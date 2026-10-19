@@ -79,7 +79,7 @@ light(0xffffff,.9,-3.5,2.5,-4);
 // ---------- estado ----------
 let presetId='feminine_soft',adj={...DEFAULT_ADJ},current=null;
 const defs=[['headWidth','Largura do crânio',.88,1.14],['cheeks','Bochechas',.5,1.5],['jaw','Mandíbula',.85,1.15],['eyes','Tamanho dos olhos',.88,1.12],['eyeGap','Distância entre olhos',.9,1.1],['nose','Nariz',.7,1.3],['mouth','Boca / sorriso',.8,1.2]];
-const SUBS={feminine_soft:'Queixo delicado, olhos amendoados, cílios e lábios cheios',masculine_soft:'Mandíbula estruturada, sobrancelha firme, nariz reto',cute_round:'Rosto redondo, olhos grandes e baixos, bochechas cheias'};
+const SUBS={feminine_soft:'Queixo delicado, olhos amendoados, cílios e lábios cheios',masculine_soft:'Mandíbula estruturada, sobrancelha firme, nariz reto',cute_round:'Rosto redondo, olhos grandes e baixos, bochechas cheias',feminine_bold:'Olhar felino de pálpebra pesada, sobrancelha alta, lábios escuros'};
 
 function rebuild(quality=1){
   if(current){scene.remove(current.group);current.dispose()}

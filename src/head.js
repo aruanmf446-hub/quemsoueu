@@ -51,6 +51,7 @@ function makeSDF(P) {
   const segB = (ax, ay, az, ra, bx2, by2, bz2, rb) => bs((ax + bx2) / 2, (ay + by2) / 2, (az + bz2) / 2, Math.hypot(bx2 - ax, by2 - ay, bz2 - az) / 2 + Math.max(ra, rb));
   const BF = bs(0, fy, fz, Math.max(frx, fry, frz)), BC = bs(bx, by, bz, Math.max(brx, bry, brz)), BJ = segB(jcw, jcy, jcz, jcr, jgx, jgy, jgz, jgr);
   const BW = segB(0, jcy, jcz, jcr, jcw, jcy, jcz, jcr), BH = bs(0, hy, hz, Math.max(hrx, hry, hrz)), BN = segB(0, nty, ntz, nr, 0, nby, nbz, nr * 1.1);
+  const S = P.scm, BS = S && segB(S[0], S[1], S[2], S[6], S[3], S[4], S[5], S[6]); // esternocleidomastoideo: de trás da orelha à base do pescoço
   return (x, y, z) => {
     const ax = sqrt(x * x + 4e-4); // |x| suave
     let d = superE(x, y - cy, z - cz, crx, cry, crz, crzB, cn);
@@ -60,6 +61,7 @@ function makeSDF(P) {
     if (jcw > 0 && !far(BW, ax, y, z, d, jk * .5)) d = smin(d, roundCone(ax, y, z, 0, jcy, jcz, jcr, jcw, jcy, jcz, jcr), jk * .5); // queixo largo (mandíbula quadrada)
     if (!far(BH, ax, y, z, d, hk)) d = smin(d, ellip(x, y - hy, z - hz, hrx, hry, hrz), hk);
     if (!far(BN, ax, y, z, d, nk)) d = smin(d, roundCone(x, y, z, 0, nty, ntz, nr, 0, nby, nbz, nr * 1.1), nk);
+    if (S && !far(BS, ax, y, z, d, S[7])) d = smin(d, roundCone(ax, y, z, S[0], S[1], S[2], S[6], S[3], S[4], S[5], S[6] * .8), S[7]);
     return y - cut > .05 ? d : smaxS(d, cut - y, .05);
   };
 }
@@ -370,7 +372,7 @@ export function buildHead(presetId, adj, opts = {}) {
         const wf = face ? sstep(.05, .5, cosP[ix]) * (1 - sstep(.3, .7, -cth) * sstep(.75, .4, cosP[ix])) : 0;
         let f = null, eyeState = 0;
         if (wf > 0) { f = field(x, y); z += f.dz * wf }
-        let lifted = false; const lwF = sstep(.4, .75, cosP[ix]);
+        let lifted = false; const lwF = sstep(.3, .8, cosP[ix]);
         if (wf > .9) for (const e of eyes) {
           const [U, V] = e.local(x, y), uN = U / e.halfW;
           if (Math.abs(uN) >= 1 || Math.abs(V) > .24) continue;
@@ -456,25 +458,26 @@ export function buildHead(presetId, adj, opts = {}) {
   {
     const eS = P.earS, yE = P.eyeY - .1, zE = -.1;
     let xs = 1.3; for (let k = 0; k < 60; k++) { const d = sdf(xs, yE, zE); if (d < 1e-4) break; xs -= d * .9 }
-    const parts = [];
-    const ell = (rx, ry, rz, px, py, pz, fn) => { const g = new THREE.SphereGeometry(1, 32, 24); g.scale(rx * eS, ry * eS, rz * eS); g.translate(px * eS, py * eS, pz * eS); setColors(g, fn); parts.push(g) };
-    const arc = (rz, ry, x0, a0, a1, r, cz, cy, fn) => {
-      const pts = [], rw = [], n = 26;
-      for (let i = 0; i <= n; i++) { const a = a0 + (a1 - a0) * i / n; pts.push(new THREE.Vector3((x0 + .012 * Math.sin(Math.PI * i / n)) * eS, (cy + ry * Math.sin(a)) * eS, (cz + rz * Math.cos(a)) * eS)); rw.push(r * eS * (.35 + .65 * Math.pow(Math.sin(Math.PI * clamp(i / n * 1.15, 0, 1)), .5))) }
-      const g = ribbon(pts, rw, rw.map(v => v * .8), () => new THREE.Vector3(1, 0, 0), 10); setColors(g, fn); parts.push(g);
-    };
-    const base = c => c.copy(skin).lerp(blush, .22), dark = c => c.copy(skin).lerp(shade, .55).lerp(blush, .2);
-    ell(.03, .19, .115, .02, 0, -.01, base);
-    ell(.016, .1, .06, .036, -.015, .0, dark);
-    arc(.105, .175, .04, .35, 4.6, .022, -.005, .0, base);
-    arc(.06, .1, .045, 1.0, 3.9, .012, -.005, -.01, base);
-    ell(.022, .045, .036, .03, -.175, .01, base);
-    ell(.016, .026, .018, .035, -.04, .088, base);
+    // concha única: elipsoide achatado, face externa escavada (cavidade + anti-hélice), borda grossa = hélice, lóbulo cheio
+    const H = .225 * eS, Wd = .13 * eS, T = .05 * eS, shell = new THREE.SphereGeometry(1, 72, 56), sp = shell.attributes.position, depth = new Float32Array(sp.count);
+    for (let i = 0; i < sp.count; i++) {
+      const ux = sp.getX(i), uy = sp.getY(i), uz = sp.getZ(i), r = Math.min(1, Math.hypot(uy, uz));
+      const lobe = sstep(-.5, -.82, uy), dish = (1 - sstep(.6, .9, r)) * (1 - lobe);
+      const anti = gau(r - .56, .11) * sstep(-.35, .15, uy) * (1 - lobe), concha = gau(uy + .12, .3) * gau(uz - .15, .32) * dish;
+      const dd = ux > 0 ? ux * (1.0 * dish - .45 * anti + .45 * concha) : 0;
+      const wz = Wd * (.7 + .3 * sstep(-.95, .15, uy));
+      sp.setXYZ(i, (ux - dd) * T + T * .45 + .012 * eS * sstep(.2, 1, -uz) * (1 - lobe), uy * H, uz * wz - .03 * eS * uy);
+      depth[i] = dd;
+    }
+    shell.computeVertexNormals();
+    const parts = [setColors(shell, (c, x, y, z, i) => c.copy(skin).lerp(blush, .28).lerp(shade, clamp(depth[i] * .45, 0, .5)))];
+    const tr = new THREE.SphereGeometry(1, 20, 14); tr.scale(.018 * eS, .03 * eS, .02 * eS); tr.translate(T * .9, -.045 * eS, Wd * .82); // trago
+    parts.push(setColors(tr, c => c.copy(skin).lerp(blush, .25)));
     const geoR = mergeGeos(parts);
     for (const s of [-1, 1]) {
       const g = s > 0 ? geoR : mirrorX(geoR);
       const m = new THREE.Mesh(track(g), skinMat); m.name = 'Ear_' + (s < 0 ? 'L' : 'R');
-      m.position.set(s * (xs - .025), yE, zE); m.rotation.set(0, s * -.22, s * .1); root.add(m);
+      m.position.set(s * (xs + .018 * eS), yE, zE); m.rotation.set(0, s * -.2, s * .08); root.add(m);
     }
   }
 
