@@ -16,7 +16,7 @@ canvas{display:block;width:100%;height:100%}
 .desc{font-size:12px;color:#77717a;line-height:1.65;margin-bottom:22px}
 .group{border-top:1px solid #e9e5e5;padding-top:17px;margin-top:18px}
 .group h3{font-size:11px;letter-spacing:.17em;text-transform:uppercase;margin:0 0 15px;color:#8a7981}
-.presets{display:grid;gap:7px}.fam{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#a8999f;margin:10px 0 2px}.fam:first-child{margin-top:0}.ctrl.off{opacity:.35;pointer-events:none}
+.presets{display:grid;gap:7px}.fam{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#a8999f;margin:10px 0 2px}.fam:first-child{margin-top:0}.ctrl.off{opacity:.35;pointer-events:none}.exprs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px}.exprs button{padding:8px 4px;font-size:11px}.exprs button.on{background:#362832;color:#fff;border-color:#362832}.toggles{display:flex;gap:16px;font-size:12px;color:#48444a;margin:0 0 14px}.toggles input{accent-color:#9a7084}
 .preset{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;padding:9px 12px}
 .preset b{font-size:13px;font-weight:600}.preset span{font-size:11px;color:#8a8189;line-height:1.4}
 .preset.active{background:#362832;border-color:#362832;color:#fff}.preset.active span{color:#d9c9d1}
@@ -41,9 +41,12 @@ button:hover{background:#f6eaee}.preset.active:hover{background:#4a3642}
   <div class="eyebrow">Escultura procedural · V2</div><h2>Head V2</h2>
   <p class="desc">Olhos grandes com pálpebras, nariz delicado, boca integrada à face, bochechas suaves e mandíbula limpa. Escolha um preset e refine nos ajustes.</p>
   <section class="group" style="border-top:0;padding-top:0;margin-top:0"><h3>Personagens</h3><div class="presets" id="presets"></div></section>
+  <section class="group"><h3>Expressões (rig)</h3><div class="exprs" id="exprs"></div>
+    <div class="toggles"><label><input type="checkbox" id="autoBlink" checked/> Piscar automático</label><label><input type="checkbox" id="talk"/> Falando</label></div>
+    <div id="poseCtrls"></div></section>
   <section class="group"><h3>Ajuste fino</h3><div id="controls"></div></section>
   <div class="group"><h3>Câmera e exportação</h3><div class="buttons"><button id="front">Frente</button><button id="side">Perfil</button><button id="threequarters">3/4</button><button id="reset">Restaurar</button><button class="primary" id="download">Exportar GLB da cabeça</button></div></div>
-  <p class="note">Head V2 é uma base de rosto: ainda sem cabelo, corpo, figurino, blendshapes ou rig facial. A forma é procedural (volumes anatômicos fundidos + relevo do rosto, pele e pescoço numa malha só) e serve para aprovar identidade visual antes da produção do personagem.</p>
+  <p class="note">Head V2 é uma base de rosto com rig facial (ossos de olhos, pálpebras, sobrancelhas, mandíbula e cantos da boca, exportados no GLB com animações prontas). Ainda sem cabelo, corpo ou figurino. A forma é procedural (volumes anatômicos fundidos + relevo do rosto, pele e pescoço numa malha só) e serve para aprovar identidade visual antes da produção do personagem.</p>
 </aside>
 </div>
 <script type="module">
@@ -53,6 +56,7 @@ import {GLTFExporter} from 'three/addons/exporters/GLTFExporter.js';
 import {RoomEnvironment} from 'three/addons/environments/RoomEnvironment.js';
 import {buildHead} from './src/head.js';
 import {PRESETS,PRESET_ORDER,FAMILY_ORDER,DEFAULT_ADJ} from './src/presets.js';
+import {EXPRESSIONS,NEUTRAL} from './src/rig.js';
 
 const host=document.getElementById('stage'),scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(30,1,.05,100);
 const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});
@@ -83,7 +87,7 @@ const defs=[['headWidth','Largura do crânio',.88,1.14],['cheeks','Bochechas',.5
 
 function rebuild(quality=1){
   if(current){scene.remove(current.group);current.dispose()}
-  current=buildHead(presetId,adj,{quality});scene.add(current.group);
+  current=buildHead(presetId,adj,{quality});scene.add(current.group);applyPose();
   document.getElementById('status').textContent='Head V2 · '+presetId;
   for(const [id] of defs)document.getElementById(id+'-value').textContent=adj[id].toFixed(2);
   document.querySelectorAll('.preset').forEach(b=>b.classList.toggle('active',b.dataset.preset===presetId));
@@ -91,6 +95,26 @@ function rebuild(quality=1){
 }
 let raf=0;function scheduleRebuild(){if(raf)return;raf=requestAnimationFrame(()=>{raf=0;rebuild(.5)})} // prévia leve ao arrastar; versão completa ao soltar
 function rebuildFull(){if(raf){cancelAnimationFrame(raf);raf=0}rebuild(1)}
+
+// ---------- expressões (rig) ----------
+// pose final = sliders/expressão escolhida + piscar automático + fala
+const poseDefs=[['lookX','Olhar ↔',-1,1],['lookY','Olhar ↕',-1,1],['blinkL','Piscar esquerdo',0,1],['blinkR','Piscar direito',0,1],['wide','Arregalar',0,1],['squint','Apertar olhos',0,1],['jaw','Abrir boca',0,1],['smile','Sorriso / tristeza',-1,1],['browRaise','Sobrancelhas',-1,1],['browAngry','Bravo / preocupado',-1,1]];
+let pose={...NEUTRAL},exprName='neutro',blinkT=0,nextBlink=2.5,talkT=0;
+const EXPR_LABEL={neutro:'Neutro',feliz:'Feliz',triste:'Triste',bravo:'Bravo',surpreso:'Surpreso',piscadela:'Piscadela',desconfiado:'Desconfiado'};
+const exprsEl=document.getElementById('exprs');
+for(const k of Object.keys(EXPRESSIONS)){const b=document.createElement('button');b.textContent=EXPR_LABEL[k]||k;b.dataset.expr=k;b.onclick=()=>setExpression(k);exprsEl.append(b)}
+const poseEl=document.getElementById('poseCtrls');
+for(const [id,title,min,max] of poseDefs){const d=document.createElement('div');d.className='ctrl';d.innerHTML='<label for="p_'+id+'">'+title+' <output id="p_'+id+'-value">0.00</output></label><input id="p_'+id+'" type="range" min="'+min+'" max="'+max+'" step=".01" value="0"/>';poseEl.append(d);d.querySelector('input').oninput=e=>{pose[id]=Number(e.target.value);exprName=null;syncPoseUI()}}
+function syncPoseUI(){for(const [id] of poseDefs){document.getElementById('p_'+id).value=pose[id]||0;document.getElementById('p_'+id+'-value').textContent=(pose[id]||0).toFixed(2)}document.querySelectorAll('.exprs button').forEach(b=>b.classList.toggle('on',b.dataset.expr===exprName))}
+function setExpression(k){pose={...NEUTRAL,...EXPRESSIONS[k]};exprName=k;syncPoseUI()}
+function livePose(dt){
+  const p={...pose};
+  if(document.getElementById('autoBlink').checked){blinkT+=dt;if(blinkT>nextBlink){const k=Math.min(1,(blinkT-nextBlink)/.09),b=k<.5?k*2:2-k*2;p.blinkL=Math.max(p.blinkL,b);p.blinkR=Math.max(p.blinkR,b);if(blinkT>nextBlink+.18){blinkT=0;nextBlink=2+Math.random()*3.5}}}
+  if(document.getElementById('talk').checked){talkT+=dt;p.jaw=Math.max(p.jaw,.4*Math.abs(Math.sin(talkT*9.1))*(.55+.45*Math.sin(talkT*2.3))+.06*Math.sin(talkT*17));p.browRaise+= .12*Math.max(0,Math.sin(talkT*2.6))}
+  return p;
+}
+function applyPose(dt=0){if(current&&current.rig)current.rig.apply(livePose(dt))}
+syncPoseUI();
 
 // ---------- UI ----------
 const presetsEl=document.getElementById('presets');
@@ -105,16 +129,19 @@ document.getElementById('side').onclick=()=>aim(...VIEWS.side);
 document.getElementById('threequarters').onclick=()=>aim(...VIEWS.three);
 document.getElementById("reset").onclick=()=>{resetAdj();rebuildFull();aim(...VIEWS.three)};
 // exportação: malha com densidade um pouco menor que a do visualizador (arquivo mais leve, mesma forma)
-function exportGLB(){const h=buildHead(presetId,adj,{quality:.7});return new GLTFExporter().parseAsync(h.group,{binary:true,onlyVisible:true}).finally(()=>h.dispose())}
+// o GLB vai em pose neutra, com o esqueleto facial e os clipes de animação (piscar, falar, expressões…)
+function exportGLB(){const h=buildHead(presetId,adj,{quality:.7});const animations=h.rig&&h.rig.makeClips?h.rig.makeClips():[];if(h.rig)h.rig.apply({});
+  return new GLTFExporter().parseAsync(h.group,{binary:true,onlyVisible:true,animations}).finally(()=>h.dispose())}
 document.getElementById('download').onclick=async e=>{
   const btn=e.currentTarget,label=btn.textContent;btn.disabled=true;btn.textContent='Exportando…';
   try{const result=await exportGLB();const blob=new Blob([result],{type:'model/gltf-binary'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='head-v2-'+presetId+'.glb';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
   catch(err){alert('Falha na exportação: '+(err&&err.message||err))}
   finally{btn.disabled=false;btn.textContent=label}
 };
-window.__atelie={group:()=>current.group,timings:()=>current.group.userData.timings,setPreset,aim,VIEWS,camera,orbit,clay:on=>current.group.traverse(o=>{if(o.isMesh&&o.material.vertexColors!==undefined&&o.material.name==='Skin'){o.material.vertexColors=!on;o.material.sheen=on?0:.6;if(on)o.material.color.set('#d8d4cf');else o.material.color.set('#ffffff');o.material.needsUpdate=true}}),exportGLB};
+window.__atelie={setExpression,setPose:p=>{pose={...NEUTRAL,...p};exprName=null;syncPoseUI();applyPose()},stopAuto:()=>{document.getElementById('autoBlink').checked=false;document.getElementById('talk').checked=false},group:()=>current.group,timings:()=>current.group.userData.timings,setPreset,aim,VIEWS,camera,orbit,clay:on=>current.group.traverse(o=>{if(o.isMesh&&o.material.vertexColors!==undefined&&o.material.name==='Skin'){o.material.vertexColors=!on;o.material.sheen=on?0:.6;if(on)o.material.color.set('#d8d4cf');else o.material.color.set('#ffffff');o.material.needsUpdate=true}}),exportGLB};
 
 rebuild();
 function resize(){const w=host.clientWidth,h=host.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}addEventListener('resize',resize);resize();
-(function frame(){requestAnimationFrame(frame);orbit.update();renderer.render(scene,camera)})();
+let lastT=performance.now();
+(function frame(){requestAnimationFrame(frame);const t=performance.now(),dt=Math.min(.1,(t-lastT)/1000);lastT=t;applyPose(dt);orbit.update();renderer.render(scene,camera)})();
 </script></body></html>

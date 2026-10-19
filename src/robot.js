@@ -8,28 +8,40 @@ const sstep = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t 
 const col = h => new THREE.Color(h);
 const unitNormals = g => { const n = g.attributes.normal.array; for (let i = 0; i < n.length; i += 3) { const l = Math.hypot(n[i], n[i + 1], n[i + 2]); if (l > 1e-8) { n[i] /= l; n[i + 1] /= l; n[i + 2] /= l } else { n[i] = 0; n[i + 1] = 0; n[i + 2] = 1 } } return g };
 
-function faceTexture(P) {
-  const W = 1024, H = 512, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
-  const c = cv.getContext('2d'), glow = P.glow || '#5fe3ff', blushC = P.blushColor || '#ff8a55';
+// Rosto da tela desenhado a partir de uma pose (mesmos campos do rig facial: olhar, piscar, sorriso, boca, sobrancelha)
+function drawFace(cv, P, pose = {}) {
+  const W = cv.width, H = cv.height, c = cv.getContext('2d'), glow = P.glow || '#5fe3ff', blushC = P.blushColor || '#ff8a55';
+  const p = { lookX: 0, lookY: 0, blinkL: 0, blinkR: 0, wide: 0, squint: 0, jaw: 0, smile: 0, smileL: 0, smileR: 0, browRaise: 0, browAngry: 0, ...pose };
   c.fillStyle = '#000'; c.fillRect(0, 0, W, H);
   const stroke = (fn, w, color, blur) => { c.save(); c.strokeStyle = color; c.lineWidth = w; c.lineCap = 'round'; c.shadowColor = color; c.shadowBlur = blur; c.beginPath(); fn(); c.stroke(); c.restore() };
-  const ex = W * .27, ey = H * .47, r = H * .17, expr = P.expression || 'happy';
+  const fill = (fn, color, blur) => { c.save(); c.fillStyle = color; c.shadowColor = color; c.shadowBlur = blur; c.beginPath(); fn(); c.fill(); c.restore() };
+  const happy = P.expression === 'happy' && p.smile >= 0 && !p.wide && !p.browAngry;
+  const ox = p.lookX * W * .05, oy = -p.lookY * H * .06, ex = W * .27, ey = H * .47 + oy, r = H * .17 * (1 + p.wide * .15);
   for (const sx of [-1, 1]) {
-    const x = W / 2 + sx * ex;
-    if (expr === 'happy') stroke(() => c.arc(x, ey + r * .45, r, Math.PI * 1.12, Math.PI * 1.88), H * .07, glow, 30);
-    else if (expr === 'angry') stroke(() => { c.moveTo(x - r, ey - r * .1 - sx * r * .35); c.lineTo(x + r, ey - r * .1 + sx * r * .35) }, H * .07, glow, 30);
-    else { c.save(); c.fillStyle = glow; c.shadowColor = glow; c.shadowBlur = 30; c.beginPath(); c.ellipse(x, ey, r * .55, r * .8, 0, 0, Math.PI * 2); c.fill(); c.restore() }
-    for (let k = 0; k < 3; k++) stroke(() => { const bx = x + sx * r * .1 + (k - 1) * r * .28, by = ey + r * 1.15; c.moveTo(bx - r * .06, by - r * .12); c.lineTo(bx + r * .06, by + r * .12) }, H * .02, blushC, 14);
+    const x = W / 2 + sx * ex + ox, blink = Math.min(1, (sx < 0 ? p.blinkL : p.blinkR) + p.squint * .45);
+    if (blink > .85) stroke(() => { c.moveTo(x - r * .8, ey + r * .1); c.quadraticCurveTo(x, ey + r * .35, x + r * .8, ey + r * .1) }, H * .06, glow, 30);
+    else if (happy) stroke(() => c.arc(x, ey + r * .45, r, Math.PI * 1.12, Math.PI * 1.88), H * .07, glow, 30);
+    else fill(() => c.ellipse(x, ey, r * .55, r * .8 * (1 - blink), 0, 0, Math.PI * 2), glow, 30);
+    if (p.browAngry || p.browRaise) { // "sobrancelha" de luz
+      const by = ey - r * (1.25 + p.browRaise * .35), tilt = sx * p.browAngry * r * .45;
+      stroke(() => { c.moveTo(x - r * .7, by - tilt); c.lineTo(x + r * .7, by + tilt) }, H * .035, glow, 20);
+    }
+    if (p.smile + (sx < 0 ? p.smileL : p.smileR) >= 0) for (let k = 0; k < 3; k++) stroke(() => { const bx = x + sx * r * .1 + (k - 1) * r * .28, by = ey + r * 1.15; c.moveTo(bx - r * .06, by - r * .12); c.lineTo(bx + r * .06, by + r * .12) }, H * .02, blushC, 14);
   }
-  stroke(() => c.arc(W / 2, H * .6, H * .09, Math.PI * .15, Math.PI * .85), H * .045, glow, 24);
-  // linhas de varredura bem sutis
+  const mx = W / 2 + ox * .5, my = H * .62 + oy * .5, mw = H * (.09 + .03 * Math.abs(p.smile)), sm = p.smile + (p.smileL + p.smileR) / 2;
+  if (p.jaw > .08) fill(() => c.ellipse(mx, my, mw * (1 + p.jaw * .2), H * .02 + p.jaw * H * .07, 0, 0, Math.PI * 2), glow, 24);
+  else stroke(() => { c.moveTo(mx - mw, my - sm * mw * .5); c.quadraticCurveTo(mx, my + sm * mw * 1.1, mx + mw, my - sm * mw * .5) }, H * .045, glow, 24);
   c.globalAlpha = .08; c.fillStyle = '#fff'; for (let y = 0; y < H; y += 6) c.fillRect(0, y, W, 1); c.globalAlpha = 1;
-  const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t;
+}
+function faceTexture(P) {
+  const cv = document.createElement('canvas'); cv.width = 1024; cv.height = 512; drawFace(cv, P, {});
+  const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; t.userData.canvas = cv; return t;
 }
 
 export function buildRobot(P, opts = {}) {
   const Q = opts.quality || 1, root = new THREE.Group(), disposables = [], track = o => (disposables.push(o), o);
   root.name = 'Head_V2_' + P.id;
+  let screenTex = null;
   const R = 1, shellC = col(P.shell || '#ece6da'), accent = col(P.accent || '#f08a24'), dark = col('#2b2a2a');
   const add = (geo, m, name, parent = root) => { if (geo.attributes.normal) unitNormals(geo); const o = new THREE.Mesh(track(geo), m); o.name = name; parent.add(o); return o };
   // tela: janela em coordenadas angulares (longitude u, latitude v), super-elipse
@@ -67,7 +79,7 @@ export function buildRobot(P, opts = {}) {
     }
     for (let i = 0; i < NR; i++) for (let j = 0; j < NA; j++) { const a = i * (NA + 1) + j, b = a + 1, c = a + NA + 1, d = c + 1; idx.push(a, c, b, b, c, d) }
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals(); unitNormals(g);
-    const tex = track(faceTexture(P));
+    const tex = track(faceTexture(P)); screenTex = tex;
     add(g, track(new THREE.MeshPhysicalMaterial({ color: 0x050608, roughness: .12, clearcoat: 1, clearcoatRoughness: .05, emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 1.5, name: 'Screen' })), 'Screen');
   }
   // "orelhas": discos laterais com anel de luz
@@ -94,5 +106,8 @@ export function buildRobot(P, opts = {}) {
   root.traverse(o => { if (o.isMesh) { o.castShadow = !(o.material.isMeshBasicMaterial); o.receiveShadow = true } });
   root.userData.params = P; root.userData.timings = { total: 0 };
   const dispose = () => { root.traverse(o => { if (o.isMesh && o.geometry) o.geometry.dispose() }); disposables.forEach(d => d.dispose && d.dispose()) };
-  return { group: root, dispose, params: P };
+  // rig do robô: a pose redesenha o rosto da tela
+  let last = '';
+  const rig = { kind: 'screen', apply(pose = {}) { const k = JSON.stringify(pose); if (k === last || !screenTex) return; last = k; drawFace(screenTex.userData.canvas, P, pose); screenTex.needsUpdate = true }, makeClips: () => [] };
+  return { group: root, dispose, params: P, rig };
 }

@@ -11,6 +11,7 @@
 import * as THREE from 'three';
 import { resolve } from './presets.js';
 import { buildRobot } from './robot.js';
+import { createRig } from './rig.js';
 
 const { clamp } = THREE.MathUtils;
 const sqrt = Math.sqrt, exp = Math.exp;
@@ -478,7 +479,7 @@ export function buildHead(presetId, adj, opts = {}) {
   const bagC = P.bag ? col(P.bag) : underC, mouthIn = col(P.mouthIn || '#4a1418');
   // barba volumétrica (anão, orc): bochechas abaixo da linha da barba, queixo, mandíbula; boca livre; bigode opcional
   const BV = P.beardVol, beardHair = BV ? col(BV.color) : null;
-  const MCv = mouthCurve(P);
+  const MCv = mouthCurve(P), SLIT = !P.open && P.mouthRig !== false;
   function beardMask(x, y, z, f) {
     const ax = Math.abs(x), tY = P.noseTipY, mY = P.mouthY, yB = mY + .02 + (P.eyeY - .24 - (mY + .02)) * sstep(.2, .62, ax);
     let m = sstep(yB + .05, yB - .06, y) * sstep(-.5, -.25, z) * (1 - sstep(.66, .8, ax) * sstep(-.1, -.3, z));
@@ -529,7 +530,7 @@ export function buildHead(presetId, adj, opts = {}) {
     const axisZ = y => y > nty ? Cz + (ntz - Cz) * clamp((Cy - y) / (Cy - nty), 0, 1) : ntz + (nbz - ntz) * clamp((nty - y) / (nty - nby), 0, 1);
     const sinP = new Float64Array(W), cosP = new Float64Array(W);
     for (let ix = 0; ix < W; ix++) { const lon = -Math.PI + 2 * Math.PI * ix / LON, ph = lon - WARP * Math.sin(lon); sinP[ix] = Math.sin(ph); cosP[ix] = Math.cos(ph) }
-    const N = W * (LAT + 1), pos = new Float32Array(N * 3), colors = new Float32Array(N * 3), gloss = new Float32Array(N), state = new Uint8Array(N);
+    const N = W * (LAT + 1), NX = N + W, pos = new Float32Array(NX * 3), colors = new Float32Array(NX * 3), gloss = new Float32Array(NX), state = new Uint8Array(NX);
     const c = new THREE.Color(); let rowGuess = 0;
     for (let iy = 0; iy <= LAT; iy++) {
       const t = iy / LAT; let oy, oz, th, face = false;
@@ -614,13 +615,38 @@ export function buildHead(presetId, adj, opts = {}) {
       }
     }
     mark('loop');
+    // ---- fenda da boca (rig): uma fileira de vértices é ajustada exatamente na linha da boca e duplicada;
+    // os triângulos abaixo da linha usam as cópias → a mandíbula abre uma boca de verdade, fechada no repouso ----
+    const dupOf = new Int32Array(N).fill(-1); let NV = N;
+    if (SLIT) for (let ix = 0; ix < W; ix++) {
+      if (cosP[ix] < .5) continue;
+      for (let iy = 0; iy < LAT && iy / LAT <= TA; iy++) {
+        const a = iy * W + ix, b = a + W, xa = pos[a * 3], ya = pos[a * 3 + 1], yb = pos[b * 3 + 1];
+        if (Math.abs(xa) > MCv.mw * .96 || state[a] || state[b]) continue;
+        const yma = MCv.ym(xa), ymb = MCv.ym(pos[b * 3]);
+        if (ya >= yma && yb < ymb) {
+          const pick = ya - yma < ymb - yb ? a : b, x = pos[pick * 3], y = MCv.ym(x), f = field(x, y);
+          pos[pick * 3 + 1] = y; pos[pick * 3 + 2] = frontZ(x, y) + f.dz;
+          const cc2 = new THREE.Color().fromArray(colors, pick * 3).lerp(lineC, .8); cc2.toArray(colors, pick * 3);
+          dupOf[pick] = NV; NV++; break;
+        }
+      }
+    }
+    for (let i = 0; i < N; i++) if (dupOf[i] >= 0) { const d = dupOf[i]; pos.copyWithin(d * 3, i * 3, i * 3 + 3); gloss[d] = gloss[i]; state[d] = 0 }
     const idx = new Uint32Array(LON * LAT * 6); let o = 0;
+    const tri = (a, b, c) => {
+      if (NV > N && (dupOf[a] >= 0 || dupOf[b] >= 0 || dupOf[c] >= 0)) {
+        const cx = (pos[a * 3] + pos[b * 3] + pos[c * 3]) / 3, cy = (pos[a * 3 + 1] + pos[b * 3 + 1] + pos[c * 3 + 1]) / 3;
+        if (cy < MCv.ym(cx)) { if (dupOf[a] >= 0) a = dupOf[a]; if (dupOf[b] >= 0) b = dupOf[b]; if (dupOf[c] >= 0) c = dupOf[c] }
+      }
+      idx[o++] = a; idx[o++] = b; idx[o++] = c;
+    };
     for (let iy = 0; iy < LAT; iy++) for (let ix = 0; ix < LON; ix++) {
       const a = iy * W + ix, b = a + 1, cc = a + W, d = cc + 1;
-      idx[o++] = a; idx[o++] = cc; idx[o++] = b; idx[o++] = b; idx[o++] = cc; idx[o++] = d;
+      tri(a, cc, b); tri(b, cc, d);
     }
     const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setIndex(new THREE.BufferAttribute(idx, 1));
+    geo.setAttribute('position', new THREE.BufferAttribute(pos.subarray(0, NV * 3), 3)); geo.setIndex(new THREE.BufferAttribute(idx, 1));
     geo.computeVertexNormals();
     const nr = geo.attributes.normal;
     { // costura e polos: normais unificadas
@@ -647,8 +673,10 @@ export function buildHead(presetId, adj, opts = {}) {
         }
       }
     }
-    geo.setAttribute('color', new THREE.BufferAttribute(colors, 3)); geo.setAttribute('gloss', new THREE.BufferAttribute(gloss, 1));
+    for (let i = 0; i < N; i++) if (dupOf[i] >= 0) colors.copyWithin(dupOf[i] * 3, i * 3, i * 3 + 3);
+    geo.setAttribute('color', new THREE.BufferAttribute(colors.subarray(0, NV * 3), 3)); geo.setAttribute('gloss', new THREE.BufferAttribute(gloss.subarray(0, NV), 1));
     const head = new THREE.Mesh(track(geo), skinMat); head.name = 'Head_Skin'; root.add(head);
+    head.userData.vinfo = { N, NV, dupOf, state };
   }
   mark('head');
 
@@ -917,6 +945,32 @@ export function buildHead(presetId, adj, opts = {}) {
       addMesh(ribbon(pts, rw, rw.map(v => v * .9), () => new THREE.Vector3(0, 0, 1), 12), m2, 'Tusk_' + (sd < 0 ? 'L' : 'R'));
     }
   }
+  // ---- interior da boca do rig (boca fechada no repouso): fundo, dentes e língua atrás dos lábios ----
+  if (SLIT) {
+    const zg = surfZ(0, MCv.ym(0)), cy = MCv.ym(0) - .02, depth = Math.min(.17, zg - P.cran[1] - .05);
+    { const g = new THREE.SphereGeometry(1, 40, 24); g.scale(MCv.mw * 1.02, .12, depth); g.translate(0, cy - .03, zg - depth - .015);
+      setColors(g, (c, x, y, z) => c.set('#3c0c10').multiplyScalar(.55 + .45 * sstep(zg - depth * 2, zg, z)));
+      addMesh(g, mat('#ffffff', { vertexColors: true, roughness: .6, side: THREE.BackSide }), 'Mouth_Bag') }
+    const tm = mat('#f4efe6', { vertexColors: true, color: 0xffffff, roughness: .3, clearcoat: .5, side: THREE.DoubleSide });
+    const teeth = (upper, h) => {
+      const NX2 = 60, NY = 5, ps = [], ix2 = [], span = MCv.mw * .8, tw = (P.teeth && P.teeth.w) || Math.max(.05, MCv.mw * .3);
+      for (let j = 0; j <= NY; j++) for (let i = 0; i <= NX2; i++) {
+        const x = -span + 2 * span * i / NX2, v = j / NY, ph = Math.abs(Math.sin(Math.PI * (x + tw / 2) / tw)), edge = MCv.ym(x) + (upper ? .012 : -.012);
+        const y = upper ? edge - v * h * (.86 + .14 * Math.pow(ph, .4)) : edge + v * h * (.86 + .14 * Math.pow(ph, .4)) - h * 1.05;
+        ps.push(x, upper ? y : y, surfZ(x, MCv.ym(x)) - (upper ? .04 : .052) - .03 * (x / span) ** 2);
+      }
+      for (let j = 0; j < NY; j++) for (let i = 0; i < NX2; i++) { const a = j * (NX2 + 1) + i, b = a + 1, c2 = a + NX2 + 1, d = c2 + 1; ix2.push(a, c2, b, b, c2, d) }
+      const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(ps, 3)); g.setIndex(ix2); g.computeVertexNormals();
+      setColors(g, (c, x) => { const ph = Math.abs(Math.sin(Math.PI * (x + tw / 2) / tw)); c.set('#f6f1e8').multiplyScalar(.86 + .14 * sstep(.03, .25, ph)).lerp(col('#c9b8a6'), .45 * sstep(.6, 1, Math.abs(x) / span)) });
+      return g;
+    };
+    const th = Math.max(.035, MCv.mw * .2);
+    addMesh(teeth(true, th), tm, 'Teeth_Upper'); addMesh(teeth(false, th * .8), tm, 'Teeth_Lower');
+    { const g = new THREE.SphereGeometry(1, 32, 20); g.scale(MCv.mw * .62, .035, depth * .55); g.translate(0, cy - .085, zg - depth * .7);
+      setColors(g, (c, x) => c.set('#c85a66').multiplyScalar(1 - .25 * gau(x, .05)));
+      addMesh(g, mat('#ffffff', { vertexColors: true, roughness: .4, clearcoat: .4 }), 'Tongue') }
+  }
+
   // ---- dentes e língua (boca aberta) ----
   if (P.open) {
     const TT = P.teeth || {}, toothMat = mat('#f4efe6', { vertexColors: true, color: 0xffffff, roughness: .3, clearcoat: .5, side: THREE.DoubleSide });
@@ -948,8 +1002,50 @@ export function buildHead(presetId, adj, opts = {}) {
     }
   }
 
+  // ================= rig facial: esqueleto + pesos =================
+  const rig = createRig(P, { eyes, MC: MCv, surfZ });
+  root.add(rig.root); root.updateMatrixWorld(true);
+  const skeleton = new THREE.Skeleton(rig.bones), Bn = n => rig.bones[rig.B[n]];
+  const mouthBagY = MCv.ym(0) - .05;
+  const classify = name => {
+    if (name === 'Head_Skin') return 'skin';
+    if (name.startsWith('Brow_')) return 'brow';
+    if (name.startsWith('Lashes_')) return 'lidU';
+    if (name.startsWith('Lid_Rim_') || name.startsWith('LowerLash_')) return 'lidL';
+    if (name === 'Mouth_Line') return 'line';
+    if (name.startsWith('Mustache_') || name.startsWith('Beard')) return 'generic';
+    if (name === 'Mouth_Bag') return 'bag';
+    if (['Goatee', 'Teeth_Lower', 'Tongue'].includes(name) || name.startsWith('Tusk_')) return 'jaw';
+    return 'head';
+  };
+  for (const obj of [...root.children]) {
+    if (obj === rig.root) continue;
+    if (obj.name === 'Eye_L' || obj.name === 'Eye_R') { // globo vai com o osso do olho; brilhos ficam fixos na cabeça
+      const side = obj.name.slice(-1), hl = new THREE.Group(); hl.name = 'Eye_Highlights_' + side;
+      hl.position.copy(obj.position); hl.quaternion.copy(obj.quaternion); root.add(hl); root.updateMatrixWorld(true);
+      for (const c of [...obj.children]) if (c.name === 'Catchlight') hl.attach(c);
+      Bn('Head').attach(hl); Bn('Eye_' + side).attach(obj); continue;
+    }
+    const kind = obj.isMesh ? classify(obj.name) : 'head';
+    if (kind === 'head') { Bn('Head').attach(obj); continue }
+    if (kind === 'jaw') { Bn('Jaw').attach(obj); continue }
+    const g = obj.geometry, vinfo = obj.userData.vinfo;
+    const fn = kind === 'skin' ? (x, y, z, i) => {
+        const jaw = vinfo && i >= vinfo.N ? 1 : (vinfo && i < vinfo.N && vinfo.dupOf[i] >= 0 ? 0 : undefined);
+        return rig.weights(x, y, z, { jaw, interior: vinfo && i < vinfo.N && vinfo.state[i] === 1 });
+      }
+      : kind === 'bag' ? (x, y, z) => rig.weights(x, y, z, { jaw: sstep(mouthBagY + .02, mouthBagY - .04, y) })
+      : kind === 'line' ? (x, y, z) => rig.weights(x, y, z, { jaw: 0 })
+      : kind === 'generic' ? (x, y, z) => rig.weights(x, y, z)
+      : (x, y, z) => rig.weights(x, y, z, { mode: kind });
+    rig.skinAttributes(g, fn);
+    const sm = new THREE.SkinnedMesh(g, obj.material); sm.name = obj.name; sm.renderOrder = obj.renderOrder;
+    root.remove(obj); root.add(sm); sm.bind(skeleton);
+  }
+  rig.apply({});
+
   root.traverse(o => { if (o.isMesh) { const transp = o.material.transparent; o.castShadow = !transp && o.name !== 'Catchlight'; o.receiveShadow = !transp } });
   mark('total'); root.userData.params = P; root.userData.timings = marks;
   const dispose = () => { root.traverse(o => { if (o.isMesh && o.geometry) o.geometry.dispose() }); disposables.forEach(d => d.dispose && d.dispose()) };
-  return { group: root, dispose, params: P };
+  return { group: root, dispose, params: P, rig };
 }
