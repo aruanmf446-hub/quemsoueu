@@ -149,48 +149,51 @@ PRESETS.orc_warrior = derive('masculine_soft', {
 // ---- vegetais: cabeça inteira é o vegetal; rosto aplicado na frente ----
 const VEG = { earType: 'none', noseType: 'none', noLips: true, beard: 0, fold: 0, zyg: 0, hollow: 0, temple: 0, cheekH: 0, chinH: 0, muzzle: 0, blushK: .1, scm: null, lash: .011, flick: 0, lashN: 0, lowerLash: 0 };
 
-PRESETS.cactus_cowboy = derive('masculine_soft', { ...VEG,
-  id: 'cactus_cowboy', label: 'Cacto pistoleiro', family: 'Vegetais', sub: 'Coluna com nervuras e espinhos, olhar sonolento, sorriso de canto',
-  skin: '#6f9a34', blush: '#7da23a', lip: '#4e6e22', lipLine: '#24350e', brow: '#2b3f10', liner: '#1e2a0c', lidShadow: '#557a26',
-  iris: ['#d6a35a', '#7a4a1e', '#2e1a08'], sss: [.12, .28, .06], rough: .7, sheen: .1, clearcoat: .1, skinGloss: .12,
-  cran: [.25, -.05, .62, 1.0, .6, .6, 2.2], occ: null,
-  loft: { y: [-1.05, -.8, -.6, -.4, -.2, 0, .15, .32], a: [.6, .62, .63, .63, .63, .62, .58, .45], zf: [.58, .6, .61, .62, .62, .6, .56, .44],
-    zb: [-.5, -.55, -.58, -.6, -.6, -.6, -.6, -.6], n: 2.2, cb: .02, k: .1 },
-  neck: [.6, -.75, -.05, -1.65, -.05, .3],
-  pattern: { type: 'ribs', n: 12, depth: .035, faceFade: .8 }, spines: { len: .065, r: .007, y0: -1.3, y1: 1.05, dy: .17, color: '#efe2b0' },
-  eyeX: .22, eyeY: .02, Re: .2, openW: deg(62), openU: deg(13), openL: deg(-27), peakU: 0, peakL: .05, tilt: deg(-6), irisAng: deg(30), crease: .01, lidShade: .4, socket: .02, orbit: .015,
-  browGap: .12, browTh: .05, browArch: .02, browPeak: .5, browSlope: .03, browLen: .95,
-  mouthY: -.38, mouthW: .17, smile: .25, smirk: 1.0, lipU: .012, lipL: .012, lipH: 0, bow: 0, browRidge: .02
+// Forma própria por perfil girado (lathe): r(y) = largura em cada altura, zs = achatamento frente/trás, top/rc = tampa
+// arredondada, dip = covinha no topo (onde entra o talo). Olhos saltados (sink pequeno), sem orelhas, sem nariz humano.
+const VEG_EYES = { sink: .08, socket: 0, orbit: 0, crease: .006, creaseGap: .04, lidShade: .35, lowerRoll: .004, temple: 0 };
+
+PRESETS.cactus_cowboy = derive('masculine_soft', { ...VEG, ...VEG_EYES,
+  id: 'cactus_cowboy', label: 'Cacto pistoleiro', family: 'Vegetais', sub: 'Coluna com cúpula, nervuras e espinhos, olhar sonolento, sorriso de canto',
+  skin: '#6c9b33', blush: '#7da23a', lip: '#3e5a1a', lipLine: '#1f2e0b', brow: '#24360c', liner: '#18220a', lidShadow: '#4f7424',
+  iris: ['#e6bd72', '#8a5524', '#2e1a08'], patternColor: ['#3a6116', '#b2d466'], sss: [.1, .3, .05], rough: .62, sheen: .15, clearcoat: .15, skinGloss: .15,
+  cran: [.3, -.04, .62, 1, .6, .6, 2], occ: null, loft: { y: [-1.2] },
+  lathe: { cz: -.04, zs: .95, y: [-1.9, -1, 0, .8, 1.3], r: [.6, .61, .62, .62, .6], top: 1.3, rc: .55 },
+  neck: [.6, -.9, -.04, -1.75, -.04, .3], scm: null,
+  pattern: { type: 'ribs', n: 8, depth: .06, faceFade: .5, top: 1.28, bot: -1.95 },
+  spines: { len: .085, r: .008, y0: -1.6, y1: 1.15, dy: .2, color: '#f3e7bf' },
+  eyeX: .25, eyeY: .1, Re: .23, openW: deg(62), openU: deg(17), openL: deg(-32), peakU: .05, peakL: 0, tilt: deg(-4), irisAng: deg(24), lidFold: .012, eyeShadow: .55, domeK: .12, bagK: 0,
+  browGap: .17, browTh: .065, browArch: .015, browPeak: .45, browSlope: .02, browLen: 1.05, browRidge: .06,
+  mouthY: -.5, mouthW: .3, smile: .25, smirk: 1.2, lipU: .012, lipL: .012, lipH: 0, bow: 0, cheekH: .02
 });
 
-PRESETS.pepper_king = derive('masculine_soft', { ...VEG,
-  id: 'pepper_king', label: 'Rei pimentão', family: 'Vegetais', sub: 'Pimentão com gomos e talo, bigode de guidão, cara de bravo',
-  skin: '#c4281b', blush: '#a81a14', lip: '#8e1a12', lipLine: '#3a0806', brow: '#151010', liner: '#120808', lidShadow: '#8e1a12',
-  iris: ['#e8c48a', '#9a6a3a', '#3a2210'], sss: [.5, .1, .06], rough: .35, clearcoat: 1.0, clearcoatRough: .12, skinGloss: .85, sheen: .1,
-  cran: [.12, -.1, .92, .92, .86, .86, 2.0], occ: null,
-  loft: { y: [-1.0, -.88, -.65, -.4, -.15, .05, .25], a: [.5, .76, .9, .93, .9, .8, .55], zf: [.5, .7, .8, .82, .8, .72, .55],
-    zb: [-.3, -.58, -.7, -.72, -.7, -.62, -.45], n: 2.0, cb: .22, k: .24 },
-  neck: [.32, -.95, -.1, -1.7, -.15, .2],
-  pattern: { type: 'lobes', n: 4, depth: .16, faceFade: .55, bot: -1.0 }, stem: { len: .3, r: .07, bend: .3, curl: 1.2, color: '#4e7a22', calyx: 5, calyxLen: .2, z: -.05 },
-  eyeX: .26, eyeY: .05, Re: .17, openU: deg(13), openL: deg(-16), peakU: .2, peakL: .15, tilt: deg(10), irisAng: deg(30), socket: .02,
-  browGap: .13, browTh: .06, browArch: .02, browPeak: .5, browSlope: .065, browLen: 1.05, browRidge: .03,
-  mouthY: -.4, mouthW: .13, smile: -.6, lipU: .015, lipL: .015, lipH: 0,
-  stache: { w: .34, th: .036, curl: .12, droop: .03, color: '#151010' }, goatee: { w: .05, len: .13, color: '#151010' }
+PRESETS.pepper_king = derive('masculine_soft', { ...VEG, ...VEG_EYES,
+  id: 'pepper_king', label: 'Rei pimentão', family: 'Vegetais', sub: 'Pimentão de 4 gomos com talo, bigode de guidão, cara de bravo',
+  skin: '#bf1d12', blush: '#9e120c', lip: '#7a0d08', lipLine: '#2e0503', brow: '#120c0c', liner: '#0e0808', lidShadow: '#8a140c',
+  iris: ['#dcb27a', '#8a5a2a', '#2e1a0a'], patternColor: ['#6e0805', '#f2604a'], sss: [.5, .1, .06], rough: .3, clearcoat: 1, clearcoatRough: .1, skinGloss: .9, sheen: .05,
+  cran: [.2, -.06, .9, .9, .85, .85, 2], occ: null, loft: { y: [-.8] },
+  lathe: { cz: -.06, zs: .9, y: [-1.9, -1.3, -1.05, -.82, -.55, -.2, .2, .5, .78], r: [.42, .43, .52, .72, .86, .92, .94, .92, .82], top: .82, rc: .3, dip: .14, dipR: .26 },
+  neck: [.42, -1.0, -.06, -1.75, -.06, .2], scm: null,
+  pattern: { type: 'lobes', n: 4, depth: .12, faceFade: .45, top: .9, bot: -1.0, mid: -.1 },
+  stem: { len: .42, r: .085, bend: .35, curl: 1.4, color: '#4f7d22', calyx: 5, calyxLen: .24, z: 0 },
+  eyeX: .27, eyeY: .12, Re: .19, openU: deg(16), openL: deg(-20), peakU: .25, peakL: .15, tilt: deg(12), irisAng: deg(28), lidFold: .012, eyeShadow: .6, sink: .14, domeK: .2, bagK: 0, lidShade: .1,
+  browGap: .15, browTh: .07, browArch: .03, browPeak: .55, browSlope: .07, browLen: 1.1, browRidge: .05,
+  mouthY: -.42, mouthW: .14, smile: -.7, lipU: .015, lipL: .015, lipH: 0,
+  stache: { w: .38, th: .042, curl: .14, droop: .03, color: '#120c0c' }, goatee: { w: .055, len: .16, color: '#120c0c' }
 });
 
-PRESETS.chili_bandit = derive('cute_round', { ...VEG,
-  id: 'chili_bandit', label: 'Pimenta bandida', family: 'Vegetais', sub: 'Pimenta comprida, olhos arregalados, sorriso enorme com língua',
-  skin: '#cf2a1d', blush: '#b01a14', lip: '#a01a12', lipLine: '#3a0806', brow: '#1a0e0c', liner: '#120808', lidShadow: '#a01a12',
-  iris: ['#f2b25a', '#c06a1e', '#4a1a06'], sss: [.5, .1, .06], rough: .4, clearcoat: .8, clearcoatRough: .15, skinGloss: .7, sheen: .1,
-  cran: [.2, -.05, .6, .95, .58, .58, 2.0], occ: null,
-  loft: { y: [-1.05, -.8, -.55, -.3, -.1, .1, .3], a: [.35, .52, .6, .62, .62, .58, .45], zf: [.48, .58, .62, .63, .62, .58, .45],
-    zb: [-.3, -.48, -.55, -.56, -.56, -.55, -.45], n: 2.2, cb: .15, k: .14 },
-  neck: [.26, -.95, -.1, -1.7, -.15, .2],
-  stem: { len: .38, r: .05, bend: .5, curl: 2.6, color: '#5a8a26', calyx: 5, calyxLen: .12 },
-  eyeX: .23, eyeY: .1, Re: .2, openW: deg(62), openU: deg(32), openL: deg(-28), peakU: -.05, tilt: deg(-4), irisAng: deg(27), socket: .02,
-  browGap: .2, browTh: .045, browArch: .05, browPeak: .4, browSlope: .055, browLen: 1.0,
-  mouthY: -.42, mouthW: .3, smile: 2.2, open: .14, teeth: { h: .065, w: .06 }, tongue: { out: .13, color: '#e0707a' },
-  lipU: .012, lipL: .02, lipH: .01, mouthIn: '#4a0e10'
+PRESETS.chili_bandit = derive('cute_round', { ...VEG, ...VEG_EYES,
+  id: 'chili_bandit', label: 'Pimenta bandida', family: 'Vegetais', sub: 'Pimenta afinando para baixo, olhos arregalados, sorriso enorme com língua',
+  skin: '#d2301b', blush: '#a8180e', lip: '#8a1a10', lipLine: '#300604', brow: '#140a08', liner: '#0e0606', lidShadow: '#a01a10',
+  iris: ['#ffcf6a', '#d07a1e', '#4a1a06'], sss: [.5, .1, .06], rough: .35, clearcoat: .9, clearcoatRough: .12, skinGloss: .8, sheen: .05,
+  cran: [.3, -.04, .6, .9, .6, .6, 2], occ: null, loft: { y: [-.95] },
+  lathe: { cz: -.04, zs: .9, y: [-1.9, -1.35, -1.05, -.7, -.3, .1, .5, .85, 1.0], r: [.34, .35, .42, .54, .61, .63, .6, .53, .48], top: 1.02, rc: .3, dip: .05, dipR: .2 },
+  neck: [.34, -1.1, -.04, -1.75, -.04, .2], scm: null,
+  stem: { len: .42, r: .055, bend: .6, curl: 2.8, color: '#5a8a26', calyx: 6, calyxLen: .26 },
+  eyeX: .24, eyeY: .22, Re: .21, sink: .13, domeK: .2, bagK: 0, lidShade: .1, openW: deg(62), openU: deg(36), openL: deg(-32), peakU: -.05, peakL: .05, tilt: deg(-6), irisAng: deg(25), lidFold: .008, eyeShadow: .35,
+  browGap: .2, browTh: .055, browArch: .06, browPeak: .35, browSlope: .07, browLen: 1.0,
+  mouthY: -.32, mouthW: .38, smile: 2.6, open: .2, teeth: { h: .075, w: .065 }, tongue: { out: .2, color: '#e66a78' },
+  lipU: .012, lipL: .02, lipH: .01, mouthIn: '#3e0a0c', cheekH: .05
 });
 
 PRESETS.robot_ball = {
@@ -211,8 +214,9 @@ export function resolve(presetId, adj = DEFAULT_ADJ) {
   const { headWidth: W, cheeks: C, jaw: J, eyes: E, eyeGap: G, nose: N, mouth: M } = { ...DEFAULT_ADJ, ...adj };
   P.cran = b.cran.slice(); P.cran[2] *= W;
   // casca facial: largura geral (crânio), bochechas (terço médio) e mandíbula (terço inferior) escalam a curva a(y)
-  const L = b.loft; P.loft = { ...L, a: L.a.map((v, i) => { const y = L.y[i], low = Math.min(1, Math.max(0, (-.42 - y) / .3)), mid = Math.exp(-(((y + .22) / .16) ** 2));
-    return v * W * (1 + (J - 1) * 1.1 * low) * (1 + (C - 1) * .06 * mid) }) };
+  const L = b.loft; P.loft = L.a ? { ...L, a: L.a.map((v, i) => { const y = L.y[i], low = Math.min(1, Math.max(0, (-.42 - y) / .3)), mid = Math.exp(-(((y + .22) / .16) ** 2));
+    return v * W * (1 + (J - 1) * 1.1 * low) * (1 + (C - 1) * .06 * mid) }) } : { ...L };
+  if (b.lathe) { const T = b.lathe; P.lathe = { ...T, r: T.r.map((v, i) => v * W * (1 + (J - 1) * .8 * Math.min(1, Math.max(0, (-.4 - T.y[i]) / .4)))) } }
   P.neck = b.neck.slice(); P.scm = b.scm ? b.scm.slice() : null;
   P.cheekH = b.cheekH * C;
   P.Re = b.Re * E; P.eyeX = b.eyeX * G * (1 + (W - 1) * .5);

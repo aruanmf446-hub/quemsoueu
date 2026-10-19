@@ -82,9 +82,26 @@ function makeLoft(L) {
   return { y0, y1, cF, at(y, out) { const fi = clamp((y - y0) / dy, 0, NT - 1.0001), i = fi | 0, t = fi - i; out.a = A[i] + (A[i + 1] - A[i]) * t; out.zf = F[i] + (F[i + 1] - F[i]) * t; out.zb = B[i] + (B[i + 1] - B[i]) * t; return out } };
 }
 
+// ---------- forma por perfil girado (vegetais): largura r(y) em volta de um eixo vertical + tampa arredondada ----------
+function makeLathe(Lt) {
+  const NT = 768, y0 = Lt.y[0], y1 = Lt.y[Lt.y.length - 1], dy = (y1 - y0) / (NT - 1), f = pchip(Lt.y, Lt.r);
+  const R = new Float64Array(NT), D = new Float64Array(NT);
+  for (let i = 0; i < NT; i++) R[i] = f(y0 + i * dy);
+  for (let i = 0; i < NT; i++) D[i] = (R[Math.min(i + 1, NT - 1)] - R[Math.max(i - 1, 0)]) / (dy * (i > 0 && i < NT - 1 ? 2 : 1));
+  const zs = Lt.zs || 1, rc = Lt.rc || .3;
+  return (x, y, z) => {
+    const zz = (z - Lt.cz) / zs, rr = sqrt(x * x + zz * zz);
+    const fi = clamp((y - y0) / dy, 0, NT - 1.0001), i = fi | 0, t = fi - i, r = R[i] + (R[i + 1] - R[i]) * t, dr = D[i] + (D[i + 1] - D[i]) * t;
+    const dS = (rr - r) / sqrt(1 + dr * dr), yt = Lt.top - (Lt.dip || 0) * exp(-((rr / (Lt.dipR || .3)) ** 2)), dT = y - yt;
+    const qx = dS + rc, qy = dT + rc; // canto arredondado (raio rc) entre a lateral e a tampa
+    return (Math.hypot(Math.max(qx, 0), Math.max(qy, 0)) + Math.min(Math.max(qx, qy), 0) - rc) * Math.min(1, zs);
+  };
+}
+
 function makeSDF(P) {
   const [cy, cz, crx, cry, crz, crzB = crz, cn0 = 2] = P.cran, cn = sqC(cn0), [nr, nty, ntz, nby, nbz, nk] = P.neck;
-  const L = makeLoft(P.loft), kf = P.loft.k ?? .16, sl = { a: 0, zf: 0, zb: 0 }, oc = P.occ;
+  const LA = P.lathe && makeLathe(P.lathe);
+  const L = LA ? null : makeLoft(P.loft), kf = LA ? 0 : P.loft.k ?? .16, sl = { a: 0, zf: 0, zb: 0 }, oc = P.occ;
   const cut = nby + .06;
   // esferas envolventes: se o ponto está longe de um volume, ele não altera a união suave → pula (bem mais rápido)
   const bs = (x, y, z, r) => ({ x, y, z, r }), far = (b, ax, y, z, d, k) => { const dx = ax - b.x, dy = y - b.y, dz = z - b.z; return sqrt(dx * dx + dy * dy + dz * dz) - b.r > d + k + .2 };
@@ -92,10 +109,12 @@ function makeSDF(P) {
   const BN = segB(0, nty, ntz, nr, 0, nby, nbz, nr * 1.1), BO = oc && bs(0, oc[0], oc[1], Math.max(oc[2], oc[3], oc[4]));
   const S = P.scm, BS = S && segB(S[0], S[1], S[2], S[6], S[3], S[4], S[5], S[6]);
   const ER = P._earRoot, BE = ER && bs(ER[0], ER[1], ER[2], Math.max(ER[3], ER[4], ER[5]));
-  const PT = P.pattern && { top: cy + cry * .98, bot: nby + .1, mid: cy - .2, ...P.pattern }; // esternocleidomastoideo: de trás da orelha à base do pescoço
+  const PT = P.pattern && { top: cy + cry * .98, bot: nby + .1, mid: cy - .2, cz: P.lathe ? P.lathe.cz : cz, ...P.pattern }; // esternocleidomastoideo: de trás da orelha à base do pescoço
   return (x, y, z) => {
     const ax = sqrt(x * x + 4e-4); // |x| suave
-    let d = superE(x, y - cy, z - cz, crx, cry, crz, crzB, cn);
+    let d;
+    if (LA) d = LA(x, y, z); else {
+    d = superE(x, y - cy, z - cz, crx, cry, crz, crzB, cn);
     if (oc && !far(BO, 0, y, z, d, oc[5])) d = smin(d, ellip(x, y - oc[0], z - oc[1], oc[2], oc[3], oc[4]), oc[5]); // occipital (nuca)
     if (y > L.y0 - .3 && y < L.y1 + .3) { // casca facial
       L.at(y, sl); const a = Math.max(sl.a, 1e-3), zc = sl.zb + (sl.zf - sl.zb) * .45, front = z > zc;
@@ -108,12 +127,13 @@ function makeSDF(P) {
     if (!far(BN, ax, y, z, d, nk)) d = smin(d, roundCone(x * 1.14, y, z, 0, nty, ntz, nr, 0, nby, nbz, nr * 1.08) * .92, nk); // seção oval (mais funda que larga)
     if (S && !far(BS, ax, y, z, d, S[7])) d = smin(d, roundCone(ax, y, z, S[0], S[1], S[2], S[6], S[3], S[4], S[5], S[6] * .8), S[7]);
     if (ER && !far(BE, ax, y, z, d, .08)) d = smin(d, ellip(ax - ER[0], y - ER[1], z - ER[2], ER[3], ER[4], ER[5]), .08); // raiz da orelha
+    }
     if (PT) { // padrão em volta do eixo vertical: nervuras (cacto) ou gomos (pimentão); some nos polos e, se pedido, no meio do rosto
-      const rx = x, rz = z - cz, rr = sqrt(rx * rx + rz * rz) + 1e-6, phi = Math.atan2(rx, rz), pole = sstep(PT.top, PT.top - .25, y) * sstep(PT.bot, PT.bot + .2, y);
+      const rx = x, rz = z - PT.cz, rr = sqrt(rx * rx + rz * rz) + 1e-6, phi = Math.atan2(rx, rz), pole = sstep(PT.top, PT.top - .25, y) * sstep(PT.bot, PT.bot + .2, y);
       const face = PT.faceFade ? 1 - PT.faceFade * sstep(.35, .8, rz / rr) * gau(y + .15, .5) : 1;
       let v = 0;
       if (PT.type === 'ribs') v = -PT.depth * (1 - sqrt(.5 + .5 * Math.cos(PT.n * phi + (PT.phase || 0))));
-      else { const c = .5 + .5 * Math.cos(PT.n * phi + (PT.phase || 0)); v = PT.depth * (c * c - .4) * (.35 + .65 * Math.min(1, Math.abs(y - PT.mid) / .5)) }
+      else { const c = .5 + .5 * Math.cos(PT.n * phi + (PT.phase || 0)); v = -PT.depth * (1 - Math.pow(c, .3)) * (.45 + .55 * Math.min(1, Math.abs(y - PT.mid) / .55)) }
       d -= v * pole * face;
     }
     return y - cut > .05 ? d : smaxS(d, cut - y, .05);
@@ -283,7 +303,7 @@ function makeFaceField(P, eyes) {
       line = gau(y - yl, .006 + .002 * tc) * lf;
       const corner = gau(ax - mw * 1.0, .018) * gau(y - ymC, .02);
       dz -= .018 * corner; ao += .6 * corner; // canto encaixado na bochecha
-      dz += P.smile * .016 * gau(ax - (mw + .07), .06) * gau(y - (ymC + .03), .07);
+      dz += Math.min(P.smile, 1.2) * .016 * gau(ax - (mw + .07), .06) * gau(y - (ymC + .03), .07);
       if (P.smile > .45) { // covinha curta além do canto: sorriso mais natural
         const dm = gau(ax - (mw * 1.1 + .012), .013) * gau(y - (ymC + .012), .03) * (P.smile - .45);
         dz -= .012 * dm; ao += .9 * dm;
@@ -468,6 +488,7 @@ export function buildHead(presetId, adj, opts = {}) {
   }
   // pintura facial (palhaço): base clara no rosto, marcas acima/abaixo dos olhos, boca pintada
   const PA = P.paint;
+  const grooveC = P.patternColor ? col(P.patternColor[0]) : null, ridgeC = P.patternColor ? col(P.patternColor[1]) : null;
   const paintBase = PA && col(PA.base), paintMark = PA && col(PA.mark), paintMouth = PA && col(PA.mouth);
   function paint(c, x, y, z, wf, f) {
     const ax = Math.abs(x), area = sstep(1.05, .85, (x / .7) ** 2 + ((y + (y > 0 ? -.1 : .22)) / (y > 0 ? .85 : .8)) ** 2) * wf;
@@ -489,7 +510,7 @@ export function buildHead(presetId, adj, opts = {}) {
       const dx = x - e.ex, dy = y - e.ey, r2 = dx * dx + dy * dy; if (r2 > e.Rl2 * 1.5) continue;
       // perfil da "tampa" do globo: esfera até 85% do raio, depois continua com a mesma inclinação e cai suave (C1, sem vinco circular)
       const t = sqrt(r2) / e.Rl, u = t - .85, hS = e.zc + e.Rl * (u < 0 ? sqrt(1 - t * t) : .5268 - 1.6135 * u - 2.2 * u * u);
-      z += (smaxS(z, hS, .08) - z) * lw;
+      z += (smaxS(z, hS, P.domeK ?? .08) - z) * lw;
     }
     return z;
   }
@@ -576,6 +597,11 @@ export function buildHead(presetId, adj, opts = {}) {
             const lips = f ? clamp(f.lipU + f.lipL + f.line, 0, 1) : 0;
             c.lerp(beardC, clamp(P.beard * b * (1 - lips), 0, .5));
           }
+        }
+        if (P.pattern && P.patternColor) { // sulcos mais escuros e cristas mais claras (lê o relevo como vegetal)
+          const PTc = P.pattern, phi = Math.atan2(x, z - (P.lathe ? P.lathe.cz : P.cran[1])), cc = .5 + .5 * Math.cos(PTc.n * phi + (PTc.phase || 0));
+          const fadeF = PTc.faceFade ? 1 - .7 * PTc.faceFade * wf * gau(y + .15, .5) : 1;
+          c.lerp(grooveC, (1 - Math.pow(cc, .35)) * .75 * fadeF).lerp(ridgeC, Math.pow(cc, 6) * .35 * fadeF);
         }
         if (PA && f) paint(c, x, y, z, wf, f);
         if (f && f.cav > 0) { c.lerp(mouthIn, clamp(f.cav * 1.3, 0, 1)) }
@@ -910,8 +936,8 @@ export function buildHead(presetId, adj, opts = {}) {
     addMesh(row(true, TT.h ?? .05), toothMat, 'Teeth_Upper');
     if (TT.lower !== false) addMesh(row(false, (TT.h ?? .05) * .8), toothMat, 'Teeth_Lower');
     { // interior escuro atrás dos dentes (garganta)
-      const g = new THREE.PlaneGeometry(MCv.mw * 2.1, MCv.open(0) * 1.6); const m = addMesh(g, mat('#2a0a0c', { roughness: .9 }), 'Mouth_Back');
-      m.position.set(0, MCv.ym(0) - MCv.open(0) / 2, surfZ(0, MCv.ym(0)) - .09);
+      const g = new THREE.CircleGeometry(1, 48); g.scale(MCv.mw * .78, MCv.open(0) * .62, 1); const m = addMesh(g, mat('#2a0a0c', { roughness: .9 }), 'Mouth_Back');
+      m.position.set(0, MCv.ym(0) - MCv.open(0) / 2, surfZ(0, MCv.ym(0)) - .13);
     }
     if (P.tongue) {
       const TG = P.tongue, g = new THREE.SphereGeometry(1, 40, 28), yb = MCv.ym(0) - MCv.open(0);
