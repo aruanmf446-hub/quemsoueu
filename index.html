@@ -67,7 +67,7 @@ import {RoomEnvironment} from 'three/addons/environments/RoomEnvironment.js';
 import {buildHead,BEARD_STYLES} from './src/head.js';
 import {PRESETS,PRESET_ORDER,FAMILY_ORDER} from './src/presets.js';
 import {EXPRESSIONS,NEUTRAL,talkPose} from './src/rig.js';
-import {buildBody} from './src/body.js';
+import {buildBody,headScale} from './src/body.js';
 import {defaultLook,buildLook,attachLook,headOpts,skinPalette,HAIR_STYLES,HAIR_COLORS,ACCESSORIES,ACC_SLOTS,ACC_COLORS} from './src/look.js';
 const host=document.getElementById('stage'),scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(30,1,.05,100);
 const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});
@@ -80,7 +80,7 @@ const TARGET=new THREE.Vector3(0,-.2,0);
 let frame={ty:-.2,dist:7.4};
 function aim(x,y,z){const k=frame.dist/7.4;camera.position.set(x*k,frame.ty+(y+.2)*k,z*k);TARGET.set(0,frame.ty,0);orbit.target.copy(TARGET);orbit.update()}
 const VIEWS={front:[0,-.05,7.4],side:[7.4,-.05,.02],three:[3.4,.8,6.5]};
-function frameBody(){const b=current&&current.body;if(b&&el('showBody').checked){const top=current.fit.top+.1;frame={ty:(top+b.ySole)/2,dist:Math.max(9,(top-b.ySole)*2.05)}}else frame={ty:-.2,dist:7.4}}
+function frameBody(){const b=current&&current.body;if(b){const top=b.pivot.y+b.hs*(current.fit.top-b.pivot.y)+.1;frame={ty:(top+b.ySole)/2,dist:Math.max(9,(top-b.ySole)*2.05)}}else frame={ty:-.2,dist:7.4}}
 aim(...VIEWS.three);
 
 renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFShadowMap;
@@ -101,23 +101,28 @@ const getLook=()=>looks[presetId]||(looks[presetId]=defaultLook(presetId));
 const statusEl=document.getElementById('status');
 function busy(msg,fn){statusEl.textContent=msg;requestAnimationFrame(()=>setTimeout(()=>{fn();statusEl.textContent='Head V2 · '+PRESETS[presetId].label},0))}
 function rebuildHead(){
-  if(current){scene.remove(current.group);current.dispose()}if(lookObj){lookObj.dispose();lookObj=null}
-  const look=getLook();current=buildHead(presetId,{},{quality:1,...headOpts(look,PRESETS[presetId])});scene.add(current.group);
+  if(current){scene.remove(current.root);if(current.body)current.body.geo.dispose();current.dispose()}if(lookObj){lookObj.dispose();lookObj=null}
+  const look=getLook();current=buildHead(presetId,{},{quality:1,...headOpts(look,PRESETS[presetId])});wrap(current);scene.add(current.root);
   addBody(current);syncBody();rebuildLook();applyPose();refreshUI();
 }
 function rebuildLook(){
   if(lookObj){if(lookObj.group.parent)lookObj.group.parent.remove(lookObj.group);lookObj.dispose()}
-  lookObj=buildLook(current.fit,getLook(),current.body&&current.body.mesh.visible?current.body.sdf:null);attachLook(current,lookObj);
+  lookObj=buildLook(current.fit,getLook(),current.body?current.body.sdfHead:null);attachLook(current,lookObj);
   lookObj.group.traverse(o=>{if(o.isMesh){o.castShadow=!o.material.transparent;o.receiveShadow=true}});
 }
 // corpo inteiro (só malha): mesma pele da cabeça; chão discreto que recebe a sombra
 const ground=new THREE.Mesh(new THREE.PlaneGeometry(40,40),new THREE.ShadowMaterial({opacity:.16}));ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;ground.visible=false;scene.add(ground);
+// personagem = grupo raiz com a cabeça (rig, cabelo, acessórios) + corpo. Com corpo, a cabeça inteira é reduzida em volta
+// da base do pescoço (escala uniforme no grupo: ossos, blendshapes e animações do rosto continuam iguais).
+function wrap(h){h.root=new THREE.Group();h.root.name='Personagem_'+(h.params.id||presetId);h.root.add(h.group);return h}
 function addBody(h,cell){
-  const b=buildBody(h.fit,h.params.id||presetId,cell?{cell}:{});if(!b)return null;
+  if(!el('showBody').checked)return null;
+  const id=h.params.id||presetId,s=headScale(id),b=buildBody(h.fit,id,{...(cell?{cell}:{}),headScale:s});if(!b)return null;
+  const pv=b.pivot;h.group.scale.setScalar(s);h.group.position.set(pv.x*(1-s),pv.y*(1-s),pv.z*(1-s));h.group.updateMatrixWorld(true);
   const skin=h.group.getObjectByName('Head_Skin'),m=new THREE.Mesh(b.geo,skin.material);m.name='Body';m.castShadow=true;m.receiveShadow=true;
-  h.group.add(m);h.body={...b,mesh:m};m.visible=el('showBody').checked;return h.body;
+  h.root.add(m);h.body={...b,mesh:m};return h.body;
 }
-function syncBody(){const on=el('showBody').checked,b=current&&current.body;if(b)b.mesh.visible=on;ground.visible=!!(on&&b);if(b)ground.position.y=b.ySole-.002;frameBody()}
+function syncBody(){const b=current&&current.body;ground.visible=!!b;if(b)ground.position.y=b.ySole-.002;frameBody()}
 const hasFacialHair=()=>{const P=current&&current.params;return !!(P&&(P.beardVol||P.stache||P.goatee))};
 
 // ---------- expressões (rig) ----------
@@ -148,9 +153,9 @@ for(const fam of FAMILY_ORDER){const ids=PRESET_ORDER.filter(id=>PRESETS[id].fam
   for(const id of ids){const b=document.createElement('button');b.className='preset';b.dataset.preset=id;b.innerHTML='<b>'+PRESETS[id].label+'</b>';b.title=PRESETS[id].sub;b.onclick=()=>setPreset(id);presetsEl.append(b)}}
 function setPreset(id){presetId=id;busy('Montando '+PRESETS[id].label+'…',()=>{rebuildHead();aim(...VIEWS.three)})}
 document.getElementById('front').onclick=()=>aim(...VIEWS.front);
-document.getElementById('bodyView').onclick=()=>{el('showBody').checked=true;syncBody();aim(...VIEWS.three)};
+document.getElementById('bodyView').onclick=()=>{if(!el('showBody').checked){el('showBody').checked=true;busy('Montando…',()=>{rebuildHead();aim(...VIEWS.three)})}else{frameBody();aim(...VIEWS.three)}};
 document.getElementById('faceView').onclick=()=>{frame={ty:-.2,dist:7.4};aim(...VIEWS.three)};
-document.getElementById('showBody').onchange=()=>{syncBody();busy('Ajustando cabelo…',()=>rebuildLook());aim(...VIEWS.three)};
+document.getElementById('showBody').onchange=()=>busy('Montando…',()=>{rebuildHead();aim(...VIEWS.three)});
 document.getElementById('side').onclick=()=>aim(...VIEWS.side);
 document.getElementById('threequarters').onclick=()=>aim(...VIEWS.three);
 document.getElementById('reset').onclick=()=>{looks[presetId]=defaultLook(presetId);busy('Restaurando…',rebuildHead)};
@@ -190,9 +195,9 @@ function refreshUI(){
 }
 // exportação: malha com densidade um pouco menor que a do visualizador (arquivo mais leve, mesma forma)
 // o GLB vai em pose neutra, com o esqueleto facial e os clipes de animação (piscar, falar, expressões…)
-function exportGLB(){const look=getLook(),h=buildHead(presetId,{},{quality:.6,export:true,...headOpts(look,PRESETS[presetId])});const withBody=el('showBody').checked&&addBody(h,.036);const L=buildLook(h.fit,look,withBody?h.body.sdf:null);attachLook(h,L);
+function exportGLB(){const look=getLook(),h=wrap(buildHead(presetId,{},{quality:.6,export:true,...headOpts(look,PRESETS[presetId])}));const withBody=addBody(h,.036);const L=buildLook(h.fit,look,withBody?h.body.sdfHead:null);attachLook(h,L);
   const animations=h.rig&&h.rig.makeClips?h.rig.makeClips():[];if(h.rig)h.rig.apply({});
-  return new GLTFExporter().parseAsync(h.group,{binary:true,onlyVisible:true,animations}).finally(()=>{h.dispose();L.dispose()})}
+  return new GLTFExporter().parseAsync(h.root,{binary:true,onlyVisible:true,animations}).finally(()=>{if(h.body)h.body.geo.dispose();h.dispose();L.dispose()})}
 document.getElementById('download').onclick=async e=>{
   const btn=e.currentTarget,label=btn.textContent;btn.disabled=true;btn.textContent='Exportando…';
   try{const result=await exportGLB();const blob=new Blob([result],{type:'model/gltf-binary'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='personagem-'+presetId+'.glb';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}

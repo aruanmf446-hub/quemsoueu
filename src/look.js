@@ -62,5 +62,6 @@ export function buildLook(fit, look, bodySdf = null) {
 // prende o visual no osso da cabeça mantendo a posição (a cabeça já está montada em pose neutra)
 export function attachLook(head, L) {
   if (!head.fit || !head.fit.headBone) { head.group.add(L.group); return }
-  head.group.updateMatrixWorld(true); head.fit.headBone.attach(L.group);
+  head.group.updateMatrixWorld(true); L.group.applyMatrix4(head.group.matrixWorld); L.group.updateMatrixWorld(true); // visual está no espaço da cabeça (que pode estar reduzida)
+  head.fit.headBone.attach(L.group);
 }
