@@ -39,7 +39,7 @@ button:hover{background:#f6eaee}.preset.active:hover{background:#4a3642}
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}</script></head><body>
 <div class="shell">
 <main class="stage" id="stage">
-  <div class="brand"><div class="eyebrow">Quem Sou Eu · Nova geração</div><h1>Ateliê facial</h1><p>Cabeça cartoon 3D com rig facial. Monte o personagem por catálogo: pele, cabelo, barba e acessórios, cada um com suas cores.</p></div>
+  <div class="brand"><div class="eyebrow">Quem Sou Eu · Nova geração</div><h1>Ateliê facial</h1><p>Personagem cartoon 3D de corpo inteiro com rig facial. Monte o visual por catálogo: pele, cabelo, barba e acessórios, cada um com suas cores.</p></div>
   <div class="status" id="status">Head V2</div>
   <div class="help">Arraste para girar · Scroll para aproximar · Frente / Perfil / 3/4</div>
 </main>
@@ -54,8 +54,9 @@ button:hover{background:#f6eaee}.preset.active:hover{background:#4a3642}
   <section class="group"><h3>Expressões (rig)</h3><div class="exprs" id="exprs"></div>
     <div class="toggles"><label><input type="checkbox" id="autoBlink" checked/> Piscar automático</label><label><input type="checkbox" id="talk"/> Falando</label></div>
     <div id="poseCtrls"></div></section>
-  <div class="group"><h3>Câmera e exportação</h3><div class="buttons"><button id="front">Frente</button><button id="side">Perfil</button><button id="threequarters">3/4</button><button id="reset">Visual padrão</button><button class="primary" id="download">Exportar GLB da cabeça</button></div></div>
-  <p class="note">Head V2 é uma base de rosto com rig facial híbrido (ossos + blendshapes, exportados no GLB com animações prontas), cabelos e acessórios por catálogo presos no osso da cabeça. Ainda sem corpo ou figurino. A forma é procedural (volumes anatômicos fundidos + relevo do rosto, pele e pescoço numa malha só) e serve para aprovar identidade visual antes da produção do personagem.</p>
+  <div class="group"><h3>Câmera e exportação</h3><div class="buttons"><button id="bodyView">Corpo inteiro</button><button id="faceView">Rosto</button><button id="front">Frente</button><button id="side">Perfil</button><button id="threequarters">3/4</button><button id="reset">Visual padrão</button><button class="primary" id="download">Exportar GLB do personagem</button></div>
+    <div class="toggles" style="margin-top:12px"><label><input type="checkbox" id="showBody" checked/> Mostrar corpo</label></div></div>
+  <p class="note">Head V2 é uma base de rosto com rig facial híbrido (ossos + blendshapes, exportados no GLB com animações prontas), cabelos e acessórios por catálogo presos no osso da cabeça. Corpo inteiro em pose A (só malha: sem roupa, acessórios ou genitais). Ainda sem figurino. A forma é procedural (volumes anatômicos fundidos + relevo do rosto, pele e pescoço numa malha só) e serve para aprovar identidade visual antes da produção do personagem.</p>
 </aside>
 </div>
 <script type="module">
@@ -66,22 +67,26 @@ import {RoomEnvironment} from 'three/addons/environments/RoomEnvironment.js';
 import {buildHead,BEARD_STYLES} from './src/head.js';
 import {PRESETS,PRESET_ORDER,FAMILY_ORDER} from './src/presets.js';
 import {EXPRESSIONS,NEUTRAL,talkPose} from './src/rig.js';
+import {buildBody} from './src/body.js';
 import {defaultLook,buildLook,attachLook,headOpts,skinPalette,HAIR_STYLES,HAIR_COLORS,ACCESSORIES,ACC_SLOTS,ACC_COLORS} from './src/look.js';
 const host=document.getElementById('stage'),scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(30,1,.05,100);
 const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});
 renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.outputColorSpace=THREE.SRGBColorSpace;
 renderer.toneMapping=THREE.NeutralToneMapping;renderer.toneMappingExposure=.96;host.prepend(renderer.domElement);
 const pmrem=new THREE.PMREMGenerator(renderer);scene.environment=pmrem.fromScene(new RoomEnvironment(),.04).texture;scene.environmentIntensity=.35;
-const orbit=new OrbitControls(camera,renderer.domElement);orbit.enableDamping=true;orbit.enablePan=false;orbit.minDistance=2.6;orbit.maxDistance=12;
+const orbit=new OrbitControls(camera,renderer.domElement);orbit.enableDamping=true;orbit.enablePan=false;orbit.minDistance=2.6;orbit.maxDistance=45;
 const TARGET=new THREE.Vector3(0,-.2,0);
-function aim(x,y,z){camera.position.set(x,y,z);orbit.target.copy(TARGET);orbit.update()}
+// câmera: no rosto (padrão antigo) ou no corpo inteiro (alvo no meio do corpo, distância pela altura)
+let frame={ty:-.2,dist:7.4};
+function aim(x,y,z){const k=frame.dist/7.4;camera.position.set(x*k,frame.ty+(y+.2)*k,z*k);TARGET.set(0,frame.ty,0);orbit.target.copy(TARGET);orbit.update()}
 const VIEWS={front:[0,-.05,7.4],side:[7.4,-.05,.02],three:[3.4,.8,6.5]};
+function frameBody(){const b=current&&current.body;if(b&&el('showBody').checked){const top=current.fit.top+.1;frame={ty:(top+b.ySole)/2,dist:Math.max(9,(top-b.ySole)*2.05)}}else frame={ty:-.2,dist:7.4}}
 aim(...VIEWS.three);
 
 renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFShadowMap;
 scene.add(new THREE.HemisphereLight(0xf2f5ff,0x9c8a84,.6));
 function light(c,i,x,y,z,shadow){const l=new THREE.DirectionalLight(c,i);l.position.set(x,y,z);
-  if(shadow){l.castShadow=true;l.shadow.mapSize.set(2048,2048);const sc=l.shadow.camera;sc.left=-1.5;sc.right=1.5;sc.top=1.5;sc.bottom=-1.9;sc.near=2;sc.far=16;l.shadow.bias=-.0004;l.shadow.normalBias=.03;l.shadow.radius=4}
+  if(shadow){l.castShadow=true;l.shadow.mapSize.set(4096,4096);const sc=l.shadow.camera;sc.left=-5;sc.right=5;sc.top=3;sc.bottom=-16;sc.near=.5;sc.far=40;l.shadow.bias=-.0004;l.shadow.normalBias=.03;l.shadow.radius=4}
   scene.add(l);return l}
 light(0xfff7f0,2.9,-2.6,3.6,6,true);   // key (sombra suave: nariz, pálpebra sobre o olho, queixo)
 light(0xf4ecea,.65,3.5,.6,5);            // fill quente
@@ -98,13 +103,21 @@ function busy(msg,fn){statusEl.textContent=msg;requestAnimationFrame(()=>setTime
 function rebuildHead(){
   if(current){scene.remove(current.group);current.dispose()}if(lookObj){lookObj.dispose();lookObj=null}
   const look=getLook();current=buildHead(presetId,{},{quality:1,...headOpts(look,PRESETS[presetId])});scene.add(current.group);
-  rebuildLook();applyPose();refreshUI();
+  addBody(current);syncBody();rebuildLook();applyPose();refreshUI();
 }
 function rebuildLook(){
   if(lookObj){if(lookObj.group.parent)lookObj.group.parent.remove(lookObj.group);lookObj.dispose()}
-  lookObj=buildLook(current.fit,getLook());attachLook(current,lookObj);
+  lookObj=buildLook(current.fit,getLook(),current.body&&current.body.mesh.visible?current.body.sdf:null);attachLook(current,lookObj);
   lookObj.group.traverse(o=>{if(o.isMesh){o.castShadow=!o.material.transparent;o.receiveShadow=true}});
 }
+// corpo inteiro (só malha): mesma pele da cabeça; chão discreto que recebe a sombra
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(40,40),new THREE.ShadowMaterial({opacity:.16}));ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;ground.visible=false;scene.add(ground);
+function addBody(h,cell){
+  const b=buildBody(h.fit,h.params.id||presetId,cell?{cell}:{});if(!b)return null;
+  const skin=h.group.getObjectByName('Head_Skin'),m=new THREE.Mesh(b.geo,skin.material);m.name='Body';m.castShadow=true;m.receiveShadow=true;
+  h.group.add(m);h.body={...b,mesh:m};m.visible=el('showBody').checked;return h.body;
+}
+function syncBody(){const on=el('showBody').checked,b=current&&current.body;if(b)b.mesh.visible=on;ground.visible=!!(on&&b);if(b)ground.position.y=b.ySole-.002;frameBody()}
 const hasFacialHair=()=>{const P=current&&current.params;return !!(P&&(P.beardVol||P.stache||P.goatee))};
 
 // ---------- expressões (rig) ----------
@@ -133,8 +146,11 @@ syncPoseUI();
 const presetsEl=document.getElementById('presets');
 for(const fam of FAMILY_ORDER){const ids=PRESET_ORDER.filter(id=>PRESETS[id].family===fam);if(!ids.length)continue;const h=document.createElement('div');h.className='fam';h.textContent=fam;presetsEl.append(h);
   for(const id of ids){const b=document.createElement('button');b.className='preset';b.dataset.preset=id;b.innerHTML='<b>'+PRESETS[id].label+'</b>';b.title=PRESETS[id].sub;b.onclick=()=>setPreset(id);presetsEl.append(b)}}
-function setPreset(id){presetId=id;busy('Montando '+PRESETS[id].label+'…',rebuildHead)}
+function setPreset(id){presetId=id;busy('Montando '+PRESETS[id].label+'…',()=>{rebuildHead();aim(...VIEWS.three)})}
 document.getElementById('front').onclick=()=>aim(...VIEWS.front);
+document.getElementById('bodyView').onclick=()=>{el('showBody').checked=true;syncBody();aim(...VIEWS.three)};
+document.getElementById('faceView').onclick=()=>{frame={ty:-.2,dist:7.4};aim(...VIEWS.three)};
+document.getElementById('showBody').onchange=()=>{syncBody();busy('Ajustando cabelo…',()=>rebuildLook());aim(...VIEWS.three)};
 document.getElementById('side').onclick=()=>aim(...VIEWS.side);
 document.getElementById('threequarters').onclick=()=>aim(...VIEWS.three);
 document.getElementById('reset').onclick=()=>{looks[presetId]=defaultLook(presetId);busy('Restaurando…',rebuildHead)};
@@ -174,18 +190,18 @@ function refreshUI(){
 }
 // exportação: malha com densidade um pouco menor que a do visualizador (arquivo mais leve, mesma forma)
 // o GLB vai em pose neutra, com o esqueleto facial e os clipes de animação (piscar, falar, expressões…)
-function exportGLB(){const look=getLook(),h=buildHead(presetId,{},{quality:.6,export:true,...headOpts(look,PRESETS[presetId])});const L=buildLook(h.fit,look);attachLook(h,L);
+function exportGLB(){const look=getLook(),h=buildHead(presetId,{},{quality:.6,export:true,...headOpts(look,PRESETS[presetId])});const withBody=el('showBody').checked&&addBody(h,.036);const L=buildLook(h.fit,look,withBody?h.body.sdf:null);attachLook(h,L);
   const animations=h.rig&&h.rig.makeClips?h.rig.makeClips():[];if(h.rig)h.rig.apply({});
   return new GLTFExporter().parseAsync(h.group,{binary:true,onlyVisible:true,animations}).finally(()=>{h.dispose();L.dispose()})}
 document.getElementById('download').onclick=async e=>{
   const btn=e.currentTarget,label=btn.textContent;btn.disabled=true;btn.textContent='Exportando…';
-  try{const result=await exportGLB();const blob=new Blob([result],{type:'model/gltf-binary'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='head-v2-'+presetId+'.glb';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+  try{const result=await exportGLB();const blob=new Blob([result],{type:'model/gltf-binary'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='personagem-'+presetId+'.glb';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
   catch(err){alert('Falha na exportação: '+(err&&err.message||err))}
   finally{btn.disabled=false;btn.textContent=label}
 };
-window.__atelie={getLook,setLook:o=>{Object.assign(getLook(),o);rebuildHead()},rebuildLook,lookObj:()=>lookObj,setExpression,setPose:p=>{pose={...NEUTRAL,...p};exprName=null;syncPoseUI();applyPose()},stopAuto:()=>{document.getElementById('autoBlink').checked=false;document.getElementById('talk').checked=false},group:()=>current.group,timings:()=>current.group.userData.timings,setPreset,aim,VIEWS,camera,orbit,clay:on=>current.group.traverse(o=>{if(o.isMesh&&o.material.vertexColors!==undefined&&o.material.name==='Skin'){o.material.vertexColors=!on;o.material.sheen=on?0:.6;if(on)o.material.color.set('#d8d4cf');else o.material.color.set('#ffffff');o.material.needsUpdate=true}}),exportGLB};
+window.__atelie={frame:()=>frame,body:()=>current.body,getLook,setLook:o=>{Object.assign(getLook(),o);rebuildHead()},rebuildLook,lookObj:()=>lookObj,setExpression,setPose:p=>{pose={...NEUTRAL,...p};exprName=null;syncPoseUI();applyPose()},stopAuto:()=>{document.getElementById('autoBlink').checked=false;document.getElementById('talk').checked=false},group:()=>current.group,timings:()=>current.group.userData.timings,setPreset,aim,VIEWS,camera,orbit,clay:on=>current.group.traverse(o=>{if(o.isMesh&&o.material.vertexColors!==undefined&&o.material.name==='Skin'){o.material.vertexColors=!on;o.material.sheen=on?0:.6;if(on)o.material.color.set('#d8d4cf');else o.material.color.set('#ffffff');o.material.needsUpdate=true}}),exportGLB};
 
-rebuildHead();
+rebuildHead();aim(...VIEWS.three);
 function resize(){const w=host.clientWidth,h=host.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}addEventListener('resize',resize);resize();
 let lastT=performance.now();
 (function frame(){requestAnimationFrame(frame);const t=performance.now(),dt=Math.min(.1,(t-lastT)/1000);lastT=t;applyPose(dt);orbit.update();renderer.render(scene,camera)})();

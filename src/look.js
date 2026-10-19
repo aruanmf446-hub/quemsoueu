@@ -43,8 +43,9 @@ export function defaultLook(presetId) {
 export const headOpts = (look, P) => ({ skin: look.skin, beard: look.beard, hairColor: look.hairColor, beardFollowsHair: look.hair !== 'none' && P.family !== 'Vegetais' });
 
 // Monta cabelo + acessórios no espaço da cabeça e prende no osso da cabeça (vão juntos no GLB)
-export function buildLook(fit, look) {
+export function buildLook(fit, look, bodySdf = null) {
   const group = new THREE.Group(); group.name = 'Look';
+  if (fit && bodySdf) { const hs = fit.sdf; fit = { ...fit, sdf: (x, y, z) => y < -1.25 ? Math.min(hs(x, y, z), bodySdf(x, y, z)) : hs(x, y, z) } } // cabelo cai sobre ombros e costas
   if (!fit) return { group, dispose() { }, setColors() { }, setHairColor() { } };
   const hair = buildHair(fit, look.hair, look.hairColor);
   if (hair) group.add(hair.group);
