@@ -57,16 +57,17 @@ const BASE = { heads: 6, W: 1, sh: 1, chest: 1, waist: 1, hip: 1, depth: 1, brea
 export const BODIES = {
   feminine_soft: { head: .8, heads: 5.9, breasts: 1, waist: .93, hip: 1.0, sh: .94, glute: .95 },
   feminine_bold: { head: .8, heads: 6, breasts: 1.12, waist: .91, hip: 1.04, sh: .96, glute: 1.0 },
-  cute_round: { head: .88, neckUp: .3, heads: 3.4, W: .8, sh: .92, waist: 1.0, hip: .88, belly: .18, arm: 1.12, hand: 1.35, foot: 1.35, leg: .92, glute: .8 },
-  masculine_soft: { head: .76, heads: 6.4, W: 1.12, sh: 1.28, chest: 1.12, waist: .98, hip: .9, depth: 1.08, muscle: .55, glute: .85, hand: 1.08, foot: 1.08 },
+  cute_round: { head: .7, neckUp: .3, heads: 3.4, W: .8, sh: .92, waist: 1.0, hip: .88, belly: .18, arm: 1.12, hand: 1.35, foot: 1.35, leg: .92, glute: .8 },
+  masculine_soft: { head: 1.0, heads: 6.4, W: 1.12, sh: 1.28, chest: 1.12, waist: .98, hip: .9, depth: 1.08, muscle: .55, glute: .85, hand: 1.08, foot: 1.08 },
   old_king: { head: .78, heads: 6.1, W: 1.14, sh: 1.22, chest: 1.08, waist: 1.12, hip: .95, depth: 1.1, belly: .55, muscle: .25, glute: .85, hand: 1.08, foot: 1.08 },
-  alchemist_villain: { head: .9, heads: 6.9, W: .8, sh: 1.08, chest: .95, waist: .82, hip: .86, hunch: .18, glute: .6, hand: 1.18, arm: 1.06 },
-  dwarf_bard: { head: .86, neckUp: .22, heads: 3.9, W: 1.3, sh: 1.12, chest: 1.1, waist: 1.15, hip: 1.0, depth: 1.15, belly: .55, muscle: .2, leg: .82, arm: .95, hand: 1.25, foot: 1.25 },
+  alchemist_villain: { head: 1.22, heads: 6.6, W: .8, sh: 1.08, chest: .95, waist: .82, hip: .86, hunch: .18, glute: .6, hand: 1.18, arm: 1.06 },
+  dwarf_bard: { head: .7, neckUp: .22, heads: 3.9, W: 1.3, sh: 1.12, chest: 1.1, waist: 1.15, hip: 1.0, depth: 1.15, belly: .55, muscle: .2, leg: .82, arm: .95, hand: 1.25, foot: 1.25 },
   sad_clown: { head: .86, neckUp: .22, heads: 4.7, W: 1.2, sh: .98, chest: 1.05, waist: 1.4, hip: 1.28, depth: 1.25, belly: 1.25, glute: 1.1, hand: 1.2, foot: 1.4 },
-  orc_warrior: { head: .8, heads: 6.3, W: 1.55, sh: 1.42, chest: 1.28, waist: 1.08, hip: .95, depth: 1.18, muscle: 1, glute: .95, hand: 1.3, foot: 1.25, arm: 1.05 },
+  orc_warrior: { head: 1.1, heads: 6.3, W: 1.55, sh: 1.42, chest: 1.28, waist: 1.08, hip: .95, depth: 1.18, muscle: 1, glute: .95, hand: 1.3, foot: 1.25, arm: 1.05 },
   cactus_cowboy: { head: .85, heads: 5.2, W: 1.55, sh: .85, chest: .9, waist: .88, hip: .85, depth: .9, glute: .3, cactus: true, fingers: 4, arm: 1.05, hand: .85 },
-  pepper_king: { veg: true, legLen: 2.3, armLen: 1.85, limbR: .085, foot: 1.2, armY: -1.15 },
-  chili_bandit: { veg: true, legLen: 2.4, armLen: 1.75, limbR: .075, foot: 1.1, armY: -1.0 }
+  // vegetais com corpo humanoide vermelho (referências): rei pimentão baixo e robusto, pimenta esguia e definida
+  pepper_king: { head: 1.0, neckUp: .6, heads: 3.5, W: 1.08, sh: 1.05, chest: 1.08, waist: 1.1, hip: 1.0, depth: 1.08, belly: .35, muscle: .2, leg: .86, arm: .98, hand: 1.18, foot: 1.6, glute: .8, vegSkin: true },
+  chili_bandit: { head: .95, neckUp: .42, heads: 4.3, W: .92, sh: 1.14, chest: 1.02, waist: .92, hip: .8, depth: .95, muscle: .65, arm: 1.08, hand: 1.18, leg: 1.04, glute: .7, vegSkin: true }
 };
 
 // escala da cabeça com corpo (a cabeça é desenhada grande para o close do rosto; no corpo inteiro ela diminui)
@@ -344,11 +345,11 @@ export function buildBody(fit, presetId, opts = {}) {
       c.lerp(blush, rosy * .22 * (P.blushK ?? .5) * 1.4);
     }
     if (J.ribs && groove && !veg) { const zc = (fit.cz || 0), phi = Math.atan2(ax < .9 ? x : x - Math.sign(x) * .4, z - zc), cc = .5 + .5 * Math.cos(J.ribs.n * phi); c.lerp(groove, (1 - Math.pow(cc, .35)) * .5).lerp(ridge, Math.pow(cc, 6) * .25) }
-    colors[i * 3] = c.r; colors[i * 3 + 1] = c.g; colors[i * 3 + 2] = c.b; gloss[i] = P.skinGloss || 0;
+    colors[i * 3] = c.r; colors[i * 3 + 1] = c.g; colors[i * 3 + 2] = c.b; gloss[i] = Math.min(P.skinGloss || 0, .35);
   }
   geo.setAttribute('color', new THREE.BufferAttribute(colors, 3)); geo.setAttribute('gloss', new THREE.BufferAttribute(gloss, 1));
   const pv = new THREE.Vector3(0, P.neck[3], P.neck[4]); // pivô da escala da cabeça (base do pescoço)
-  const out = { geo, sdf: S.f, ySole: S.joints.ySole, timing: Math.round(performance.now() - T0), joints: S.joints, hs, pivot: pv,
+  const out = { vegSkin: !!S.B.vegSkin, geo, sdf: S.f, ySole: S.joints.ySole, timing: Math.round(performance.now() - T0), joints: S.joints, hs, pivot: pv,
     sdfHead: (x, y, z) => S.f(pv.x + hs * (x - pv.x), pv.y + hs * (y - pv.y), pv.z + hs * (z - pv.z)) / hs }; // corpo visto do espaço da cabeça (colisão do cabelo)
   return out;
 }

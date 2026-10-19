@@ -119,7 +119,7 @@ function addBody(h,cell){
   if(!el('showBody').checked)return null;
   const id=h.params.id||presetId,s=headScale(id),b=buildBody(h.fit,id,{...(cell?{cell}:{}),headScale:s});if(!b)return null;
   const pv=b.pivot;h.group.scale.setScalar(s);h.group.position.set(pv.x*(1-s),pv.y*(1-s),pv.z*(1-s));h.group.updateMatrixWorld(true);
-  const skin=h.group.getObjectByName('Head_Skin'),m=new THREE.Mesh(b.geo,skin.material);m.name='Body';m.castShadow=true;m.receiveShadow=true;
+  const skin=h.group.getObjectByName('Head_Skin'),m=new THREE.Mesh(b.geo,b.vegSkin?new THREE.MeshPhysicalMaterial({name:'Skin_Body',vertexColors:true,roughness:.5,clearcoat:.25,clearcoatRoughness:.4,sheen:.3,sheenColor:new THREE.Color('#ffffff').multiplyScalar(.3)}):skin.material);m.name='Body';m.castShadow=true;m.receiveShadow=true;
   h.root.add(m);h.body={...b,mesh:m};return h.body;
 }
 function syncBody(){const b=current&&current.body;ground.visible=!!b;if(b)ground.position.y=b.ySole-.002;frameBody()}
