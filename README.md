@@ -96,3 +96,16 @@ Para verificar a cobertura das calças padrão na malha real, rode `node tests/c
 
 A comparação visual usa um checkout separado de `caa45f5`, o mesmo Three.js, resolução, luzes, pose neutra e matrizes de câmera nas duas versões. Os acessórios atuais são preservados na versão corrigida. Não se altera rosto, rig, corpo, cabelo nem escala dos personagens.
 
+Comparação reproduzível (dois servidores locais, um em cada checkout):
+
+```sh
+git worktree add --detach ../quemsoueu-baseline caa45f5
+python3 -m http.server 8001 --directory ../quemsoueu-baseline
+# Em outro terminal, sirva a versão atual na porta 8000.
+ATELIE_REFERENCIA=1 node tests/comparacao.cjs
+node tests/comparacao.cjs
+```
+
+Os PNGs e as matrizes ficam em `renders/comparacao/{caa45f5,nova}/`. A câmera das sereias é afastada igualmente nas duas versões para incluir a nadadeira inteira. `ATELIE_BASELINE` permite indicar outro caminho para o checkout da referência; `ATELIE_COMPARACOES` muda a pasta de saída e `ATELIE_PERSONAGENS` limita a captura por IDs separados por vírgula. O teste geométrico principal também executa a verificação de cobertura e protege a independência das normais externas em relação à espessura do tecido.
+
+Verificação desta correção (19/10/2026): 13 personagens no navegador, 688 trocas de peças e cores, nenhum erro de console, 12 clipes preservados em cada personagem com rig facial. Maior p95 de troca em cache: 46 ms no SwiftShader. O teste de cobertura verificou 79.011 vértices das calças padrão, sem falhas. Esses números descrevem esta execução, não um limite de desempenho para qualquer dispositivo.
