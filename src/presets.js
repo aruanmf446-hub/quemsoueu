@@ -1,5 +1,13 @@
-// Presets de rosto da Head V2.
-// Todas as medidas estão no espaço da cabeça: y=0 ≈ linha dos olhos, +z = frente, unidade ≈ 1 = meia-largura do crânio.
+// Presets de rosto da Head V2 (beauty pass).
+// Espaço da cabeça: y=0 ≈ linha dos olhos, +z = frente, ~0.85 = meia-largura do crânio.
+// A forma base é um campo de distância (SDF) feito de volumes anatômicos fundidos suavemente:
+//   cran  = crânio            [y, z, rx, ry, rz]
+//   face  = massa do terço médio [y, z, rx, ry, rz]
+//   cheekB= maçãs/zigomático   [x, y, z, rx, ry, rz, blend]
+//   jaw   = mandíbula (cone arredondado do queixo ao ângulo) [queixoY, queixoZ, queixoR, ânguloX, ânguloY, ânguloZ, ânguloR, blend]
+//   chin  = queixo             [y, z, rx, ry, rz, blend]
+//   neck  = pescoço            [raio, topoY, topoZ, baseY, baseZ, blend]
+// O relevo fino (olhos, nariz, boca, prega da pálpebra…) é um campo de deslocamento em src/head.js.
 const deg = d => d * Math.PI / 180;
 
 export const PRESET_ORDER = ['feminine_soft', 'masculine_soft', 'cute_round'];
@@ -7,52 +15,53 @@ export const PRESET_ORDER = ['feminine_soft', 'masculine_soft', 'cute_round'];
 export const PRESETS = {
   feminine_soft: {
     id: 'feminine_soft', label: 'Feminino suave',
-    skin: '#dca07a', blush: '#e8847c', lip: '#c6616a', lipLine: '#7a3138', brow: '#2a1b17',
-    iris: ['#e8c27a', '#a8662c', '#4a2812'],
-    // silhueta
-    top: .96, bottom: -.9, templeY: .24,
-    w: .86, cheekW: .82, jawQ: 1.7, jawN: 2.05,
+    skin: '#cc9373', blush: '#d66f72', lip: '#ac3e4d', lipLine: '#4e1520', brow: '#2a1913', liner: '#160c0b', lidShadow: '#9a5a4c',
+    iris: ['#f2bd62', '#ad6522', '#4c2408'],
+    cran: [.2, -.08, .8, .76, .84, .84, 2.5], face: [-.36, .15, .55, .5, .6, 2.4], cheekB: [.405, -.17, .36, .31, .26, .27, .22],
+    jaw: [-.84, .42, .13, .42, -.5, -.24, .12, .22], chin: [-.82, .43, .15, .09, .11, .14], neck: [.27, -.5, -.2, -1.55, -.3, .12],
     // olhos
-    eyeX: .345, eyeY: -.005, Re: .218, openW: deg(62), openU: deg(26), openL: deg(-33), irisAng: deg(35),
-    tilt: deg(6), sink: .175, socket: .045, lash: .0145, flick: .055,
+    eyeX: .41, eyeY: 0, Re: .25, openW: deg(64), openU: deg(24), openL: deg(-23), peakU: -.12, peakL: .12, irisAng: deg(31.5),
+    tilt: deg(5), sink: .2, socket: .035, crease: .016, creaseGap: .05, lidShade: .55,
+    lash: .019, flick: .07, lashN: 15, lashLen: .075, lowerLash: .5,
     // sobrancelhas
-    browGap: .265, browTh: .021, browArch: .05, browPeak: .6, browSlope: .02, browLen: 1.0,
+    browGap: .228, browTh: .029, browArch: .05, browPeak: .64, browSlope: .012, browLen: 1.06,
     // nariz
-    noseTipY: -.18, noseH: .07, noseW: 1.0, tipH: .075, alaeH: .036,
+    noseTipY: -.31, noseH: .066, noseW: .8, tipH: .05, tipR: .047, alaeH: .013, alaeX: .07, scoop: 1.5,
     // boca
-    mouthY: -.47, mouthW: .29, lipU: .062, lipL: .062, lipH: .07, smile: .7,
+    mouthY: -.54, mouthW: .225, lipU: .058, lipL: .074, lipH: .062, smile: .75, bow: .38,
     // volumes
-    cheekH: .04, chinH: .04, muzzle: .035, browRidge: .018,
-    // extras
-    neckR: .25, earS: .85, jawLift: .24
+    cheekH: .045, chinH: .012, muzzle: .03, browRidge: .015, fold: .5,
+    earS: .88
   },
   masculine_soft: {
     id: 'masculine_soft', label: 'Masculino suave',
-    skin: '#c98a64', blush: '#d17a6c', lip: '#b05a58', lipLine: '#6a2e30', brow: '#1f1512',
-    iris: ['#c79a58', '#6c4122', '#2b170c'],
-    top: 1.03, bottom: -1.02, templeY: .28,
-    w: .88, cheekW: .83, jawQ: 2.15, jawN: 2.6,
-    eyeX: .35, eyeY: .03, Re: .2, openW: deg(60), openU: deg(21), openL: deg(-29), irisAng: deg(32),
-    tilt: deg(1.5), sink: .155, socket: .055, lash: .009, flick: 0,
-    browGap: .225, browTh: .03, browArch: .022, browPeak: .5, browSlope: -.004, browLen: 1.08,
-    noseTipY: -.2, noseH: .095, noseW: 1.15, tipH: .072, alaeH: .04,
-    mouthY: -.52, mouthW: .27, lipU: .05, lipL: .064, lipH: .068, smile: .3,
-    cheekH: .015, chinH: .075, muzzle: .03, browRidge: .045,
-    neckR: .29, earS: 1.0, jawLift: .16
+    skin: '#a87258', blush: '#b0605a', lip: '#93554c', lipLine: '#3e1914', brow: '#1d120e', liner: '#24160f', lidShadow: '#7c4a3a',
+    iris: ['#c99a56', '#6e4020', '#26150a'],
+    cran: [.2, -.1, .82, .78, .86, .86, 2.6], face: [-.46, .08, .62, .58, .66, 2.8], cheekB: [.43, -.12, .34, .28, .22, .26, .14],
+    jaw: [-.98, .4, .15, .56, -.62, -.22, .15, .26, .12], chin: [-.95, .42, .15, .09, .11, .2], neck: [.32, -.55, -.2, -1.55, -.3, .12],
+    eyeX: .375, eyeY: .02, Re: .215, openW: deg(60), openU: deg(16), openL: deg(-18), peakU: -.02, peakL: .18, irisAng: deg(31),
+    tilt: deg(-1), sink: .19, socket: .05, crease: .008, creaseGap: .035, lidShade: .3,
+    lash: .011, flick: 0, lashN: 0, lashLen: .03, lowerLash: .15,
+    browGap: .158, browTh: .042, browArch: .014, browPeak: .5, browSlope: -.012, browLen: 1.1,
+    noseTipY: -.37, noseH: .1, noseW: 1.08, tipH: .05, tipR: .062, alaeH: .022, alaeX: .085, scoop: 1.0,
+    mouthY: -.64, mouthW: .235, lipU: .036, lipL: .062, lipH: .048, smile: .18, bow: .2,
+    cheekH: .008, chinH: .03, muzzle: .028, browRidge: .05, fold: .7,
+    earS: 1.0
   },
   cute_round: {
     id: 'cute_round', label: 'Cute arredondado',
-    skin: '#eeb190', blush: '#f08a86', lip: '#d8737a', lipLine: '#8a3d45', brow: '#35231d',
-    iris: ['#f0cf86', '#b06f33', '#4d2a13'],
-    top: .98, bottom: -.88, templeY: .24,
-    w: .92, cheekW: .9, jawQ: 2.05, jawN: 2.0,
-    eyeX: .385, eyeY: -.06, Re: .245, openW: deg(60), openU: deg(33), openL: deg(-36), irisAng: deg(41),
-    tilt: deg(-3), sink: .195, socket: .05, lash: .012, flick: .012,
-    browGap: .3, browTh: .022, browArch: .035, browPeak: .55, browSlope: .0, browLen: .85,
-    noseTipY: -.24, noseH: .05, noseW: .9, tipH: .072, alaeH: .03,
-    mouthY: -.5, mouthW: .22, lipU: .05, lipL: .06, lipH: .06, smile: .9,
-    cheekH: .075, chinH: .025, muzzle: .045, browRidge: .008,
-    neckR: .28, earS: .8, jawLift: .22
+    skin: '#e6ad90', blush: '#ef7f82', lip: '#d4677a', lipLine: '#7a2a3a', brow: '#3a241b', liner: '#1e1210', lidShadow: '#b06c62',
+    iris: ['#f6d58c', '#b8763a', '#4a2813'],
+    cran: [.15, -.08, .84, .78, .86, .84, 2.3], face: [-.32, .15, .62, .48, .6, 2.2], cheekB: [.4, -.28, .36, .33, .3, .3, .22],
+    jaw: [-.76, .44, .15, .45, -.45, -.22, .15, .3], chin: [-.74, .46, .15, .1, .11, .16], neck: [.25, -.5, -.2, -1.55, -.3, .12],
+    eyeX: .405, eyeY: -.07, Re: .262, openW: deg(60), openU: deg(30), openL: deg(-30), peakU: -.08, peakL: .05, irisAng: deg(35),
+    tilt: deg(-2), sink: .215, socket: .03, crease: .01, creaseGap: .05, lidShade: .45,
+    lash: .016, flick: .025, lashN: 11, lashLen: .06, lowerLash: .3,
+    browGap: .27, browTh: .025, browArch: .035, browPeak: .52, browSlope: 0, browLen: .9,
+    noseTipY: -.3, noseH: .03, noseW: .88, tipH: .05, tipR: .058, alaeH: .02, alaeX: .062, scoop: 1.8,
+    mouthY: -.5, mouthW: .17, lipU: .042, lipL: .056, lipH: .05, smile: 1.0, bow: .32,
+    cheekH: .055, chinH: .01, muzzle: .035, browRidge: .005, fold: .3,
+    earS: .82
   }
 };
 
@@ -62,11 +71,18 @@ export const DEFAULT_ADJ = { headWidth: 1, cheeks: 1, jaw: 1, eyes: 1, eyeGap: 1
 export function resolve(presetId, adj = DEFAULT_ADJ) {
   const b = PRESETS[presetId], P = { ...b };
   const { headWidth: W, cheeks: C, jaw: J, eyes: E, eyeGap: G, nose: N, mouth: M } = { ...DEFAULT_ADJ, ...adj };
-  P.w = b.w * W; P.cheekW = b.cheekW * W * (1 + (C - 1) * .2);
-  P.jawQ = b.jawQ * (1 + (J - 1) * 1.5);
+  P.cran = b.cran.slice(); P.cran[2] *= W;
+  P.face = b.face.slice(); P.face[2] *= W;
+  P.cheekB = b.cheekB.slice(); P.cheekB[0] *= W; P.cheekB[3] *= 1 + (C - 1) * .25; P.cheekB[5] *= 1 + (C - 1) * .25;
+  P.jaw = b.jaw.slice(); P.jaw[3] *= Math.sqrt(W) * (1 + (J - 1) * .8); P.jaw[6] *= 1 + (J - 1) * .6; P.jaw[2] *= 1 + (J - 1) * .8;
+  P.chin = b.chin.slice(); P.chin[2] *= 1 + (J - 1) * 1.5;
+  P.neck = b.neck.slice();
   P.cheekH = b.cheekH * C;
   P.Re = b.Re * E; P.eyeX = b.eyeX * G * (1 + (W - 1) * .5);
-  P.noseH = b.noseH * N; P.tipH = b.tipH * N; P.alaeH = b.alaeH * N; P.noseW = b.noseW * (1 + (N - 1) * .6);
+  // olhos + sobrancelha nunca passam da silhueta do crânio (combinações extremas dos sliders)
+  const lim = .92 * P.cran[2], outer = P.eyeX + 1.3 * P.Re;
+  if (outer > lim) { const k = lim / outer; P.eyeX *= k; P.Re *= k }
+  P.noseH = b.noseH * N; P.tipH = b.tipH * N; P.alaeH = b.alaeH * N; P.tipR = b.tipR * (1 + (N - 1) * .6); P.noseW = b.noseW * (1 + (N - 1) * .5);
   P.mouthW = b.mouthW * M; P.smile = b.smile * M;
   return P;
 }

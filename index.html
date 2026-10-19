@@ -28,7 +28,7 @@ button{border:1px solid #ded3d6;border-radius:9px;background:white;color:#423842
 button:hover{background:#f6eaee}.preset.active:hover{background:#4a3642}
 .primary{grid-column:span 2;background:#362832;color:#fff;border-color:#362832}.primary:hover{background:#564050}
 .note{font-size:11px;line-height:1.6;color:#88818b;border-top:1px solid #e9e5e5;margin-top:25px;padding-top:18px}
-@media(max-width:760px){.shell{grid-template-columns:1fr;height:auto}.stage{height:68dvh;min-height:460px}.sidebar{border-left:0}.brand{left:16px;top:16px}.help{left:16px;bottom:12px}.status{right:12px;top:16px}}
+@media(max-width:760px){.shell{grid-template-columns:1fr;height:auto}.stage{height:68dvh;min-height:460px}.sidebar{border-left:0}.brand{left:16px;top:16px}.help{left:16px;bottom:12px}.status{right:12px;top:auto;bottom:34px}}
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}</script></head><body>
 <div class="shell">
@@ -43,7 +43,7 @@ button:hover{background:#f6eaee}.preset.active:hover{background:#4a3642}
   <section class="group" style="border-top:0;padding-top:0;margin-top:0"><h3>Presets de rosto</h3><div class="presets" id="presets"></div></section>
   <section class="group"><h3>Ajuste fino</h3><div id="controls"></div></section>
   <div class="group"><h3>Câmera e exportação</h3><div class="buttons"><button id="front">Frente</button><button id="side">Perfil</button><button id="threequarters">3/4</button><button id="reset">Restaurar</button><button class="primary" id="download">Exportar GLB da cabeça</button></div></div>
-  <p class="note">Head V2 é uma base de rosto: ainda sem cabelo, corpo, figurino, blendshapes ou rig facial. A topologia é procedural (malha única da face) e serve para aprovar identidade visual antes da produção do personagem.</p>
+  <p class="note">Head V2 é uma base de rosto: ainda sem cabelo, corpo, figurino, blendshapes ou rig facial. A forma é procedural (volumes anatômicos fundidos + relevo do rosto, pele e pescoço numa malha só) e serve para aprovar identidade visual antes da produção do personagem.</p>
 </aside>
 </div>
 <script type="module">
@@ -57,17 +57,24 @@ import {PRESETS,PRESET_ORDER,DEFAULT_ADJ} from './src/presets.js';
 const host=document.getElementById('stage'),scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(30,1,.05,100);
 const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});
 renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.outputColorSpace=THREE.SRGBColorSpace;
-renderer.toneMapping=THREE.NeutralToneMapping;renderer.toneMappingExposure=1.05;host.prepend(renderer.domElement);
-const pmrem=new THREE.PMREMGenerator(renderer);scene.environment=pmrem.fromScene(new RoomEnvironment(),.04).texture;scene.environmentIntensity=.32;
+renderer.toneMapping=THREE.NeutralToneMapping;renderer.toneMappingExposure=.96;host.prepend(renderer.domElement);
+const pmrem=new THREE.PMREMGenerator(renderer);scene.environment=pmrem.fromScene(new RoomEnvironment(),.04).texture;scene.environmentIntensity=.35;
 const orbit=new OrbitControls(camera,renderer.domElement);orbit.enableDamping=true;orbit.enablePan=false;orbit.minDistance=2.6;orbit.maxDistance=12;
 const TARGET=new THREE.Vector3(0,-.2,0);
 function aim(x,y,z){camera.position.set(x,y,z);orbit.target.copy(TARGET);orbit.update()}
 const VIEWS={front:[0,-.05,7.4],side:[7.4,-.05,.02],three:[3.4,.8,6.5]};
 aim(...VIEWS.three);
 
-scene.add(new THREE.HemisphereLight(0xeaf1ff,0xc79a85,.45));
-function light(c,i,x,y,z){const l=new THREE.DirectionalLight(c,i);l.position.set(x,y,z);scene.add(l)}
-light(0xfff0e4,3.3,-3,4.5,6);light(0xff9a72,.55,1,-3,5);light(0xcfe0ff,.9,5,1.5,3);light(0xffffff,1.3,-2,3,-5);
+renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+scene.add(new THREE.HemisphereLight(0xf2f5ff,0x9c8a84,.6));
+function light(c,i,x,y,z,shadow){const l=new THREE.DirectionalLight(c,i);l.position.set(x,y,z);
+  if(shadow){l.castShadow=true;l.shadow.mapSize.set(2048,2048);const sc=l.shadow.camera;sc.left=-1.5;sc.right=1.5;sc.top=1.5;sc.bottom=-1.9;sc.near=2;sc.far=16;l.shadow.bias=-.0004;l.shadow.normalBias=.03}
+  scene.add(l);return l}
+light(0xfff7f0,2.9,-2.6,3.6,6,true);   // key (sombra suave: nariz, pálpebra sobre o olho, queixo)
+light(0xf4ecea,.65,3.5,.6,5);            // fill quente
+light(0xffc0a8,.22,0,-3,4);             // rebatida de baixo
+light(0xd2e2ff,1.1,4.5,2.2,-2.5);       // recorte frio
+light(0xffffff,.9,-3.5,2.5,-4);
 
 // ---------- estado ----------
 let presetId='feminine_soft',adj={...DEFAULT_ADJ},current=null;
@@ -81,24 +88,29 @@ function rebuild(quality=1){
   for(const [id] of defs)document.getElementById(id+'-value').textContent=adj[id].toFixed(2);
   document.querySelectorAll('.preset').forEach(b=>b.classList.toggle('active',b.dataset.preset===presetId));
 }
-let queued=false;function scheduleRebuild(){if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;rebuild(.5)})} // prévia leve ao arrastar; versão completa ao soltar
+let raf=0;function scheduleRebuild(){if(raf)return;raf=requestAnimationFrame(()=>{raf=0;rebuild(.5)})} // prévia leve ao arrastar; versão completa ao soltar
+function rebuildFull(){if(raf){cancelAnimationFrame(raf);raf=0}rebuild(1)}
 
 // ---------- UI ----------
 const presetsEl=document.getElementById('presets');
 for(const id of PRESET_ORDER){const b=document.createElement('button');b.className='preset';b.dataset.preset=id;b.innerHTML='<b>'+PRESETS[id].label+' <small style="opacity:.55;font-weight:400">'+id+'</small></b><span>'+SUBS[id]+'</span>';b.onclick=()=>setPreset(id);presetsEl.append(b)}
 const ctrls=document.getElementById('controls');
-for(const [id,title,min,max] of defs){const d=document.createElement('div');d.className='ctrl';d.innerHTML='<label for="'+id+'">'+title+' <output id="'+id+'-value"></output></label><input id="'+id+'" type="range" min="'+min+'" max="'+max+'" step=".01" value="'+adj[id]+'"/>';ctrls.append(d);const inp=d.querySelector('input');inp.oninput=e=>{adj[id]=Number(e.target.value);scheduleRebuild()};inp.onchange=()=>rebuild(1)}
+for(const [id,title,min,max] of defs){const d=document.createElement('div');d.className='ctrl';d.innerHTML='<label for="'+id+'">'+title+' <output id="'+id+'-value"></output></label><input id="'+id+'" type="range" min="'+min+'" max="'+max+'" step=".01" value="'+adj[id]+'"/>';ctrls.append(d);const inp=d.querySelector('input');inp.oninput=e=>{adj[id]=Number(e.target.value);scheduleRebuild()};inp.onchange=rebuildFull}
 function resetAdj(){adj={...DEFAULT_ADJ};for(const [id] of defs)document.getElementById(id).value=adj[id]}
-function setPreset(id){presetId=id;resetAdj();rebuild()}
+function setPreset(id){presetId=id;resetAdj();rebuildFull()}
 document.getElementById('front').onclick=()=>aim(...VIEWS.front);
 document.getElementById('side').onclick=()=>aim(...VIEWS.side);
 document.getElementById('threequarters').onclick=()=>aim(...VIEWS.three);
-document.getElementById('reset').onclick=()=>{resetAdj();rebuild();aim(...VIEWS.three)};
-document.getElementById('download').onclick=()=>{
-  const exporter=new GLTFExporter();
-  exporter.parse(current.group,result=>{const blob=new Blob([result],{type:'model/gltf-binary'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='head-v2-'+presetId+'.glb';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)},e=>alert('Falha na exportação: '+(e&&e.message||e)),{binary:true,onlyVisible:true});
+document.getElementById("reset").onclick=()=>{resetAdj();rebuildFull();aim(...VIEWS.three)};
+// exportação: malha com densidade um pouco menor que a do visualizador (arquivo mais leve, mesma forma)
+function exportGLB(){const h=buildHead(presetId,adj,{quality:.7});return new GLTFExporter().parseAsync(h.group,{binary:true,onlyVisible:true}).finally(()=>h.dispose())}
+document.getElementById('download').onclick=async e=>{
+  const btn=e.currentTarget,label=btn.textContent;btn.disabled=true;btn.textContent='Exportando…';
+  try{const result=await exportGLB();const blob=new Blob([result],{type:'model/gltf-binary'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='head-v2-'+presetId+'.glb';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+  catch(err){alert('Falha na exportação: '+(err&&err.message||err))}
+  finally{btn.disabled=false;btn.textContent=label}
 };
-window.__atelie={setPreset,aim,VIEWS,camera,orbit,clay:on=>current.group.traverse(o=>{if(o.isMesh&&o.material.vertexColors!==undefined&&o.material.name==='Skin'){o.material.vertexColors=!on;o.material.sheen=on?0:.6;if(on)o.material.color.set('#d8d4cf');else o.material.color.set('#ffffff');o.material.needsUpdate=true}}),exportGLB:()=>new Promise((res,rej)=>new GLTFExporter().parse(current.group,res,rej,{binary:true,onlyVisible:true}))};
+window.__atelie={timings:()=>current.group.userData.timings,setPreset,aim,VIEWS,camera,orbit,clay:on=>current.group.traverse(o=>{if(o.isMesh&&o.material.vertexColors!==undefined&&o.material.name==='Skin'){o.material.vertexColors=!on;o.material.sheen=on?0:.6;if(on)o.material.color.set('#d8d4cf');else o.material.color.set('#ffffff');o.material.needsUpdate=true}}),exportGLB};
 
 rebuild();
 function resize(){const w=host.clientWidth,h=host.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}addEventListener('resize',resize);resize();
