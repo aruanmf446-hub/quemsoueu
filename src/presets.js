@@ -200,7 +200,7 @@ PRESETS.chili_bandit = derive('cute_round', { ...VEG, ...VEG_EYES,
   stem: { len: .42, r: .055, bend: .6, curl: 2.8, color: '#5a8a26', calyx: 6, calyxLen: .26 },
   eyeX: .24, eyeY: .22, Re: .21, sink: .13, domeK: .2, bagK: 0, lidShade: .1, openW: deg(62), openU: deg(36), openL: deg(-32), peakU: -.05, peakL: .05, tilt: deg(-6), irisAng: deg(25), lidFold: .008, eyeShadow: .35,
   browGap: .2, browTh: .055, browArch: .06, browPeak: .35, browSlope: .07, browLen: 1.0,
-  mouthY: -.32, mouthW: .38, smile: 2.6, open: .2, teeth: { h: .075, w: .065 }, tongue: { out: .2, color: '#e66a78' },
+  mouthY: -.32, mouthW: .38, smile: 2.6, open: .2, teeth: { h: .075, w: .065 }, tongue: { color: '#e66a78' },
   lipU: .012, lipL: .02, lipH: .01, mouthIn: '#3e0a0c', cheekH: .05
 });
 

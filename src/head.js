@@ -1047,7 +1047,7 @@ export function buildHead(presetId, adj, opts = {}) {
       setColors(g, (c, x, y, z) => c.set(TG.color || '#e2737e').multiplyScalar(1 - .3 * gau(x, .18) * sstep(-.2, .6, z)));
       const m = addMesh(g, mat('#ffffff', { vertexColors: true, roughness: .35, clearcoat: .6, clearcoatRoughness: .3 }), 'Tongue');
       if (TG.out) { m.scale.set(MCv.mw * .48, TG.out, .045); m.position.set(TG.x || 0, yb - TG.out * .55, surfZ(0, yb) + .015); m.rotation.set(-.55, 0, TG.tilt || 0) }
-      else { m.scale.set(MCv.mw * .6, MCv.open(0) * .35, .08); m.position.set(0, yb + MCv.open(0) * .2, surfZ(0, yb) - .07) }
+      else { m.scale.set(MCv.mw * .62, MCv.open(0) * .32, .1); m.position.set(0, yb + MCv.open(0) * .22, surfZ(0, yb) - .1) } // dentro da boca, apoiada atrás dos dentes de baixo
     }
   }
 
@@ -1158,7 +1158,7 @@ export function buildHead(presetId, adj, opts = {}) {
     if (obj.name === 'Head_Skin') addMorphs(obj, 'skin');
     else if (obj.name.startsWith('Brow_')) addMorphs(obj, 'brow');
     else if (obj.name.startsWith('Mustache_')) addMorphs(obj, 'mouthAcc');
-    else if (SLIT && (obj.name.startsWith('Teeth_') || obj.name === 'Mouth_Bag' || obj.name === 'Tongue')) addMorphs(obj, 'teeth'); // dentes acompanham a boca (não aparecem pelos cantos)
+    else if (obj.name.startsWith('Teeth_') || obj.name === 'Mouth_Bag' || obj.name === 'Tongue' || obj.name === 'Mouth_Back') addMorphs(obj, 'teeth'); // dentes acompanham a boca (não aparecem pelos cantos)
   }
   mark('morphs');
 
@@ -1204,7 +1204,8 @@ export function buildHead(presetId, adj, opts = {}) {
     if (kind === 'jaw') { Bn('Jaw').attach(obj); continue }
     const g = obj.geometry, vinfo = obj.userData.vinfo;
     const fn = kind === 'skin' ? (x, y, z, i) => {
-        const jaw = vinfo && i >= vinfo.N ? 1 : (vinfo && i < vinfo.N && vinfo.dupOf[i] >= 0 ? 0 : undefined);
+        let jaw = vinfo && i >= vinfo.N ? 1 : (vinfo && i < vinfo.N && vinfo.dupOf[i] >= 0 ? 0 : undefined);
+        if (!SLIT && vinfo && i < vinfo.N && vinfo.state[i] === 3) { const ym = MCv.ym(x) - MCv.open(x) * .5; jaw = sstep(ym + .015, ym - .015, y) } // boca sempre aberta: metade de cima do interior fica com a cabeça
         return rig.weights(x, y, z, { jaw, interior: vinfo && i < vinfo.N && vinfo.state[i] === 1 });
       }
       : kind === 'bag' ? (x, y, z) => rig.weights(x, y, z, { jaw: sstep(mouthBagY + .02, mouthBagY - .04, y) })
