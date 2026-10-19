@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { buildHair, HAIR_STYLES, HAIR_COLORS } from './hair.js';
 import { buildAccessories, ACCESSORIES, ACC_SLOTS, ACC_COLORS } from './accessories.js';
 import { PRESETS } from './presets.js';
+import { defaultClothes } from './clothes.js';
 export { HAIR_STYLES, HAIR_COLORS, ACCESSORIES, ACC_SLOTS, ACC_COLORS };
 
 export const SKIN_TONES = {
@@ -37,7 +38,7 @@ export const DEFAULT_LOOKS = {
 };
 export function defaultLook(presetId) {
   const P = PRESETS[presetId], d = DEFAULT_LOOKS[presetId] || { hair: 'none', acc: {} };
-  return { skin: P.skin || null, hair: d.hair, hairColor: d.hairColor || '#2a1a12', beard: d.beard || 'default', acc: { ...d.acc }, colors: { ...C, ...(d.colors || {}) } };
+  return { ...defaultClothes(presetId), skin: P.skin || null, hair: d.hair, hairColor: d.hairColor || '#2a1a12', beard: d.beard || 'default', acc: { ...d.acc }, colors: { ...C, ...(d.colors || {}) } };
 }
 // barba acompanha o cabelo quando o personagem tem cabelo e barba de fios (anão, orc, rei…)
 export const headOpts = (look, P) => ({ skin: look.skin, beard: look.beard, hairColor: look.hairColor, beardFollowsHair: look.hair !== 'none' && P.family !== 'Vegetais' });

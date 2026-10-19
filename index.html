@@ -39,24 +39,25 @@ button:hover{background:#f6eaee}.preset.active:hover{background:#4a3642}
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}</script></head><body>
 <div class="shell">
 <main class="stage" id="stage">
-  <div class="brand"><div class="eyebrow">Quem Sou Eu · Nova geração</div><h1>Ateliê facial</h1><p>Personagem cartoon 3D de corpo inteiro com rig facial. Monte o visual por catálogo: pele, cabelo, barba e acessórios, cada um com suas cores.</p></div>
+  <div class="brand"><div class="eyebrow">Quem Sou Eu · Nova geração</div><h1>Ateliê facial</h1><p>Personagem cartoon 3D de corpo inteiro com rig facial. Monte o visual por catálogo: pele, cabelo, barba, roupas e acessórios, cada um com suas cores.</p></div>
   <div class="status" id="status">Head V2</div>
   <div class="help">Arraste para girar · Scroll para aproximar · Frente / Perfil / 3/4</div>
 </main>
 <aside class="sidebar">
   <div class="eyebrow">Escultura procedural · V2</div><h2>Head V2</h2>
-  <p class="desc">Escolha um personagem e monte o visual por catálogo: clica e troca o modelo de cabelo, barba e acessórios, e as cores de pele, cabelo e acessórios. O rosto não é esticado.</p>
+  <p class="desc">Escolha um personagem e monte o visual por catálogo: clica e troca o modelo de cabelo, barba, roupas e acessórios, com cores próprias. O rosto não é esticado.</p>
   <section class="group" style="border-top:0;padding-top:0;margin-top:0"><h3>Personagens</h3><div class="presets" id="presets"></div></section>
   <section class="group" id="gSkin"><h3>Pele</h3><div class="body"><div class="sws" id="skins"></div></div></section>
   <section class="group" id="gHair"><h3>Cabelo</h3><div class="body"><div class="cards" id="hairs"></div><div class="sub">Cor do cabelo</div><div class="sws" id="hairColors"></div></div></section>
   <section class="group" id="gBeard"><h3>Barba</h3><div class="body"><div class="chips" id="beards"></div></div></section>
+  <section class="group" id="gClothes"><h3>Roupas</h3><p class="muted" id="clothesHint"></p><div class="body"><div class="cards" id="outfits"></div><div id="clothColors"></div></div></section>
   <section class="group" id="gAcc"><h3>Acessórios</h3><div class="body"><div id="accs"></div><div id="accColors"></div></div></section>
   <section class="group"><h3>Expressões (rig)</h3><div class="exprs" id="exprs"></div>
     <div class="toggles"><label><input type="checkbox" id="autoBlink" checked/> Piscar automático</label><label><input type="checkbox" id="talk"/> Falando</label></div>
     <div id="poseCtrls"></div></section>
   <div class="group"><h3>Câmera e exportação</h3><div class="buttons"><button id="bodyView">Corpo inteiro</button><button id="faceView">Rosto</button><button id="front">Frente</button><button id="side">Perfil</button><button id="threequarters">3/4</button><button id="reset">Visual padrão</button><button class="primary" id="download">Exportar GLB do personagem</button></div>
     <div class="toggles" style="margin-top:12px"><label><input type="checkbox" id="showBody" checked/> Mostrar corpo</label></div></div>
-  <p class="note">Head V2 é uma base de rosto com rig facial híbrido (ossos + blendshapes, exportados no GLB com animações prontas), cabelos e acessórios por catálogo presos no osso da cabeça. Corpo inteiro em pose A (só malha: sem roupa, acessórios ou genitais). Ainda sem figurino. A forma é procedural (volumes anatômicos fundidos + relevo do rosto, pele e pescoço numa malha só) e serve para aprovar identidade visual antes da produção do personagem.</p>
+  <p class="note">Head V2 é uma base de rosto com rig facial híbrido (ossos + blendshapes, exportados no GLB com animações prontas), cabelos e acessórios por catálogo presos no osso da cabeça. Corpo inteiro em pose A, sem genitais, com figurinos procedurais por catálogo. As roupas acompanham o corpo e são exportadas no GLB; o corpo ainda não tem esqueleto. A forma é procedural (volumes anatômicos fundidos + relevo do rosto, pele e pescoço numa malha só) e serve para aprovar identidade visual antes da produção do personagem.</p>
 </aside>
 </div>
 <script type="module">
@@ -68,6 +69,7 @@ import {buildHead,BEARD_STYLES} from './src/head.js';
 import {PRESETS,PRESET_ORDER,FAMILY_ORDER} from './src/presets.js';
 import {EXPRESSIONS,NEUTRAL,talkPose} from './src/rig.js';
 import {buildBody,headScale} from './src/body.js';
+import {buildClothes,OUTFITS,CLOTH_COLORS,CLOTH_CHANNELS} from './src/clothes.js';
 import {defaultLook,buildLook,attachLook,headOpts,skinPalette,HAIR_STYLES,HAIR_COLORS,ACCESSORIES,ACC_SLOTS,ACC_COLORS} from './src/look.js';
 const host=document.getElementById('stage'),scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(30,1,.05,100);
 const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});
@@ -96,14 +98,19 @@ light(0xffffff,.9,-3.5,2.5,-4);
 
 // ---------- estado ----------
 // cada personagem guarda o próprio visual (pele, cabelo, barba, acessórios, cores); trocar de personagem e voltar mantém as escolhas
-let presetId='feminine_soft',current=null,lookObj=null;const looks={};
+let presetId='feminine_soft',current=null,lookObj=null,clothesObj=null;const looks={};
 const getLook=()=>looks[presetId]||(looks[presetId]=defaultLook(presetId));
 const statusEl=document.getElementById('status');
 function busy(msg,fn){statusEl.textContent=msg;requestAnimationFrame(()=>setTimeout(()=>{fn();statusEl.textContent='Head V2 · '+PRESETS[presetId].label},0))}
 function rebuildHead(){
+  if(clothesObj){clothesObj.dispose();clothesObj=null}
   if(current){scene.remove(current.root);if(current.body)current.body.geo.dispose();current.dispose()}if(lookObj){lookObj.dispose();lookObj=null}
   const look=getLook();current=buildHead(presetId,{},{quality:1,...headOpts(look,PRESETS[presetId])});wrap(current);scene.add(current.root);
-  addBody(current);syncBody();rebuildLook();applyPose();refreshUI();
+  addBody(current);rebuildClothes();syncBody();rebuildLook();applyPose();refreshUI();
+}
+function rebuildClothes(){
+  if(clothesObj){clothesObj.group.removeFromParent();clothesObj.dispose()}
+  clothesObj=buildClothes(current.body,getLook());current.root.add(clothesObj.group);
 }
 function rebuildLook(){
   if(lookObj){if(lookObj.group.parent)lookObj.group.parent.remove(lookObj.group);lookObj.dispose()}
@@ -170,6 +177,15 @@ function refreshUI(){
   document.querySelectorAll('.preset').forEach(b=>b.classList.toggle('active',b.dataset.preset===presetId));
   for(const g of ['gSkin','gHair','gBeard','gAcc'])el(g).classList.toggle('off',robot);
   el('gBeard').style.display=veg?'none':'';
+  el('gClothes').classList.toggle('off',!current.body);
+  el('clothesHint').textContent=robot?'O robô usa o próprio casco.':!current.body?'Ative Mostrar corpo para experimentar as roupas.':'Conjuntos completos · cores independentes dos acessórios';
+  el('outfits').replaceChildren(...Object.entries(OUTFITS).map(([id,def])=>card(def.label,def.sub,look.outfit===id,()=>{look.outfit=id;busy('Vestindo…',()=>{rebuildClothes();refreshUI()})})));
+  const clothColors=el('clothColors');clothColors.replaceChildren();
+  if(look.outfit!=='none')for(const [key,label] of Object.entries(CLOTH_CHANNELS)){
+    const h=document.createElement('div');h.className='sub';h.textContent=label;clothColors.append(h);
+    const row=document.createElement('div');row.className='sws';clothColors.append(row);
+    row.append(...CLOTH_COLORS.map(([name,hex])=>swatch(hex,name,look.clothColors[key]===hex,()=>{look.clothColors[key]=hex;clothesObj.setColors(look.clothColors);refreshUI()})));
+  }
   const skins=el('skins');skins.replaceChildren(...skinPalette(P).map(([n,h])=>swatch(h,n,(look.skin||'').toLowerCase()===h,()=>{look.skin=h;busy('Aplicando pele…',rebuildHead)})));
   if(P.skin&&!skinPalette(P).some(([,h])=>h===P.skin))skins.prepend(swatch(P.skin,'Original',look.skin===P.skin,()=>{look.skin=P.skin;busy('Aplicando pele…',rebuildHead)}));
   el('hairs').replaceChildren(...Object.entries(HAIR_STYLES).map(([k,S])=>card(S.label,S.sub,look.hair===k,()=>{
@@ -196,15 +212,16 @@ function refreshUI(){
 // exportação: malha com densidade um pouco menor que a do visualizador (arquivo mais leve, mesma forma)
 // o GLB vai em pose neutra, com o esqueleto facial e os clipes de animação (piscar, falar, expressões…)
 function exportGLB(){const look=getLook(),h=wrap(buildHead(presetId,{},{quality:.6,export:true,...headOpts(look,PRESETS[presetId])}));const withBody=addBody(h,.036);const L=buildLook(h.fit,look,withBody?h.body.sdfHead:null);attachLook(h,L);
+  const clothes=buildClothes(h.body,look);h.root.add(clothes.group);
   const animations=h.rig&&h.rig.makeClips?h.rig.makeClips():[];if(h.rig)h.rig.apply({});
-  return new GLTFExporter().parseAsync(h.root,{binary:true,onlyVisible:true,animations}).finally(()=>{if(h.body)h.body.geo.dispose();h.dispose();L.dispose()})}
+  return new GLTFExporter().parseAsync(h.root,{binary:true,onlyVisible:true,animations}).finally(()=>{if(h.body)h.body.geo.dispose();h.dispose();L.dispose();clothes.dispose()})}
 document.getElementById('download').onclick=async e=>{
   const btn=e.currentTarget,label=btn.textContent;btn.disabled=true;btn.textContent='Exportando…';
   try{const result=await exportGLB();const blob=new Blob([result],{type:'model/gltf-binary'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='personagem-'+presetId+'.glb';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
   catch(err){alert('Falha na exportação: '+(err&&err.message||err))}
   finally{btn.disabled=false;btn.textContent=label}
 };
-window.__atelie={frame:()=>frame,body:()=>current.body,getLook,setLook:o=>{Object.assign(getLook(),o);rebuildHead()},rebuildLook,lookObj:()=>lookObj,setExpression,setPose:p=>{pose={...NEUTRAL,...p};exprName=null;syncPoseUI();applyPose()},stopAuto:()=>{document.getElementById('autoBlink').checked=false;document.getElementById('talk').checked=false},group:()=>current.group,timings:()=>current.group.userData.timings,setPreset,aim,VIEWS,camera,orbit,clay:on=>current.group.traverse(o=>{if(o.isMesh&&o.material.vertexColors!==undefined&&o.material.name==='Skin'){o.material.vertexColors=!on;o.material.sheen=on?0:.6;if(on)o.material.color.set('#d8d4cf');else o.material.color.set('#ffffff');o.material.needsUpdate=true}}),exportGLB};
+window.__atelie={clothes:()=>clothesObj,setOutfit:id=>{if(!OUTFITS[id])return;getLook().outfit=id;rebuildClothes();refreshUI()},setClothColors:colors=>{Object.assign(getLook().clothColors,colors);clothesObj.setColors(getLook().clothColors);refreshUI()},frame:()=>frame,body:()=>current.body,getLook,setLook:o=>{Object.assign(getLook(),o);rebuildHead()},rebuildLook,lookObj:()=>lookObj,setExpression,setPose:p=>{pose={...NEUTRAL,...p};exprName=null;syncPoseUI();applyPose()},stopAuto:()=>{document.getElementById('autoBlink').checked=false;document.getElementById('talk').checked=false},group:()=>current.group,timings:()=>current.group.userData.timings,setPreset,aim,VIEWS,camera,orbit,clay:on=>current.group.traverse(o=>{if(o.isMesh&&o.material.vertexColors!==undefined&&o.material.name==='Skin'){o.material.vertexColors=!on;o.material.sheen=on?0:.6;if(on)o.material.color.set('#d8d4cf');else o.material.color.set('#ffffff');o.material.needsUpdate=true}}),exportGLB};
 
 rebuildHead();aim(...VIEWS.three);
 function resize(){const w=host.clientWidth,h=host.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}addEventListener('resize',resize);resize();

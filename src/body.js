@@ -86,7 +86,7 @@ function makeBodySDF(fit, presetId, hs = 1) { // hs: escala da cabeça (a cabeç
 
   const yN = nby + .02 + (B.neckUp ?? .1), ySole = fit.top - B.heads * H, Lb = yN - ySole, z0 = nbz + .02;
   const Y = f => yN - f * Lb;
-  joints.ySole = ySole; joints.Lb = Lb;
+  joints.ySole = ySole; joints.Lb = Lb; joints.yNeck = yN; joints.zCenter = z0;
 
   // ---- pescoço: continua o da cabeça (mesma seção oval), alargando para dentro do trapézio ----
   { const a = V(0, nby + .26 * hs, nbz - .02 * hs), b = V(0, nby - .1, nbz - .06), r1 = nr * hs * 1.14, r2 = nr * (.3 + .7 * hs) * 1.24;
@@ -349,7 +349,7 @@ export function buildBody(fit, presetId, opts = {}) {
   }
   geo.setAttribute('color', new THREE.BufferAttribute(colors, 3)); geo.setAttribute('gloss', new THREE.BufferAttribute(gloss, 1));
   const pv = new THREE.Vector3(0, P.neck[3], P.neck[4]); // pivô da escala da cabeça (base do pescoço)
-  const out = { vegSkin: !!S.B.vegSkin, geo, sdf: S.f, ySole: S.joints.ySole, timing: Math.round(performance.now() - T0), joints: S.joints, hs, pivot: pv,
+  const out = { proportions: { ...S.B }, vegSkin: !!S.B.vegSkin, geo, sdf: S.f, ySole: S.joints.ySole, timing: Math.round(performance.now() - T0), joints: S.joints, hs, pivot: pv,
     sdfHead: (x, y, z) => S.f(pv.x + hs * (x - pv.x), pv.y + hs * (y - pv.y), pv.z + hs * (z - pv.z)) / hs }; // corpo visto do espaço da cabeça (colisão do cabelo)
   return out;
 }
