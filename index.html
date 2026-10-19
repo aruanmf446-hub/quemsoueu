@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Ateliê Facial — Quem Sou Eu</title>
+<style>
+:root{font-family:Inter,system-ui,sans-serif;color:#21202b;background:#e7e6e9}*{box-sizing:border-box}body{margin:0}.shell{display:grid;grid-template-columns:minmax(0,1fr) 320px;height:100dvh;min-height:560px}.stage{position:relative;overflow:hidden;background:radial-gradient(ellipse at 50% 42%,#f9f7f4,#d3d1d6 76%)}canvas{display:block;width:100%;height:100%}.brand{position:absolute;left:28px;top:24px;pointer-events:none}.eyebrow{text-transform:uppercase;letter-spacing:.25em;font-size:10px;font-weight:800;color:#8c7782}.brand h1{font-family:Georgia,serif;font-size:clamp(23px,3vw,43px);font-weight:400;letter-spacing:-.045em;margin:8px 0}.brand p{max-width:345px;font-size:12px;line-height:1.6;color:#66606b;margin:0}.help{position:absolute;left:25px;bottom:20px;color:#655f6a;font-size:11px}.status{position:absolute;right:24px;top:26px;font-size:11px;background:#ffffffa6;border:1px solid #ffffffa6;border-radius:99px;padding:10px 14px}.sidebar{background:#fbfaf9;border-left:1px solid #d7d3d3;padding:26px 23px;overflow-y:auto}.sidebar h2{font-family:Georgia,serif;font-size:27px;font-weight:400;margin:2px 0 8px}.desc{font-size:12px;color:#77717a;line-height:1.65;margin-bottom:26px}.group{border-top:1px solid #e9e5e5;padding-top:17px;margin-top:18px}.group h3{font-size:11px;letter-spacing:.17em;text-transform:uppercase;margin:0 0 17px;color:#8a7981}.ctrl{margin:0 0 18px}.ctrl label{display:flex;justify-content:space-between;font-size:12px;margin:0 0 9px;color:#48444a}.ctrl output{font-variant-numeric:tabular-nums;color:#9b7384}input[type=range]{width:100%;accent-color:#9a7084;cursor:pointer}.buttons{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;margin-top:15px}button{border:1px solid #ded3d6;border-radius:9px;background:white;color:#423842;padding:11px;font-size:12px;cursor:pointer}button:hover{background:#f6eaee}.primary{grid-column:span 2;background:#362832;color:#fff;border-color:#362832}.primary:hover{background:#564050}.note{font-size:11px;line-height:1.6;color:#88818b;border-top:1px solid #e9e5e5;margin-top:25px;padding-top:18px}@media(max-width:760px){.shell{grid-template-columns:1fr;height:auto}.stage{height:68dvh;min-height:460px}.sidebar{border-left:0}.brand{left:16px;top:16px}.help{left:16px;bottom:12px}.status{right:12px;top:16px}}
+</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}</script></head><body>
+<div class="shell"><main class="stage" id="stage"><div class="brand"><div class="eyebrow">Quem Sou Eu · Nova geração</div><h1>Ateliê facial</h1><p>Protótipo de malha independente. Primeiro aprovamos a anatomia; depois construímos o personagem.</p></div><div class="status" id="status">Malha experimental · V1</div><div class="help">Arraste para girar · Scroll para aproximar · Clique em Frente / Perfil</div></main>
+<aside class="sidebar"><div class="eyebrow">Escultura procedural</div><h2>Rosto piloto</h2><p class="desc">Inspirado nas proporções da referência: crânio suave, olhos expressivos, nariz delicado e mandíbula contínua, sem esmagamento facial.</p>
+<section class="group"><h3>Forma principal</h3><div id="controls"></div></section>
+<div class="group"><h3>Câmera</h3><div class="buttons"><button id="front">Frente</button><button id="side">Perfil</button><button id="threequarters">3/4</button><button id="reset">Restaurar</button><button class="primary" id="download">Exportar GLB do rosto</button></div></div>
+<p class="note">Esta é a malha-piloto de rosto, não uma conversão automática da imagem nem o personagem pronto. Ainda faltam topologia de produção, expressões, rig facial, cabelos, corpo e figurino. A referência serve como meta estética, não como resultado já alcançado.</p></aside></div>
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+import {GLTFExporter} from 'three/addons/exporters/GLTFExporter.js';
+const host=document.getElementById('stage'),scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(33,1,.01,100);
+camera.position.set(2.35,1.15,5.7);
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.outputColorSpace=THREE.SRGBColorSpace;
+renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.4;host.prepend(renderer.domElement);
+const orbit=new OrbitControls(camera,renderer.domElement);orbit.target.set(0,.05,0);orbit.enableDamping=true;orbit.minDistance=2.3;orbit.maxDistance=10;
+scene.add(new THREE.HemisphereLight(0xe5efff,0xb28c79,2.3));
+function light(col,intensity,x,y,z){const a=new THREE.DirectionalLight(col,intensity);a.position.set(x,y,z);scene.add(a)}
+light(0xffeadb,3.1,-2,5,5);light(0xc5d9ff,1.65,4,2,3);light(0xffffff,2,-3,2,-4);
+const skin=new THREE.MeshPhysicalMaterial({color:0xb77458,roughness:.62,metalness:0,clearcoat:.08,clearcoatRoughness:.8});
+const skinSoft=new THREE.MeshPhysicalMaterial({color:0xbe7c61,roughness:.7});
+const lip=new THREE.MeshStandardMaterial({color:0x9f4d54,roughness:.68});
+const whites=new THREE.MeshPhysicalMaterial({color:0xfff7eb,roughness:.23,clearcoat:.25});
+const iris=new THREE.MeshStandardMaterial({color:0x704323,roughness:.32});
+const irisInner=new THREE.MeshStandardMaterial({color:0xaf8c56,roughness:.27});
+const black=new THREE.MeshStandardMaterial({color:0x110c12,roughness:.19});
+const browMat=new THREE.MeshStandardMaterial({color:0x241a1a,roughness:.84});
+const highlights=new THREE.MeshBasicMaterial({color:0xffffff});
+const params={headWidth:1,cheeks:1,jaw:.78,eyes:1,eyeGap:1,nose:.87,mouth:1};
+const defs=[['headWidth','Largura do crânio',.84,1.17],['cheeks','Bochechas',.7,1.25],['jaw','Mandíbula',.55,1.1],['eyes','Tamanho dos olhos',.8,1.2],['eyeGap','Distância entre olhos',.86,1.14],['nose','Nariz',.72,1.18],['mouth','Sorriso',.65,1.2]];
+for(const [id,title,min,max] of defs){const d=document.createElement('div');d.className='ctrl';d.innerHTML='<label for="'+id+'">'+title+' <output id="'+id+'-value"></output></label><input id="'+id+'" type="range" min="'+min+'" max="'+max+'" step=".01" value="'+params[id]+'"/>';document.getElementById('controls').append(d);d.querySelector('input').oninput=e=>{params[id]=Number(e.target.value);rebuild()}}
+let face=new THREE.Group();scene.add(face);
+function ell(parent,material,x,y,z,sx,sy,sz){const m=new THREE.Mesh(new THREE.SphereGeometry(1,48,32),material);m.position.set(x,y,z);m.scale.set(sx,sy,sz);parent.add(m);return m}
+function curve(parent,material,points,r){const c=new THREE.CatmullRomCurve3(points.map(p=>new THREE.Vector3(...p)));const m=new THREE.Mesh(new THREE.TubeGeometry(c,36,r,8,false),material);parent.add(m);return m}
+function rebuild(){
+ scene.remove(face);face.traverse(o=>{if(o.isMesh)o.geometry.dispose()});face=new THREE.Group();scene.add(face);face.name='Rosto cartoon — piloto';
+ const W=params.headWidth,C=params.cheeks,J=params.jaw,E=params.eyes,G=params.eyeGap,N=params.nose,M=params.mouth;
+ // Continuous skull mesh: neck-to-chin transition is sculpted by vertex-dependent radii.
+ const geo=new THREE.SphereGeometry(1,96,64);const a=geo.attributes.position;
+ for(let i=0;i<a.count;i++){const x=a.getX(i),y=a.getY(i),z=a.getZ(i);const lower=Math.max(0,-y),upper=Math.max(0,y);
+ let width=.90*W*(1+.08*upper-.12*lower*J+.095*C*Math.exp(-Math.pow((y+.22)/.27,2)));
+ let depth=.74*(1+.09*upper-.12*lower);
+ let ny=y*1.15+.16;
+ // preserve mouth-chin-nose spacing: never compress lower-third globally.
+ const newZ=z*depth + (z>0?.055*Math.exp(-Math.pow((y+.18)/.34,2)):0);
+ a.setXYZ(i,x*width,ny,newZ);
+ }
+ geo.computeVertexNormals();face.add(new THREE.Mesh(geo,skin));
+ // Ears integrated as readable secondary volumes.
+ for(const s of [-1,1]){const ear=ell(face,skinSoft,s*.87*W,-.11,-.02,.16,.28,.12);ear.rotation.z=s*-.13;
+ ell(face,skin,s*.913*W,-.11,.07,.065,.175,.04);
+ // Eyes: sockets, eyeballs, lids and irises share a controlled frame.
+ const ex=s*.37*G,ey=.28,ez=.642,eyeW=.265*E,eyeH=.225*E;
+ ell(face,skinSoft,ex,ey,ez-.025,eyeW*1.24,eyeH*1.29,.105);
+ ell(face,whites,ex,ey,ez+.026,eyeW,eyeH,.135);
+ ell(face,iris,ex-s*.027,ey-.012,ez+.158,eyeW*.47,eyeH*.53,.028);
+ ell(face,irisInner,ex-s*.027,ey-.012,ez+.181,eyeW*.26,eyeH*.31,.012);
+ ell(face,black,ex-s*.027,ey-.012,ez+.195,eyeW*.18,eyeH*.23,.01);
+ ell(face,highlights,ex-s*.027-.045,ey+.051,ez+.212,.035,.031,.008);
+ ell(face,highlights,ex-s*.027+.051,ey-.059,ez+.208,.015,.016,.006);
+ const xs=[-1,-.5,0,.5,1].map(k=>ex+k*eyeW);
+ curve(face,skin,xs.map((xx,i)=>[xx,ey+eyeH*Math.sqrt(Math.max(0,1-Math.pow((xx-ex)/eyeW,2)))+.02,ez+.11]),.029);
+ curve(face,skin,xs.map(xx=>[xx,ey-eyeH*.65*Math.sqrt(Math.max(0,1-Math.pow((xx-ex)/eyeW,2))),ez+.12]),.021);
+ curve(face,browMat,[[ex-eyeW*.92,ey+.355,ez+.08],[ex-eyeW*.45,ey+.388,ez+.11],[ex,ey+.396,ez+.115],[ex+eyeW*.88,ey+.334,ez+.095]],.036);
+ // separate cheek pad, subtle enough to avoid merged-smile effect
+ ell(face,skin,s*.47,-.19,.545,.28*C,.185,.09);
+ }
+ // Nose: bridge, round tip, independent nostril wings.
+ ell(face,skin,0,-.045,.70,.095*N,.245,.117);
+ ell(face,skin,0,-.22,.786,.139*N,.105,.12);
+ for(const s of [-1,1])ell(face,skinSoft,s*.116*N,-.245,.757,.07,.058,.055);
+ // Mouth: independently modeled lip volumes and clean dark opening; avoids stretched mask.
+ const mw=.32*M;ell(face,lip,0,-.493,.692,mw,.048,.035);
+ ell(face,lip,0,-.567,.688,mw*.83,.067,.041);
+ curve(face,browMat,[[-mw,-.52,.718],[-mw*.48,-.542,.727],[0,-.547,.735],[mw*.48,-.542,.727],[mw,-.52,.718]],.013);
+ ell(face,skin,0,-.69,.56,.28,.11,.12);
+ // Neck only to preview silhouette; detailed body postponed
+ const neck=new THREE.Mesh(new THREE.CylinderGeometry(.25,.32,.55,64),skin);neck.position.set(0,-1.11,-.055);face.add(neck);
+ for(const [id] of defs)document.getElementById(id+'-value').textContent=params[id].toFixed(2);
+}
+rebuild();
+function aim(x,y,z){camera.position.set(x,y,z);orbit.target.set(0,0,0);orbit.update()}
+document.getElementById('front').onclick=()=>aim(0,.05,5.8);document.getElementById('side').onclick=()=>aim(5.8,.05,.02);document.getElementById('threequarters').onclick=()=>aim(2.35,1.15,5.7);
+document.getElementById('reset').onclick=()=>{for(const [id] of defs){params[id]=({headWidth:1,cheeks:1,jaw:.78,eyes:1,eyeGap:1,nose:.87,mouth:1})[id];document.getElementById(id).value=params[id]}rebuild();aim(2.35,1.15,5.7)};
+document.getElementById('download').onclick=()=>{const exporter=new GLTFExporter();exporter.parse(face,result=>{const blob=new Blob([result],{type:'model/gltf-binary'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='rosto-piloto-v1.glb';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)},e=>alert('Falha na exportação: '+e.message),{binary:true,onlyVisible:true})};
+function resize(){const w=host.clientWidth,h=host.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}addEventListener('resize',resize);resize();
+function frame(){requestAnimationFrame(frame);orbit.update();renderer.render(scene,camera)}frame();
+</script></body></html>
