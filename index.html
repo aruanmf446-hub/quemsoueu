@@ -56,7 +56,7 @@ import {GLTFExporter} from 'three/addons/exporters/GLTFExporter.js';
 import {RoomEnvironment} from 'three/addons/environments/RoomEnvironment.js';
 import {buildHead} from './src/head.js';
 import {PRESETS,PRESET_ORDER,FAMILY_ORDER,DEFAULT_ADJ} from './src/presets.js';
-import {EXPRESSIONS,NEUTRAL} from './src/rig.js';
+import {EXPRESSIONS,NEUTRAL,talkPose} from './src/rig.js';
 
 const host=document.getElementById('stage'),scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(30,1,.05,100);
 const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});
@@ -98,9 +98,11 @@ function rebuildFull(){if(raf){cancelAnimationFrame(raf);raf=0}rebuild(1)}
 
 // ---------- expressões (rig) ----------
 // pose final = sliders/expressão escolhida + piscar automático + fala
-const poseDefs=[['lookX','Olhar ↔',-1,1],['lookY','Olhar ↕',-1,1],['blinkL','Piscar esquerdo',0,1],['blinkR','Piscar direito',0,1],['wide','Arregalar',0,1],['squint','Apertar olhos',0,1],['jaw','Abrir boca',0,1],['smile','Sorriso / tristeza',-1,1],['browRaise','Sobrancelhas',-1,1],['browAngry','Bravo / preocupado',-1,1]];
+const poseDefs=[['lookX','Olhar ↔',-1,1],['lookY','Olhar ↕',-1,1],['blinkL','Piscar esquerdo',0,1],['blinkR','Piscar direito',0,1],['wide','Arregalar',0,1],['squint','Apertar olhos',0,1],
+  ['jaw','Abrir boca',0,1],['smile','Sorriso / tristeza',-1,1],['smileR','Sorriso só direito',-1,1],['smileL','Sorriso só esquerdo',-1,1],['mouthWide','Boca larga (E)',0,1],['pucker','Bico (O / U / beijo)',0,1],['press','Lábios apertados (M)',0,1],
+  ['browRaise','Sobrancelhas sobem / descem',-1,1],['browAngry','Bravo / preocupado',-1,1],['browUpL','Só a sobrancelha esquerda',0,1],['browUpR','Só a sobrancelha direita',0,1]];
 let pose={...NEUTRAL},exprName='neutro',blinkT=0,nextBlink=2.5,talkT=0;
-const EXPR_LABEL={neutro:'Neutro',feliz:'Feliz',triste:'Triste',bravo:'Bravo',surpreso:'Surpreso',piscadela:'Piscadela',desconfiado:'Desconfiado'};
+const EXPR_LABEL={neutro:'Neutro',feliz:'Feliz',triste:'Triste',bravo:'Bravo',surpreso:'Surpreso',piscadela:'Piscadela',desconfiado:'Desconfiado',beijo:'Beijo',risada:'Risada'};
 const exprsEl=document.getElementById('exprs');
 for(const k of Object.keys(EXPRESSIONS)){const b=document.createElement('button');b.textContent=EXPR_LABEL[k]||k;b.dataset.expr=k;b.onclick=()=>setExpression(k);exprsEl.append(b)}
 const poseEl=document.getElementById('poseCtrls');
@@ -110,7 +112,7 @@ function setExpression(k){pose={...NEUTRAL,...EXPRESSIONS[k]};exprName=k;syncPos
 function livePose(dt){
   const p={...pose};
   if(document.getElementById('autoBlink').checked){blinkT+=dt;if(blinkT>nextBlink){const k=Math.min(1,(blinkT-nextBlink)/.09),b=k<.5?k*2:2-k*2;p.blinkL=Math.max(p.blinkL,b);p.blinkR=Math.max(p.blinkR,b);if(blinkT>nextBlink+.18){blinkT=0;nextBlink=2+Math.random()*3.5}}}
-  if(document.getElementById('talk').checked){talkT+=dt;p.jaw=Math.max(p.jaw,.4*Math.abs(Math.sin(talkT*9.1))*(.55+.45*Math.sin(talkT*2.3))+.06*Math.sin(talkT*17));p.browRaise+= .12*Math.max(0,Math.sin(talkT*2.6))}
+  if(document.getElementById('talk').checked){talkT+=dt;const tp=talkPose(talkT);for(const k in tp)p[k]=(p[k]||0)+tp[k]} // fala com formas de boca (A, E, O, U, M)
   return p;
 }
 function applyPose(dt=0){if(current&&current.rig)current.rig.apply(livePose(dt))}
@@ -130,7 +132,7 @@ document.getElementById('threequarters').onclick=()=>aim(...VIEWS.three);
 document.getElementById("reset").onclick=()=>{resetAdj();rebuildFull();aim(...VIEWS.three)};
 // exportação: malha com densidade um pouco menor que a do visualizador (arquivo mais leve, mesma forma)
 // o GLB vai em pose neutra, com o esqueleto facial e os clipes de animação (piscar, falar, expressões…)
-function exportGLB(){const h=buildHead(presetId,adj,{quality:.7});const animations=h.rig&&h.rig.makeClips?h.rig.makeClips():[];if(h.rig)h.rig.apply({});
+function exportGLB(){const h=buildHead(presetId,adj,{quality:.6,export:true});const animations=h.rig&&h.rig.makeClips?h.rig.makeClips():[];if(h.rig)h.rig.apply({});
   return new GLTFExporter().parseAsync(h.group,{binary:true,onlyVisible:true,animations}).finally(()=>h.dispose())}
 document.getElementById('download').onclick=async e=>{
   const btn=e.currentTarget,label=btn.textContent;btn.disabled=true;btn.textContent='Exportando…';

@@ -201,7 +201,8 @@ function eyeFrame(P, s) {
 // sorriso: cantos sobem; smirk: só o canto direito sobe (sorriso torto); open: abertura (crescente) abaixo da curva
 export function mouthCurve(P) {
   const mw = P.mouthW, sm = P.smirk || 0;
-  const ym = x => { const k = clamp(x / mw, -1.25, 1.25), t = Math.abs(k); return P.mouthY + P.smile * .04 * t * t - .004 * gau(x, .03) + sm * .05 * Math.max(k, 0) ** 2 - sm * .008 * Math.max(-k, 0) ** 2 };
+  const sL = P.smileL || 0, sR = P.smileR || 0;
+  const ym = x => { const k = clamp(x / mw, -1.25, 1.25), t = Math.abs(k); return P.mouthY + (P.smile + (k < 0 ? sL : sR)) * .04 * t * t - .004 * gau(x, .03) + sm * .05 * Math.max(k, 0) ** 2 - sm * .008 * Math.max(-k, 0) ** 2 };
   const open = x => P.open ? P.open * Math.pow(Math.max(0, 1 - (Math.abs(x) / (mw * .98)) ** 2), .7) : 0;
   return { ym, open, mw };
 }
@@ -215,6 +216,7 @@ function makeFaceField(P, eyes) {
   return function field(x, y) {
     const ax = sqrt(x * x + 1e-4); // |x| suave: sem vinco na linha média
     const ymC = ymAt(x < 0 ? -mw : mw); let cav = 0;
+    const sX = x < 0 ? (P.smileL || 0) : (P.smileR || 0), smS = P.smile + sX; // sorriso deste lado (base + expressão)
     let dz = 0, ao = 0, hi = 0, lid = 0, lipU = 0, lipL = 0, lipHi = 0, line = 0, nostril = 0, gloss = 0, under = 0;
     // testa e arcada
     dz += P.browRidge * exp(-((ax / .58) ** 4)) * gau(y - (eyeY + .25), .09); // arcada contínua (sem vale no meio)
@@ -250,7 +252,13 @@ function makeFaceField(P, eyes) {
     // maçãs do rosto
     // maçãs: altas (logo abaixo do olho) e cheias, descendo até o canto da boca; o sorriso empurra para cima
     const chY = P.cheekY ?? (eyeY - .27), chX = P.cheekX ?? .42;
-    dz += P.cheekH * gau(ax - chX, .19) * gau(y - (chY + .025 * P.smile), .15) + P.cheekH * .45 * gau(ax - (mw + .1), .13) * gau(y - (ymC + .08), .12);
+    dz += P.cheekH * gau(ax - chX, .19) * gau(y - (chY + .025 * smS), .15) + P.cheekH * .45 * gau(ax - (mw + .1), .13) * gau(y - (ymC + .08), .12);
+    if (sX > 0) { // expressão de sorriso: maçã sobe e enche, canto empurra a bochecha
+      dz += sX * .03 * gau(ax - (mw + .1), .12) * gau(y - (ymC + .12), .11) + sX * .02 * gau(ax - chX, .17) * gau(y - (chY + .05), .13);
+    } else if (sX < 0) { // tristeza: queixo contrai (bolinha do queixo) e cantos afundam
+      dz += -sX * .014 * gau(x, .1) * gau(y - (mY - P.lipL - .1), .06);
+      dz -= -sX * .01 * gau(ax - (mw + .02), .04) * gau(y - (ymC - .03), .05);
+    }
     // planos de estrutura: zigomático (crista que sobe para a orelha), cavado abaixo dele, têmporas
     if (P.zyg) { const zy = gau(ax - .52, .15) * gau(y - (eyeY - .17) - .25 * (ax - .52), .065); dz += P.zyg * zy; hi += 1.2 * zy * P.zyg / .02 }
     if (P.hollow) { const ho = gau(ax - .5, .13) * gau(y - (mY + .1), .11); dz -= P.hollow * ho; ao += .45 * ho * P.hollow / .015 }
@@ -304,9 +312,9 @@ function makeFaceField(P, eyes) {
       line = gau(y - yl, .006 + .002 * tc) * lf;
       const corner = gau(ax - mw * 1.0, .018) * gau(y - ymC, .02);
       dz -= .018 * corner; ao += .6 * corner; // canto encaixado na bochecha
-      dz += Math.min(P.smile, 1.2) * .016 * gau(ax - (mw + .07), .06) * gau(y - (ymC + .03), .07);
-      if (P.smile > .45) { // covinha curta além do canto: sorriso mais natural
-        const dm = gau(ax - (mw * 1.1 + .012), .013) * gau(y - (ymC + .012), .03) * (P.smile - .45);
+      dz += Math.max(0, Math.min(smS, 1.4)) * .016 * gau(ax - (mw + .07), .06) * gau(y - (ymC + .03), .07);
+      if (smS > .45) { // covinha curta além do canto: sorriso mais natural
+        const dm = gau(ax - (mw * 1.1 + .012), .013) * gau(y - (ymC + .012), .03) * Math.min(smS - .45, 1);
         dz -= .012 * dm; ao += .9 * dm;
       }
       const oC = MC.open(0), sul = gau(y - (mY - oC - P.lipL - .052), .03) * gau(x, mw * .85);
@@ -315,7 +323,7 @@ function makeFaceField(P, eyes) {
       const band = sstep(mY + P.lipU * .9, mY + P.lipU * 1.5, y) * sstep(tipY - .03, tipY - .09, y);
       dz -= .0035 * gau(x, .024) * band; dz += .0018 * gau(ax - .032, .02) * band;
       gloss += lipU * .55 + lipL * 1.0;
-      const fold = (P.fold ?? .5) * (.4 + .6 * Math.min(P.smile, 1));
+      const fold = (P.fold ?? .5) * (.4 + .6 * clamp(smS, 0, 1)) + .5 * Math.max(sX, 0);
       if (fold > .05) { // dobra nasolabial (sorriso / maturidade)
         const px = .14 * nW, py = tipY - .02, sx = mw * 1.1 - px, sy = ymC + .01 - py;
         const tt = clamp(((ax - px) * sx + (y - py) * sy) / (sx * sx + sy * sy), 0, 1);
@@ -530,7 +538,7 @@ export function buildHead(presetId, adj, opts = {}) {
     const axisZ = y => y > nty ? Cz + (ntz - Cz) * clamp((Cy - y) / (Cy - nty), 0, 1) : ntz + (nbz - ntz) * clamp((nty - y) / (nty - nby), 0, 1);
     const sinP = new Float64Array(W), cosP = new Float64Array(W);
     for (let ix = 0; ix < W; ix++) { const lon = -Math.PI + 2 * Math.PI * ix / LON, ph = lon - WARP * Math.sin(lon); sinP[ix] = Math.sin(ph); cosP[ix] = Math.cos(ph) }
-    const N = W * (LAT + 1), NX = N + W, pos = new Float32Array(NX * 3), colors = new Float32Array(NX * 3), gloss = new Float32Array(NX), state = new Uint8Array(NX);
+    const N = W * (LAT + 1), NX = N + W, pos = new Float32Array(NX * 3), colors = new Float32Array(NX * 3), gloss = new Float32Array(NX), state = new Uint8Array(NX), wfA = new Float32Array(NX);
     const c = new THREE.Color(); let rowGuess = 0;
     for (let iy = 0; iy <= LAT; iy++) {
       const t = iy / LAT; let oy, oz, th, face = false;
@@ -571,7 +579,7 @@ export function buildHead(presetId, adj, opts = {}) {
             x += dx * grow; y += dy * grow; z += dz0 * grow;
           }
         }
-        pos[i * 3] = x; pos[i * 3 + 1] = y; pos[i * 3 + 2] = z; state[i] = eyeState;
+        pos[i * 3] = x; pos[i * 3 + 1] = y; pos[i * 3 + 2] = z; state[i] = eyeState; wfA[i] = wf;
         // cor
         c.copy(skin);
         if (f) {
@@ -632,18 +640,22 @@ export function buildHead(presetId, adj, opts = {}) {
         }
       }
     }
-    for (let i = 0; i < N; i++) if (dupOf[i] >= 0) { const d = dupOf[i]; pos.copyWithin(d * 3, i * 3, i * 3 + 3); gloss[d] = gloss[i]; state[d] = 0 }
+    for (let i = 0; i < N; i++) if (dupOf[i] >= 0) { const d = dupOf[i]; pos.copyWithin(d * 3, i * 3, i * 3 + 3); gloss[d] = gloss[i]; state[d] = 0; wfA[d] = wfA[i] }
     const idx = new Uint32Array(LON * LAT * 6); let o = 0;
     const tri = (a, b, c) => {
       if (NV > N && (dupOf[a] >= 0 || dupOf[b] >= 0 || dupOf[c] >= 0)) {
-        const cx = (pos[a * 3] + pos[b * 3] + pos[c * 3]) / 3, cy = (pos[a * 3 + 1] + pos[b * 3 + 1] + pos[c * 3 + 1]) / 3;
-        if (cy < MCv.ym(cx)) { if (dupOf[a] >= 0) a = dupOf[a]; if (dupOf[b] >= 0) b = dupOf[b]; if (dupOf[c] >= 0) c = dupOf[c] }
+        // lado do triângulo decidido pelos vértices que NÃO estão na fenda (robusto nos degraus da curva)
+        let below = 0, n = 0, cx = 0, cy = 0;
+        for (const v of [a, b, c]) { cx += pos[v * 3]; cy += pos[v * 3 + 1]; if (dupOf[v] < 0) { n++; if (pos[v * 3 + 1] < MCv.ym(pos[v * 3])) below++ } }
+        const isBelow = n ? below * 2 > n || (below * 2 === n && cy / 3 < MCv.ym(cx / 3)) : cy / 3 < MCv.ym(cx / 3);
+        if (isBelow) { if (dupOf[a] >= 0) a = dupOf[a]; if (dupOf[b] >= 0) b = dupOf[b]; if (dupOf[c] >= 0) c = dupOf[c] }
       }
       idx[o++] = a; idx[o++] = b; idx[o++] = c;
     };
     for (let iy = 0; iy < LAT; iy++) for (let ix = 0; ix < LON; ix++) {
       const a = iy * W + ix, b = a + 1, cc = a + W, d = cc + 1;
-      tri(a, cc, b); tri(b, cc, d);
+      if (iy < LAT && dupOf[a] >= 0 && d < N && dupOf[d] >= 0) { tri(a, cc, d); tri(a, d, b) } // degrau da fenda: diagonal segue a linha da boca
+      else { tri(a, cc, b); tri(b, cc, d) }
     }
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.BufferAttribute(pos.subarray(0, NV * 3), 3)); geo.setIndex(new THREE.BufferAttribute(idx, 1));
@@ -676,7 +688,7 @@ export function buildHead(presetId, adj, opts = {}) {
     for (let i = 0; i < N; i++) if (dupOf[i] >= 0) colors.copyWithin(dupOf[i] * 3, i * 3, i * 3 + 3);
     geo.setAttribute('color', new THREE.BufferAttribute(colors.subarray(0, NV * 3), 3)); geo.setAttribute('gloss', new THREE.BufferAttribute(gloss.subarray(0, NV), 1));
     const head = new THREE.Mesh(track(geo), skinMat); head.name = 'Head_Skin'; root.add(head);
-    head.userData.vinfo = { N, NV, dupOf, state };
+    head.userData.vinfo = { N, NV, dupOf, state, wfA };
   }
   mark('head');
 
@@ -833,8 +845,8 @@ export function buildHead(presetId, adj, opts = {}) {
     { const m = new THREE.Mesh(track(mergeGeos(lashGeos)), lashMat); m.name = 'Lashes_' + (s < 0 ? 'L' : 'R'); root.add(m) } // delineado + tufos numa malha
   }
 
-  // ---- linha da boca: traço fino no fundo do sulco ----
-  if (!P.open) {
+  // ---- linha da boca: traço fino no fundo do sulco (só sem fenda de rig) ----
+  if (!P.open && !SLIT) {
     const N = 40, pts = [], rw = [], mw = P.mouthW;
     for (let i = 0; i < N; i++) {
       const t = i / (N - 1), x = (t * 2 - 1) * mw * 1.02, y = mouthCurve(P).ym(x);
@@ -948,24 +960,24 @@ export function buildHead(presetId, adj, opts = {}) {
   // ---- interior da boca do rig (boca fechada no repouso): fundo, dentes e língua atrás dos lábios ----
   if (SLIT) {
     const zg = surfZ(0, MCv.ym(0)), cy = MCv.ym(0) - .02, depth = Math.min(.17, zg - P.cran[1] - .05);
-    { const g = new THREE.SphereGeometry(1, 40, 24); g.scale(MCv.mw * 1.02, .12, depth); g.translate(0, cy - .03, zg - depth - .015);
+    { const g = new THREE.SphereGeometry(1, 40, 24); g.scale(MCv.mw * 1.4, .13, depth); g.translate(0, cy - .03, zg - depth - .015);
       setColors(g, (c, x, y, z) => c.set('#3c0c10').multiplyScalar(.55 + .45 * sstep(zg - depth * 2, zg, z)));
       addMesh(g, mat('#ffffff', { vertexColors: true, roughness: .6, side: THREE.BackSide }), 'Mouth_Bag') }
     const tm = mat('#f4efe6', { vertexColors: true, color: 0xffffff, roughness: .3, clearcoat: .5, side: THREE.DoubleSide });
     const teeth = (upper, h) => {
-      const NX2 = 60, NY = 5, ps = [], ix2 = [], span = MCv.mw * .8, tw = (P.teeth && P.teeth.w) || Math.max(.05, MCv.mw * .3);
+      const NX2 = 60, NY = 5, ps = [], ix2 = [], span = MCv.mw * .72, tw = (P.teeth && P.teeth.w) || Math.max(.05, MCv.mw * .3);
       for (let j = 0; j <= NY; j++) for (let i = 0; i <= NX2; i++) {
         const x = -span + 2 * span * i / NX2, v = j / NY, ph = Math.abs(Math.sin(Math.PI * (x + tw / 2) / tw)), edge = MCv.ym(x) + (upper ? .012 : -.012);
         const y = upper ? edge - v * h * (.86 + .14 * Math.pow(ph, .4)) : edge + v * h * (.86 + .14 * Math.pow(ph, .4)) - h * 1.05;
-        ps.push(x, upper ? y : y, surfZ(x, MCv.ym(x)) - (upper ? .04 : .052) - .03 * (x / span) ** 2);
+        ps.push(x, y, surfZ(x, MCv.ym(x)) - (upper ? .05 : .065) - .05 * (x / span) ** 2);
       }
       for (let j = 0; j < NY; j++) for (let i = 0; i < NX2; i++) { const a = j * (NX2 + 1) + i, b = a + 1, c2 = a + NX2 + 1, d = c2 + 1; ix2.push(a, c2, b, b, c2, d) }
       const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(ps, 3)); g.setIndex(ix2); g.computeVertexNormals();
-      setColors(g, (c, x) => { const ph = Math.abs(Math.sin(Math.PI * (x + tw / 2) / tw)); c.set('#f6f1e8').multiplyScalar(.86 + .14 * sstep(.03, .25, ph)).lerp(col('#c9b8a6'), .45 * sstep(.6, 1, Math.abs(x) / span)) });
+      setColors(g, (c, x) => { const ph = Math.abs(Math.sin(Math.PI * (x + tw / 2) / tw)); c.set('#f6f1e8').multiplyScalar(.92 + .08 * sstep(.03, .25, ph)).lerp(col('#c9b8a6'), .45 * sstep(.6, 1, Math.abs(x) / span)) });
       return g;
     };
     const th = Math.max(.035, MCv.mw * .2);
-    addMesh(teeth(true, th), tm, 'Teeth_Upper'); addMesh(teeth(false, th * .8), tm, 'Teeth_Lower');
+    addMesh(teeth(true, th), tm, 'Teeth_Upper'); addMesh(teeth(false, th * .55), tm, 'Teeth_Lower');
     { const g = new THREE.SphereGeometry(1, 32, 20); g.scale(MCv.mw * .62, .035, depth * .55); g.translate(0, cy - .085, zg - depth * .7);
       setColors(g, (c, x) => c.set('#c85a66').multiplyScalar(1 - .25 * gau(x, .05)));
       addMesh(g, mat('#ffffff', { vertexColors: true, roughness: .4, clearcoat: .4 }), 'Tongue') }
@@ -1002,6 +1014,117 @@ export function buildHead(presetId, adj, opts = {}) {
     }
   }
 
+  // ================= blendshapes esculpidos (formas de expressão) =================
+  // Cada forma é o rosto reconstruído com outros parâmetros (ex.: sorriso extra de um lado) e a pele arrastada
+  // junto com a boca/sobrancelha → lábios, bochechas, prega nasolabial e queixo mudam de forma, não só de lugar.
+  const morphDefs = (() => {
+    const mw = MCv.mw, Re = P.Re, browY = P.eyeY + P.browGap + P.browArch * .4, lidTop = P.eyeY + Re * Math.sin(P.openU) * 1.1;
+    const keepLid = (y, x = P.eyeX) => 1 - (1 - sstep(lidTop + .005, lidTop + .07, y)) * gau(Math.abs(x) - P.eyeX, Re * 1.25); // pálpebra e olho não se mexem com a sobrancelha
+    const mouth = (name, P2, widen = 0, side = 0) => ({ name, mouth: true, P2: { ...P, ...P2 }, widen, side });
+    const brow = (name, fn, extraDz) => ({ name, carry: fn, extraDz });
+    const browMask = (x, y, sd) => (sd === 0 || Math.sign(x) === sd ? 1 : 0) * Math.exp(-(((Math.abs(x) - P.eyeX) / .26) ** 4)) * gau(y - browY, .17) * keepLid(y, x);
+    const inner = (x, y) => gau(Math.abs(x) - .13, .15) * gau(y - browY, .15) * keepLid(y, x);
+    return [
+      mouth('smile_L', { smileL: 1.35 }, .03, -1), mouth('smile_R', { smileR: 1.35 }, .03, 1),
+      mouth('frown_L', { smileL: -1.25 }, -.005, -1), mouth('frown_R', { smileR: -1.25 }, -.005, 1),
+      mouth('mouthWide', { mouthW: mw * 1.2, lipU: P.lipU * .8, lipL: P.lipL * .8, smile: P.smile + .2 }),
+      mouth('mouthPucker', { mouthW: mw * .64, lipH: P.lipH * 1.8 + .012, lipU: P.lipU * 1.25, lipL: P.lipL * 1.15, muzzle: (P.muzzle || 0) + .035, smile: P.smile * .3 }),
+      mouth('mouthPress', { lipU: P.lipU * .45, lipL: P.lipL * .5, lipH: P.lipH * .45, smile: P.smile * .8 }),
+      brow('browUp_L', (x, y) => [0, .06 * browMask(x, y, -1)]), brow('browUp_R', (x, y) => [0, .06 * browMask(x, y, 1)]),
+      brow('browInnerUp', (x, y) => { const m = inner(x, y); return [-Math.sign(x) * .01 * m, .065 * m] },
+        (x, y) => .006 * gau(y - (browY + .1), .03) * gau(x, .14) * keepLid(y, x)), // rugas horizontais leves (preocupado)
+      brow('browDown', (x, y) => { const m = gau(Math.abs(x) - .14, .19) * gau(y - browY, .16) * keepLid(y, x); return [-Math.sign(x) * .026 * m, -.05 * m] },
+        (x, y) => -.014 * gau(Math.abs(x) - .05, .016) * gau(y - (browY - .02), .07) * keepLid(y, x) + .01 * gau(Math.abs(x) - .16, .1) * gau(y - (browY - .01), .06) * keepLid(y, x))
+    ];
+  })();
+  // superfície base (sem relevo) numa grade: consulta rápida e idêntica para pele e peças
+  const FZ = (() => { if (!(P.rigMorphs !== false && (Q >= 1 || opts.export))) return null; const x0 = -.9, y0 = -1.45, st = .012, NXg = Math.ceil(1.8 / st) + 1, NYg = Math.ceil(2.1 / st) + 1, T = new Float32Array(NXg * NYg);
+    for (let j = 0; j < NYg; j++) for (let i = 0; i < NXg; i++) T[j * NXg + i] = frontZ(x0 + i * st, y0 + j * st);
+    return (x, y) => { const fx = clamp((x - x0) / st, 0, NXg - 1.001), fy = clamp((y - y0) / st, 0, NYg - 1.001), i = fx | 0, j = fy | 0, u = fx - i, v = fy - j, k = j * NXg + i;
+      return (T[k] * (1 - u) + T[k + 1] * u) * (1 - v) + (T[k + NXg] * (1 - u) + T[k + NXg + 1] * u) * v } })();
+  const fieldCache = new Map(), fieldFor = d => { if (!fieldCache.has(d.name)) fieldCache.set(d.name, makeFaceField(d.P2, eyes)); return fieldCache.get(d.name) };
+  const MC2 = new Map(), curveFor = d => { if (!MC2.has(d.name)) MC2.set(d.name, mouthCurve(d.P2)); return MC2.get(d.name) };
+  // deslocamento (x,y) de um ponto do rosto para uma forma
+  function warpXY(d, x, y) {
+    if (d.carry) { const [dx, dy] = d.carry(x, y); return [x + dx, y + dy] }
+    const M1 = MCv, M2 = curveFor(d), u = x / M1.mw, au = Math.abs(u);
+    let xT = au <= 1 ? u * M2.mw : x + Math.sign(x) * (M2.mw - M1.mw);
+    if (d.widen && (d.side === 0 || Math.sign(x) === d.side)) xT += Math.sign(x) * d.widen * gau(Math.abs(x) - M1.mw, .14);
+    const yT = y + (M2.ym(xT) - MCv.ym(x)) - (M2.open(xT) - M1.open(x)) * sstep(MCv.ym(x), MCv.ym(x) - .05, y);
+    const w = gau(y - M1.ym(x), .17) * (au < 1 ? 1 : exp(-(((au - 1) / .7) ** 2)));
+    return [x + w * (xT - x), y + w * (yT - y)];
+  }
+  // pele: inclinação da superfície pela normal + diferença de relevo reavaliada na posição nova
+  function morphSkin(headMesh, d, withNormals) {
+    const g = headMesh.geometry, p = g.attributes.position, nr = g.attributes.normal, vi = headMesh.userData.vinfo, n = p.count;
+    const out = new Float32Array(n * 3), f2 = d.mouth ? fieldFor(d) : null, xLim = d.mouth ? Math.min(.85, MCv.mw * 2.6 + .15) : .85;
+    if (!vi.baseDz) { vi.baseDz = new Float32Array(n).fill(NaN) }
+    for (let i = 0; i < n; i++) {
+      const wf = vi.wfA[i]; if (wf < .02 || (i < vi.N && vi.state[i] === 1)) continue;
+      const x = p.getX(i), y = p.getY(i), z = p.getZ(i); if (z < -.2 || Math.abs(x) > xLim) continue;
+      if (d.mouth && (y > P.eyeY - .02 || y < (P.loft?.y?.[0] ?? -1.2) - .36)) continue;
+      // região da boca some suavemente (sem degrau): até a pálpebra de baixo em cima, abaixo do queixo embaixo
+      const fz0 = FZ(x, y); if (Math.abs(fz0 - z) > .14) continue; // só a frente do rosto (a silhueta fica parada)
+      const fade = (d.mouth ? sstep(P.eyeY - .03, P.eyeY - .16, y) * sstep((P.loft?.y?.[0] ?? -1.2) - .35, (P.loft?.y?.[0] ?? -1.2) - .1, y) : 1) * sstep(.12, .3, nr.getZ(i));
+      if (fade < .001) continue;
+      let [x2, y2] = warpXY(d, x, y); x2 = x + (x2 - x) * fade; y2 = y + (y2 - y) * fade;
+      const dx = x2 - x, dy = y2 - y;
+      let dz = FZ(x2, y2) - fz0; // relevo é carregado junto com a pele
+      if (f2) { let b0 = vi.baseDz[i]; if (b0 !== b0) b0 = vi.baseDz[i] = field(x, y).dz; dz += wf * fade * (f2(x2, y2).dz - b0) } // e reesculpido (lábios, bochechas, prega) na forma nova
+      if (d.extraDz) dz += wf * d.extraDz(x, y);
+      if (Math.abs(dx) + Math.abs(dy) + Math.abs(dz) < 1e-6) continue;
+      out[i * 3] = dx; out[i * 3 + 1] = dy; out[i * 3 + 2] = dz;
+    }
+    return out;
+  }
+  // peças sobre a pele (sobrancelha, bigode): seguem a superfície nova
+  function morphAccessory(mesh, d, noRelief) {
+    const p = mesh.geometry.attributes.position, n = p.count, out = new Float32Array(n * 3), f2 = d.mouth ? fieldFor(d) : null;
+    for (let i = 0; i < n; i++) {
+      const x = p.getX(i), y = p.getY(i), [x2, y2] = warpXY(d, x, y);
+      let dz = FZ(x2, y2) - FZ(x, y);
+      if (f2 && !noRelief) dz += f2(x2, y2).dz - field(x, y).dz;
+      if (d.extraDz) dz += d.extraDz(x, y);
+      out[i * 3] = x2 - x; out[i * 3 + 1] = y2 - y; out[i * 3 + 2] = dz;
+    }
+    return out;
+  }
+  const morphMeshes = [];
+  function addMorphs(mesh, kind) {
+    const g = mesh.geometry, list = kind === 'brow' ? morphDefs.filter(d => d.carry) : kind === 'mouthAcc' || kind === 'teeth' ? morphDefs.filter(d => d.mouth) : morphDefs;
+    g.morphAttributes.position = []; if (kind === 'skin' && !opts.export) g.morphAttributes.normal = [];
+    const idx = g.index, base = g.attributes.position.array;
+    for (const d of list) {
+      const delta = kind === 'skin' ? morphSkin(mesh, d) : morphAccessory(mesh, d, kind === 'teeth'), attr = new THREE.Float32BufferAttribute(delta, 3); attr.name = d.name;
+      g.morphAttributes.position.push(attr);
+      if (g.morphAttributes.normal) { // normais da forma, recalculadas só onde a pele se mexe (sombreado correto das bochechas)
+        const nb = g.attributes.normal.array, nd = new Float32Array(nb.length), ia = idx.array, nv = base.length / 3, mark = new Uint8Array(nv);
+        for (let v = 0; v < nv; v++) if (delta[v * 3] || delta[v * 3 + 1] || delta[v * 3 + 2]) mark[v] = 1;
+        for (let t = 0; t < ia.length; t += 3) { const a2 = ia[t], b2 = ia[t + 1], c2 = ia[t + 2]; if (mark[a2] === 1 || mark[b2] === 1 || mark[c2] === 1) { mark[a2] |= 2; mark[b2] |= 2; mark[c2] |= 2 } }
+        const acc = new Float32Array(nb.length), P3 = (v, k) => base[v * 3 + k] + delta[v * 3 + k];
+        for (let t = 0; t < ia.length; t += 3) {
+          const a2 = ia[t], b2 = ia[t + 1], c2 = ia[t + 2]; if (!(mark[a2] | mark[b2] | mark[c2])) continue;
+          const ux = P3(b2, 0) - P3(a2, 0), uy = P3(b2, 1) - P3(a2, 1), uz = P3(b2, 2) - P3(a2, 2), vx = P3(c2, 0) - P3(a2, 0), vy = P3(c2, 1) - P3(a2, 1), vz = P3(c2, 2) - P3(a2, 2);
+          const nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+          for (const v of [a2, b2, c2]) { acc[v * 3] += nx; acc[v * 3 + 1] += ny; acc[v * 3 + 2] += nz }
+        }
+        for (let v = 0; v < nv; v++) if (mark[v]) { const x = acc[v * 3], y = acc[v * 3 + 1], z = acc[v * 3 + 2], l = Math.hypot(x, y, z) || 1;
+          nd[v * 3] = x / l - nb[v * 3]; nd[v * 3 + 1] = y / l - nb[v * 3 + 1]; nd[v * 3 + 2] = z / l - nb[v * 3 + 2] }
+        const na = new THREE.Float32BufferAttribute(nd, 3); na.name = d.name; g.morphAttributes.normal.push(na);
+      }
+    }
+    g.morphTargetsRelative = true; mesh.updateMorphTargets(); morphMeshes.push(mesh);
+  }
+  const doMorphs = P.rigMorphs !== false && (Q >= 1 || opts.export) && !(typeof window !== 'undefined' && window.__noMorphs); // prévia do slider sem blendshapes (rápida)
+  if (doMorphs) for (const obj of root.children) {
+    if (!obj.isMesh) continue;
+    if (obj.name === 'Head_Skin') addMorphs(obj, 'skin');
+    else if (obj.name.startsWith('Brow_')) addMorphs(obj, 'brow');
+    else if (obj.name.startsWith('Mustache_')) addMorphs(obj, 'mouthAcc');
+    else if (SLIT && (obj.name.startsWith('Teeth_') || obj.name === 'Mouth_Bag' || obj.name === 'Tongue')) addMorphs(obj, 'teeth'); // dentes acompanham a boca (não aparecem pelos cantos)
+  }
+  mark('morphs');
+
   // ================= rig facial: esqueleto + pesos =================
   const rig = createRig(P, { eyes, MC: MCv, surfZ });
   root.add(rig.root); root.updateMatrixWorld(true);
@@ -1009,11 +1132,11 @@ export function buildHead(presetId, adj, opts = {}) {
   const mouthBagY = MCv.ym(0) - .05;
   const classify = name => {
     if (name === 'Head_Skin') return 'skin';
-    if (name.startsWith('Brow_')) return 'brow';
+    if (name.startsWith('Brow_')) return 'head';
     if (name.startsWith('Lashes_')) return 'lidU';
     if (name.startsWith('Lid_Rim_') || name.startsWith('LowerLash_')) return 'lidL';
     if (name === 'Mouth_Line') return 'line';
-    if (name.startsWith('Mustache_') || name.startsWith('Beard')) return 'generic';
+    if (name.startsWith('Mustache_')) return 'head';
     if (name === 'Mouth_Bag') return 'bag';
     if (['Goatee', 'Teeth_Lower', 'Tongue'].includes(name) || name.startsWith('Tusk_')) return 'jaw';
     return 'head';
@@ -1040,9 +1163,10 @@ export function buildHead(presetId, adj, opts = {}) {
       : (x, y, z) => rig.weights(x, y, z, { mode: kind });
     rig.skinAttributes(g, fn);
     const sm = new THREE.SkinnedMesh(g, obj.material); sm.name = obj.name; sm.renderOrder = obj.renderOrder;
+    if (g.morphAttributes.position) { sm.updateMorphTargets(); const k = morphMeshes.indexOf(obj); if (k >= 0) morphMeshes[k] = sm }
     root.remove(obj); root.add(sm); sm.bind(skeleton);
   }
-  rig.apply({});
+  rig.morphMeshes = morphMeshes; rig.apply({});
 
   root.traverse(o => { if (o.isMesh) { const transp = o.material.transparent; o.castShadow = !transp && o.name !== 'Catchlight'; o.receiveShadow = !transp } });
   mark('total'); root.userData.params = P; root.userData.timings = marks;
