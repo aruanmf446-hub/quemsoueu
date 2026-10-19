@@ -246,6 +246,10 @@ function makeFaceField(P, eyes) {
       const corner = gau(ax - mw * 1.02, .02) * gau(y - ymC, .022);
       dz -= .012 * corner; ao += .5 * corner;
       dz += P.smile * .016 * gau(ax - (mw + .07), .06) * gau(y - (ymC + .03), .07);
+      if (P.smile > .45) { // covinha curta além do canto: sorriso mais natural
+        const dm = gau(ax - (mw * 1.1 + .012), .013) * gau(y - (ymC + .012), .03) * (P.smile - .45);
+        dz -= .012 * dm; ao += .9 * dm;
+      }
       const sul = gau(y - (mY - P.lipL - .052), .03) * gau(x, mw * .85);
       dz -= .016 * sul; ao += .4 * sul;
       ao += .35 * gau(y - (mY - P.lipL - .022), .02) * gau(x, mw * .7);
@@ -403,7 +407,7 @@ export function buildHead(presetId, adj, opts = {}) {
   const skinHi = new THREE.Color().setHSL(hsl.h + .006, hsl.s * .92, Math.min(.92, hsl.l * 1.13));
   const blotchC = new THREE.Color().setHSL(hsl.h - .02, Math.min(1, hsl.s * 1.15), hsl.l * .92), foreC = new THREE.Color().setHSL(hsl.h + .018, hsl.s * .9, Math.min(.9, hsl.l * 1.06));
   const underC = new THREE.Color().setHSL(hsl.h - .05, hsl.s * .7, hsl.l * .82), beardC = new THREE.Color().setHSL(hsl.h + .03, hsl.s * .55, hsl.l * .74);
-  const lipUC = lipC.clone().multiplyScalar(.8), lipHiC = lipC.clone().lerp(col('#ffd0c8'), .3), nostrilC = col('#3a1612'), deep = col('#6e3634');
+  const lipUC = lipC.clone().multiplyScalar(.8), lipHiC = lipC.clone().lerp(col('#ffd0c8'), .3), nostrilC = col('#3a1612'), deep = col('#8a5650');
   const skinMat = track(skinMaterial());
 
   function surfNoDome(x, y) { return frontZ(x, y) + field(x, y).dz }
