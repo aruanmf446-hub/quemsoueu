@@ -10,6 +10,7 @@
 // calculada na malha, brilho por vértice (lábios), sombras projetadas. Sem assets externos.
 import * as THREE from 'three';
 import { resolve } from './presets.js';
+import { buildRobot } from './robot.js';
 
 const { clamp } = THREE.MathUtils;
 const sqrt = Math.sqrt, exp = Math.exp;
@@ -90,7 +91,8 @@ function makeSDF(P) {
   const segB = (ax, ay, az, ra, bx2, by2, bz2, rb) => bs((ax + bx2) / 2, (ay + by2) / 2, (az + bz2) / 2, Math.hypot(bx2 - ax, by2 - ay, bz2 - az) / 2 + Math.max(ra, rb));
   const BN = segB(0, nty, ntz, nr, 0, nby, nbz, nr * 1.1), BO = oc && bs(0, oc[0], oc[1], Math.max(oc[2], oc[3], oc[4]));
   const S = P.scm, BS = S && segB(S[0], S[1], S[2], S[6], S[3], S[4], S[5], S[6]);
-  const ER = P._earRoot, BE = ER && bs(ER[0], ER[1], ER[2], Math.max(ER[3], ER[4], ER[5])); // esternocleidomastoideo: de trás da orelha à base do pescoço
+  const ER = P._earRoot, BE = ER && bs(ER[0], ER[1], ER[2], Math.max(ER[3], ER[4], ER[5]));
+  const PT = P.pattern && { top: cy + cry * .98, bot: nby + .1, mid: cy - .2, ...P.pattern }; // esternocleidomastoideo: de trás da orelha à base do pescoço
   return (x, y, z) => {
     const ax = sqrt(x * x + 4e-4); // |x| suave
     let d = superE(x, y - cy, z - cz, crx, cry, crz, crzB, cn);
@@ -106,6 +108,14 @@ function makeSDF(P) {
     if (!far(BN, ax, y, z, d, nk)) d = smin(d, roundCone(x * 1.14, y, z, 0, nty, ntz, nr, 0, nby, nbz, nr * 1.08) * .92, nk); // seção oval (mais funda que larga)
     if (S && !far(BS, ax, y, z, d, S[7])) d = smin(d, roundCone(ax, y, z, S[0], S[1], S[2], S[6], S[3], S[4], S[5], S[6] * .8), S[7]);
     if (ER && !far(BE, ax, y, z, d, .08)) d = smin(d, ellip(ax - ER[0], y - ER[1], z - ER[2], ER[3], ER[4], ER[5]), .08); // raiz da orelha
+    if (PT) { // padrão em volta do eixo vertical: nervuras (cacto) ou gomos (pimentão); some nos polos e, se pedido, no meio do rosto
+      const rx = x, rz = z - cz, rr = sqrt(rx * rx + rz * rz) + 1e-6, phi = Math.atan2(rx, rz), pole = sstep(PT.top, PT.top - .25, y) * sstep(PT.bot, PT.bot + .2, y);
+      const face = PT.faceFade ? 1 - PT.faceFade * sstep(.35, .8, rz / rr) * gau(y + .15, .5) : 1;
+      let v = 0;
+      if (PT.type === 'ribs') v = -PT.depth * (1 - sqrt(.5 + .5 * Math.cos(PT.n * phi + (PT.phase || 0))));
+      else { const c = .5 + .5 * Math.cos(PT.n * phi + (PT.phase || 0)); v = PT.depth * (c * c - .4) * (.35 + .65 * Math.min(1, Math.abs(y - PT.mid) / .5)) }
+      d -= v * pole * face;
+    }
     return y - cut > .05 ? d : smaxS(d, cut - y, .05);
   };
 }
@@ -166,15 +176,24 @@ function eyeFrame(P, s) {
   return e;
 }
 
+// ---------- curva da boca (compartilhada entre relevo, traço e dentes) ----------
+// sorriso: cantos sobem; smirk: só o canto direito sobe (sorriso torto); open: abertura (crescente) abaixo da curva
+export function mouthCurve(P) {
+  const mw = P.mouthW, sm = P.smirk || 0;
+  const ym = x => { const k = clamp(x / mw, -1.25, 1.25), t = Math.abs(k); return P.mouthY + P.smile * .04 * t * t - .004 * gau(x, .03) + sm * .05 * Math.max(k, 0) ** 2 - sm * .008 * Math.max(-k, 0) ** 2 };
+  const open = x => P.open ? P.open * Math.pow(Math.max(0, 1 - (Math.abs(x) / (mw * .98)) ** 2), .7) : 0;
+  return { ym, open, mw };
+}
+
 // ---------- relevo do rosto + máscaras de cor ----------
 function makeFaceField(P, eyes) {
   const eyeX = P.eyeX, eyeY = P.eyeY, tipY = P.noseTipY, mY = P.mouthY, mw = P.mouthW, nW = P.noseW, Re = P.Re;
   const rootY = eyeY - .02, chinY = P.loft.y[0] + .02;
-  const out = { dz: 0, lipU: 0, lipL: 0, lipHi: 0, line: 0, blush: 0, ao: 0, nostril: 0, lid: 0, hi: 0, gloss: 0, under: 0 };
-  const ymAt = ax => { const t = Math.min(ax / mw, 1.25); return mY + P.smile * .04 * t * t - .004 * gau(ax, .03) };
-  const ymC = ymAt(mw);
+  const out = { dz: 0, lipU: 0, lipL: 0, lipHi: 0, line: 0, blush: 0, ao: 0, nostril: 0, lid: 0, hi: 0, gloss: 0, under: 0, cav: 0 };
+  const MC = mouthCurve(P), ymAt = MC.ym, noNose = P.noseType === 'none' || P.noseType === 'ball';
   return function field(x, y) {
     const ax = sqrt(x * x + 1e-4); // |x| suave: sem vinco na linha média
+    const ymC = ymAt(x < 0 ? -mw : mw); let cav = 0;
     let dz = 0, ao = 0, hi = 0, lid = 0, lipU = 0, lipL = 0, lipHi = 0, line = 0, nostril = 0, gloss = 0, under = 0;
     // testa e arcada
     dz += P.browRidge * exp(-((ax / .58) ** 4)) * gau(y - (eyeY + .25), .09); // arcada contínua (sem vale no meio)
@@ -216,7 +235,7 @@ function makeFaceField(P, eyes) {
     if (P.hollow) { const ho = gau(ax - .5, .13) * gau(y - (mY + .1), .11); dz -= P.hollow * ho; ao += .45 * ho * P.hollow / .015 }
     if (P.temple) { const te = gau(ax - .66, .12) * gau(y - (eyeY + .2), .13); dz -= P.temple * te; ao += .25 * te * P.temple / .015 }
     // ---- nariz: forma contínua — ponte → ponta alongada (sem "bolinha") → base; asas baixas e recuadas; narinas por baixo ----
-    if (ax < .42 && y < rootY + .25 && y > tipY - .3) {
+    if (!noNose && ax < .42 && y < rootY + .25 && y > tipY - .3) {
       const span = rootY - tipY, q = (rootY - y) / span, qc = clamp(q, 0, 1), below = Math.max(0, (q - 1) * span);
       const bw = (.036 + .034 * qc * qc) * nW, xb = x / bw;
       const prof = P.noseH * Math.pow(qc, P.scoop) * exp(-((below / (P.tipR * .8)) ** 2));
@@ -239,7 +258,7 @@ function makeFaceField(P, eyes) {
     const t = ax / mw;
     dz += P.muzzle * gau(x, .34) * gau(y - (mY + .03), .2);
     if (t < 3 && y > mY - .4 && y < tipY + .1) {
-      const ym = ymAt(ax), tc = Math.min(t, 1), xf = t < 1 ? 1 : exp(-(((t - 1) / .1) ** 2));
+      const ym = ymAt(x), opn = MC.open(x), ymL = ym - opn, tc = Math.min(t, 1), xf = t < 1 ? 1 : exp(-(((t - 1) / .1) ** 2));
       // espessuras ao longo da largura: lábio de cima fino com arco do cupido macio; de baixo cheio e arredondado, afinando nos cantos
       const thU = P.lipU * Math.pow(Math.max(0, 1 - Math.pow(tc, 2.2)), .8) * (1 + P.bow * (.35 * gau(tc - .28, .14) - .28 * gau(tc, .07)));
       const thL = P.lipL * Math.pow(Math.max(0, 1 - Math.pow(tc, 1.8)), .75) * (1 + .12 * gau(tc - .32, .22));
@@ -249,16 +268,19 @@ function makeFaceField(P, eyes) {
         dz += P.lipH * .85 * (thU / P.lipU) * sh * sstep(-.05, .25, v) * xf + P.lipH * .06 * gau(v - 1.0, .12) * xf;
         lipU = (1 - sstep(.88, 1.2, v)) * sstep(.0015, .006, thU);
         hi += .18 * gau(v - 1.04, .1) * xf * sstep(.002, .01, thU);
+      } else if (y > ymL) { // boca aberta: cavidade entre os lábios
+        cav = sstep(0, .012, ym - y) * sstep(0, .012, y - ymL) * (t < .97 ? 1 : exp(-(((t - .97) / .03) ** 2)));
       } else {
         // lábio de baixo: volume redondo (seção quase circular), mais cheio no centro
-        const w = (ym - y) / Math.max(thL, .003), r = clamp(1 - ((w - .45) / .75) ** 2, 0, 1);
+        const w = (ymL - y) / Math.max(thL, .003), r = clamp(1 - ((w - .45) / .75) ** 2, 0, 1);
         dz += P.lipH * 1.2 * (thL / P.lipL) * r * (2 - r) * sstep(-.05, .2, w) * xf;
         lipL = (1 - sstep(.78, 1.22, w)) * sstep(.0015, .006, thL);
         lipHi = gau(w - .4, .2) * gau(x, mw * .4);
       }
       const lf = t < 1 ? 1 : exp(-(((t - 1) / .06) ** 2));
-      dz -= .02 * gau(y - ym, .008 + .004 * tc) * lf;
-      line = gau(y - ym, .006 + .002 * tc) * lf;
+      const yl = clamp(y, ymL, ym); // distância à abertura (uma linha quando fechada)
+      dz -= .02 * gau(y - yl, .008 + .004 * tc) * lf;
+      line = gau(y - yl, .006 + .002 * tc) * lf;
       const corner = gau(ax - mw * 1.0, .018) * gau(y - ymC, .02);
       dz -= .018 * corner; ao += .6 * corner; // canto encaixado na bochecha
       dz += P.smile * .016 * gau(ax - (mw + .07), .06) * gau(y - (ymC + .03), .07);
@@ -266,9 +288,9 @@ function makeFaceField(P, eyes) {
         const dm = gau(ax - (mw * 1.1 + .012), .013) * gau(y - (ymC + .012), .03) * (P.smile - .45);
         dz -= .012 * dm; ao += .9 * dm;
       }
-      const sul = gau(y - (mY - P.lipL - .052), .03) * gau(x, mw * .85);
+      const oC = MC.open(0), sul = gau(y - (mY - oC - P.lipL - .052), .03) * gau(x, mw * .85);
       dz -= .016 * sul; ao += .4 * sul;
-      ao += .35 * gau(y - (mY - P.lipL - .022), .02) * gau(x, mw * .7);
+      ao += .35 * gau(y - (mY - oC - P.lipL - .022), .02) * gau(x, mw * .7);
       const band = sstep(mY + P.lipU * .9, mY + P.lipU * 1.5, y) * sstep(tipY - .03, tipY - .09, y);
       dz -= .0035 * gau(x, .024) * band; dz += .0018 * gau(ax - .032, .02) * band;
       gloss += lipU * .55 + lipL * 1.0;
@@ -285,7 +307,7 @@ function makeFaceField(P, eyes) {
     hi += .35 * gau(x, .12) * gau(y - (chinY + .08), .08);
     // zona T e pálpebras levemente mais brilhantes (pele viva, não plástico uniforme)
     gloss += .3 * gau(x, .16) * gau(y - .42, .2) + .22 * gau(x, .06) * sstep(eyeY - .02, tipY + .02, y) * (y < rootY + .05 ? 1 : 0) + .18 * gau(x, .14) * gau(y - (chinY + .08), .08) + .15 * lid;
-    out.under = under;
+    out.under = under; out.cav = cav;
     out.dz = dz; out.ao = ao; out.hi = hi; out.lid = lid; out.lipU = lipU; out.lipL = lipL; out.lipHi = lipHi; out.line = line; out.nostril = nostril; out.gloss = gloss;
     out.blush = .75 * gau(ax - chX, .21) * gau(y - (chY + .02), .16) + .5 * gau(x, .08) * gau(y - tipY, .07) + .12 * gau(x, .2) * gau(y - (chinY + .06), .12);
     return out;
@@ -373,12 +395,14 @@ function irisTexture(cols, pupil) {
 }
 
 // Pele: difusa com "wrap" colorido (luz vermelha atravessa o terminador) + rugosidade por vértice (brilho dos lábios)
-function skinMaterial() {
-  const m = new THREE.MeshPhysicalMaterial({ vertexColors: true, roughness: .58, metalness: 0, specularIntensity: .5, sheen: .32, sheenRoughness: .5, sheenColor: col('#ffcdb8'), clearcoat: .22, clearcoatRoughness: .38, name: 'Skin' });
+function skinMaterial(P = {}) {
+  const m = new THREE.MeshPhysicalMaterial({ vertexColors: true, roughness: P.rough ?? .58, metalness: 0, specularIntensity: .5, sheen: P.sheen ?? .32, sheenRoughness: .5, sheenColor: col(P.sheenColor || '#ffcdb8'), clearcoat: P.clearcoat ?? .22, clearcoatRoughness: P.clearcoatRough ?? .38, name: 'Skin' });
+  const sss = P.sss || [.5, .22, .14];
   m.onBeforeCompile = sh => {
+    sh.uniforms.uSSS = { value: new THREE.Vector3(...sss) };
     sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute float gloss;\nvarying float vGloss;\nvarying vec3 vObjPos;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvGloss = gloss; vObjPos = position;');
     sh.fragmentShader = sh.fragmentShader
-      .replace('#include <common>', '#include <common>\nvarying float vGloss;\nvarying vec3 vObjPos;\n' +
+      .replace('#include <common>', '#include <common>\nvarying float vGloss;\nvarying vec3 vObjPos;\nuniform vec3 uSSS;\n' +
         'float h31(vec3 p){ p = fract(p * .3183099 + .1); p *= 17.0; return fract(p.x * p.y * p.z * (p.x + p.y + p.z)); }\n' +
         'float vn3(vec3 x){ vec3 i = floor(x), f = fract(x); f = f * f * (3. - 2. * f);\n' +
         '  return mix(mix(mix(h31(i), h31(i + vec3(1,0,0)), f.x), mix(h31(i + vec3(0,1,0)), h31(i + vec3(1,1,0)), f.x), f.y),\n' +
@@ -398,11 +422,11 @@ function skinMaterial() {
         '  directLight.color *= mix( 1.0, shF, smoothstep( 0.0, 0.35, dot( geometryNormal, directLight.direction ) ) ); }'))
       .replace('#include <lights_physical_pars_fragment>', THREE.ShaderChunk.lights_physical_pars_fragment.replace(
         'reflectedLight.directDiffuse += irradiance * BRDF_Lambert( material.diffuseColor );',
-        'float nlW = dot( geometryNormal, directLight.direction ); vec3 wW = vec3( .5, .22, .14 );\n' +
+        'float nlW = dot( geometryNormal, directLight.direction ); vec3 wW = uSSS;\n' +
         'vec3 wrapD = pow( clamp( ( vec3( nlW ) + wW ) / ( 1.0 + wW ), 0.0, 1.0 ), vec3( 1.5 ) );\n' +
         'reflectedLight.directDiffuse += wrapD * directLight.color * BRDF_Lambert( material.diffuseColor );'));
   };
-  m.customProgramCacheKey = () => 'skin-wrap-v4';
+  m.customProgramCacheKey = () => 'skin-wrap-v5';
   return m;
 }
 
@@ -411,10 +435,11 @@ export function buildHead(presetId, adj, opts = {}) {
   const T0 = performance.now(), marks = {}, mark = l => { marks[l] = Math.round(performance.now() - T0) };
   const Q = opts.quality || 1;
   const P = resolve(presetId, adj);
+  if (P.kind === 'robot') return buildRobot(P, opts);
   const disposables = [], root = new THREE.Group();
   root.name = 'Head_V2_' + presetId;
   const track = o => (disposables.push(o), o);
-  { // raiz da orelha: um volume suave na cabeça onde a concha se apoia (orelha não fica "colada")
+  if (P.earType !== 'none') { // raiz da orelha: um volume suave na cabeça onde a concha se apoia (orelha não fica "colada")
     const s0 = makeSDF(P), eS = P.earS, Hh = (P.eyeY + .12 - P.noseTipY) / 2 * eS, yE = (P.eyeY + .12 + P.noseTipY) / 2 - .01, zE = -.19;
     let x = 1.4; for (let k = 0; k < 80; k++) { const d = s0(x, yE - .03, zE); if (d < 1e-4) break; x -= d * .9 }
     P._earRoot = [x - .02, yE - .03, zE + .01, .06, Hh * .55, Hh * .32];
@@ -429,7 +454,33 @@ export function buildHead(presetId, adj, opts = {}) {
   const blotchC = new THREE.Color().setHSL(hsl.h - .02, Math.min(1, hsl.s * 1.15), hsl.l * .92), foreC = new THREE.Color().setHSL(hsl.h + .018, hsl.s * .9, Math.min(.9, hsl.l * 1.06));
   const underC = new THREE.Color().setHSL(hsl.h - .05, hsl.s * .7, hsl.l * .82), beardC = new THREE.Color().setHSL(hsl.h + .03, hsl.s * .55, hsl.l * .74);
   const lipUC = lipC.clone().multiplyScalar(.86), lipHiC = lipC.clone().lerp(col('#ffd0c8'), .3), nostrilC = col('#3a1612'), deep = col('#8a5650');
-  const skinMat = track(skinMaterial());
+  const skinMat = track(skinMaterial(P));
+  const bagC = P.bag ? col(P.bag) : underC, mouthIn = col(P.mouthIn || '#4a1418');
+  // barba volumétrica (anão, orc): bochechas abaixo da linha da barba, queixo, mandíbula; boca livre; bigode opcional
+  const BV = P.beardVol, beardHair = BV ? col(BV.color) : null;
+  const MCv = mouthCurve(P);
+  function beardMask(x, y, z, f) {
+    const ax = Math.abs(x), tY = P.noseTipY, mY = P.mouthY, yB = mY + .02 + (P.eyeY - .24 - (mY + .02)) * sstep(.2, .62, ax);
+    let m = sstep(yB + .05, yB - .06, y) * sstep(-.5, -.25, z) * (1 - sstep(.66, .8, ax) * sstep(-.1, -.3, z));
+    if (BV.stache) m = Math.max(m, sstep(tY - .06, tY - .11, y) * sstep(mY + .1, mY + .05, y) * (1 - sstep(MCv.mw * 1.2, MCv.mw * 1.6, ax)));
+    const ym = MCv.ym(x), opn = MCv.open(x), lip = ((x / (MCv.mw * 1.15)) ** 2 + ((y - (ym - opn / 2)) / (P.lipU + P.lipL + opn / 2 + .012)) ** 2);
+    return m * sstep(.75, 1.25, lip);
+  }
+  // pintura facial (palhaço): base clara no rosto, marcas acima/abaixo dos olhos, boca pintada
+  const PA = P.paint;
+  const paintBase = PA && col(PA.base), paintMark = PA && col(PA.mark), paintMouth = PA && col(PA.mouth);
+  function paint(c, x, y, z, wf, f) {
+    const ax = Math.abs(x), area = sstep(1.05, .85, (x / .7) ** 2 + ((y + (y > 0 ? -.1 : .22)) / (y > 0 ? .85 : .8)) ** 2) * wf;
+    c.lerp(paintBase, .92 * area);
+    for (const e of eyes) {
+      const [U, V] = e.local(x, y), up = V > 0, top = e.hu + .035, bot = -(e.hl + .03), len = up ? .13 : .16;
+      const vv = up ? (V - top) / len : (bot - V) / len; if (vv < 0 || vv > 1) continue;
+      const half = .03 * Math.sin(Math.PI * Math.pow(vv, .8)), dd = Math.abs(U) - half;
+      c.lerp(paintMark, sstep(.004, -.004, dd) * .95);
+    }
+    const ym = MCv.ym(x), t = ax / MCv.mw, band = (P.lipU + P.lipL) * .8 * Math.max(0, 1 - Math.pow(t / 1.15, 2)) + .004;
+    c.lerp(paintMouth, sstep(.006, -.004, Math.abs(y - ym + band * .1) - band) * (t < 1.2 ? 1 : 0));
+  }
 
   function surfNoDome(x, y) { return frontZ(x, y) + field(x, y).dz }
   for (const e of eyes) e.zc = surfNoDome(e.ex, e.ey) - P.sink;
@@ -489,6 +540,15 @@ export function buildHead(presetId, adj, opts = {}) {
           break;
         }
         if (wf > 0 && !lifted) z = domeLift(x, y, z, lwF);
+        if (f && f.cav > 0) { z -= .1 * f.cav * wf; eyeState = eyeState || 3 } // boca aberta: interior afundado
+        let bm = 0;
+        if (BV && face) { // barba esculpida: volume que cresce para fora (e para baixo no queixo), com mechas
+          bm = beardMask(x, y, z, f);
+          if (bm > 0) {
+            const flow = vnoise(x * 34 + 2, y * 5.5, z * 34) - .5, grow = BV.thick * bm * (1 + BV.len * sstep(P.mouthY - .05, P.loft.y[0] - .1, y)) + .014 * bm * flow;
+            x += dx * grow; y += dy * grow; z += dz0 * grow;
+          }
+        }
         pos[i * 3] = x; pos[i * 3 + 1] = y; pos[i * 3 + 2] = z; state[i] = eyeState;
         // cor
         c.copy(skin);
@@ -498,12 +558,11 @@ export function buildHead(presetId, adj, opts = {}) {
           c.lerp(blush, clamp(f.blush * k * (P.blushK ?? .5), 0, .7));
           c.lerp(lidC, clamp(f.lid * k * P.lidShade * .55, 0, .5));
           c.lerp(shade, clamp(f.ao * k * .5, 0, .6));
-          c.lerp(lipUC, clamp(f.lipU * k, 0, 1));
-          c.lerp(lipC, clamp(f.lipL * k, 0, 1));
+          if (!P.noLips) { c.lerp(lipUC, clamp(f.lipU * k, 0, 1)); c.lerp(lipC, clamp(f.lipL * k, 0, 1)) }
           c.lerp(lipHiC, clamp(f.lipHi * f.lipL * k * .45, 0, 1));
           c.lerp(lineC, clamp(f.line * k * .9, 0, 1));
           c.lerp(nostrilC, clamp(f.nostril * k * .85, 0, .85));
-          c.lerp(underC, clamp(f.under * k * .32, 0, .35));
+          c.lerp(bagC, clamp(f.under * k * (P.bagK ?? .32), 0, .7));
           gloss[i] = clamp(f.gloss * k, 0, 1);
         }
         { // variação orgânica de tom: manchas suaves (ruído de baixa frequência), testa mais clara/amarelada, barba sombreada
@@ -518,6 +577,11 @@ export function buildHead(presetId, adj, opts = {}) {
             c.lerp(beardC, clamp(P.beard * b * (1 - lips), 0, .5));
           }
         }
+        if (PA && f) paint(c, x, y, z, wf, f);
+        if (f && f.cav > 0) { c.lerp(mouthIn, clamp(f.cav * 1.3, 0, 1)) }
+        if (bm > 0) { const n = vnoise(x * 34 + 2, y * 5.5, z * 34); c.lerp(beardHair.clone().multiplyScalar(.7 + .55 * n), clamp(bm * 1.6, 0, 1)) }
+        if (P.skinGloss) gloss[i] = Math.max(gloss[i], P.skinGloss * (1 - bm));
+        if (bm > 0) gloss[i] *= 1 - bm;
         if (eyeState === 2) c.lerp(blush, .22);
         if (eyeState === 1) c.copy(deep);
         colors[i * 3] = c.r; colors[i * 3 + 1] = c.g; colors[i * 3 + 2] = c.b;
@@ -548,7 +612,7 @@ export function buildHead(presetId, adj, opts = {}) {
       };
       const s1 = Math.max(1, Math.round(3 * Q)), s2 = Math.max(2, Math.round(9 * Q));
       for (let i = 1; i < LAT; i++) for (let j = 0; j < W; j++) {
-        const p = i * W + j; if (state[p] === 1) continue;
+        const p = i * W + j; if (state[p] === 1 || state[p] === 3) continue;
         const c1 = cav(i, j % LON, s1), c2 = cav(i, j % LON, s2);
         const dark = .3 * sstep(.0005, .005, c1) + .4 * sstep(.002, .016, c2), dn = sstep(-.3, -.85, nr.getY(p)) * .35;
         const lite = .1 * sstep(-.002, -.008, c1);
@@ -568,7 +632,7 @@ export function buildHead(presetId, adj, opts = {}) {
   };
 
   // ---- orelhas: peça única em "C" — hélice (borda), anti-hélice, concha, trago e lóbulo; tamanho anatômico ----
-  {
+  if (P.earType !== 'none') {
     const eS = P.earS, Hh = (P.eyeY + .12 - P.noseTipY) / 2 * eS, Wd = Hh * .6, T = Hh * .26;
     const yE = (P.eyeY + .12 + P.noseTipY) / 2 - .01, zE = -.19;
     const surfX = (y, z) => { let x = 1.4; for (let k = 0; k < 80; k++) { const d = sdf(x, y, z); if (d < 1e-4) break; x -= d * .9 } return x };
@@ -578,7 +642,8 @@ export function buildHead(presetId, adj, opts = {}) {
     for (let i = 0; i < rows; i++) for (let j = 0; j < W; j++) {
       const front = i <= NR, r = front ? i / NR : (2 * NR - i) / NR, th = -Math.PI + 2 * Math.PI * j / NT; // th = 0 em cima, >0 para trás
       const cy = Math.cos(th), sz = Math.sin(th);
-      const Yo = Hh * cy, Zo = -Wd * sz * (sz < 0 ? .72 : 1) * (1 - .35 * sstep(.2, 1, -cy)); // contorno: frente mais reta, lóbulo mais estreito
+      const tipK = 1 + (P.earPoint || 0) * Math.pow(Math.max(0, Math.cos(th - (P.earTipA ?? .7))), 7); // orelha pontuda
+      const Yo = Hh * cy * tipK, Zo = -Wd * sz * (sz < 0 ? .72 : 1) * (1 - .35 * sstep(.2, 1, -cy)) * tipK; // contorno: frente mais reta, lóbulo mais estreito
       const Y = r * Yo, Z = r * Zo, E = Math.sqrt(Math.max(0, 1 - Math.pow(r, 8)));
       const lobe = sstep(-.55, -.85, cy), helix = sstep(-.9, -.35, th) * (1 - sstep(2.55, 3.0, th)) * (1 - lobe);
       let h, depth = 0;
@@ -598,7 +663,7 @@ export function buildHead(presetId, adj, opts = {}) {
     for (const s of [-1, 1]) {
       const g = s > 0 ? g0 : mirrorX(g0);
       const m = new THREE.Mesh(track(g), skinMat); m.name = 'Ear_' + (s < 0 ? 'L' : 'R');
-      m.position.set(s * (xs - T * .2), yE, zE); m.rotation.set(-.14, s * -.5, s * .04); root.add(m);
+      m.position.set(s * (xs - T * .2), yE, zE); m.rotation.set(-.14 - (P.earLift || 0), s * -(.5 + (P.earFlare || 0)), s * .04); root.add(m);
     }
   }
 
@@ -715,15 +780,146 @@ export function buildHead(presetId, adj, opts = {}) {
   }
 
   // ---- linha da boca: traço fino no fundo do sulco ----
-  {
+  if (!P.open) {
     const N = 40, pts = [], rw = [], mw = P.mouthW;
     for (let i = 0; i < N; i++) {
-      const t = i / (N - 1), x = (t * 2 - 1) * mw * 1.02, ax = Math.abs(x), tt = Math.min(ax / mw, 1.25);
-      const y = P.mouthY + P.smile * .04 * tt * tt - .004 * gau(ax, .03);
+      const t = i / (N - 1), x = (t * 2 - 1) * mw * 1.02, y = mouthCurve(P).ym(x);
       pts.push(new THREE.Vector3(x, y, surfZ(x, y) + .0015)); rw.push(.0052 * Math.pow(Math.sin(Math.PI * t), .6));
     }
     const mat = track(new THREE.MeshStandardMaterial({ color: col(P.lipLine), roughness: .6, name: 'MouthLine' }));
     const m = new THREE.Mesh(track(ribbon(pts, rw, rw.map(r => r * .7), () => new THREE.Vector3(0, 0, 1), 8)), mat); m.name = 'Mouth_Line'; root.add(m);
+  }
+
+  // ================= peças de personagem (opcionais, por preset) =================
+  const sdfGrad = (x, y, z) => { const e = .003; return new THREE.Vector3(sdf(x + e, y, z) - sdf(x - e, y, z), sdf(x, y + e, z) - sdf(x, y - e, z), sdf(x, y, z + e) - sdf(x, y, z - e)).normalize() };
+  const cz0 = P.cran[1];
+  const mat = (color, o = {}) => track(new THREE.MeshPhysicalMaterial({ color: col(color), roughness: .55, ...o }));
+  const addMesh = (geo, material, name) => { if (geo.attributes.normal) fixNormals(geo); const m = new THREE.Mesh(track(geo), material); m.name = name; root.add(m); return m };
+
+  // ---- talo + cálice (pimentão, pimenta) ----
+  if (P.stem) {
+    const S = P.stem, top = traceOut(sdf, 0, P.cran[0], cz0 + (S.z || 0), 0, 1, 0), base = new THREE.Vector3(0, P.cran[0] + top - .03, cz0 + (S.z || 0));
+    const pts = [], rw = [];
+    for (let i = 0; i <= 30; i++) {
+      const t = i / 30, p = base.clone(); let px = 0, py = 0, step = S.len / 30;
+      for (let k = 0; k < i; k++) { const a2 = (S.bend || 0) * (k / 30) + (S.curl || 0) * (k / 30) ** 3; px += Math.sin(a2) * step; py += Math.cos(a2) * step }
+      p.x += px * (S.dirX ?? 1) * .3; p.z += px * (S.dirZ ?? -1); p.y += py;
+      pts.push(p); rw.push(S.r * (1 - .45 * t) * (i === 30 ? .6 : 1) + (i === 0 ? S.r * .4 : 0));
+    }
+    const g = ribbon(pts, rw, rw, () => new THREE.Vector3(0, 0, 1), 14);
+    setColors(g, (c, x, y) => c.set(S.color).multiplyScalar(.85 + .3 * sstep(base.y, base.y + S.len, y)));
+    addMesh(g, mat(S.color, { vertexColors: true, color: 0xffffff, roughness: .5, clearcoat: .3 }), 'Stem');
+    if (S.calyx) { // folhas do cálice deitadas sobre o topo
+      const geos = [];
+      for (let k = 0; k < S.calyx; k++) {
+        const a2 = k / S.calyx * Math.PI * 2 + .3, lp = [], lw = [];
+        for (let i = 0; i <= 12; i++) {
+          const t = i / 12, r = S.r * .8 + t * S.calyxLen, x = Math.sin(a2) * r, z = cz0 + (S.z || 0) + Math.cos(a2) * r;
+          let y = base.y + .02; for (let it = 0; it < 40; it++) { const d = sdf(x, y, z); if (Math.abs(d) < 1e-4) break; y -= d * .8 }
+          lp.push(new THREE.Vector3(x, y + .012, z)); lw.push(S.r * 1.1 * Math.sin(Math.PI * Math.min(1, t * 1.1 + .05)) + .002);
+        }
+        geos.push(ribbon(lp, lw, lw.map(v => v * .25), (i, p) => sdfGrad(p.x, p.y, p.z), 8));
+      }
+      const g2 = mergeGeos(geos.map(g3 => setColors(g3, c => c.set(S.color))));
+      addMesh(g2, mat(S.color, { vertexColors: true, color: 0xffffff, roughness: .55 }), 'Calyx');
+    }
+  }
+
+  // ---- espinhos (cacto): tufos nas cristas das nervuras, fora do centro do rosto ----
+  if (P.spines && P.pattern) {
+    const SP = P.spines, PTn = P.pattern.n, geos = [], cone = new THREE.ConeGeometry(1, 1, 6, 1); cone.translate(0, .5, 0);
+    const up = new THREE.Vector3(0, 1, 0), q = new THREE.Quaternion(), M = new THREE.Matrix4(), sc = new THREE.Vector3();
+    for (let k = 0; k < PTn; k++) {
+      const phi = (2 * Math.PI * k - (P.pattern.phase || 0)) / PTn, sx = Math.sin(phi), szz = Math.cos(phi);
+      for (let yy = SP.y0 + (k % 2) * SP.dy * .5; yy < SP.y1; yy += SP.dy) {
+        const face = szz > .45 && yy > P.mouthY - .15 && yy < P.eyeY + .35 && Math.abs(sx) < .55; if (face) continue;
+        const r = traceOut(sdf, 0, yy, cz0, sx, 0, szz), p = new THREE.Vector3(sx * r, yy, cz0 + szz * r), n = sdfGrad(p.x, p.y, p.z);
+        for (let j = 0; j < 3; j++) {
+          const tilt = new THREE.Vector3(Math.cos(j * 2.1 + k), Math.sin(j * 2.1 + k * 1.7), 0).multiplyScalar(j ? .55 : 0);
+          const dir = n.clone().add(tilt.applyQuaternion(q.setFromUnitVectors(new THREE.Vector3(0, 0, 1), n))).normalize();
+          q.setFromUnitVectors(up, dir); const L = SP.len * (j ? .65 : 1);
+          M.compose(p.clone().addScaledVector(n, -.004), q, sc.set(SP.r * (j ? .7 : 1), L, SP.r * (j ? .7 : 1)));
+          const g = cone.clone().applyMatrix4(M); g.deleteAttribute('uv'); geos.push(g);
+        }
+      }
+    }
+    if (geos.length) {
+      geos.forEach(g => { g.computeVertexNormals(); setColors(g, (c, x, y, z, i) => c.set(SP.color)) });
+      addMesh(mergeGeos(geos), mat(SP.color, { vertexColors: true, color: 0xffffff, roughness: .45 }), 'Spines');
+    }
+    cone.dispose();
+  }
+
+  // ---- nariz bola (palhaço) ----
+  if (P.noseType === 'ball') {
+    const r = P.ballR || .09, y = P.noseTipY + .02, g = new THREE.SphereGeometry(r, 48, 32);
+    const m = addMesh(g, mat(P.ballColor || '#c8141c', { roughness: .25, clearcoat: .8, clearcoatRoughness: .2 }), 'Nose_Ball');
+    m.position.set(0, y, surfZ(0, y) + r * .55);
+  }
+
+  const hairMat = c0 => mat(c0, { roughness: .85, sheen: .6, sheenColor: col(c0).lerp(col('#ffffff'), .3) });
+  // ---- bigode (guidão com pontas viradas ou caído) ----
+  if (P.stache) {
+    const S = P.stache, yC = MCv.ym(0) + P.lipU + .028 + (S.y || 0), m2 = hairMat(S.color);
+    for (const sd of [-1, 1]) {
+      const pts = [], rw = [], rh = [];
+      for (let i = 0; i <= 32; i++) {
+        const t = i / 32, xr = .006 + t * S.w; let x = sd * xr, y = yC - (S.droop || 0) * t * t - .02 * sstep(0, .3, t);
+        let z = surfZ(Math.min(Math.abs(x), MCv.mw * 1.5) * sd, y) + S.th * .55;
+        if (t > .62) { const u = (t - .62) / .38; y += (S.curl || 0) * u * u; z += .04 * u - (Math.abs(x) > .45 ? .05 * u : 0) }
+        pts.push(new THREE.Vector3(x, y, z)); const w = S.th * (1 - .85 * Math.pow(t, 1.3)) * (.75 + .25 * sstep(0, .1, t)) + .002; rw.push(w * 1.3); rh.push(w * .75);
+      }
+      addMesh(ribbon(pts, rw, rh, (i, p) => normalAt(clamp(p.x, -.5, .5), p.y), 12), m2, 'Mustache_' + (sd < 0 ? 'L' : 'R'));
+    }
+  }
+  // ---- cavanhaque pontudo ----
+  if (P.goatee) {
+    const G = P.goatee, y0 = MCv.ym(0) - MCv.open(0) - P.lipL - .03, chinBot = Math.max(P.loft.y[0], y0 - G.len), pts = [], rw = [], rh = [];
+    for (let i = 0; i <= 24; i++) {
+      const t = i / 24, y = y0 - t * (y0 - chinBot + G.len);
+      const z = y > chinBot + .06 ? surfZ(0, y) + .012 : surfZ(0, chinBot + .06) + .012 - (chinBot + .06 - y) * .3;
+      pts.push(new THREE.Vector3(0, y, z)); const w = G.w * Math.pow(1 - t, .8) * sstep(-.1, .2, t) + .002; rw.push(w); rh.push(w * .45 + .003);
+    }
+    addMesh(ribbon(pts, rw, rh, () => new THREE.Vector3(0, 0, 1), 12), hairMat(G.color), 'Goatee');
+  }
+  // ---- presas (orc) ----
+  if (P.tusks) {
+    const T = P.tusks, m2 = mat(T.color || '#efe2c4', { roughness: .4, clearcoat: .3 });
+    for (const sd of [-1, 1]) {
+      const bx = sd * T.x, by = MCv.ym(bx) - P.lipL * .4, bz = surfZ(bx, by) - .015, pts = [], rw = [];
+      for (let i = 0; i <= 16; i++) { const a = i / 16; pts.push(new THREE.Vector3(bx + sd * T.out * a * a, by + T.len * a, bz + .035 * a - .02 * a * a)); rw.push(T.r * Math.pow(1 - a, .7) + .002) }
+      addMesh(ribbon(pts, rw, rw.map(v => v * .9), () => new THREE.Vector3(0, 0, 1), 12), m2, 'Tusk_' + (sd < 0 ? 'L' : 'R'));
+    }
+  }
+  // ---- dentes e língua (boca aberta) ----
+  if (P.open) {
+    const TT = P.teeth || {}, toothMat = mat('#f4efe6', { vertexColors: true, color: 0xffffff, roughness: .3, clearcoat: .5, side: THREE.DoubleSide });
+    const row = (upper, h) => {
+      const NX = 72, NY = 6, pos = [], idx = [], span = MCv.mw * (TT.span ?? .86), tw = TT.w ?? .05;
+      for (let j = 0; j <= NY; j++) for (let i = 0; i <= NX; i++) {
+        const x = -span + 2 * span * i / NX, edge = upper ? MCv.ym(x) + .006 : MCv.ym(x) - MCv.open(x) - .006, v = j / NY;
+        const ph = Math.abs(Math.sin(Math.PI * (x + tw / 2) / tw)), tip = h * (.86 + .14 * Math.pow(ph, .4));
+        const y = upper ? edge - v * Math.min(tip, MCv.open(x) * .55) : edge + v * Math.min(tip, MCv.open(x) * .5);
+        pos.push(x, y, surfZ(x, edge) - .028 - .01 * (x / span) ** 2 - .01 * v);
+      }
+      for (let j = 0; j < NY; j++) for (let i = 0; i < NX; i++) { const a = j * (NX + 1) + i, b = a + 1, c2 = a + NX + 1, d = c2 + 1; idx.push(a, c2, b, b, c2, d) }
+      const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals(); fixNormals(g);
+      setColors(g, (c, x, y) => { const ph = Math.abs(Math.sin(Math.PI * (x + tw / 2) / tw)); c.set('#f6f1e8').multiplyScalar(.62 + .38 * sstep(.05, .35, ph)).lerp(col('#c9b8a6'), .5 * sstep(.6, 1, Math.abs(x) / span)) });
+      return g;
+    };
+    addMesh(row(true, TT.h ?? .05), toothMat, 'Teeth_Upper');
+    if (TT.lower !== false) addMesh(row(false, (TT.h ?? .05) * .8), toothMat, 'Teeth_Lower');
+    { // interior escuro atrás dos dentes (garganta)
+      const g = new THREE.PlaneGeometry(MCv.mw * 2.1, MCv.open(0) * 1.6); const m = addMesh(g, mat('#2a0a0c', { roughness: .9 }), 'Mouth_Back');
+      m.position.set(0, MCv.ym(0) - MCv.open(0) / 2, surfZ(0, MCv.ym(0)) - .09);
+    }
+    if (P.tongue) {
+      const TG = P.tongue, g = new THREE.SphereGeometry(1, 40, 28), yb = MCv.ym(0) - MCv.open(0);
+      setColors(g, (c, x, y, z) => c.set(TG.color || '#e2737e').multiplyScalar(1 - .3 * gau(x, .18) * sstep(-.2, .6, z)));
+      const m = addMesh(g, mat('#ffffff', { vertexColors: true, roughness: .35, clearcoat: .6, clearcoatRoughness: .3 }), 'Tongue');
+      if (TG.out) { m.scale.set(MCv.mw * .48, TG.out, .045); m.position.set(TG.x || 0, yb - TG.out * .55, surfZ(0, yb) + .015); m.rotation.set(-.55, 0, TG.tilt || 0) }
+      else { m.scale.set(MCv.mw * .6, MCv.open(0) * .35, .08); m.position.set(0, yb + MCv.open(0) * .2, surfZ(0, yb) - .07) }
+    }
   }
 
   root.traverse(o => { if (o.isMesh) { const transp = o.material.transparent; o.castShadow = !transp && o.name !== 'Catchlight'; o.receiveShadow = !transp } });
