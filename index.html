@@ -65,10 +65,10 @@ function aim(x,y,z){camera.position.set(x,y,z);orbit.target.copy(TARGET);orbit.u
 const VIEWS={front:[0,-.05,7.4],side:[7.4,-.05,.02],three:[3.4,.8,6.5]};
 aim(...VIEWS.three);
 
-renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFShadowMap;
 scene.add(new THREE.HemisphereLight(0xf2f5ff,0x9c8a84,.6));
 function light(c,i,x,y,z,shadow){const l=new THREE.DirectionalLight(c,i);l.position.set(x,y,z);
-  if(shadow){l.castShadow=true;l.shadow.mapSize.set(2048,2048);const sc=l.shadow.camera;sc.left=-1.5;sc.right=1.5;sc.top=1.5;sc.bottom=-1.9;sc.near=2;sc.far=16;l.shadow.bias=-.0004;l.shadow.normalBias=.03}
+  if(shadow){l.castShadow=true;l.shadow.mapSize.set(2048,2048);const sc=l.shadow.camera;sc.left=-1.5;sc.right=1.5;sc.top=1.5;sc.bottom=-1.9;sc.near=2;sc.far=16;l.shadow.bias=-.0004;l.shadow.normalBias=.03;l.shadow.radius=4}
   scene.add(l);return l}
 light(0xfff7f0,2.9,-2.6,3.6,6,true);   // key (sombra suave: nariz, pálpebra sobre o olho, queixo)
 light(0xf4ecea,.65,3.5,.6,5);            // fill quente

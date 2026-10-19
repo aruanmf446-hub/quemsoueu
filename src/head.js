@@ -180,8 +180,8 @@ function makeFaceField(P, eyes) {
     // órbitas
     const sock = gau(ax - eyeX, Re * 1.15) * gau(y - eyeY, Re * .95);
     dz -= P.socket * sock;
-    const inner = gau(ax - (eyeX - Re * .98), .07) * gau(y - (eyeY + .015), .075);
-    dz -= .016 * inner; ao += .2 * inner;
+    const inner = gau(ax - (eyeX - Re * .98), .06) * gau(y - (eyeY + .01), .07);
+    dz -= .024 * inner; ao += .35 * inner;
     // pálpebras: prega, pele da pálpebra, bolsinha inferior
     for (const e of eyes) {
       const [U, V] = e.local(x, y), uN = U / e.halfW;
@@ -193,11 +193,22 @@ function makeFaceField(P, eyes) {
       dz -= P.crease * cr; ao += .9 * cr * P.crease / .016;
       dz += P.crease * .5 * gau(V - (vc - .024), .017) * fade;
       if (V > 0) lid = Math.max(lid, fade * sstep(vc + .07, vc - .01, V));
+      // arcada sobre o olho: "prateleira" acima da dobra que sombreia a pálpebra e corre até a têmpora
+      const orb = P.orbit ?? .02, span = sstep(-1.15, -.4, uN) * (1 - sstep(1.2, 1.8, uN)), vr = vc + .075 + .03 * sstep(0, 1.2, uN);
+      dz += orb * gau(V - vr, .055) * span; hi += .5 * gau(V - vr - .01, .035) * span * orb / .02;
+      ao += .5 * gau(V - (vc + .02), .03) * span * (orb / .02) * sstep(-.5, .3, uN); // sombra sob a arcada (lado externo)
+      // pálpebra superior com espessura: borda arredondada logo acima da abertura
+      if (V > 0) dz += (P.lidFold ?? .008) * gau(V - (Hu + .014), .016) * fade;
+      // pálpebra inferior: rolinho visível que emenda na maçã
+      dz += (P.lowerRoll ?? .006) * gau(V + Hl + .022, .016) * fade;
+      hi += .6 * gau(V + Hl + .026, .012) * fade;
       dz += .003 * gau(V + Hl + .045, .03) * fade;
       if (V < 0) under = Math.max(under, fade * gau(V + Hl + .065, .05));
     }
     // maçãs do rosto
-    dz += P.cheekH * gau(ax - .41, .2) * gau(y - (ymC + .25), .16);
+    // maçãs: altas (logo abaixo do olho) e cheias, descendo até o canto da boca; o sorriso empurra para cima
+    const chY = P.cheekY ?? (eyeY - .27), chX = P.cheekX ?? .42;
+    dz += P.cheekH * gau(ax - chX, .19) * gau(y - (chY + .025 * P.smile), .15) + P.cheekH * .45 * gau(ax - (mw + .1), .13) * gau(y - (ymC + .08), .12);
     // planos de estrutura: zigomático (crista que sobe para a orelha), cavado abaixo dele, têmporas
     if (P.zyg) { const zy = gau(ax - .52, .15) * gau(y - (eyeY - .17) - .25 * (ax - .52), .065); dz += P.zyg * zy; hi += 1.2 * zy * P.zyg / .02 }
     if (P.hollow) { const ho = gau(ax - .5, .13) * gau(y - (mY + .1), .11); dz -= P.hollow * ho; ao += .45 * ho * P.hollow / .015 }
@@ -227,24 +238,27 @@ function makeFaceField(P, eyes) {
     dz += P.muzzle * gau(x, .34) * gau(y - (mY + .03), .2);
     if (t < 3 && y > mY - .4 && y < tipY + .1) {
       const ym = ymAt(ax), tc = Math.min(t, 1), xf = t < 1 ? 1 : exp(-(((t - 1) / .1) ** 2));
-      const thU = P.lipU * Math.pow(Math.max(0, 1 - Math.pow(tc, 2.4)), .7) * (1 + P.bow * (gau(tc - .3, .15) - .45 * gau(tc, .085)));
-      const thL = P.lipL * Math.pow(Math.max(0, 1 - Math.pow(tc, 2)), .6);
+      // espessuras ao longo da largura: lábio de cima fino com arco do cupido macio; de baixo cheio e arredondado, afinando nos cantos
+      const thU = P.lipU * Math.pow(Math.max(0, 1 - Math.pow(tc, 2.2)), .8) * (1 + P.bow * (.35 * gau(tc - .28, .14) - .28 * gau(tc, .07)));
+      const thL = P.lipL * Math.pow(Math.max(0, 1 - Math.pow(tc, 1.8)), .75) * (1 + .12 * gau(tc - .32, .22));
       if (y >= ym) {
-        const v = (y - ym) / Math.max(thU, .003);
-        dz += P.lipH * (thU / P.lipU) * (exp(-(((v - .4) / .72) ** 2)) + .12 * gau(v - 1.03, .13)) * xf;
-        lipU = (1 - sstep(.82, 1.12, v)) * sstep(.0015, .006, thU);
-        hi += .35 * gau(v - 1.08, .12) * xf * sstep(.002, .01, thU);
+        // lábio de cima: plano inclinado para a frente, mais saliente perto da borda; "rolinho" claro na borda (vermilion)
+        const v = (y - ym) / Math.max(thU, .003), sh = v < .6 ? .55 + .45 * Math.sin(Math.PI * .5 * v / .6) : exp(-(((v - .6) / .6) ** 2));
+        dz += P.lipH * .85 * (thU / P.lipU) * sh * sstep(-.05, .25, v) * xf + P.lipH * .06 * gau(v - 1.0, .12) * xf;
+        lipU = (1 - sstep(.88, 1.2, v)) * sstep(.0015, .006, thU);
+        hi += .18 * gau(v - 1.04, .1) * xf * sstep(.002, .01, thU);
       } else {
-        const w = (ym - y) / Math.max(thL, .003);
-        dz += P.lipH * 1.1 * (thL / P.lipL) * exp(-(((w - .45) / .62) ** 2)) * xf;
-        lipL = (1 - sstep(.82, 1.12, w)) * sstep(.0015, .006, thL);
-        lipHi = gau(w - .38, .22) * gau(x, mw * .45);
+        // lábio de baixo: volume redondo (seção quase circular), mais cheio no centro
+        const w = (ym - y) / Math.max(thL, .003), r = clamp(1 - ((w - .45) / .75) ** 2, 0, 1);
+        dz += P.lipH * 1.2 * (thL / P.lipL) * r * (2 - r) * sstep(-.05, .2, w) * xf;
+        lipL = (1 - sstep(.78, 1.22, w)) * sstep(.0015, .006, thL);
+        lipHi = gau(w - .4, .2) * gau(x, mw * .4);
       }
       const lf = t < 1 ? 1 : exp(-(((t - 1) / .06) ** 2));
       dz -= .02 * gau(y - ym, .008 + .004 * tc) * lf;
       line = gau(y - ym, .006 + .002 * tc) * lf;
-      const corner = gau(ax - mw * 1.02, .02) * gau(y - ymC, .022);
-      dz -= .012 * corner; ao += .5 * corner;
+      const corner = gau(ax - mw * 1.0, .018) * gau(y - ymC, .02);
+      dz -= .018 * corner; ao += .6 * corner; // canto encaixado na bochecha
       dz += P.smile * .016 * gau(ax - (mw + .07), .06) * gau(y - (ymC + .03), .07);
       if (P.smile > .45) { // covinha curta além do canto: sorriso mais natural
         const dm = gau(ax - (mw * 1.1 + .012), .013) * gau(y - (ymC + .012), .03) * (P.smile - .45);
@@ -254,7 +268,7 @@ function makeFaceField(P, eyes) {
       dz -= .016 * sul; ao += .4 * sul;
       ao += .35 * gau(y - (mY - P.lipL - .022), .02) * gau(x, mw * .7);
       const band = sstep(mY + P.lipU * .9, mY + P.lipU * 1.5, y) * sstep(tipY - .03, tipY - .09, y);
-      dz -= .005 * gau(x, .022) * band; dz += .0032 * gau(ax - .03, .015) * band;
+      dz -= .0035 * gau(x, .024) * band; dz += .0018 * gau(ax - .032, .02) * band;
       gloss += lipU * .55 + lipL * 1.0;
       const fold = (P.fold ?? .5) * (.4 + .6 * Math.min(P.smile, 1));
       if (fold > .05) { // dobra nasolabial (sorriso / maturidade)
@@ -271,7 +285,7 @@ function makeFaceField(P, eyes) {
     gloss += .3 * gau(x, .16) * gau(y - .42, .2) + .22 * gau(x, .06) * sstep(eyeY - .02, tipY + .02, y) * (y < rootY + .05 ? 1 : 0) + .18 * gau(x, .14) * gau(y - (chinY + .08), .08) + .15 * lid;
     out.under = under;
     out.dz = dz; out.ao = ao; out.hi = hi; out.lid = lid; out.lipU = lipU; out.lipL = lipL; out.lipHi = lipHi; out.line = line; out.nostril = nostril; out.gloss = gloss;
-    out.blush = .6 * gau(ax - .42, .19) * gau(y - (ymC + .25), .15) + .35 * gau(x, .07) * gau(y - tipY, .06) + .12 * gau(x, .2) * gau(y - (chinY + .06), .12);
+    out.blush = .75 * gau(ax - chX, .21) * gau(y - (chY + .02), .16) + .5 * gau(x, .08) * gau(y - tipY, .07) + .12 * gau(x, .2) * gau(y - (chinY + .06), .12);
     return out;
   };
 }
@@ -382,11 +396,11 @@ function skinMaterial() {
         '  directLight.color *= mix( 1.0, shF, smoothstep( 0.0, 0.35, dot( geometryNormal, directLight.direction ) ) ); }'))
       .replace('#include <lights_physical_pars_fragment>', THREE.ShaderChunk.lights_physical_pars_fragment.replace(
         'reflectedLight.directDiffuse += irradiance * BRDF_Lambert( material.diffuseColor );',
-        'float nlW = dot( geometryNormal, directLight.direction ); vec3 wW = vec3( .4, .2, .15 );\n' +
+        'float nlW = dot( geometryNormal, directLight.direction ); vec3 wW = vec3( .5, .22, .14 );\n' +
         'vec3 wrapD = pow( clamp( ( vec3( nlW ) + wW ) / ( 1.0 + wW ), 0.0, 1.0 ), vec3( 1.5 ) );\n' +
         'reflectedLight.directDiffuse += wrapD * directLight.color * BRDF_Lambert( material.diffuseColor );'));
   };
-  m.customProgramCacheKey = () => 'skin-wrap-v3';
+  m.customProgramCacheKey = () => 'skin-wrap-v4';
   return m;
 }
 
@@ -407,7 +421,7 @@ export function buildHead(presetId, adj, opts = {}) {
   const skinHi = new THREE.Color().setHSL(hsl.h + .006, hsl.s * .92, Math.min(.92, hsl.l * 1.13));
   const blotchC = new THREE.Color().setHSL(hsl.h - .02, Math.min(1, hsl.s * 1.15), hsl.l * .92), foreC = new THREE.Color().setHSL(hsl.h + .018, hsl.s * .9, Math.min(.9, hsl.l * 1.06));
   const underC = new THREE.Color().setHSL(hsl.h - .05, hsl.s * .7, hsl.l * .82), beardC = new THREE.Color().setHSL(hsl.h + .03, hsl.s * .55, hsl.l * .74);
-  const lipUC = lipC.clone().multiplyScalar(.8), lipHiC = lipC.clone().lerp(col('#ffd0c8'), .3), nostrilC = col('#3a1612'), deep = col('#8a5650');
+  const lipUC = lipC.clone().multiplyScalar(.86), lipHiC = lipC.clone().lerp(col('#ffd0c8'), .3), nostrilC = col('#3a1612'), deep = col('#8a5650');
   const skinMat = track(skinMaterial());
 
   function surfNoDome(x, y) { return frontZ(x, y) + field(x, y).dz }
@@ -427,11 +441,11 @@ export function buildHead(presetId, adj, opts = {}) {
 
   // ---- pele: cabeça + pescoço numa malha só ----
   {
-    const LON = Math.round(300 * Q), LAT = Math.round(320 * Q), WARP = .5, W = LON + 1;
+    const LON = Math.round(310 * Q), LAT = Math.round(340 * Q), WARP = .5, W = LON + 1;
     const [, nty, ntz, nby, nbz] = P.neck, Cy = -.02, Cz = -.1, yBot = nby + .12;
     const TA = .76, TB = .93, thA = 150 * Math.PI / 180, thH = Math.PI / 2 * 1.04;
     const NS = 600, cdf = new Float64Array(NS + 1);
-    for (let i = 1; i <= NS; i++) { const th = thA * (i - .5) / NS; cdf[i] = cdf[i - 1] + .45 + 1.0 * sstep(.75, 1.2, th) * (1 - sstep(2.35, 2.6, th)) }
+    for (let i = 1; i <= NS; i++) { const th = thA * (i - .5) / NS; cdf[i] = cdf[i - 1] + .32 + 1.4 * sstep(.8, 1.2, th) * (1 - sstep(2.4, 2.65, th)) }
     const invTh = s => { const tg = s * cdf[NS]; let lo = 0, hi = NS; while (hi - lo > 1) { const m = (lo + hi) >> 1; if (cdf[m] < tg) lo = m; else hi = m } return thA * (lo + (tg - cdf[lo]) / ((cdf[hi] - cdf[lo]) || 1)) / NS };
     const axisZ = y => y > nty ? Cz + (ntz - Cz) * clamp((Cy - y) / (Cy - nty), 0, 1) : ntz + (nbz - ntz) * clamp((nty - y) / (nty - nby), 0, 1);
     const sinP = new Float64Array(W), cosP = new Float64Array(W);
@@ -474,7 +488,7 @@ export function buildHead(presetId, adj, opts = {}) {
         if (f) {
           const k = wf;
           c.lerp(skinHi, clamp(f.hi * k * .4, 0, .5));
-          c.lerp(blush, clamp(f.blush * k * .5, 0, .55));
+          c.lerp(blush, clamp(f.blush * k * (P.blushK ?? .5), 0, .7));
           c.lerp(lidC, clamp(f.lid * k * P.lidShade * .55, 0, .5));
           c.lerp(shade, clamp(f.ao * k * .5, 0, .6));
           c.lerp(lipUC, clamp(f.lipU * k, 0, 1));
@@ -595,7 +609,7 @@ export function buildHead(presetId, adj, opts = {}) {
   // ---- olhos ----
   const scleraMat = track(new THREE.MeshPhysicalMaterial({ vertexColors: true, roughness: .35, clearcoat: .5, clearcoatRoughness: .25, name: 'Sclera' }));
   const irisTex = track(irisTexture(P.iris, .3));
-  const irisMat = track(new THREE.MeshPhysicalMaterial({ map: irisTex, roughness: .55, name: 'Iris' }));
+  const irisMat = track(new THREE.MeshPhysicalMaterial({ map: irisTex, vertexColors: true, roughness: .55, name: 'Iris' }));
   const corneaMat = track(new THREE.MeshPhysicalMaterial({ color: 0xffffff, transparent: true, opacity: .12, roughness: .03, clearcoat: 1, clearcoatRoughness: 0, specularIntensity: 1, depthWrite: false, name: 'Cornea' }));
   const catchMat = track(new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .95, name: 'Catchlight' }));
   const lashMat = track(new THREE.MeshStandardMaterial({ color: col(P.liner), roughness: .55, name: 'Lash' }));
@@ -608,10 +622,14 @@ export function buildHead(presetId, adj, opts = {}) {
     grp.position.set(e.ex, e.ey, e.zc);
     grp.lookAt(0, e.ey, e.zc + 4.5); // leve convergência: os dois olhos olham para o mesmo ponto
     const sg = new THREE.SphereGeometry(Re, 64, 44, 0, Math.PI * 2, ia * .985, Math.PI - ia * .985); sg.rotateX(Math.PI / 2);
+    // sombra da pálpebra superior sobre o globo (a pálpebra tem espessura e projeta sombra) — dá profundidade e "olhar"
+    const lidShadow = (x, y) => { const [U, V] = e.local(e.ex + x, e.ey + y), uN = clamp(U / e.halfW, -.999, .999), d = e.H(uN, true) - V;
+      return 1 - (P.eyeShadow ?? .5) * exp(-Math.max(d, 0) / (.09 * Re / .23)) * sstep(-.02, .01, d) - .18 * exp(-Math.max(e.H(uN, false) + V, 0) / .035) };
     setColors(sg, (c, x, y, z) => {
-      const dx = x / Re, dy = y / Re, dz = z / Re;
-      c.set('#efe5dc').multiplyScalar(1 - .42 * sstep(-.1, .7, dy) - .3 * Math.pow(1 - clamp(dz, 0, 1), 2));
+      const dx = x / Re, dz = z / Re;
+      c.set('#f2e8df').multiplyScalar(1 - .22 * Math.pow(1 - clamp(dz, 0, 1), 2));
       c.lerp(col('#d9a29a'), .5 * sstep(.55, .95, Math.abs(dx)));
+      c.multiplyScalar(lidShadow(x, y));
     });
     const sclera = new THREE.Mesh(track(sg), scleraMat); sclera.name = 'Sclera'; grp.add(sclera);
     // íris côncava (lente) sob a córnea
@@ -622,7 +640,8 @@ export function buildHead(presetId, adj, opts = {}) {
         p.setZ(i, zRim + .002 - .022 * Re * (1 - r * r));
         const a = Math.atan2(-y, -x); uv.setXY(i, ((a / (2 * Math.PI)) % 1 + 1) % 1, 1 - r); // u≈.25 em baixo, v=1 na pupila
       }
-      ig.computeVertexNormals(); fixNormals(ig); }
+      ig.computeVertexNormals(); fixNormals(ig);
+      setColors(ig, (c, x, y) => { c.setRGB(1, 1, 1).multiplyScalar(lidShadow(x, y)) }); }
     const iris = new THREE.Mesh(track(ig), irisMat); iris.name = 'Iris'; grp.add(iris);
     const cg = new THREE.SphereGeometry(Re * 1.004, 56, 18, 0, Math.PI * 2, 0, ia * 1.3); cg.rotateX(Math.PI / 2);
     { const p = cg.attributes.position, rc = Re * Math.sin(ia * 1.3); for (let i = 0; i < p.count; i++) { const r = Math.hypot(p.getX(i), p.getY(i)) / rc; p.setZ(i, p.getZ(i) + .016 * Re / .25 * Math.max(0, 1 - r * r)) } cg.computeVertexNormals(); fixNormals(cg) }
@@ -686,7 +705,7 @@ export function buildHead(presetId, adj, opts = {}) {
     for (let i = 0; i < N; i++) {
       const t = i / (N - 1), x = (t * 2 - 1) * mw * 1.02, ax = Math.abs(x), tt = Math.min(ax / mw, 1.25);
       const y = P.mouthY + P.smile * .04 * tt * tt - .004 * gau(ax, .03);
-      pts.push(new THREE.Vector3(x, y, surfZ(x, y) + .0015)); rw.push(.0038 * Math.pow(Math.sin(Math.PI * t), .5));
+      pts.push(new THREE.Vector3(x, y, surfZ(x, y) + .0015)); rw.push(.0052 * Math.pow(Math.sin(Math.PI * t), .6));
     }
     const mat = track(new THREE.MeshStandardMaterial({ color: col(P.lipLine), roughness: .6, name: 'MouthLine' }));
     const m = new THREE.Mesh(track(ribbon(pts, rw, rw.map(r => r * .7), () => new THREE.Vector3(0, 0, 1), 8)), mat); m.name = 'Mouth_Line'; root.add(m);
