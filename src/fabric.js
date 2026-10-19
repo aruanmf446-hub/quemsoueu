@@ -1,15 +1,13 @@
 // Malhas de tecido: seções de apoio, folga e queda própria. O corpo é somente uma referência de encaixe.
 import * as THREE from 'three';
 const V = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
-const { clamp, lerp, smoothstep } = THREE.MathUtils;
-const profiles = new WeakMap();
 
 // Superfície com avesso e bordas fechadas. Anéis periódicos compartilham vértices e normais na costura.
 export function clothSurface(nr, nc, point, { closed = false, thickness = .025 } = {}) {
   const cols = closed ? nc : nc + 1, pos = [], ids = [], shade = [];
   for (let i = 0; i <= nr; i++) for (let j = 0; j < cols; j++) {
     const p = point(i / nr, j / nc); pos.push(p.x, p.y, p.z);
-    shade.push(.96 + .04 * Math.cos(j / nc * Math.PI * 24));
+    shade.push(1);
   }
   const faces = [];
   for (let i = 0; i < nr; i++) for (let j = 0; j < nc; j++) {
@@ -26,7 +24,9 @@ export function clothSurface(nr, nc, point, { closed = false, thickness = .025 }
   if (!closed) for (let i = 0; i < nr; i++) { join((i + 1) * cols, i * cols); join(i * cols + nc, (i + 1) * cols + nc) }
   g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('shade', new THREE.Float32BufferAttribute([...shade, ...shade.map(x => x * .86)], 1));
   g.setAttribute('mixc', new THREE.Float32BufferAttribute(new Float32Array(count * 2), 1));
-  g.setIndex(ids); g.deleteAttribute('normal'); g.computeVertexNormals(); g.computeBoundingBox(); g.userData.surface = { nr, cols, closed, nc }; return g;
+  g.setIndex(ids); g.deleteAttribute('normal'); g.computeVertexNormals();
+  // As barras não participam da média de normais da superfície visível.
+  for(let i=0;i<count;i++){g.attributes.normal.setXYZ(i,normal.getX(i),normal.getY(i),normal.getZ(i));g.attributes.normal.setXYZ(i+count,-normal.getX(i),-normal.getY(i),-normal.getZ(i))} g.computeBoundingBox(); g.userData.surface = { nr, cols, closed, nc }; return g;
 }
 
 // Taubin somente nas peças residuais de SDF, com contorno preservado. Não atua na malha do corpo.
@@ -48,51 +48,6 @@ export function smoothCloth(g, passes = 5) {
     p.array.set(next);
   }
   p.needsUpdate = true; g.computeVertexNormals(); return g;
-}
-
-export function fabricFit(body) {
-  if (profiles.has(body.sdf)) return profiles.get(body.sdf);
-  const B = body.proportions, J = body.joints, W = B.W, L = J.Lb, z0 = J.zCenter, Y = J.Y;
-  const anchor = [0, .045, .09, .15, .24, .33, .42, .49], measurements = anchor.map(() => ({ w: .25 * W, front: .15 * W, back: .2 * W }));
-  const aDir = J.elbow.clone().sub(J.shoulder).normalize(), bis = V(aDir.x, aDir.y - 1, 0).normalize(), n = V(-bis.y, bis.x, 0);
-  const p = body.geo.attributes.position;
-  for (let i = 0; i < p.count; i++) {
-    const x = Math.abs(p.getX(i)), y = p.getY(i), z = p.getZ(i), f = (J.yNeck - y) / L;
-    if ((x - J.shoulder.x) * n.x + (y - J.shoulder.y) * n.y > .035 * W) continue;
-    for (let k = 0; k < anchor.length; k++) if (Math.abs(f - anchor[k]) < .023) {
-      const m = measurements[k]; m.w = Math.max(m.w, x); m.front = Math.max(m.front, z - z0); m.back = Math.max(m.back, z0 - z);
-    }
-  }
-  measurements[0] = { w: .34 * body.hs, front: .26 * body.hs, back: .29 * body.hs };
-  function section(f, ease = .12 * W, relaxed = true) {
-    f = clamp(f, 0, .49); let k = 0; while (k < anchor.length - 2 && f > anchor[k + 1]) k++;
-    const t = smoothstep(f, anchor[k], anchor[k + 1]), out = {};
-    for (const key of ['w', 'front', 'back']) out[key] = lerp(measurements[k][key], measurements[k + 1][key], t) + ease;
-    const bridge = (relaxed ? 1 : 0) * smoothstep(f, .065, .15) * (1 - smoothstep(f, .38, .49));
-    for (const [key, value] of Object.entries({ w: Math.max(measurements[3].w * .9, measurements[6].w * .88) + ease, front: Math.max(measurements[3].front, measurements[4].front, measurements[5].front) + ease, back: measurements[3].back * .95 + ease })) out[key] = Math.max(out[key], lerp(out[key], value, bridge));
-    return out;
-  }
-  function at(f, a, ease = .12 * W, relaxed = true) {
-    const m = section(f, ease, relaxed), s = Math.sin(a), c = Math.cos(a), power = .86;
-    return V(Math.sign(s) * Math.abs(s) ** power * m.w, Y(f), z0 + Math.sign(c) * Math.abs(c) ** power * (c >= 0 ? m.front : m.back));
-  }
-  function torso(f0, f1, { ease = .12 * W, open = 0, flare = 0, folds = .025 * W, count = 12, bottom = null, top = null, relaxed = true } = {}) {
-    return clothSurface(40, 80, (t, u) => {
-      const f = lerp(f0, f1, t), a = lerp(open, Math.PI * 2 - open, u), q = at(Math.min(f, f1 <= .5 ? .49 : .43), a, ease, relaxed);
-      q.y = Y(f) + (bottom ? bottom(a) * smoothstep(t, .85, 1) : 0) + (top ? top(a) * (1 - smoothstep(t, 0, .12)) : 0);
-      const drop = Math.max(0, f - .3) * L, fold = folds * Math.sin(a * count + .2 * Math.sin(t * 3)) * smoothstep(t, 0, .8);
-      q.x += Math.sin(a) * (drop * flare + fold); q.z += Math.cos(a) * (drop * flare + fold);
-      return q;
-    }, { closed: !open, thickness: .028 * W });
-  }
-  function limb(a, b, r0, r1, { puff = 0, folds = .012 * W } = {}) {
-    const dir = b.clone().sub(a).normalize(), side = V(0, 0, 1).cross(dir).normalize(), front = side.clone().cross(dir).normalize();
-    return clothSurface(26, 48, (t, u) => {
-      const ang = u * Math.PI * 2, r = lerp(r0, r1, smoothstep(t, 0, 1)) + puff * Math.sin(t * Math.PI) + folds * Math.sin(ang * 10 + t * 2) * Math.sin(t * Math.PI);
-      return a.clone().lerp(b, t).addScaledVector(side, Math.cos(ang) * r).addScaledVector(front, Math.sin(ang) * r);
-    }, { closed: true, thickness: .025 * W });
-  }
-  const result = { section, at, torso, limb, W, Y, z0 }; profiles.set(body.sdf, result); return result;
 }
 
 // Luvas: recorta apenas a região da mão, com folga nas normais. Evita remalhar o SDF a cada modelo.

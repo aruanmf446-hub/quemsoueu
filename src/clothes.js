@@ -1,6 +1,6 @@
 // Figurinos procedurais no espaço do corpo. Nenhuma alteração na pele ou no rig facial.
 import * as THREE from 'three';
-import { fabricFit } from './fabric.js';
+import { buildLegacyClothes } from './legacy-clothes.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { buildSdfOutfit, SDF_OUTFITS, SDF_DEFAULT_COLORS, SDF_DEFAULT_OUTFIT } from './outfits.js';
 
@@ -73,7 +73,12 @@ function template(body, style, slot) {
   if (templates.has(key)) { const item = templates.get(key); templates.delete(key); templates.set(key, item); return item }
   const descriptors = [], details = new Map();
   const add = (name, geo, channel) => descriptors.push({ name, geo, channel, slot: geo.userData.slot || 'extras' });
-  buildSdfOutfit(body, style, {}, {}, add, (ch, geo) => {
+  if(!SDF_OUTFITS[style]){
+    const legacy=buildLegacyClothes(body,{outfit:style},slot);legacy.group.updateMatrixWorld(true);
+    legacy.group.traverse(m=>{if(!m.isMesh)return;const name=m.name.slice(6),part=/Calca|Saiote|Saia/.test(name)||name==='Barra'&&['dress','royal'].includes(style)?'lower':/Bota/.test(name)?'feet':/Cinto|Fivela$/.test(name)?'belt':/Capa/.test(name)?'cape':/Bracadeira/.test(name)?'extras':'upper';
+      if(part!==slot)return;const geo=m.geometry.clone().applyMatrix4(m.matrixWorld);geo.clearGroups();geo.userData.slot=part;add(name,geo,Array.isArray(m.material)?'fabric':m.material.name.slice(6));});
+    legacy.dispose();
+  }else buildSdfOutfit(body, style, {}, {}, add, (ch, geo) => {
     const key = (geo.userData.slot || 'extras') + ':' + ch;
     if (!details.has(key)) details.set(key, []); details.get(key).push(geo);
   }, slot);
@@ -95,7 +100,7 @@ function template(body, style, slot) {
 function pieceMaterial(channel, colors) {
   const colorKey = ['gem', 'liquid'].includes(channel) ? 'accent' : ['tail', 'fin'].includes(channel) ? 'fabric' : channel === 'veil' ? 'secondary' : channel;
   const metal = channel === 'trim', leather = channel === 'leather', pearl = channel === 'pearl';
-  const m = new THREE.MeshPhysicalMaterial({ name: 'Roupa_' + channel, color: pearl ? '#f6eee5' : colors[colorKey] || '#ffffff', vertexColors: true, roughness: metal ? .36 : leather ? .55 : .72, metalness: metal ? .85 : 0, sheen: metal ? 0 : .3, sheenRoughness: .55, sheenColor: new THREE.Color('#eee7e2'), clearcoat: leather || pearl ? .2 : 0, side: THREE.FrontSide, shadowSide: THREE.FrontSide });
+  const m = new THREE.MeshPhysicalMaterial({ name: 'Roupa_' + channel, color: pearl ? '#f6eee5' : colors[colorKey] || '#ffffff', vertexColors: true, roughness: metal ? .36 : leather ? .62 : .72, metalness: metal ? .85 : 0, sheen: metal ? 0 : leather ? .1 : .3, sheenRoughness: .55, sheenColor: new THREE.Color('#eee7e2'), clearcoat: pearl ? .2 : 0, side: THREE.DoubleSide, shadowSide: THREE.FrontSide });
   if (['gem', 'pearl', 'tail', 'fin'].includes(channel)) { m.roughness = channel === 'gem' ? .13 : .32; m.clearcoat = .5 }
   if (['veil', 'glass', 'liquid'].includes(channel)) { m.side=THREE.DoubleSide; m.transparent = true; m.opacity = channel === 'glass' ? .3 : channel === 'liquid' ? .85 : .48; m.depthWrite = false }
   m.userData.colorKey = colorKey; return m;
@@ -114,7 +119,18 @@ function paint(mesh, channel, colors, W) {
     const data=mat.map.image.data,c=new THREE.Color();for(let i=0;i<width;i++){c.set(palette[Math.floor(i/128)]).convertLinearToSRGB();data[i*4]=Math.round(c.r*255);data[i*4+1]=Math.round(c.g*255);data[i*4+2]=Math.round(c.b*255);data[i*4+3]=255}mat.map.needsUpdate=true;
     for(let i=0;i<p.count;i++){const s=shade?shade.getX(i):1;col.setXYZ(i,s,s,s)}col.needsUpdate=true;return;
   }
-  const a = new THREE.Color(colors[channel === 'veil' ? 'secondary' : 'fabric']), b = new THREE.Color(colors.accent), c = new THREE.Color();
+  if(channel==='tail'&&!mat.map){
+    // Escamas procedurais incorporadas no GLB; as cores continuam nos vértices.
+    const size=256,data=new Uint8Array(size*size*4);
+    for(let y=0;y<size;y++)for(let x=0;x<size;x++){
+      const row=Math.floor(y/128),u=((x/size+row*.5)%1)-.5,v=(y%128)/128-.15,d=Math.hypot(u,v*.9);
+      const edge=THREE.MathUtils.smoothstep(d,.42,.52),hi=1-THREE.MathUtils.smoothstep(d,0,.38),tone=THREE.MathUtils.lerp(1+.18*hi,.55,edge),k=(y*size+x)*4;
+      const value=Math.round(THREE.MathUtils.clamp(tone/1.18,0,1)*255);data.set([value,value,value,255],k);
+    }
+    const tex=new THREE.DataTexture(data,size,size);tex.wrapS=tex.wrapT=THREE.RepeatWrapping;tex.magFilter=tex.minFilter=THREE.LinearFilter;tex.needsUpdate=true;mat.map=tex;mat.needsUpdate=true;
+    const uv=new Float32Array(p.count*2);for(let i=0;i<p.count;i++){uv[i*2]=Math.atan2(p.getX(i),p.getZ(i)+.15)*.62/.085;uv[i*2+1]=p.getY(i)/(.068*2)}g.setAttribute('uv',new THREE.BufferAttribute(uv,2));
+  }
+  const a = new THREE.Color(colors[channel === 'veil' ? (mesh.userData.style==='mermaid_ruby'?'accent':'secondary') : 'fabric']), b = new THREE.Color(colors.accent), c = new THREE.Color();
   const stripes = [new THREE.Color(colors.secondary), a, b];
   for (let i = 0; i < p.count; i++) {
     if (channel.startsWith('stripes')) { const h = channel === 'stripesV', k = Math.floor((h ? p.getX(i) / (.3 * W) : p.getY(i) / .07) + 30.5); c.copy(stripes[((k % (h ? 3 : 2)) + (h ? 3 : 2)) % (h ? 3 : 2)]) }
@@ -132,26 +148,18 @@ export function buildClothes(body, look) {
     item.group.removeFromParent(); item.group.traverse(m => { if (m.isMesh) { m.material.map?.dispose(); m.material.dispose(); if (m.userData.ownGeometry) m.geometry.dispose() } });
     item.template.refs--; instances.delete(slot);
   }
-  function fitBelt() {
-    const item=instances.get('belt');if(!item||!body)return;
-    const style=selection.belt.split(':')[0];if(style.startsWith('mermaid'))return;
-    const upper=selection.upper||'none',lower=selection.lower||'none';
-    const loose=!['none','orc:upper','warrior:upper','mermaid_pearl:upper','mermaid_ruby:upper'].includes(upper)||/^(dress|royal):/.test(lower);
-    const f=style==='orc'?.4:style==='adventurer'?.36:.34,fit=fabricFit(body),W=body.proportions.W;
-    const from=fit.section(f,(style==='orc'?.12:.38)*W,style!=='orc'),to=fit.section(f,(loose?.38:.12)*W,loose);
-    const x=to.w/from.w,z=(to.front+to.back)/(from.front+from.back);
-    item.group.scale.set(x,1,z);item.group.position.z=body.joints.zCenter*(1-z);
-  }
+  // O cinto usa o mesmo contorno medido da roupa; não é esticado como um aro.
   function setPiece(slot, id, colors = null) {
     if (!body || !pieceOptions(body, slot).some(p => p.id === id)) return false;
-    remove(slot); selection[slot] = id; if (id === 'none') {fitBelt();return true;}
+    remove(slot); selection[slot] = id; if (id === 'none') {return true;}
     const style = id.split(':')[0], source = template(body, style, slot), part = new THREE.Group(); part.name = 'RoupaSlot_' + slot; source.refs++;
     const cc = { ...outfitColors(style), ...(style === styleOf(look.outfit) ? look.clothColors || {} : {}), ...(colors || look.pieceColors?.[slot] || {}) };
     for (const d of source.descriptors.filter(d => d.slot === slot)) {
       const own = patterned.has(d.channel), geo = own ? d.geo.clone() : d.geo, mat = pieceMaterial(d.channel, cc), mesh = new THREE.Mesh(geo, mat);
-      mesh.name = 'Roupa_' + d.name; mesh.castShadow = !mat.transparent; mesh.receiveShadow = true; mesh.userData = { ownGeometry: own, channel: d.channel, slot }; paint(mesh, d.channel, cc, body.proportions.W); part.add(mesh);
+      if(!SDF_OUTFITS[style]){mat.roughness=d.channel==='trim'?.38:d.channel==='leather'?.78:.88;mat.sheen=.15;mat.clearcoat=0}
+      mesh.name = 'Roupa_' + d.name; mesh.castShadow = !mat.transparent; mesh.receiveShadow = true; mesh.userData = { ownGeometry: own, channel: d.channel, slot, style }; paint(mesh, d.channel, cc, body.proportions.W); part.add(mesh);
     }
-    group.add(part); instances.set(slot, { group: part, template: source, colors: cc }); fitBelt(); return true;
+    group.add(part); instances.set(slot, { group: part, template: source, colors: cc }); return true;
   }
   for (const [slot, id] of Object.entries(selection)) setPiece(slot, id);
   return {

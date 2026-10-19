@@ -1,11 +1,14 @@
 // Figurinos esculpidos (referências): palhaço de circo, orc guerreiro, anão aventureiro, falcoeiro do deserto,
 // sereia pérola e sereia rubi.
 //
-// Tecido por seções de apoio e malhas paramétricas com avesso, pregas e barras enroladas.
+// Volumes contínuos recuperados do caa45f5; saias e abas por contornos cúbicos medidos.
+// Suavização só no tecido, com pregas, avesso e barras próprias.
 // Luvas usam recortes com folga nas normais; o corpo é somente consultado, nunca alterado.
 import * as THREE from 'three';
+import { sdfMesh } from './body.js';
+import { smoothCloth } from './fabric.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { clothSurface, fabricFit, handPatch } from './fabric.js';
+import { clothSurface, handPatch } from './fabric.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 const { clamp, lerp } = THREE.MathUtils;
@@ -13,6 +16,7 @@ const sqrt = Math.sqrt, PI = Math.PI;
 const sstep = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t) };
 const smin = (a, b, k) => { const h = Math.max(k - Math.abs(a - b), 0) / k; return Math.min(a, b) - h * h * k * .25 };
 const smax = (a, b, k) => -smin(-a, -b, k);
+const contourCache = new WeakMap();
 const V = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
 
 // ---------- catálogo ----------
@@ -50,16 +54,22 @@ export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot 
   const bT = (x, y, z) => armSide(Math.abs(x), y) > .02 ? Math.max(bf(x, y, z), .05) : bf(x, y, z); // só tronco/pernas (ignora braços e mãos)
   const frontZ = (x, y) => { let z = zB + .5; for (let k = 0; k < 120; k++) { const d = bT(x, y, z); if (d < 1e-3) break; z -= Math.max(d * .9, .004); if (z < zA - .5) return z0 } return z };
   const backZ = (x, y) => { let z = zA - .5; for (let k = 0; k < 120; k++) { const d = bT(x, y, z); if (d < 1e-3) break; z += Math.max(d * .9, .004); if (z > zB + .5) return z0 } return z };
-  const radAt = (y, ph, cz = z0, cx = 0) => { const dx = Math.sin(ph), dz = Math.cos(ph); let r = 2.5 * W + 1; for (let k = 0; k < 120; k++) { const d = bT(cx + dx * r, y, cz + dz * r); if (d < 1e-3) break; r -= Math.max(d * .9, .004); if (r < .01) return .01 } return r };
-  const onFront = (x, y, off = 0) => {
-    const f = (yN - y) / Lb, sec = fabricFit(body).section(Math.min(f, .43), .1 * W, style!=='orc'), u = clamp(Math.abs(x) / sec.w, 0, .99);
-    const lift=detailSlot==='belt'&&style!=='orc'&&!style.startsWith('mermaid')?Math.max(off,.33*W):off;
-    return V(x, y, Math.max(frontZ(x, y), z0 + sec.front * Math.sqrt(1 - u * u)) + lift);
+  // Medições compartilhadas pelos slots; as roupas consultam sempre o mesmo corpo imutável.
+  if(!contourCache.has(bf))contourCache.set(bf,new Map());
+  const measured=contourCache.get(bf);
+  const radAt=(y,ph,cz=z0,cx=0)=>{
+    const key=[y,Math.atan2(Math.sin(ph),Math.cos(ph)),cz,cx].map(v=>v.toFixed(6)).join(':');
+    if(measured.has(key))return measured.get(key);
+    const dx=Math.sin(ph),dz=Math.cos(ph);let r=2.5*W+1;
+    for(let k=0;k<120;k++){const d=bT(cx+dx*r,y,cz+dz*r);if(d<1e-3)break;r-=Math.max(d*.9,.004);if(r<.01){r=.01;break}}
+    if(measured.size>16000)measured.delete(measured.keys().next().value);measured.set(key,r);return r;
   };
+
+  const onFront = (x,y,off=0) => V(x,y,frontZ(x,y)+off);
   const limbR = (P0, dir, side = 1) => { const up = Math.abs(dir.y) > .9 ? V(1, 0, 0) : V(0, 1, 0), n = up.clone().cross(dir).normalize(); let r = .02; while (r < 1.5 && bf(P0.x * side + n.x * r, P0.y + n.y * r, P0.z + n.z * r) < 0) r += .01; return r };
   const bodyBounds = (y0, y1, extra = .3) => ({ x: bx + extra, y0, y1, z0: zA - extra, z1: zB + extra });
 
-  const tubeG = (pts, r, seg = 8) => new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), Math.max(12, pts.length), r, seg, false);
+  const tubeG = (pts, r, seg = 8) => new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), Math.max(12, pts.length * 4), r, seg, false);
   const sph = (p, r, sx = 1, sy = 1, sz = 1, w = 14, h = 10) => { const g = new THREE.SphereGeometry(r, w, h); g.scale(sx, sy, sz); g.translate(p.x, p.y, p.z); return g };
   const orient = (g, p, dir, up = V(0, 1, 0)) => { const zz = dir.clone().normalize(), xx = up.clone().cross(zz); if (xx.lengthSq() < 1e-6) xx.set(1, 0, 0); xx.normalize(); const yy = zz.clone().cross(xx); g.applyMatrix4(new THREE.Matrix4().makeBasis(xx, yy, zz).setPosition(p)); return g };
   const chainG = (points, r = .022 * W) => {
@@ -72,12 +82,17 @@ export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot 
   const mirror = (fn) => { fn(1); fn(-1) };
   const starShape = (r0, r1, n = 5) => { const s = new THREE.Shape(); for (let k = 0; k <= n * 2; k++) { const a = k / (n * 2) * PI * 2, r = k % 2 ? r1 : r0; k ? s.lineTo(Math.sin(a) * r, Math.cos(a) * r) : s.moveTo(Math.sin(a) * r, Math.cos(a) * r) } return s };
   const flatOnBody = (shape, x, y, depth, rot = 0, lift = .012) => { const g = new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: true, bevelThickness: depth * .4, bevelSize: depth * .4, bevelSegments: 1, curveSegments: 8 }); g.rotateZ(rot); const p = onFront(x, y, lift); const e = .03, n = V(bf(x + e, y, p.z) - bf(x - e, y, p.z), bf(x, y + e, p.z) - bf(x, y - e, p.z), bf(x, y, p.z + e) - bf(x, y, p.z - e)).normalize(); return orient(g, p, n) };
-  // ---- peças base: caimento independente da anatomia ----
-  const fit = fabricFit(body);
+  // ---- volumes da referência e contornos de tecido medidos ----
   const emit = add, detail = addGeo;
   let detailSlot = 'extras';
   add = (name, g, ch, slot = 'extras') => { if(onlySlot&&onlySlot!==slot){g.dispose();return} g.userData.slot = slot; return emit(name, g, ch) };
   addGeo = (ch, g) => { if(onlySlot&&onlySlot!==detailSlot){g.dispose();return} g.userData.slot = detailSlot; detail(ch, g) };
+  let activeSlot='extras';
+  const piece=(name,ch,field,bounds,cell=cellBase)=>{
+    const slot=activeSlot;if(onlySlot&&onlySlot!==slot)return;
+    const g=smoothCloth(sdfMesh(field,bounds,cell),3);
+    if(g.attributes.position.count)add(name,g,ch,slot);else g.dispose();
+  };
   function fabric(name, ch, g, slot) {
     add(name, g, ch, slot);
     const grid = g.userData.surface;
@@ -91,72 +106,81 @@ export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot 
   }
   function top(name, ch, o) {
     if(onlySlot&&onlySlot!=='upper')return;
-    const yTop = yN + (o.collar ?? .02), f0 = (yN - yTop) / Lb;
-    fabric(name, ch, fit.torso(f0, o.bottom, { ease: Math.max(.14 * W, (o.t || 0) + .09 * W), open: o.open || 0, folds: .025 * W, flare: o.loose ? .05 : 0 }), 'upper');
-    if (!o.sleeve) return;
-    const end = o.sleeve === 'wrist' ? Wr.clone().addScaledVector(dF, -.035) : o.sleeve === 'elbow' ? E.clone().lerp(Wr, .08) : S.clone().lerp(E, o.short ?? .55);
-    const r = .23 * W * (1 + .35 * B.muscle), start = S.clone().addScaledVector(dU, -.25 * W), long = o.sleeve === 'wrist' || o.sleeve === 'elbow';
-    mirror(side => {
-      add(name+'_Ombro',sph(V(side*S.x,S.y+.07*W,S.z),r*1.28+.105*W,1.05,1.06,1,28,18),ch,'upper');
-      const a = start.clone(); a.x *= side; const mid = E.clone(); mid.x *= side; const b = end.clone(); b.x *= side;
-      if (long) {
-        fabric(name + '_MangaSuperior', ch, fit.limb(a, mid, r * 1.2 + .1 * W, r * .85 + .09 * W, { puff: Math.max(o.puff || 0, .06 * W) }), 'upper');
-        fabric(name + '_MangaInferior', ch, fit.limb(mid, b, r * .85 + .09 * W, r * .57 + .07 * W, { puff: (o.puff || 0) * .5 }), 'upper');
-      } else fabric(name + '_Manga', ch, fit.limb(a, b, r * 1.2 + .1 * W, r + .08 * W, { puff: o.puff || .03 * W }), 'upper');
-    });
+    activeSlot='upper';
+    const sleeveEnd = o.sleeve === 'wrist' ? Wr.clone().addScaledVector(dF, -.02) : o.sleeve === 'elbow' ? E.clone().addScaledVector(dF, .15 * Lb * .1) : o.sleeve === 'short' ? S.clone().addScaledVector(dU, S.distanceTo(E) * (o.short ?? .55)) : null;
+    const sDir = o.sleeve === 'wrist' || o.sleeve === 'elbow' ? dF : dU;
+    const yTop = yN + (o.collar ?? .02), yBot = Y(o.bottom);
+    const f = (x, y, z) => {
+      const ax = Math.abs(x), as = armSide(ax, y);
+      let t = o.t + (o.loose || 0) * sstep(Y(.2), Y(.38), y) + (o.puff || 0) * sstep(-.1, .4, as) * (sleeveEnd ? Math.sin(PI * clamp(along(ax, y, z, S, sDir) / Math.max(.01, along(sleeveEnd.x, sleeveEnd.y, sleeveEnd.z, S, sDir)), 0, 1)) : 1);
+      if (o.folds) t += o.folds * (.5 + .5 * Math.sin(phiOf(x, z) * 14 + y * 3)) * sstep(Y(.3), Y(.5), y);
+      let d = bf(x, y, z) - t;
+      const neck = y - yTop + (o.vneck ? o.vneck * Math.max(0, 1 - ax / .25) * sstep(z0, z0 + .3, z) : 0) * 1;
+      d = smax(d, neck, .02); d = Math.max(d, yBot - y);
+      if (sleeveEnd) d = Math.max(d, Math.min(along(ax, y, z, sleeveEnd, sDir), as + .1 * W)); else d = Math.max(d, as - (o.shoulderPad ?? .08) * W);
+      if (o.open) { const ph = Math.abs(phiOf(x, z)); d = Math.max(d, (o.open - ph) * .4) }
+      return d;
+    };
+    piece(name, ch, f, { x: bx + .3, y0: yBot - .3, y1: yTop + .3, z0: zA - .3, z1: zB + .4 }, o.cell);
   }
+  // calça: pernas + espessura; bombacha (volume no meio, franzida no tornozelo); termina acima do tornozelo
   function pants(name, ch, o) {
     if(onlySlot&&onlySlot!=='lower')return;
-    fabric(name + '_Quadril', ch, fit.torso(o.top, .49, { ease: .13 * W + (o.t || 0), folds: .015 * W }), 'lower');
-    const endY = A.y + (o.cuff ?? .05) * Lb, end = K.clone().lerp(A, clamp((K.y - endY) / (K.y - A.y), .02, 1));
-    mirror(side => {
-      const hip = H.clone().add(V(0, .08 * Lb, 0)), knee = K.clone(), ankle = end.clone(); hip.x *= side; knee.x *= side; ankle.x *= side;
-      const thigh = .38 * W * (1 + .15 * B.muscle) * (.92 + .12 * B.hip) + .1 * W, kr = .25 * W * (1 + .15 * B.muscle) + .09 * W;
-      fabric(name + '_Coxa', ch, fit.limb(hip, knee, thigh, kr, { puff: o.puff || .05 * W, folds: .026 * W }), 'lower');
-      fabric(name + '_Perna', ch, fit.limb(knee, ankle, kr, Math.max(.15 * W, kr * .72), { puff: (o.puff || .03 * W) * .7, folds: .02 * W }), 'lower');
-    });
+    activeSlot='lower';
+    const yTop = Y(o.top), yBot = A.y + (o.cuff ?? .05) * Lb;
+    const f = (x, y, z) => {
+      const ax = Math.abs(x); if (armSide(ax, y) > 0) return 1;
+      const u = clamp((yTop - y) / (yTop - yBot), 0, 1);
+      let t = o.t + (o.puff || 0) * Math.pow(Math.sin(PI * clamp((u - .05) / .95, 0, 1)), .8) * (1 - .6 * sstep(.85, 1, u));
+      if (o.folds) t += o.folds * (.5 + .5 * Math.sin(Math.atan2(ax - K.x, z - z0) * 9 + y * 4));
+      let d = bf(x, y, z) - t; d = Math.max(d, y - yTop, yBot - y);
+      if (o.stripes) d = Math.max(d, o.stripes(x, y, z));
+      return d;
+    };
+    piece(name, ch, f, { x: Math.max(bx + .3 * W, Math.max(H.x, K.x) + .6 * W + (o.puff || 0) * 1.5), y0: yBot - .2, y1: yTop + .2, z0: zA - .3, z1: zB + .3 + (o.puff || 0) }, o.cell);
   }
+  // bota/meia: pé + perna até a altura h (acima do tornozelo), cano largo no topo, sola
   function boots(name, ch, o) {
     if(onlySlot&&onlySlot!=='feet')return;
-    const yTop = A.y + o.h * Lb, start = K.clone().lerp(A, clamp((K.y - yTop) / (K.y - A.y), 0, .95));
-    mirror(side => {
-      const a = start.clone(), b = A.clone(); a.x *= side; b.x *= side;
-      fabric(name + '_Cano', ch, fit.limb(a, b, .3 * W + (o.cuffT || 0), .19 * W, { folds: .006 * W }), 'feet');
-      const pa = body.geo.attributes.position, bounds = new THREE.Box3();
-      for (let i = 0; i < pa.count; i++) if (pa.getX(i) * side > .03 && pa.getY(i) < A.y + .04) bounds.expandByPoint(V(pa.getX(i), pa.getY(i), pa.getZ(i)));
-      const center = bounds.getCenter(V()), size = bounds.getSize(V());
-      if (bounds.isEmpty()) { center.copy(b); center.y = ySole + .16 * W; center.z += .25 * W; size.set(.38 * W, .26 * W, .7 * W) }
-      const toe = (o.toe || 0) + .04 * W;
-      const shoe = sph(center.clone().add(V(0, .04 * W, toe)), 1, size.x * .57 + .04 * W, size.y * .65 + .05 * W, size.z * .57 + toe, 32, 20);
-      add(name + '_Pe', shoe, ch, 'feet');
-      const sole = sph(V(center.x, ySole + .025 * W, center.z + toe), 1, size.x * .59 + .04 * W, .065 * W, size.z * .59 + toe, 32, 12);
-      add(name + '_Sola', sole, 'leather', 'feet');
-    });
+    activeSlot='feet';
+    const yTop = A.y + o.h * Lb;
+    const f = (x, y, z) => {
+      let t = o.t + (o.cuffT || 0) * sstep(yTop - .25 * Lb * .1 - .08, yTop, y) + (o.toe || 0) * sstep(A.z + .1, A.z + .5, z) * sstep(A.y, ySole, y);
+      let d = bf(x, y, z) - t; d = Math.max(d, y - yTop);
+      if (o.stripes) d = Math.max(d, o.stripes(x, y, z));
+      return d;
+    };
+    piece(name, ch, f, { x: A.x + .9 * W, y0: ySole - .15, y1: yTop + .1, z0: A.z - .7 * W, z1: A.z + 1.3 * W + (o.toe || 0) }, o.cell);
   }
+  // faixa em volta do corpo (cinto, faixa, gola baixa)
   function band(name, ch, yc, h, t, o = {}) {
     if(onlySlot&&onlySlot!=='belt')return;
-    const f = (yN - yc) / Lb;
-    fabric(name, ch, fit.torso(f - h / Lb / 2, f + h / Lb / 2, { ease: style==='orc' ? .12*W : Math.max(.38*W,t+.12*W), folds: .005 * W, relaxed: style!=='orc' }), 'belt');
+    activeSlot='belt';
+    const f = (x, y, z) => { let d = Math.max(bf(x, y, z) - t, Math.abs(y - yc - (o.tilt || 0) * x) - h / 2); if (armSide(Math.abs(x), y) > -.05) d = Math.max(d, .05); return d };
+    piece(name, ch, f, bodyBounds(yc - h - .3, yc + h + .3), o.cell ?? cellBase * .8);
   }
+  // trecho de membro (braçadeira, polaina): segmento a→b do braço/perna, entre t0 e t1
   function limbWrap(name, ch, a, b, t0, t1, t, o = {}) {
-    const slot=/Bota|Polaina/.test(name)?'feet':'extras';if(onlySlot&&onlySlot!==slot)return;
-    const start = a.clone().lerp(b, t0), end = a.clone().lerp(b, t1), r = /Bota/.test(name) ? lerp(.33 * W, .19 * W, (t0 + t1) / 2) + .022 * W : limbR(a.clone().lerp(b, (t0 + t1) / 2), b.clone().sub(a).normalize()) + t + .08 * W;
-    mirror(side => { const p = start.clone(), q = end.clone(); p.x *= side; q.x *= side; fabric(name, ch, fit.limb(p, q, r, r + (o.flare || 0), { folds: .003 * W }), /Bota|Polaina/.test(name) ? 'feet' : 'extras') });
+    activeSlot=/Bota|Polaina/.test(name)?'feet':'extras';if(onlySlot&&onlySlot!==activeSlot)return;
+    const d0 = b.clone().sub(a), Lseg = d0.length(), dir = d0.clone().normalize(), p0 = a.clone().addScaledVector(dir, Lseg * t0), p1 = a.clone().addScaledVector(dir, Lseg * t1);
+    const R = limbR(a.clone().lerp(b, (t0 + t1) / 2), dir) + t + .35;
+    const f = (x, y, z) => { const ax = Math.abs(x); let tt = t + (o.flare || 0) * sstep(.6, 1, along(ax, y, z, p0, dir) / (Lseg * (t1 - t0))); if (o.rings) tt += o.rings * (Math.cos(along(ax, y, z, p0, dir) / (Lseg * (t1 - t0)) * PI * 2 * o.ringsN) > .6 ? 1 : 0); return Math.max(bf(x, y, z) - tt, -along(ax, y, z, p0, dir), along(ax, y, z, p1, dir), segD(ax, y, z, p0, p1) - R) };
+    const lo = V(Math.min(p0.x, p1.x) - R, Math.min(p0.y, p1.y) - R, Math.min(p0.z, p1.z) - R), hi = V(Math.max(p0.x, p1.x) + R, Math.max(p0.y, p1.y) + R, Math.max(p0.z, p1.z) + R);
+    piece(name, ch, f, { x: hi.x + .1, y0: lo.y - .1, y1: hi.y + .1, z0: lo.z - .1, z1: hi.z + .1 }, o.cell ?? cellBase * .8);
   }
-  function cone(name, ch, o) {
-    if(onlySlot&&onlySlot!=='extras'&&name==='Echarpe')return;
-    if(name==='Echarpe'){const g=clothSurface(16,64,(t,u)=>{const a=u*PI*2,r=(.42+.18*t)*W+(o.pad||0);return V(Math.sin(a)*r,Y(-.008+.06*t)-.025*W*Math.sin(a*8)*t,z0+Math.cos(a)*r)},{closed:true,thickness:.04*W});fabric(name,ch,g,'extras');return}
-    const slot = /Casaca|Gibao|Tunica/.test(name) ? 'upper' : /Echarpe/.test(name) ? 'extras' : 'lower';
+  // casca cônica (saia, abas de casaco, tanga em volta): raio = contorno do corpo + folga + abertura com a altura
+  function cone(name,ch,o){
+    const slot=/Casaca|Gibao|Tunica/.test(name)?'upper':name==='Echarpe'?'extras':'lower';
     if(onlySlot&&onlySlot!==slot)return;
-    // As tiras do saiote são painéis com bordas próprias, sem recortes serrilhados no SDF.
-    if (o.only) for (let i = 0; i < 12; i++) {
-      const a0 = i / 12 * PI * 2 + .025, a1 = (i + 1) / 12 * PI * 2 - .025;
-      const g = clothSurface(24, 8, (t, u) => {
-        const a = a0 + (a1 - a0) * u, f = o.top + (o.bottom - o.top) * t, q = fit.at(Math.min(f,.43), a, .14 * W, false);
-        const drape = (o.flare || .08) * (Y(o.top) - Y(f)) + .035 * W * Math.sin(u * PI) * t;
-        q.x += Math.sin(a) * drape; q.z += Math.cos(a) * drape; q.y = Y(f) + (o.ragged || 0) * .35 * Math.sin(i * 1.7) * t ** 4; return q;
-      }, { thickness: .035 * W }); fabric(name, ch, g, slot);
-    } else fabric(name, ch, fit.torso(o.top, o.bottom, { ease: (o.pad || .05) + (/Barra/.test(name) ? .19 : .13) * W, open: o.open || 0, flare: o.flare || .06, folds: Math.max(.025 * W, o.pleat || 0), count: o.pleatN || 12, bottom: a => (o.ragged || 0) * .22 * Math.sin(a * 9) + (o.tails ? o.tails(a) : 0) }), slot);
+    const yt=Y(o.top),yb=Y(o.bottom),N=144,base=Array.from({length:N},(_,i)=>radAt(yt,2*PI*i/N)+(o.pad??.06));
+    const radius=a=>{const f=((a/(2*PI))%1+1)%1*N,i=Math.floor(f),t=f-i,at=k=>base[(k+N)%N];return ((2*at(i))+(-at(i-1)+at(i+1))*t+(2*at(i-1)-5*at(i)+4*at(i+1)-at(i+2))*t*t+(-at(i-1)+3*at(i)-3*at(i+1)+at(i+2))*t*t*t)*.5};
+    const point=(t,u,a0=o.open||0,a1=2*PI-(o.open||0))=>{
+      const a=lerp(a0,a1,u),r=radius(a)+(o.flare||0)*t*(yt-yb)+(o.pleat||0)*Math.sin(a*(o.pleatN||16))*t;
+      const rag=o.ragged?o.ragged*(.5+.5*Math.sin(a*23)*Math.sin(a*7)):0;
+      return V(Math.sin(a)*r,lerp(yt,yb,t)+(rag+(o.tails?o.tails(a):0))*t**6,z0+Math.cos(a)*r);
+    };
+    if(o.only){for(let i=0;i<13;i++){const a=i*2*PI/13+.035,b=(i+1)*2*PI/13-.035;fabric(name,ch,clothSurface(64,20,(t,u)=>point(t,u,a,b),{thickness:.04*W}),slot)}}
+    else fabric(name,ch,clothSurface(80,192,(t,u)=>point(t,u),{closed:!o.open,thickness:.035*W}),slot);
   }
   // superfície fina de dupla face a partir de uma grade de pontos (babado, véu, nadadeira, capa leve)
   function sheet(name, ch, rows, mixFn, shadeFn) {
@@ -172,17 +196,17 @@ export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot 
   function ruffle(name, ch, center, axis, r0, r1, n, amp, drop = 0) {
     if(onlySlot&&onlySlot!=='extras')return;
     const ax = axis.clone().normalize(), u = (Math.abs(ax.y) > .9 ? V(1, 0, 0) : V(0, 1, 0)).cross(ax).normalize(), v = ax.clone().cross(u), rows = [];
-    for (let i = 0; i <= 6; i++) { const t = i / 6, row = []; for (let j = 0; j <= 160; j++) { const a = j / 160 * PI * 2, r = r0 + (r1 - r0) * t, w = Math.sin(a * n) * amp * t; row.push(center.clone().addScaledVector(u, Math.cos(a) * r).addScaledVector(v, Math.sin(a) * r).addScaledVector(ax, w - drop * t * t)) } rows.push(row) }
+    for (let i = 0; i <= 20; i++) { const t = i / 20, row = []; for (let j = 0; j <= 384; j++) { const a = j / 384 * PI * 2, r = r0 + (r1 - r0) * t, w = Math.sin(a * n) * amp * t; row.push(center.clone().addScaledVector(u, Math.cos(a) * r).addScaledVector(v, Math.sin(a) * r).addScaledVector(ax, w - drop * t * t)) } rows.push(row) }
     sheet(name, ch, rows, null, (t, s) => .82 + .18 * Math.abs(Math.sin(s * PI * 2 * n)) * (.5 + t * .5));
   }
   // capa/manto: pano que sai dos ombros e cai atrás, com pregas
   function cape(name, ch, o) {
     if(onlySlot&&onlySlot!=='cape')return;
-    const rows = [], NC = 46, NR = 40, yT = Y(o.top), yB = o.yBottom ?? Y(o.bottom);
+    const rows = [], NC = 96, NR = 64, yT = Y(o.top), yB = o.yBottom ?? Y(o.bottom);
     for (let i = 0; i <= NR; i++) {
       const t = i / NR, y = yT + (yB - yT) * t, row = [];
       for (let j = 0; j <= NC; j++) {
-        const s = j / NC, ph = PI - (o.span ?? 1.9) / 2 + (o.span ?? 1.9) * s + (o.turn || 0), rr = Math.max(radAt(Y(o.top + .06), ph), radAt(Y(.42), ph)) + .18 * W + (o.flare ?? .25) * t + .05 * Math.sin(s * PI * (o.pleats ?? 9) + t * 2) * t;
+        const s = j / NC, ph = PI - (o.span ?? 1.9) / 2 + (o.span ?? 1.9) * s + (o.turn || 0), rr = radAt(Math.max(y, Y(.42)), ph) + .07 + (o.flare ?? .25) * t + .05 * Math.sin(s * PI * (o.pleats ?? 9) + t * 2) * t;
         const sw = (o.sway || 0) * t * t;
         row.push(V(Math.sin(ph) * rr + sw, y - (o.ragged ? o.ragged * t * (.5 + .5 * Math.sin(s * 40)) * sstep(.9, 1, t) : 0), z0 + Math.cos(ph) * rr));
       }
@@ -191,28 +215,18 @@ export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot 
     sheet(name, ch, rows, null, (t, s) => .75 + .25 * (.5 + .5 * Math.sin(s * PI * (o.pleats ?? 9) + t * 2)));
   }
 
-  if (['casual', 'dress', 'clown', 'warrior', 'cowboy', 'royal', 'inventor'].includes(style)) {
-    if (style === 'warrior') {
-      cone('Saiote', 'leather', { top: .36, bottom: .61, pad: .12 * W, flare: .1, pleat: .035 });
-      detailSlot = 'upper'; addGeo('leather', sph(V(-S.x, S.y + .15 * W, S.z), .48 * W, 1.15, .7, 1.15, 28, 18));
-    } else {
-      top('Tunica', style === 'cowboy' ? 'secondary' : 'fabric', { t: .1 * W, bottom: .4, sleeve: style === 'dress' || style === 'cowboy' ? 'short' : 'elbow', puff: .06 * W });
-      if (style === 'dress' || style === 'royal') cone('Saia', 'fabric', { top: .32, bottom: style === 'royal' ? .9 : .76, pad: .12 * W, flare: .17, pleat: .045, pleatN: 14 });
-      if (style === 'inventor') { top('Jaleco', 'secondary', { t: .2 * W, bottom: .4, open: .35 }); cone('Jaleco_Abas', 'secondary', { top: .35, bottom: .75, pad: .21 * W, flare: .1, open: .35 }) }
-      if (style === 'cowboy') top('Colete', 'leather', { t: .21 * W, bottom: .4, open: .35 });
-      if (style === 'royal') cape('Capa', 'accent', { top: .035, bottom: .95, span: 3.5, flare: .7, pleats: 10 });
-    }
-    if (style !== 'dress' && style !== 'royal') pants('Calca', 'pants', { top: .35, t: .08 * W, puff: .035 * W, cuff: .1 });
-    boots('Botas', 'leather', { t: .08 * W, h: .2, cuffT: .035 * W });
-    band('Cinto', 'leather', Y(.34), .13 * W, .16 * W);
-    detailSlot = 'belt'; addGeo('trim', orient(new THREE.TorusGeometry(.09 * W, .025 * W, 10, 32), onFront(0, Y(.34), .2 * W), V(0, 0, 1)));
-    return;
-  }
-
   // ================= figurinos =================
   if (style === 'circus') {
     // macacão listrado (creme / vermelho / azul em faixas verticais) em balão, franzido no tornozelo
-    top('Macacao', 'stripesV', { t: .13 * W, bottom: .43 }); pants('BombachaCirco', 'stripesV', { top: .4, t: .12 * W, puff: .17 * W, cuff: .14 }); // listras verticais creme/vermelho/azul pelo material (bordas nítidas)
+    const sw = .3 * W, stripe = k => (x, y, z) => { const u = (x / sw + 30.5) % 3, c = k + .5; let dd = Math.abs(u - c); dd = Math.min(dd, 3 - dd); return (dd - .5) * sw };
+    const suit = (x, y, z) => {
+      const ax = Math.abs(x); if (armSide(ax, y) > .02 * W) return .5;
+      const yTop = Y(.03), yBot = A.y + .085 * Lb, u = clamp((Y(.45) - y) / (Y(.45) - yBot), 0, 1);
+      const t = .07 + .2 * W * sstep(Y(.12), Y(.32), y) * (1 - sstep(Y(.36), Y(.48), y)) + .18 * W * Math.pow(Math.sin(PI * u), .8) * (1 - .7 * sstep(.82, 1, u)) * sstep(Y(.4), Y(.5), y);
+      return Math.max(bf(x, y, z) - t, y - yTop, yBot - y);
+    };
+    const bb = bodyBounds(A.y, Y(0) + .2, .7);
+    for(const slot of ['upper','lower']){activeSlot=slot;piece('Macacao','stripesV',(x,y,z)=>Math.max(suit(x,y,z),slot==='upper'?Y(.405)-y:y-Y(.395)),bb)} // listras verticais creme/vermelho/azul pelo material (bordas nítidas)
     // casaca aberta com abas até o joelho, mangas com punho franzido
     top('Casaca', 'fabric', { t: .1 * W, sleeve: 'wrist', bottom: .3, collar: -.05, open: .75, cell: cellBase, puff: .04 * W, loose: .12 * W });
     cone('Casaca_Abas', 'fabric', { top: .29, bottom: .68, pad: .26 * W, flare: .1, open: 1.05, th: .035, ragged: .12, pleat: .035, pleatN: 9 });
@@ -308,7 +322,7 @@ export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot 
     detailSlot = 'extras';
     // lenço/capuz azul no pescoço e capa azul caindo do ombro esquerdo com barra dourada
     fabric('Lenco','fabric',clothSurface(18,72,(t,u)=>{const a=u*PI*2,r=.34*body.hs+.12*W+.018*W*Math.sin(a*5+t*2);return V(Math.sin(a)*r,yN+.14*W-.32*W*t,z0+Math.cos(a)*r)},{closed:true,thickness:.035*W}),'extras');
-    cape('Capa', 'fabric', { top: .03, yBottom: Y(.8), span: 2.4, flare: .5, pleats: 6, turn: -.25 });
+    cape('Capa', 'fabric', { top: .03, yBottom: Y(.8), span: 3.4, flare: .65, pleats: 6, turn: -.25 });
     // luva de falcoeiro no braço direito e braçadeira no esquerdo
     if(!onlySlot||onlySlot==='extras')add('Luva',handPatch(body,-1,.05*W),'leather','extras');
   }
@@ -319,33 +333,28 @@ export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot 
     const yT = Y(.36), yAnk = ySole + .17 * Lb, yEnd = ySole + .08 * Lb;
     const wAt = y => { const u = clamp((yT - y) / (yT - yAnk), 0, 1); return W * (1.02 * B.hip - (1.02 * B.hip - .2) * Math.pow(u, 1.15) + .12 * Math.sin(PI * Math.min(u * 1.4, 1)) * (1 - u)) };
     const zc = y => z0 - .02 + .12 * Math.sin(clamp((yT - y) / (yT - yEnd), 0, 1) * PI * 1.1);
-    const tailPoint = (t, u) => {
-      const y = yT + (yEnd - yT) * t, a = u * PI * 2, f = (yN - y) / Lb;
-      const support = fit.section(Math.min(f, .43), .09 * W), hip = fit.section(.43, .09 * W);
-      const taper = sstep(.2, 1, t), w = lerp(hip.w, .16 * W, taper), depth = lerp(Math.max(hip.front, hip.back), .13 * W, taper);
-      const q = V(Math.sin(a) * Math.max(w, t < .16 ? support.w : 0), y, zc(y) + Math.cos(a) * depth);
-      q.y -= .06 * W * (1 - Math.abs(Math.sin(a))) * Math.max(0, Math.cos(a)) * (1 - sstep(0, .08, t));
-      return q;
+    activeSlot='lower';
+    if(!onlySlot||onlySlot==='lower'){
+    const tail = (x, y, z) => {
+      const w = Math.max(wAt(y), .1), d = w * .78, q = Math.hypot(x / w, (z - zc(y)) / d);
+      let dd = (q - 1) * Math.min(w, d) * .9;
+      const vcut = yT + .06 - .16 * Math.max(0, 1 - Math.abs(x) / (.5 * W)) * sstep(z0, z0 + .3, z);
+      const hipCover = armSide(Math.abs(x), y) > -.02 ? 1 : bf(x, y, z) - .045 * W; // cobre quadril/glúteos do corpo
+      dd = smin(dd, hipCover, .06);
+      dd = smax(dd, y - vcut, .02); dd = smax(dd, yEnd - y, .05);
+      return dd;
     };
-    const tg = clothSurface(64, 96, tailPoint, { closed: true, thickness: .035 * W });
-    { const pa = tg.attributes.position; for (let i = 0; i < pa.count; i++) tg.attributes.mixc.setX(i, Math.pow(sstep(yT, yEnd, pa.getY(i)), ruby ? .9 : 1.3)) }
-    fabric('Cauda', 'tail', tg, 'lower');
-    detailSlot = 'lower';
-    // Escamas em relevo: borda de cada escama esculpida, presente também no GLB.
-    if(!onlySlot||onlySlot==='lower')for(let row=0;row<26;row++)for(let col=0;col<36;col++){
-      const t=.035+row/26*.88,u=(col+(row%2)*.5)/36,pos=[],ix=[];
-      for(let j=0;j<=6;j++)for(const side of [-1,1]){
-        const x=j/6*2-1,tt=t+.017*(1-x*x)+side*.0016,uu=(u+x/72+1)%1,q=tailPoint(tt,uu),normal=V(q.x,0,q.z-zc(q.y)).normalize();q.addScaledVector(normal,.007*W);pos.push(q.x,q.y,q.z);
-      }
-      for(let j=0;j<6;j++){const a=j*2;ix.push(a,a+1,a+2,a+1,a+3,a+2)}
-      const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setIndex(ix);g.computeVertexNormals();addGeo('trim',g);
+    const tg = sdfMesh(tail, { x: 1.4 * W + .5, y0: yEnd - .2, y1: yT + .3, z0: z0 - 1.4 * W - .3, z1: z0 + 1.4 * W + .4 }, cellBase);
+    { const pa = tg.attributes.position, n = pa.count, mixc = new Float32Array(n), shade = new Float32Array(n); for (let i = 0; i < n; i++) { const y = pa.getY(i); mixc[i] = Math.pow(sstep(yT, yEnd, y), ruby ? .9 : 1.3); shade[i] = 1 } tg.setAttribute('mixc', new THREE.BufferAttribute(mixc, 1)); tg.setAttribute('shade', new THREE.BufferAttribute(shade, 1)) }
+    add('Cauda', smoothCloth(tg,3), 'tail', 'lower');
     }
+    detailSlot='lower';
     // linhas douradas no cós e descendo a cauda
     { const pts = []; for (let i = 0; i <= 40; i++) { const t = i / 40, ph = -1.25 + 2.5 * t, x = Math.sin(ph), y = yT + .06 - .16 * Math.max(0, 1 - Math.abs(Math.sin(ph) * radAt(yT, ph)) / (.5 * W)) - .02; const r = radAt(y, ph, zc(y)) + .03; pts.push(V(Math.sin(ph) * r, y, zc(y) + Math.cos(ph) * r)) } addGeo('trim', tubeG(pts, .022 * W, 6)) }
     mirror(s => { const pts = []; for (let i = 0; i <= 30; i++) { const t = i / 30, y = yT - .1 - t * (yT - yAnk - .1), w = wAt(y); pts.push(V(s * (.35 * w * (1 - t) + .08 * w), y, zc(y) + w * .78 * Math.sqrt(1 - Math.pow(.35 * (1 - t) + .08, 2)) + .015)) } addGeo('trim', tubeG(pts, .012 * W, 5)) });
     // nadadeira da cauda: dois lóbulos em leque com raios, borda recortada e ondulada
     const finSheet = (name, base, dirMain, side, len, spread, n, ruffleAmp) => {
-      const rows = [], NR = 18, NC = 30; const up = V(0, 0, 1);
+      const rows = [], NR = 48, NC = 96; const up = V(0, 0, 1);
       for (let i = 0; i <= NR; i++) { const t = i / NR, row = []; for (let j = 0; j <= NC; j++) { const s = j / NC, ang = (s - .5) * spread, dir = dirMain.clone().applyAxisAngle(up, ang).normalize(); const L = len * (.55 + .45 * Math.pow(Math.sin(PI * s), .6)) * (1 - .25 * Math.abs(Math.sin(s * PI * n)) * sstep(.8, 1, t)); const p = base.clone().addScaledVector(dir, L * t); p.z += ruffleAmp * Math.sin(s * PI * n * 2) * t * t + side * .05 * t; row.push(p) } rows.push(row) }
       sheet(name, 'fin', rows, (t) => .35 + .65 * t, (t, s) => .7 + .3 * Math.abs(Math.cos(s * PI * 14)) * (.6 + .4 * t));
     };
@@ -355,7 +364,8 @@ export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot 
     mirror(s => { const y = yT - .55 * (yT - yAnk), b = V(s * wAt(y) * .95, y, zc(y)); finSheet('Nadadeira_Lateral', b, V(s * .8, -1, 0).normalize(), s, .75 * W, .8, 3, .05) });
     // top: faixa no busto com decote coração (pérolas/joias), colar e correntes na barriga
     const yB0 = Y(.2), yB1 = Y(.115);
-    fabric('Top', 'secondary', fit.torso(.115, .205, { ease: .08 * W, folds: 0, top: a => .1 * W * (.6 - Math.cos(a * 2)) * Math.max(0, Math.cos(a)) }), 'upper');
+    activeSlot='upper';
+    piece('Top', 'secondary', (x, y, z) => { const ax = Math.abs(x); if (armSide(ax, y) > -.02) return .3; const cup = .08 * W * Math.exp(-((ax - .3 * W) ** 2) / (.04 * W * W)) * sstep(z0, z0 + .3, z); const topEdge = yB1 + .06 * Math.exp(-((ax - .3 * W) ** 2) / (.03 * W * W)) - .12 * Math.exp(-(x * x) / (.008 * W * W)) - (z < z0 ? .1 : 0); return Math.max(bf(x, y, z) - .04 * W - cup, y - topEdge, yB0 + .05 - y) }, bodyBounds(yB0 - .2, yB1 + .3), cellBase * .7);
     detailSlot = 'upper';
     const pearl = 'pearl';
     { const pts = []; for (let i = 0; i <= 44; i++) { const t = i / 44, x = (t - .5) * 1.5 * W, y = yB1 + .04 - .09 * Math.exp(-(x * x) / (.012 * W * W)) + .005; pts.push(onFront(x, y, .055 * W)) } pts.forEach((p, i) => addGeo(ruby ? 'trim' : pearl, sph(p, (ruby ? .02 : .028) * W, 1, 1, 1, 8, 6))) }
