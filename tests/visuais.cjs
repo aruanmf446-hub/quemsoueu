@@ -9,10 +9,10 @@ fs.mkdirSync(output,{recursive:true});
 const browser=await chromium.launch({executablePath:'/usr/bin/chromium',headless:true,args:['--no-sandbox','--use-gl=swiftshader','--enable-unsafe-swiftshader','--ignore-gpu-blocklist']});
 try{
 const page=await browser.newPage({viewport:{width:1000,height:760}}),errors=[],reports=[];
-page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error'&&!m.text().includes('favicon'))errors.push(m.text())});
+page.on('pageerror',e=>{errors.push(e.message);console.error(e.message)});page.on('console',m=>{if(m.type()==='error'&&!m.text().includes('favicon'))errors.push(m.text())});
 await page.route('https://cdn.jsdelivr.net/npm/three@0.180.0/**',async route=>route.fulfill({path:threeRoot+'/'+route.request().url().split('three@0.180.0/')[1],contentType:'application/javascript'}));
 await page.route('http://localhost:8000/',route=>{let source=fs.readFileSync(path.join(root,'index.html'),'utf8');source=source.replace('mapSize.set(4096,4096)','mapSize.set(1024,1024)').replace('(function frame(){requestAnimationFrame(frame);','window.__render=function(){').replace('renderer.render(scene,camera)})();','renderer.render(scene,camera)};');route.fulfill({body:source,contentType:'text/html'})});
-await page.goto('http://localhost:8000');await page.waitForFunction(()=>window.__atelie);await page.evaluate(()=>window.__atelie.stopAuto());await page.addStyleTag({content:'.brand,.help{visibility:hidden}'});console.log('Inicialização concluída');
+await page.goto('http://localhost:8000');await page.waitForFunction(()=>window.__atelie,null,{timeout:120000});await page.evaluate(()=>window.__atelie.stopAuto());await page.addStyleTag({content:'.brand,.help{visibility:hidden}'});console.log('Inicialização concluída');
 const ids=process.env.ATELIE_PERSONAGENS?.split(',')||await page.evaluate(async()=>Object.keys((await import('/src/presets.js')).PRESETS));
 for(const id of ids){
  await page.evaluate(id=>window.__atelie.setPreset(id),id);
@@ -23,6 +23,7 @@ for(const id of ids){
   await page.evaluate(view=>{window.__atelie.aim(...window.__atelie.VIEWS[view]);window.__render()},view);
   await page.screenshot({path:output+'/'+id+'-'+view+'.png',timeout:120000});
  }
+ if(process.env.ATELIE_CLOSEUPS){await page.locator('#faceView').click();await page.evaluate(()=>window.__render());await page.screenshot({path:output+'/'+id+'-acessorios.png',timeout:120000});await page.locator('#bodyView').click()}
  console.log('Renders',id);
  const report=await page.evaluate(async id=>{
   const a=window.__atelie,b=a.body(),expectedScale=b?b.hs:1;
@@ -33,10 +34,27 @@ for(const id of ids){
    if(!has('Body')||!has('Figurino')||!has('Bone_Head'))throw Error('Nó ausente');
    if((json.animations||[]).length!==12)throw Error('Clipes alterados');
    if(!head||!(head.scale||[1,1,1]).every(x=>Math.abs(x-expectedScale)<1e-6))throw Error('Escala da cabeça alterada');
+   for(const mesh of json.meshes)for(const p of mesh.primitives)if(p.attributes.NORMAL!==undefined&&json.accessors[p.attributes.NORMAL].count!==json.accessors[p.attributes.POSITION].count)throw Error('Normais incompletas no GLB');
+   if(id==='sad_clown'&&!json.images?.some(i=>i.bufferView!==undefined))throw Error('Listras não foram incorporadas no GLB');
    if(!json.skins?.length||!json.meshes.some(m=>m.primitives.some(p=>p.targets?.length===11)))throw Error('Rig ou blendshapes ausentes');
   }
   return {id,MB:+(data.byteLength/1048576).toFixed(2),animations:json.animations?.length||0,clothes:nodes.filter(x=>x.name?.startsWith('Roupa_')).length};
  },id);reports.push(report);console.log('GLB',JSON.stringify(report));
+ if(id!=='robot_ball'){
+  const metrics=await page.evaluate(()=>{
+    const a=window.__atelie,body=a.body(),head=a.group(),skin=body.geo.attributes.position.array.slice(),times=[];
+    for(const slot of ['upper','lower','feet','cape','belt','extras'])for(const option of a.pieceOptions(slot)){
+      const other=a.clothes().group.children.find(g=>g.name!=='RoupaSlot_'+slot);
+      if(!a.setPiece(slot,option.id))throw Error('Peça rejeitada: '+option.id);
+      const start=performance.now();a.setPiece(slot,option.id);times.push(performance.now()-start);
+      if(other&&!a.clothes().group.children.includes(other))throw Error('Peça de outro slot foi remontada');
+      a.setPieceColors(slot,{fabric:'#246366',secondary:'#e8d9b6',accent:'#c4161f',trim:'#c59842',leather:'#493028',pants:'#30323c'});
+      if(a.body()!==body||a.group()!==head)throw Error('Trocar peça remontou corpo ou rosto');
+    }
+    if(!skin.every((v,i)=>v===body.geo.attributes.position.array[i]))throw Error('A roupa alterou a pele');
+    times.sort((a,b)=>a-b);return {trocas:times.length,p95:+times[Math.floor(times.length*.95)].toFixed(1)};
+  });report.slots=metrics.trocas;report.swapP95=metrics.p95;console.log('Peças e cores',id,JSON.stringify(metrics));
+ }
  if(id!=='robot_ball'){
   await page.evaluate(()=>{const a=window.__atelie,group=a.group(),body=a.body();a.setClothColors({fabric:'#246366'});if(a.group()!==group||a.body()!==body)throw Error('Cor remontou o personagem');a.setOutfit('none');if(a.clothes().group.children.length)throw Error('Roupa não removida');a.setExpression('feliz')});
   await page.evaluate(()=>{document.getElementById('reset').click()});await page.waitForFunction(()=>!document.getElementById('status').textContent.includes('…'));
@@ -50,8 +68,11 @@ for(let i=0;i<await page.locator('#hairs button').count();i++){await page.locato
 await page.locator('#hairColors button').nth(2).click();await ready();
 await page.locator('#skins button').nth(3).click();await ready();
 await page.locator('#beards button').nth(1).click();await ready();
-await page.locator('#accs .chips').first().locator('button').nth(2).click();await ready();
-await page.locator('#accColors .sws').first().locator('button').nth(2).click();await ready();
+for(let slot=0;slot<await page.locator('#accs .chips').count();slot++){
+  const count=await page.locator('#accs .chips').nth(slot).locator('button').count();
+  for(let i=0;i<count;i++){await page.locator('#accs .chips').nth(slot).locator('button').nth(i).click();await ready()}
+}
+for(let row=0;row<await page.locator('#accColors .sws').count();row++){await page.locator('#accColors .sws').nth(row).locator('button').nth(2).click();await ready()}
 for(let i=0;i<await page.locator('#outfits button').count();i++){await page.locator('#outfits button').nth(i).click();await ready()}
 await page.locator('#clothColors .sws').first().locator('button').nth(3).click();await ready();
 const saved=await page.evaluate(()=>JSON.stringify(window.__atelie.getLook()));
