@@ -42,24 +42,66 @@ function roundCone(px, py, pz, ax, ay, az, ra, bx, by, bz, rb) {
   return sqrt(dx * dx + dy * dy + dz * dz) - (ra + (rb - ra) * h);
 }
 
+// ---------- casca facial por curvas (loft) ----------
+// Cada fatia horizontal do rosto é uma super-elipse definida por três curvas da altura y:
+//   a(y)  = meia-largura (contorno de frente: maçãs → mandíbula → queixo)
+//   zf(y) = frente (perfil de base: testa → maçã → boca → queixo)
+//   zb(y) = fundo  (ramo e linha de baixo da mandíbula, vista de perfil)
+// Curvas: Hermite monotônica pelos pontos de controle → suavização gaussiana (curvatura contínua: sem faixas na luz)
+// → fechamento elíptico nas pontas (queixo arredondado embaixo, some dentro do crânio em cima).
+function pchip(xs, vs) {
+  const n = xs.length, h = [], d = [], m = new Array(n);
+  for (let i = 0; i < n - 1; i++) { h[i] = xs[i + 1] - xs[i]; d[i] = (vs[i + 1] - vs[i]) / h[i] }
+  m[0] = d[0]; m[n - 1] = d[n - 2];
+  for (let i = 1; i < n - 1; i++) {
+    if (d[i - 1] * d[i] <= 0) m[i] = 0;
+    else { const w1 = 2 * h[i] + h[i - 1], w2 = h[i] + 2 * h[i - 1]; m[i] = (w1 + w2) / (w1 / d[i - 1] + w2 / d[i]) }
+  }
+  return x => {
+    x = clamp(x, xs[0], xs[n - 1]); let i = 0; while (i < n - 2 && x > xs[i + 1]) i++;
+    const t = (x - xs[i]) / h[i], t2 = t * t, t3 = t2 * t;
+    return (2 * t3 - 3 * t2 + 1) * vs[i] + (t3 - 2 * t2 + t) * h[i] * m[i] + (-2 * t3 + 3 * t2) * vs[i + 1] + (t3 - t2) * h[i] * m[i + 1];
+  };
+}
+function makeLoft(L) {
+  const Y = L.y, y0 = Y[0], y1 = Y[Y.length - 1], NT = 1024, dy = (y1 - y0) / (NT - 1);
+  const fa = pchip(Y, L.a), ff = pchip(Y, L.zf), fb = pchip(Y, L.zb);
+  let A = new Float64Array(NT), F = new Float64Array(NT), B = new Float64Array(NT);
+  for (let i = 0; i < NT; i++) { const y = y0 + i * dy; A[i] = fa(y); F[i] = ff(y); B[i] = fb(y) }
+  const sig = (L.blur ?? .05) / dy, R = Math.ceil(3 * sig), ker = [];
+  let ks = 0; for (let k = -R; k <= R; k++) { const w = exp(-k * k / (2 * sig * sig)); ker.push(w); ks += w }
+  const blur = T => { const o = new Float64Array(NT); for (let i = 0; i < NT; i++) { let v = 0; for (let k = -R; k <= R; k++) v += T[clamp(i + k, 0, NT - 1)] * ker[k + R]; o[i] = v / ks } return o };
+  A = blur(A); F = blur(F); B = blur(B);
+  const cb = L.cb ?? .1, ct = L.ct ?? .18;
+  for (let i = 0; i < NT; i++) {
+    const y = y0 + i * dy, f = (y < y0 + cb ? sqrt(Math.max(0, 1 - ((y0 + cb - y) / cb) ** 2)) : 1) * (y > y1 - ct ? sqrt(Math.max(0, 1 - ((y - (y1 - ct)) / ct) ** 2)) : 1);
+    const mid = (F[i] + B[i]) / 2; A[i] *= f; F[i] = mid + (F[i] - mid) * f; B[i] = mid + (B[i] - mid) * f;
+  }
+  const cF = sqC(L.n ?? 2.4);
+  return { y0, y1, cF, at(y, out) { const fi = clamp((y - y0) / dy, 0, NT - 1.0001), i = fi | 0, t = fi - i; out.a = A[i] + (A[i + 1] - A[i]) * t; out.zf = F[i] + (F[i + 1] - F[i]) * t; out.zb = B[i] + (B[i + 1] - B[i]) * t; return out } };
+}
+
 function makeSDF(P) {
-  const [cy, cz, crx, cry, crz, crzB = crz, cn0 = 2] = P.cran, [fy, fz, frx, fry, frz, fn0 = 2] = P.face, cn = sqC(cn0), fn = sqC(fn0), [bx, by, bz, brx, bry, brz, bk] = P.cheekB;
-  const [jcy, jcz, jcr, jgx, jgy, jgz, jgr, jk, jcw = 0] = P.jaw, [hy, hz, hrx, hry, hrz, hk] = P.chin, [nr, nty, ntz, nby, nbz, nk] = P.neck;
+  const [cy, cz, crx, cry, crz, crzB = crz, cn0 = 2] = P.cran, cn = sqC(cn0), [nr, nty, ntz, nby, nbz, nk] = P.neck;
+  const L = makeLoft(P.loft), kf = P.loft.k ?? .16, sl = { a: 0, zf: 0, zb: 0 }, oc = P.occ;
   const cut = nby + .06;
   // esferas envolventes: se o ponto está longe de um volume, ele não altera a união suave → pula (bem mais rápido)
   const bs = (x, y, z, r) => ({ x, y, z, r }), far = (b, ax, y, z, d, k) => { const dx = ax - b.x, dy = y - b.y, dz = z - b.z; return sqrt(dx * dx + dy * dy + dz * dz) - b.r > d + k + .2 };
   const segB = (ax, ay, az, ra, bx2, by2, bz2, rb) => bs((ax + bx2) / 2, (ay + by2) / 2, (az + bz2) / 2, Math.hypot(bx2 - ax, by2 - ay, bz2 - az) / 2 + Math.max(ra, rb));
-  const BF = bs(0, fy, fz, Math.max(frx, fry, frz)), BC = bs(bx, by, bz, Math.max(brx, bry, brz)), BJ = segB(jcw, jcy, jcz, jcr, jgx, jgy, jgz, jgr);
-  const BW = segB(0, jcy, jcz, jcr, jcw, jcy, jcz, jcr), BH = bs(0, hy, hz, Math.max(hrx, hry, hrz)), BN = segB(0, nty, ntz, nr, 0, nby, nbz, nr * 1.1);
+  const BN = segB(0, nty, ntz, nr, 0, nby, nbz, nr * 1.1), BO = oc && bs(0, oc[0], oc[1], Math.max(oc[2], oc[3], oc[4]));
   const S = P.scm, BS = S && segB(S[0], S[1], S[2], S[6], S[3], S[4], S[5], S[6]); // esternocleidomastoideo: de trás da orelha à base do pescoço
   return (x, y, z) => {
     const ax = sqrt(x * x + 4e-4); // |x| suave
     let d = superE(x, y - cy, z - cz, crx, cry, crz, crzB, cn);
-    if (!far(BF, ax, y, z, d, .3)) d = smin(d, superE(x, y - fy, z - fz, frx, fry, frz, frz, fn), .3);
-    if (!far(BC, ax, y, z, d, bk)) d = smin(d, ellip(ax - bx, y - by, z - bz, brx, bry, brz), bk);
-    if (!far(BJ, ax, y, z, d, jk)) d = smin(d, roundCone(ax, y, z, jcw, jcy, jcz, jcr, jgx, jgy, jgz, jgr), jk);
-    if (jcw > 0 && !far(BW, ax, y, z, d, jk * .5)) d = smin(d, roundCone(ax, y, z, 0, jcy, jcz, jcr, jcw, jcy, jcz, jcr), jk * .5); // queixo largo (mandíbula quadrada)
-    if (!far(BH, ax, y, z, d, hk)) d = smin(d, ellip(x, y - hy, z - hz, hrx, hry, hrz), hk);
+    if (oc && !far(BO, 0, y, z, d, oc[5])) d = smin(d, ellip(x, y - oc[0], z - oc[1], oc[2], oc[3], oc[4]), oc[5]); // occipital (nuca)
+    if (y > L.y0 - .3 && y < L.y1 + .3) { // casca facial
+      L.at(y, sl); const a = Math.max(sl.a, 1e-3), zc = sl.zb + (sl.zf - sl.zb) * .45, front = z > zc;
+      const X = ax / a, Z = front ? (z - zc) / Math.max(sl.zf - zc, 1e-3) : (zc - z) / Math.max(zc - sl.zb, 1e-3), q = X * X + Z * Z;
+      let h = sqrt(q); if (front && q > 1e-12) { const w = 2 * X * Z / q; h *= 1 - L.cF * w * w }
+      let dl = (h - 1) * Math.min(a, Math.max(sl.zf - zc, 1e-3)) * .9;
+      if (y < L.y0) dl = Math.max(dl, L.y0 - y); else if (y > L.y1) dl = Math.max(dl, y - L.y1);
+      d = smin(d, dl, kf);
+    }
     if (!far(BN, ax, y, z, d, nk)) d = smin(d, roundCone(x, y, z, 0, nty, ntz, nr, 0, nby, nbz, nr * 1.1), nk);
     if (S && !far(BS, ax, y, z, d, S[7])) d = smin(d, roundCone(ax, y, z, S[0], S[1], S[2], S[6], S[3], S[4], S[5], S[6] * .8), S[7]);
     return y - cut > .05 ? d : smaxS(d, cut - y, .05);
@@ -97,6 +139,15 @@ function makeFrontZ(sdf) {
   };
 }
 
+// ruído de valor 3D (determinístico, sem dependências) — variação orgânica da pele
+function hash3(i, j, k) { let h = Math.imul(i, 374761393) + Math.imul(j, 668265263) + Math.imul(k, 1274126177) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967295 }
+function vnoise(x, y, z) {
+  const i = Math.floor(x), j = Math.floor(y), k = Math.floor(z), fx = x - i, fy = y - j, fz = z - k;
+  const u = fx * fx * (3 - 2 * fx), v = fy * fy * (3 - 2 * fy), w = fz * fz * (3 - 2 * fz), L = (a, b, t) => a + (b - a) * t;
+  return L(L(L(hash3(i, j, k), hash3(i + 1, j, k), u), L(hash3(i, j + 1, k), hash3(i + 1, j + 1, k), u), v),
+           L(L(hash3(i, j, k + 1), hash3(i + 1, j, k + 1), u), L(hash3(i, j + 1, k + 1), hash3(i + 1, j + 1, k + 1), u), v), w);
+}
+
 // ---------- olho: quadro local ----------
 function cornerFn(u, peak) { // 0 nos cantos, 1 no ponto mais aberto
   if (Math.abs(u) >= 1) return 0;
@@ -116,13 +167,13 @@ function eyeFrame(P, s) {
 // ---------- relevo do rosto + máscaras de cor ----------
 function makeFaceField(P, eyes) {
   const eyeX = P.eyeX, eyeY = P.eyeY, tipY = P.noseTipY, mY = P.mouthY, mw = P.mouthW, nW = P.noseW, Re = P.Re;
-  const rootY = eyeY - .02, chinY = P.chin[0];
-  const out = { dz: 0, lipU: 0, lipL: 0, lipHi: 0, line: 0, blush: 0, ao: 0, nostril: 0, lid: 0, hi: 0, gloss: 0 };
+  const rootY = eyeY - .02, chinY = P.loft.y[0] + .02;
+  const out = { dz: 0, lipU: 0, lipL: 0, lipHi: 0, line: 0, blush: 0, ao: 0, nostril: 0, lid: 0, hi: 0, gloss: 0, under: 0 };
   const ymAt = ax => { const t = Math.min(ax / mw, 1.25); return mY + P.smile * .04 * t * t - .004 * gau(ax, .03) };
   const ymC = ymAt(mw);
   return function field(x, y) {
     const ax = sqrt(x * x + 1e-4); // |x| suave: sem vinco na linha média
-    let dz = 0, ao = 0, hi = 0, lid = 0, lipU = 0, lipL = 0, lipHi = 0, line = 0, nostril = 0, gloss = 0;
+    let dz = 0, ao = 0, hi = 0, lid = 0, lipU = 0, lipL = 0, lipHi = 0, line = 0, nostril = 0, gloss = 0, under = 0;
     // testa e arcada
     dz += P.browRidge * exp(-((ax / .58) ** 4)) * gau(y - (eyeY + .25), .09); // arcada contínua (sem vale no meio)
     hi += .35 * gau(x, .28) * gau(y - .45, .22);
@@ -143,26 +194,33 @@ function makeFaceField(P, eyes) {
       dz += P.crease * .5 * gau(V - (vc - .024), .017) * fade;
       if (V > 0) lid = Math.max(lid, fade * sstep(vc + .07, vc - .01, V));
       dz += .003 * gau(V + Hl + .045, .03) * fade;
+      if (V < 0) under = Math.max(under, fade * gau(V + Hl + .065, .05));
     }
     // maçãs do rosto
     dz += P.cheekH * gau(ax - .41, .2) * gau(y - (ymC + .25), .16);
-    // ---- nariz ----
+    // planos de estrutura: zigomático (crista que sobe para a orelha), cavado abaixo dele, têmporas
+    if (P.zyg) { const zy = gau(ax - .52, .15) * gau(y - (eyeY - .17) - .25 * (ax - .52), .065); dz += P.zyg * zy; hi += 1.2 * zy * P.zyg / .02 }
+    if (P.hollow) { const ho = gau(ax - .5, .13) * gau(y - (mY + .1), .11); dz -= P.hollow * ho; ao += .45 * ho * P.hollow / .015 }
+    if (P.temple) { const te = gau(ax - .66, .12) * gau(y - (eyeY + .2), .13); dz -= P.temple * te; ao += .25 * te * P.temple / .015 }
+    // ---- nariz: forma contínua — ponte → ponta alongada (sem "bolinha") → base; asas baixas e recuadas; narinas por baixo ----
     if (ax < .42 && y < rootY + .25 && y > tipY - .3) {
-      const q = (rootY - y) / (rootY - tipY), qc = clamp(q, 0, 1), bw = (.04 + .05 * Math.pow(qc, 1.6)) * nW;
-      const prof = P.noseH * Math.pow(qc, P.scoop) * (q > 1 ? exp(-(((q - 1) / .14) ** 2)) : 1);
-      dz += prof * exp(-((x / bw) ** 2));
-      hi += .8 * exp(-((x / (bw * .45)) ** 2)) * sstep(.05, .45, q) * (1 - sstep(.95, 1.15, q));
-      const dy = y - (tipY + .014), ry = dy > 0 ? P.tipR * 1.2 : P.tipR * .7, r2 = (x / (P.tipR * nW)) ** 2 + (dy / ry) ** 2;
-      if (r2 < 1) { const k = 1 - r2; dz += P.tipH * Math.pow(k, 1.5); hi += 1.1 * k * k * k; gloss += .25 * k * k }
-      const aX = P.alaeX * nW, a2 = ((ax - aX) / (.048 * nW)) ** 2 + ((y - (tipY - .006)) / .042) ** 2;
-      if (a2 < 1) dz += P.alaeH * Math.pow(1 - a2, 1.5);
-      const ring = sqrt(a2), side = sstep(aX * .55, aX * 1.05, ax) + sstep(tipY - .02, tipY + .03, y) * .6;
-      const crease = gau(ring - 1.05, .15) * Math.min(side, 1) * sstep(tipY - .07, tipY - .02, y);
-      dz -= P.alaeH * .25 * crease; ao += .2 * crease;
-      const n2 = ((ax - .041 * nW) / (.025 * nW)) ** 2 + ((y - (tipY - .052)) / .013) ** 2;
-      nostril = exp(-n2 * 1.4); dz -= .012 * nostril;
-      const under = gau(x, .1) * gau(y - (tipY - .082), .026);
-      dz -= .01 * under; ao += .45 * under;
+      const span = rootY - tipY, q = (rootY - y) / span, qc = clamp(q, 0, 1), below = Math.max(0, (q - 1) * span);
+      const bw = (.036 + .034 * qc * qc) * nW, xb = x / bw;
+      const prof = P.noseH * Math.pow(qc, P.scoop) * exp(-((below / (P.tipR * .8)) ** 2));
+      dz += prof * exp(-xb * xb);
+      hi += .7 * exp(-((x / (bw * .42)) ** 2)) * sstep(.08, .5, q) * (1 - sstep(.9, 1.1, q));
+      ao += .22 * gau(ax - bw * 1.25, bw * .55) * sstep(.15, .5, q) * (1 - sstep(.85, 1.05, q)); // laterais da ponte
+      const dy = y - (tipY + .012), ry = dy > 0 ? P.tipR * 1.9 : P.tipR * .78, r2 = (x / (P.tipR * nW)) ** 2 + (dy / ry) ** 2;
+      if (r2 < 1) { const k = 1 - r2; dz += P.tipH * k * k; hi += 1.0 * k * k * k * sstep(-.5, .3, dy / ry); gloss += .3 * k * k }
+      const aX = P.alaeX * nW, ex = (ax - aX) / (.044 * nW), ey = (y - (tipY - .014)) / .036, a2 = ex * ex + ey * ey;
+      if (a2 < 1) dz += P.alaeH * (1 - a2) * (1 - a2);
+      const ring = sqrt(a2), side = clamp(sstep(-.1, .6, ex) + .6 * sstep(.1, .7, ey) * sstep(-.6, 0, ex), 0, 1);
+      const crease = gau(ring - 1.0, .16) * side;
+      dz -= P.alaeH * .35 * crease; ao += .35 * crease;
+      const n2 = ((ax - .036 * nW) / (.022 * nW)) ** 2 + ((y - (tipY - .047)) / .012) ** 2;
+      nostril = exp(-n2 * 1.6) * .75; dz -= .009 * nostril;
+      const under = gau(x, .07) * gau(y - (tipY - .078), .022);
+      dz -= .008 * under; ao += .2 * under;
     }
     // ---- boca ----
     const t = ax / mw;
@@ -175,7 +233,7 @@ function makeFaceField(P, eyes) {
         const v = (y - ym) / Math.max(thU, .003);
         dz += P.lipH * (thU / P.lipU) * (exp(-(((v - .4) / .72) ** 2)) + .12 * gau(v - 1.03, .13)) * xf;
         lipU = (1 - sstep(.82, 1.12, v)) * sstep(.0015, .006, thU);
-        hi += .9 * gau(v - 1.08, .12) * xf * sstep(.002, .01, thU);
+        hi += .35 * gau(v - 1.08, .12) * xf * sstep(.002, .01, thU);
       } else {
         const w = (ym - y) / Math.max(thL, .003);
         dz += P.lipH * 1.1 * (thL / P.lipL) * exp(-(((w - .45) / .62) ** 2)) * xf;
@@ -192,7 +250,7 @@ function makeFaceField(P, eyes) {
       dz -= .016 * sul; ao += .4 * sul;
       ao += .35 * gau(y - (mY - P.lipL - .022), .02) * gau(x, mw * .7);
       const band = sstep(mY + P.lipU * .9, mY + P.lipU * 1.5, y) * sstep(tipY - .03, tipY - .09, y);
-      dz -= .007 * gau(x, .02) * band; dz += .005 * gau(ax - .032, .014) * band;
+      dz -= .005 * gau(x, .022) * band; dz += .0032 * gau(ax - .03, .015) * band;
       gloss += lipU * .55 + lipL * 1.0;
       const fold = (P.fold ?? .5) * (.4 + .6 * Math.min(P.smile, 1));
       if (fold > .05) { // dobra nasolabial (sorriso / maturidade)
@@ -205,6 +263,9 @@ function makeFaceField(P, eyes) {
     // queixo
     dz += P.chinH * gau(x, .2) * gau(y - (chinY + .06), .12);
     hi += .35 * gau(x, .12) * gau(y - (chinY + .08), .08);
+    // zona T e pálpebras levemente mais brilhantes (pele viva, não plástico uniforme)
+    gloss += .3 * gau(x, .16) * gau(y - .42, .2) + .22 * gau(x, .06) * sstep(eyeY - .02, tipY + .02, y) * (y < rootY + .05 ? 1 : 0) + .18 * gau(x, .14) * gau(y - (chinY + .08), .08) + .15 * lid;
+    out.under = under;
     out.dz = dz; out.ao = ao; out.hi = hi; out.lid = lid; out.lipU = lipU; out.lipL = lipL; out.lipHi = lipHi; out.line = line; out.nostril = nostril; out.gloss = gloss;
     out.blush = .6 * gau(ax - .42, .19) * gau(y - (ymC + .25), .15) + .35 * gau(x, .07) * gau(y - tipY, .06) + .12 * gau(x, .2) * gau(y - (chinY + .06), .12);
     return out;
@@ -293,12 +354,24 @@ function irisTexture(cols, pupil) {
 
 // Pele: difusa com "wrap" colorido (luz vermelha atravessa o terminador) + rugosidade por vértice (brilho dos lábios)
 function skinMaterial() {
-  const m = new THREE.MeshPhysicalMaterial({ vertexColors: true, roughness: .56, metalness: 0, specularIntensity: .55, sheen: .3, sheenRoughness: .5, sheenColor: col('#ffd2c2'), name: 'Skin' });
+  const m = new THREE.MeshPhysicalMaterial({ vertexColors: true, roughness: .58, metalness: 0, specularIntensity: .5, sheen: .32, sheenRoughness: .5, sheenColor: col('#ffcdb8'), clearcoat: .22, clearcoatRoughness: .38, name: 'Skin' });
   m.onBeforeCompile = sh => {
-    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute float gloss;\nvarying float vGloss;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvGloss = gloss;');
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute float gloss;\nvarying float vGloss;\nvarying vec3 vObjPos;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvGloss = gloss; vObjPos = position;');
     sh.fragmentShader = sh.fragmentShader
-      .replace('#include <common>', '#include <common>\nvarying float vGloss;')
-      .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = mix(roughnessFactor, .24, clamp(vGloss, 0., 1.));')
+      .replace('#include <common>', '#include <common>\nvarying float vGloss;\nvarying vec3 vObjPos;\n' +
+        'float h31(vec3 p){ p = fract(p * .3183099 + .1); p *= 17.0; return fract(p.x * p.y * p.z * (p.x + p.y + p.z)); }\n' +
+        'float vn3(vec3 x){ vec3 i = floor(x), f = fract(x); f = f * f * (3. - 2. * f);\n' +
+        '  return mix(mix(mix(h31(i), h31(i + vec3(1,0,0)), f.x), mix(h31(i + vec3(0,1,0)), h31(i + vec3(1,1,0)), f.x), f.y),\n' +
+        '             mix(mix(h31(i + vec3(0,0,1)), h31(i + vec3(1,0,1)), f.x), mix(h31(i + vec3(0,1,1)), h31(i + vec3(1,1,1)), f.x), f.y), f.z); }')
+      .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\n' +
+        'float gl = clamp(vGloss, 0., 1.); float pn = vn3(vObjPos * 140.);\n' +
+        'roughnessFactor = mix(roughnessFactor, .26, gl) * (.92 + .16 * pn);')
+      .replace('#include <normal_fragment_maps>', '#include <normal_fragment_maps>\n' +
+        '{ // microrrelevo da pele (poros bem sutis): quebra o brilho como em pele real\n' +
+        '  vec3 p = vObjPos * 140.; float e = .35, n0 = vn3(p); vec3 g = vec3(vn3(p + vec3(e,0,0)), vn3(p + vec3(0,e,0)), vn3(p + vec3(0,0,e))) - n0;\n' +
+        '  vec3 p2 = vObjPos * 330.; float m0 = vn3(p2); g += .6 * (vec3(vn3(p2 + vec3(e,0,0)), vn3(p2 + vec3(0,e,0)), vn3(p2 + vec3(0,0,e))) - m0);\n' +
+        '  normal = normalize(normal - .09 * (1. - .7 * gl) * (viewMatrix * vec4(g, 0.)).xyz); }')
+      .replace('#include <lights_physical_fragment>', '#include <lights_physical_fragment>\n#ifdef USE_CLEARCOAT\n material.clearcoat *= mix(.45, 1.0, gl);\n#endif')
       .replace('#include <lights_fragment_begin>', THREE.ShaderChunk.lights_fragment_begin.replace(
         'directLight.color *= ( directLight.visible && receiveShadow ) ? getShadow( directionalShadowMap[ i ], directionalLightShadow.shadowMapSize, directionalLightShadow.shadowIntensity, directionalLightShadow.shadowBias, directionalLightShadow.shadowRadius, vDirectionalShadowCoord[ i ] ) : 1.0;',
         '{ float shF = ( directLight.visible && receiveShadow ) ? getShadow( directionalShadowMap[ i ], directionalLightShadow.shadowMapSize, directionalLightShadow.shadowIntensity, directionalLightShadow.shadowBias, directionalLightShadow.shadowRadius, vDirectionalShadowCoord[ i ] ) : 1.0;\n' +
@@ -309,7 +382,7 @@ function skinMaterial() {
         'vec3 wrapD = pow( clamp( ( vec3( nlW ) + wW ) / ( 1.0 + wW ), 0.0, 1.0 ), vec3( 1.5 ) );\n' +
         'reflectedLight.directDiffuse += wrapD * directLight.color * BRDF_Lambert( material.diffuseColor );'));
   };
-  m.customProgramCacheKey = () => 'skin-wrap-v2';
+  m.customProgramCacheKey = () => 'skin-wrap-v3';
   return m;
 }
 
@@ -328,6 +401,8 @@ export function buildHead(presetId, adj, opts = {}) {
   const hsl = {}; skin.getHSL(hsl);
   const shade = new THREE.Color().setHSL(hsl.h - .018, Math.min(1, hsl.s * 1.02), hsl.l * .6);
   const skinHi = new THREE.Color().setHSL(hsl.h + .006, hsl.s * .92, Math.min(.92, hsl.l * 1.13));
+  const blotchC = new THREE.Color().setHSL(hsl.h - .02, Math.min(1, hsl.s * 1.15), hsl.l * .92), foreC = new THREE.Color().setHSL(hsl.h + .018, hsl.s * .9, Math.min(.9, hsl.l * 1.06));
+  const underC = new THREE.Color().setHSL(hsl.h - .05, hsl.s * .7, hsl.l * .82), beardC = new THREE.Color().setHSL(hsl.h + .03, hsl.s * .55, hsl.l * .74);
   const lipUC = lipC.clone().multiplyScalar(.8), lipHiC = lipC.clone().lerp(col('#ffd0c8'), .3), nostrilC = col('#3a1612'), deep = col('#6e3634');
   const skinMat = track(skinMaterial());
 
@@ -403,7 +478,20 @@ export function buildHead(presetId, adj, opts = {}) {
           c.lerp(lipHiC, clamp(f.lipHi * f.lipL * k * .45, 0, 1));
           c.lerp(lineC, clamp(f.line * k * .9, 0, 1));
           c.lerp(nostrilC, clamp(f.nostril * k * .85, 0, .85));
+          c.lerp(underC, clamp(f.under * k * .32, 0, .35));
           gloss[i] = clamp(f.gloss * k, 0, 1);
+        }
+        { // variação orgânica de tom: manchas suaves (ruído de baixa frequência), testa mais clara/amarelada, barba sombreada
+          const n = vnoise(x * 6.5 + 3.1, y * 6.5, z * 6.5) * .6 + vnoise(x * 17 + 9.7, y * 17, z * 17) * .4 - .5;
+          c.lerp(n > 0 ? blotchC : skinHi, Math.abs(n) * .22);
+          c.lerp(foreC, .22 * gau(x, .3) * gau(y - .42, .24) * sstep(-.1, .3, z));
+          if (P.beard) { // barba sombreada: buço + queixo + mandíbula; linha da barba desce da costeleta ao canto da boca, bordas suaves
+            const ax = Math.abs(x), tY = P.noseTipY, mY = P.mouthY, yB = mY + .06 + (P.eyeY - .2 - (mY + .06)) * sstep(.22, .66, ax);
+            const cheek = sstep(yB + .07, yB - .07, y), lip = sstep(tY - .05, tY - .15, y);
+            const b = Math.max(cheek, lip * (1 - sstep(.18, .3, ax))) * sstep(P.loft.y[0] - .5, P.loft.y[0] - .18, y) * sstep(-.42, -.18, z);
+            const lips = f ? clamp(f.lipU + f.lipL + f.line, 0, 1) : 0;
+            c.lerp(beardC, clamp(P.beard * b * (1 - lips), 0, .5));
+          }
         }
         if (eyeState === 2) c.lerp(blush, .22);
         if (eyeState === 1) c.copy(deep);

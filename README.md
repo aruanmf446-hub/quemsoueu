@@ -8,10 +8,10 @@ https://aruanmf446-hub.github.io/quemsoueu/
 Para rodar localmente, sirva a pasta com qualquer servidor estático (ex.: `python3 -m http.server`) e abra `index.html`. Os módulos ES não funcionam abrindo o arquivo direto (`file://`). Usa Three.js via CDN, sem build, Vercel, API de geração, Supabase ou serviços pagos.
 
 ## O que a V2 faz
-- **Forma da cabeça por volumes anatômicos**: crânio, terço médio, maçãs do rosto, mandíbula (do queixo ao ângulo, opcionalmente quadrada), queixo, pescoço e músculos do pescoço (esternocleidomastoideo) são fundidos por união suave num campo de distância (SDF). Pele e pescoço formam **uma única malha**, sem emendas — perfil com testa, nariz, lábios, queixo e linha da mandíbula até a orelha.
-- **Relevo do rosto** sobre essa base: órbitas, arcada, prega da pálpebra, nariz com ponte / ponta / asas / narinas, **lábios paramétricos com arco do cupido**, filtro, cantos da boca, sulco do queixo, maçãs e dobra nasolabial.
+- **Formato da cara por curvas**: o rosto é uma casca única definida por três curvas suaves por altura — contorno de frente (maçãs → mandíbula → queixo), perfil (testa → maçã → boca → queixo) e linha de trás (ramo e base da mandíbula) — fundida ao crânio, à nuca, ao pescoço e aos músculos do pescoço num campo de distância (SDF). As curvas têm curvatura contínua (sem "faixas" na luz) e pele + pescoço formam **uma única malha**, sem emendas nem volumes "montados".
+- **Relevo do rosto** sobre essa base: planos de estrutura (zigomático, cavado abaixo dele, têmporas), órbitas, arcada, prega da pálpebra, nariz com ponte / ponta / asas / narinas, **lábios paramétricos com arco do cupido**, filtro, cantos da boca, sulco do queixo, maçãs e dobra nasolabial.
 - **Olhos**: a pele envolve o globo (pálpebras na própria malha, abertura recortada nela), **íris côncava sob a córnea** (profundidade e brilho), íris procedural com fibras e luz entrando por baixo, carúncula no canto interno, linha d'água, **delineado com asa** e **tufos de cílios** curvados; sobrancelhas espessas e afinadas na cauda.
-- **Pele**: shader com "wrap" avermelhado no terminador (falso espalhamento subsuperficial), oclusão por cavidade calculada na malha, brilho por vértice (lábios mais brilhantes), sombras suaves projetadas (nariz, pálpebra sobre o olho, queixo).
+- **Pele**: variação orgânica de tom (manchas suaves por ruído, testa mais clara, nariz/maçãs/orelhas mais rosados, olheira sutil, barba sombreada no masculino), microrrelevo no shader que quebra o brilho como pele real, zona T e lábios mais brilhantes, segunda camada especular suave, "wrap" avermelhado no terminador (falso espalhamento subsuperficial), oclusão por cavidade e sombras suaves projetadas.
 - **4 presets** com identidade própria, trocados por botões:
   - `feminine_soft` — rosto em coração, olhos amendoados grandes com delineado e cílios, sobrancelha arqueada, nariz delicado, lábios cheios.
   - `masculine_soft` — rosto mais longo, mandíbula quadrada com queixo largo, arcada forte, olhos mais estreitos sob sobrancelhas grossas e baixas, nariz longo.
@@ -24,10 +24,10 @@ Para rodar localmente, sirva a pasta com qualquer servidor estático (ex.: `pyth
 ## Estrutura
 ```
 index.html        interface, cena (luzes, sombras) e exportação
-src/presets.js    dados dos presets (volumes do SDF + olhos, nariz, boca…) e aplicação dos sliders
-src/head.js       geração procedural: SDF da cabeça, projeção da malha, relevo do rosto, olhos, cílios, pele
+src/presets.js    dados dos presets (crânio, curvas do rosto, olhos, nariz, boca, pele…) e aplicação dos sliders
+src/head.js       geração procedural: SDF (crânio + casca facial por curvas), projeção da malha, relevo do rosto, olhos, cílios, shader de pele
 ```
-Para criar um novo preset, copie uma entrada de `PRESETS` (`src/presets.js`), ajuste os volumes (`cran`, `face`, `cheekB`, `jaw`, `chin`, `neck`, `scm`) e os traços, e inclua o id em `PRESET_ORDER` e em `SUBS` (`index.html`).
+Para criar um novo preset, copie uma entrada de `PRESETS` (`src/presets.js`), ajuste o crânio (`cran`, `occ`), as curvas da casca facial (`loft`: `a`, `zf`, `zb`), o pescoço (`neck`, `scm`) e os traços, e inclua o id em `PRESET_ORDER` e em `SUBS` (`index.html`).
 
 ## Limites desta versão
 Base de rosto, não personagem final: não há cabelo, corpo, figurino, blendshapes, rig facial nem topologia de produção (a malha é uma grade procedural densa, não *edge loops* de animação). Pele com cor por vértice, sem textura pintada; o shader de pele e as sombras ficam no visualizador (o GLB leva geometria, cores por vértice e materiais PBR padrão). A geração completa leva algumas centenas de milissegundos ao trocar de preset. As referências aprovadas são direção de arte para revisão manual, não um resultado reproduzido.
