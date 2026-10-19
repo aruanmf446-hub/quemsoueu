@@ -1,5 +1,7 @@
 // Figurinos procedurais no espaço do corpo. Nenhuma alteração na pele ou no rig facial.
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { buildSdfOutfit, twoTone, stripeMaterial, SDF_OUTFITS, SDF_DEFAULT_COLORS, SDF_DEFAULT_OUTFIT } from './outfits.js';
 
 export const OUTFITS = {
   none: { label: 'Sem roupa', sub: 'Somente a malha do corpo' },
@@ -9,14 +11,18 @@ export const OUTFITS = {
   warrior: { label: 'Guerreiro', sub: 'Couro, ombreira e rebites' },
   cowboy: { label: 'Faroeste', sub: 'Colete, lenço e botas' },
   royal: { label: 'Realeza', sub: 'Túnica longa, capa e broche' },
-  inventor: { label: 'Inventor', sub: 'Jaleco, botões e cinto' }
+  inventor: { label: 'Inventor', sub: 'Jaleco, botões e cinto' },
+  ...SDF_OUTFITS
 };
-export const CLOTH_COLORS = [['Vinho', '#822e42'], ['Vermelho', '#b83c32'], ['Azul', '#324c78'], ['Petróleo', '#246366'], ['Verde', '#426349'], ['Roxo', '#66467f'], ['Creme', '#e8d9b6'], ['Branco', '#e6e3de'], ['Caramelo', '#93613c'], ['Marrom', '#493028'], ['Grafite', '#30323c'], ['Dourado', '#c59842']];
-export const CLOTH_CHANNELS = { fabric: 'Tecido principal', secondary: 'Tecido secundário', trim: 'Acabamentos', leather: 'Couro e calçados' };
-const DEFAULTS = { fabric: '#324c78', secondary: '#e8d9b6', trim: '#c59842', leather: '#493028' };
+export const CLOTH_COLORS = [['Vinho', '#822e42'], ['Vermelho', '#b83c32'], ['Azul', '#324c78'], ['Petróleo', '#246366'], ['Verde', '#426349'], ['Roxo', '#66467f'], ['Creme', '#e8d9b6'], ['Branco', '#e6e3de'], ['Caramelo', '#93613c'], ['Marrom', '#493028'], ['Grafite', '#30323c'], ['Dourado', '#c59842'], ['Azul real', '#2f4fb5'], ['Turquesa', '#4f8fd8'], ['Rubi', '#c4161f'], ['Preto', '#17111a'], ['Pérola', '#f3f1ee'], ['Cinza ferro', '#8c8a86'], ['Osso', '#e8dcc0']];
+export const CLOTH_CHANNELS = { fabric: 'Tecido principal', secondary: 'Tecido secundário', accent: 'Destaque', pants: 'Calça', trim: 'Acabamentos e metal', leather: 'Couro e calçados' };
+const DEFAULTS = { fabric: '#324c78', secondary: '#e8d9b6', accent: '#8e3326', pants: '#3a3836', trim: '#c59842', leather: '#493028' };
+// cores padrão de um figurino (ao escolher o figurino no catálogo)
+export const outfitColors = id => ({ ...DEFAULTS, ...(SDF_DEFAULT_COLORS[id] || {}) });
 export function defaultClothes(id) {
   const styles = { feminine_soft: 'dress', feminine_bold: 'dress', cute_round: 'casual', masculine_soft: 'casual', old_king: 'royal', alchemist_villain: 'inventor', dwarf_bard: 'casual', sad_clown: 'clown', orc_warrior: 'warrior', cactus_cowboy: 'cowboy', pepper_king: 'royal', chili_bandit: 'cowboy' };
   const colors = id === 'sad_clown' ? { fabric: '#822e42', secondary: '#e8d9b6', leather: '#822e42' } : id === 'pepper_king' || id === 'old_king' ? { fabric: '#822e42' } : id === 'alchemist_villain' ? { fabric: '#e6e3de', secondary: '#324c78' } : id === 'orc_warrior' || id === 'cactus_cowboy' ? { fabric: '#93613c', secondary: '#30323c' } : {};
+  if (SDF_DEFAULT_OUTFIT[id]) return { outfit: SDF_DEFAULT_OUTFIT[id], clothColors: outfitColors(SDF_DEFAULT_OUTFIT[id]) };
   return { outfit: styles[id] || 'none', clothColors: { ...DEFAULTS, ...colors } };
 }
 
@@ -28,6 +34,7 @@ export function buildClothes(body, look) {
   }
   const result = { group, setColors(colors) { for (const [key, mat] of Object.entries(materials)) mat.color.set(colors[key] || DEFAULTS[key]) }, dispose() { group.traverse(o => { if (o.isMesh) o.geometry.dispose() }); Object.values(materials).forEach(m => m.dispose()) } };
   const style = look.outfit;
+  if (SDF_OUTFITS[style] && body) return buildSculpted(body, style, look.clothColors || outfitColors(style));
   if (!body || !OUTFITS[style] || style === 'none') return result;
   const B = body.proportions, J = body.joints, L = J.Lb, W = B.W, zc = J.zCenter;
   const Y = f => J.yNeck - L * f;
@@ -173,4 +180,46 @@ export function buildClothes(body, look) {
     ball('Fivela', point(.32, 0, .28 * W), [.14 * W, .085 * W, .035 * W], 'trim');
   }
   return result;
+}
+
+// ---------- figurinos esculpidos (src/outfits.js) ----------
+function buildSculpted(body, style, cols) {
+  const group = new THREE.Group(); group.name = 'Figurino';
+  const c = k => cols[k] || DEFAULTS[k];
+  const ruby = style === 'mermaid_ruby';
+  const std = (k, o = {}) => new THREE.MeshPhysicalMaterial({ name: 'Roupa_' + k, color: c(k), roughness: .78, sheen: .35, sheenRoughness: .6, sheenColor: new THREE.Color('#ffffff').multiplyScalar(.25), side: THREE.DoubleSide, ...o });
+  const mats = {
+    fabric: std('fabric'), secondary: std('secondary'), accent: std('accent'), pants: std('pants'),
+    leather: std('leather', { roughness: .62, sheen: .1 }), trim: std('trim', { metalness: .9, roughness: .3, sheen: 0 }),
+    gem: new THREE.MeshPhysicalMaterial({ name: 'Roupa_gem', color: c('accent'), roughness: .05, clearcoat: 1, specularIntensity: 1, ior: 2.2, flatShading: true }),
+    pearl: new THREE.MeshPhysicalMaterial({ name: 'Roupa_perola', color: '#f6f0e6', roughness: .22, sheen: 1, sheenColor: new THREE.Color('#ffe6f2'), clearcoat: .8 }),
+    glass: new THREE.MeshPhysicalMaterial({ name: 'Roupa_vidro', color: '#e9eef2', roughness: .05, transparent: true, opacity: .35, clearcoat: 1, depthWrite: false }),
+    liquid: new THREE.MeshPhysicalMaterial({ name: 'Roupa_liquido', color: c('accent'), emissive: c('accent'), emissiveIntensity: .35, roughness: .2, transparent: true, opacity: .9 }),
+    tail: twoTone('Roupa_cauda', c('fabric'), c('accent'), { scales: true, roughness: .32, clearcoat: .6, clearcoatRoughness: .25, sheen: .4, sheenColor: new THREE.Color('#ffffff') }),
+    fin: twoTone('Roupa_nadadeira', c('fabric'), c('accent'), { side: THREE.DoubleSide, transparent: true, opacity: .9, roughness: .3, clearcoat: .5, dark: true }),
+    stripesV: stripeMaterial('Roupa_listras', [c('secondary'), c('fabric'), c('accent')], 'x', .3 * (body.joints.W || 1)),
+    stripesH: stripeMaterial('Roupa_meias', [c('fabric'), c('secondary')], 'y', .07),
+    veil: twoTone('Roupa_veu', ruby ? c('accent') : c('secondary'), ruby ? '#3a0508' : c('trim'), { side: THREE.DoubleSide, transparent: true, opacity: .45, roughness: .4, depthWrite: false })
+  };
+  const geos = {};
+  const add = (name, geo, ch) => { const m = new THREE.Mesh(geo, mats[ch] || mats.fabric); m.name = 'Roupa_' + name; m.castShadow = !(mats[ch] && mats[ch].transparent); m.receiveShadow = true; if (ch === 'veil' || ch === 'glass') m.renderOrder = 3; group.add(m); return m };
+  const addGeo = (ch, g) => { (geos[ch] || (geos[ch] = [])).push(g) };
+  buildSdfOutfit(body, style, cols, mats, add, addGeo);
+  for (const [ch, list] of Object.entries(geos)) {
+    const norm = list.map(g => { if (g.attributes.uv) g.deleteAttribute('uv'); for (const k of Object.keys(g.attributes)) if (k !== 'position' && k !== 'normal') g.deleteAttribute(k); if (!g.attributes.normal) g.computeVertexNormals(); return g.index ? g.toNonIndexed() : g });
+    const merged = mergeGeometries(norm, false); norm.forEach(g => g.dispose()); list.forEach(g => g.dispose());
+    if (merged) add('Detalhes_' + ch, merged, ch);
+  }
+  return {
+    group,
+    setColors(cc) {
+      const k = x => cc[x] || DEFAULTS[x];
+      for (const ch of ['fabric', 'secondary', 'accent', 'pants', 'leather', 'trim']) mats[ch].color.set(k(ch));
+      mats.gem.color.set(k('accent')); mats.liquid.color.set(k('accent')); mats.liquid.emissive.set(k('accent'));
+      mats.tail.color.set(k('fabric')); mats.tail.userData.colorB.set(k('accent')); mats.fin.color.set(k('fabric')); mats.fin.userData.colorB.set(k('accent'));
+      mats.veil.color.set(ruby ? k('accent') : k('secondary'));
+      mats.stripesV.userData.cols[0].set(k('secondary')); mats.stripesV.userData.cols[1].set(k('fabric')); mats.stripesV.userData.cols[2].set(k('accent')); mats.stripesH.userData.cols[0].set(k('fabric')); mats.stripesH.userData.cols[1].set(k('secondary'));
+    },
+    dispose() { group.traverse(o => { if (o.isMesh) o.geometry.dispose() }); Object.values(mats).forEach(m => m.dispose()) }
+  };
 }

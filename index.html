@@ -69,7 +69,7 @@ import {buildHead,BEARD_STYLES} from './src/head.js';
 import {PRESETS,PRESET_ORDER,FAMILY_ORDER} from './src/presets.js';
 import {EXPRESSIONS,NEUTRAL,talkPose} from './src/rig.js';
 import {buildBody,headScale} from './src/body.js';
-import {buildClothes,OUTFITS,CLOTH_COLORS,CLOTH_CHANNELS} from './src/clothes.js';
+import {buildClothes,OUTFITS,CLOTH_COLORS,CLOTH_CHANNELS,outfitColors} from './src/clothes.js';
 import {defaultLook,buildLook,attachLook,headOpts,skinPalette,HAIR_STYLES,HAIR_COLORS,ACCESSORIES,ACC_SLOTS,ACC_COLORS} from './src/look.js';
 const host=document.getElementById('stage'),scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(30,1,.05,100);
 const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});
@@ -124,7 +124,7 @@ const ground=new THREE.Mesh(new THREE.PlaneGeometry(40,40),new THREE.ShadowMater
 function wrap(h){h.root=new THREE.Group();h.root.name='Personagem_'+(h.params.id||presetId);h.root.add(h.group);return h}
 function addBody(h,cell){
   if(!el('showBody').checked)return null;
-  const id=h.params.id||presetId,s=headScale(id),b=buildBody(h.fit,id,{...(cell?{cell}:{}),headScale:s});if(!b)return null;
+  const id=h.params.id||presetId,s=headScale(id),b=buildBody(h.fit,id,{...(cell?{cell}:{}),headScale:s,mermaid:!!(OUTFITS[getLook().outfit]||{}).mermaid});if(!b)return null;
   const pv=b.pivot;h.group.scale.setScalar(s);h.group.position.set(pv.x*(1-s),pv.y*(1-s),pv.z*(1-s));h.group.updateMatrixWorld(true);
   const skin=h.group.getObjectByName('Head_Skin'),m=new THREE.Mesh(b.geo,b.vegSkin?new THREE.MeshPhysicalMaterial({name:'Skin_Body',vertexColors:true,roughness:.5,clearcoat:.25,clearcoatRoughness:.4,sheen:.3,sheenColor:new THREE.Color('#ffffff').multiplyScalar(.3)}):skin.material);m.name='Body';m.castShadow=true;m.receiveShadow=true;
   h.root.add(m);h.body={...b,mesh:m};return h.body;
@@ -179,9 +179,9 @@ function refreshUI(){
   el('gBeard').style.display=veg?'none':'';
   el('gClothes').classList.toggle('off',!current.body);
   el('clothesHint').textContent=robot?'O robô usa o próprio casco.':!current.body?'Ative Mostrar corpo para experimentar as roupas.':'Conjuntos completos · cores independentes dos acessórios';
-  el('outfits').replaceChildren(...Object.entries(OUTFITS).map(([id,def])=>card(def.label,def.sub,look.outfit===id,()=>{look.outfit=id;busy('Vestindo…',()=>{rebuildClothes();refreshUI()})})));
+  el('outfits').replaceChildren(...Object.entries(OUTFITS).map(([id,def])=>card(def.label,def.sub,look.outfit===id,()=>{const flip=!!(OUTFITS[look.outfit]||{}).mermaid!==!!def.mermaid;look.outfit=id;if(def.channels)look.clothColors=outfitColors(id);busy('Vestindo…',()=>{flip?rebuildHead():(rebuildClothes(),refreshUI())})})));
   const clothColors=el('clothColors');clothColors.replaceChildren();
-  if(look.outfit!=='none')for(const [key,label] of Object.entries(CLOTH_CHANNELS)){
+  if(look.outfit!=='none')for(const [key,label] of Object.entries(CLOTH_CHANNELS)){if(OUTFITS[look.outfit].channels&&!OUTFITS[look.outfit].channels.includes(key))continue;if(!OUTFITS[look.outfit].channels&&(key==='accent'||key==='pants'))continue;
     const h=document.createElement('div');h.className='sub';h.textContent=label;clothColors.append(h);
     const row=document.createElement('div');row.className='sws';clothColors.append(row);
     row.append(...CLOTH_COLORS.map(([name,hex])=>swatch(hex,name,look.clothColors[key]===hex,()=>{look.clothColors[key]=hex;clothesObj.setColors(look.clothColors);refreshUI()})));

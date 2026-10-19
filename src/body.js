@@ -74,7 +74,7 @@ export const BODIES = {
 export const headScale = id => (BODIES[id] && BODIES[id].head) || 1;
 
 // ---------- SDF do corpo ----------
-function makeBodySDF(fit, presetId, hs = 1) { // hs: escala da cabeça (a cabeça diminui em volta da base do pescoço; o corpo não muda)
+function makeBodySDF(fit, presetId, hs = 1, mermaid = false) { // hs: escala da cabeça (a cabeça diminui em volta da base do pescoço; o corpo não muda)
   const P = fit.P, B = { ...BASE, ...(BODIES[presetId] || {}) };
   const prims = []; // { f(x,y,z) com x ≥ 0 (corpo simétrico), b: esfera envolvente, k }
   const add = (f, b, k) => prims.push({ f, b, k });
@@ -151,7 +151,8 @@ function makeBodySDF(fit, presetId, hs = 1) { // hs: escala da cabeça (a cabeç
   // ---- pernas ----
   const hipJ = V(.45 * W * M.hi, Y(.465), z0 + .02), lk = (.735 - .465) * B.leg, la = (.955 - .735) * B.leg;
   const fK = .465 + (.49 * (lk / (lk + la))), knee = V(.4 * W * (.9 + .1 * M.hi), Y(fK), z0 + .05), ankle = V(.36 * W, ySole + .033 * Lb * (.9 + .1 * B.foot), z0 - .02);
-  joints.knee = knee; joints.ankle = ankle;
+  joints.knee = knee; joints.ankle = ankle; joints.hip = hipJ; joints.W = W; joints.Y = Y; joints.M = M; joints.mermaid = mermaid;
+  if (!mermaid) { // sereia: sem pernas (a cauda é uma peça do figurino)
   const rT = .38 * W * (1 + .15 * mu) * (.92 + .12 * M.hi), rK = .25 * W * (1 + .15 * mu), rAn = .125 * W * (1 + .15 * mu);
   add((x, y, z) => roundCone(x, y, z, hipJ, rT, knee, rK), bs(hipJ.clone().lerp(knee, .5), hipJ.distanceTo(knee) / 2 + rT), .14 * W);
   { const c = hipJ.clone().lerp(knee, .35).add(V(.0, 0, .08 * W)); add((x, y, z) => ellip(x, y, z, c, rT * .8, hipJ.distanceTo(knee) * .36, rT * .78), bs(c, Math.max(rT * .8, hipJ.distanceTo(knee) * .36) + .05), .3 * W) } // quadríceps
@@ -159,6 +160,7 @@ function makeBodySDF(fit, presetId, hs = 1) { // hs: escala da cabeça (a cabeç
   { const c = knee.clone().lerp(ankle, .26).add(V(-.01, 0, -.08 * W)); add((x, y, z) => ellip(x, y, z, c, rK * .9, knee.distanceTo(ankle) * .28, rK * .9), bs(c, Math.max(rK * .9, knee.distanceTo(ankle) * .28) + .05), .22 * W) } // panturrilha
   { const c = knee.clone().add(V(0, -.02, rK * .5)); add((x, y, z) => ellip(x, y, z, c, rK * .55, rK * .6, rK * .4), bs(c, rK), .14 * W) } // joelho
   foot(ankle, ySole, .105 * Lb * B.foot * (.9 + .1 * W), W);
+  }
   if (cactus) joints.ribs = PT;
 
   function hand(wr, along, Lh, rw, nF) { // mão relaxada, palma virada para a coxa, polegar para a frente
@@ -299,17 +301,31 @@ function mesh(sdf, bounds, cell) {
   return { pos: new Float32Array(pos), idx, val, cell, origin: [x0, y0, z0] };
 }
 
+// malha de qualquer campo de distância (usada pelo corpo e pelos figurinos): surface nets + 1 passo de Newton + normais
+export function sdfMesh(f, bounds, cell) {
+  const m = mesh(f, bounds, cell), p = m.pos, e = cell * .5;
+  for (let i = 0; i < p.length; i += 3) {
+    const x = p[i], y = p[i + 1], z = p[i + 2];
+    const a1 = f(x + e, y - e, z - e), a2 = f(x - e, y - e, z + e), a3 = f(x - e, y + e, z - e), a4 = f(x + e, y + e, z + e);
+    const d = (a1 + a2 + a3 + a4) / 4, gx = a1 - a2 - a3 + a4, gy = -a1 - a2 + a3 + a4, gz = -a1 + a2 - a3 + a4, gl = sqrt(gx * gx + gy * gy + gz * gz) || 1;
+    const st = clamp(d, -cell, cell); p[i] -= gx / gl * st; p[i + 1] -= gy / gl * st; p[i + 2] -= gz / gl * st;
+  }
+  const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(p, 3)); geo.setIndex(m.idx); geo.computeVertexNormals();
+  return geo;
+}
+export { roundCone, ellip, ellipO };
+
 // ---------- montagem ----------
 const cache = new Map();
 export function buildBody(fit, presetId, opts = {}) {
   if (!fit || !fit.P || fit.P.kind === 'robot' || !BODIES[presetId]) return null;
   const T0 = performance.now(), P = fit.P;
-  const hs = opts.headScale ?? 1, key = presetId + '|' + (opts.cell || 0) + '|' + hs;
+  const hs = opts.headScale ?? 1, mer = !!opts.mermaid, key = presetId + '|' + (opts.cell || 0) + '|' + hs + '|' + mer;
   let geo, S;
   const hit = cache.get(key);
   if (hit) { geo = hit.geo.clone(); S = hit.S }
   else {
-    S = makeBodySDF(fit, presetId, hs);
+    S = makeBodySDF(fit, presetId, hs, mer);
     const B = S.joints.bounds, cell = opts.cell || (S.joints.limb ? .014 : .028 * clamp(S.B.W, 1, 1.3));
     const m = mesh(S.f, B, cell);
     // projeta cada vértice na superfície (2 passos de Newton com gradiente numérico)
