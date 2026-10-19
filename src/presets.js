@@ -19,16 +19,16 @@ export const PRESETS = {
     cran: [.18, -.08, .79, .78, .84, .84, 2.4], occ: [.02, -.5, .58, .55, .42, .25],
     loft: { y: [-1.1, -1.02, -.92, -.8, -.66, -.5, -.32, -.15, 0, .15, .32], a: [.11, .22, .385, .54, .65, .725, .76, .765, .74, .6, .42],
       zf: [.62, .68, .71, .72, .735, .765, .78, .76, .72, .6, .42], zb: [.36, .26, .1, -.04, -.15, -.22, -.26, -.28, -.3, -.3, -.3], n: 2.2, cb: .12, k: .16 },
-    neck: [.26, -.58, -.2, -1.6, -.3, .12], scm: [.3, -.38, -.3, .07, -1.4, -.08, .075, .14],
+    neck: [.35, -.62, -.13, -1.6, -.2, .24], scm: [.3, -.4, -.32, .07, -1.4, -.04, .075, .16],
     eyeX: .355, eyeY: 0, Re: .232, openW: deg(64), openU: deg(24), openL: deg(-23), peakU: -.12, peakL: .12, irisAng: deg(31.5),
     tilt: deg(5), sink: .2, socket: .035, crease: .016, creaseGap: .05, lidShade: .55, orbit: .022, lidFold: .009, lowerRoll: .006, eyeShadow: .5,
     lash: .025, flick: .07, lashN: 15, lashLen: .075, lowerLash: .5,
     // sobrancelhas
     browGap: .172, browTh: .042, browArch: .036, browPeak: .66, browSlope: .006, browLen: 1.1,
     // nariz
-    noseTipY: -.4, noseH: .08, noseW: .92, tipH: .06, tipR: .05, alaeH: .019, alaeX: .072, scoop: 1.5,
+    noseTipY: -.4, noseH: .078, noseW: .86, tipH: .064, tipR: .056, alaeH: .024, alaeX: .06, scoop: 1.5,
     // boca
-    mouthY: -.725, mouthW: .215, lipU: .05, lipL: .07, lipH: .05, smile: .8, bow: .5,
+    mouthY: -.725, mouthW: .23, lipU: .046, lipL: .064, lipH: .046, smile: 1.15, bow: .5,
     // volumes
     cheekH: .05, chinH: .03, muzzle: .012, browRidge: .015, fold: .5, zyg: .012, hollow: .005, temple: .01,
     blushK: 0.75, earS: .88
@@ -40,7 +40,7 @@ export const PRESETS = {
     cran: [.18, -.1, .82, .8, .86, .86, 2.6], occ: [0, -.52, .6, .55, .44, .25],
     loft: { y: [-1.17, -1.11, -1.0, -.86, -.7, -.48, -.25, 0, .15, .32], a: [.27, .37, .5, .6, .66, .7, .74, .76, .62, .44],
       zf: [.58, .66, .69, .71, .74, .78, .78, .74, .62, .44], zb: [.38, .3, .1, -.12, -.24, -.3, -.3, -.3, -.3, -.3], n: 2.6, cb: .06, k: .12, blur: .04 },
-    neck: [.31, -.62, -.2, -1.55, -.3, .12], scm: [.36, -.42, -.3, .09, -1.4, -.06, .095, .14],
+    neck: [.42, -.66, -.13, -1.6, -.2, .22], scm: [.36, -.44, -.32, .09, -1.4, -.02, .095, .16],
     eyeX: .362, eyeY: .02, Re: .21, openW: deg(60), openU: deg(15), openL: deg(-17), peakU: -.02, peakL: .18, irisAng: deg(29.5),
     tilt: deg(-1), sink: .19, socket: .05, crease: .008, creaseGap: .035, lidShade: .3, orbit: .045, lidFold: .006, lowerRoll: .005, eyeShadow: .55,
     lash: .011, flick: 0, lashN: 0, lashLen: .03, lowerLash: .15,
@@ -48,7 +48,7 @@ export const PRESETS = {
     noseTipY: -.44, noseH: .1, noseW: 1.08, tipH: .05, tipR: .062, alaeH: .022, alaeX: .085, scoop: 1.0,
     mouthY: -.78, mouthW: .235, lipU: .036, lipL: .062, lipH: .048, smile: .18, bow: .2,
     cheekH: .008, chinH: .03, muzzle: .012, browRidge: .05, fold: .7, zyg: .03, hollow: .02, temple: .022, beard: .32,
-    blushK: 0.35, earS: 1.0
+    blushK: 0.35, earS: .84
   },
   cute_round: {
     id: 'cute_round', label: 'Cute arredondado',
@@ -57,12 +57,12 @@ export const PRESETS = {
     cran: [.14, -.08, .84, .8, .86, .84, 2.3], occ: [0, -.48, .6, .55, .42, .25],
     loft: { y: [-.9, -.82, -.72, -.6, -.46, -.3, -.12, .05, .2, .32], a: [.2, .36, .54, .66, .74, .78, .79, .74, .62, .45],
       zf: [.58, .66, .71, .74, .76, .77, .75, .7, .6, .45], zb: [.3, .12, -.05, -.18, -.25, -.28, -.3, -.3, -.3, -.3], n: 2.15, cb: .1, k: .18 },
-    neck: [.25, -.5, -.2, -1.55, -.3, .12], scm: [.3, -.36, -.28, .07, -1.4, -.08, .07, .14],
+    neck: [.33, -.55, -.13, -1.55, -.2, .24], scm: [.3, -.38, -.3, .07, -1.4, -.04, .07, .16],
     eyeX: .372, eyeY: -.07, Re: .262, openW: deg(60), openU: deg(30), openL: deg(-30), peakU: -.08, peakL: .05, irisAng: deg(35),
     tilt: deg(-2), sink: .215, socket: .03, crease: .01, creaseGap: .05, lidShade: .45, orbit: .012, lidFold: .008, lowerRoll: .007, eyeShadow: .42,
     lash: .016, flick: .025, lashN: 11, lashLen: .06, lowerLash: .3,
     browGap: .27, browTh: .025, browArch: .035, browPeak: .52, browSlope: 0, browLen: .9,
-    noseTipY: -.33, noseH: .03, noseW: .88, tipH: .05, tipR: .058, alaeH: .02, alaeX: .062, scoop: 1.8,
+    noseTipY: -.33, noseH: .04, noseW: .86, tipH: .06, tipR: .06, alaeH: .024, alaeX: .056, scoop: 1.8,
     mouthY: -.565, mouthW: .17, lipU: .042, lipL: .056, lipH: .05, smile: 1.0, bow: .32,
     cheekH: .055, chinH: .01, muzzle: .015, browRidge: .005, fold: .3, temple: .005,
     blushK: 0.8, earS: .82
@@ -74,13 +74,13 @@ export const PRESETS = {
     cran: [.18, -.08, .79, .78, .84, .84, 2.4], occ: [.02, -.5, .58, .55, .42, .25],
     loft: { y: [-1.05, -.97, -.88, -.76, -.63, -.48, -.3, -.13, 0, .15, .32], a: [.11, .21, .37, .52, .63, .715, .765, .775, .74, .6, .42],
       zf: [.62, .68, .71, .72, .735, .765, .78, .76, .72, .6, .42], zb: [.37, .27, .11, -.03, -.14, -.21, -.26, -.28, -.3, -.3, -.3], n: 2.3, cb: .11, k: .14 },
-    neck: [.26, -.58, -.2, -1.55, -.3, .12], scm: [.3, -.38, -.3, .07, -1.4, -.08, .075, .14],
+    neck: [.34, -.62, -.13, -1.6, -.2, .24], scm: [.3, -.4, -.32, .07, -1.4, -.04, .075, .16],
     eyeX: .36, eyeY: 0, Re: .225, openW: deg(66), openU: deg(18), openL: deg(-19), peakU: .12, peakL: .22, irisAng: deg(30),
     tilt: deg(10), sink: .2, socket: .04, crease: .02, creaseGap: .045, lidShade: .9, orbit: .03, lidFold: .01, lowerRoll: .006, eyeShadow: .6,
     lash: .022, flick: .1, lashN: 14, lashLen: .07, lowerLash: .7,
     browGap: .18, browTh: .03, browArch: .075, browPeak: .7, browSlope: .03, browLen: 1.08,
-    noseTipY: -.375, noseH: .085, noseW: .78, tipH: .048, tipR: .044, alaeH: .012, alaeX: .066, scoop: 1.3,
-    mouthY: -.68, mouthW: .23, lipU: .06, lipL: .072, lipH: .055, smile: .45, bow: .3,
+    noseTipY: -.375, noseH: .085, noseW: .82, tipH: .058, tipR: .05, alaeH: .02, alaeX: .058, scoop: 1.3,
+    mouthY: -.68, mouthW: .23, lipU: .06, lipL: .072, lipH: .055, smile: .75, bow: .3,
     cheekH: .025, chinH: .015, muzzle: .012, browRidge: .02, fold: .4, zyg: .026, hollow: .016, temple: .016,
     blushK: 0.62, earS: .86
   }

@@ -89,7 +89,8 @@ function makeSDF(P) {
   const bs = (x, y, z, r) => ({ x, y, z, r }), far = (b, ax, y, z, d, k) => { const dx = ax - b.x, dy = y - b.y, dz = z - b.z; return sqrt(dx * dx + dy * dy + dz * dz) - b.r > d + k + .2 };
   const segB = (ax, ay, az, ra, bx2, by2, bz2, rb) => bs((ax + bx2) / 2, (ay + by2) / 2, (az + bz2) / 2, Math.hypot(bx2 - ax, by2 - ay, bz2 - az) / 2 + Math.max(ra, rb));
   const BN = segB(0, nty, ntz, nr, 0, nby, nbz, nr * 1.1), BO = oc && bs(0, oc[0], oc[1], Math.max(oc[2], oc[3], oc[4]));
-  const S = P.scm, BS = S && segB(S[0], S[1], S[2], S[6], S[3], S[4], S[5], S[6]); // esternocleidomastoideo: de trás da orelha à base do pescoço
+  const S = P.scm, BS = S && segB(S[0], S[1], S[2], S[6], S[3], S[4], S[5], S[6]);
+  const ER = P._earRoot, BE = ER && bs(ER[0], ER[1], ER[2], Math.max(ER[3], ER[4], ER[5])); // esternocleidomastoideo: de trás da orelha à base do pescoço
   return (x, y, z) => {
     const ax = sqrt(x * x + 4e-4); // |x| suave
     let d = superE(x, y - cy, z - cz, crx, cry, crz, crzB, cn);
@@ -102,8 +103,9 @@ function makeSDF(P) {
       if (y < L.y0) dl = Math.max(dl, L.y0 - y); else if (y > L.y1) dl = Math.max(dl, y - L.y1);
       d = smin(d, dl, kf);
     }
-    if (!far(BN, ax, y, z, d, nk)) d = smin(d, roundCone(x, y, z, 0, nty, ntz, nr, 0, nby, nbz, nr * 1.1), nk);
+    if (!far(BN, ax, y, z, d, nk)) d = smin(d, roundCone(x * 1.14, y, z, 0, nty, ntz, nr, 0, nby, nbz, nr * 1.08) * .92, nk); // seção oval (mais funda que larga)
     if (S && !far(BS, ax, y, z, d, S[7])) d = smin(d, roundCone(ax, y, z, S[0], S[1], S[2], S[6], S[3], S[4], S[5], S[6] * .8), S[7]);
+    if (ER && !far(BE, ax, y, z, d, .08)) d = smin(d, ellip(ax - ER[0], y - ER[1], z - ER[2], ER[3], ER[4], ER[5]), .08); // raiz da orelha
     return y - cut > .05 ? d : smaxS(d, cut - y, .05);
   };
 }
@@ -219,7 +221,7 @@ function makeFaceField(P, eyes) {
       const bw = (.036 + .034 * qc * qc) * nW, xb = x / bw;
       const prof = P.noseH * Math.pow(qc, P.scoop) * exp(-((below / (P.tipR * .8)) ** 2));
       dz += prof * exp(-xb * xb);
-      hi += .7 * exp(-((x / (bw * .42)) ** 2)) * sstep(.08, .5, q) * (1 - sstep(.9, 1.1, q));
+      hi += .4 * exp(-((x / (bw * .42)) ** 2)) * sstep(.3, .7, q) * (1 - sstep(.9, 1.1, q));
       ao += .22 * gau(ax - bw * 1.25, bw * .55) * sstep(.15, .5, q) * (1 - sstep(.85, 1.05, q)); // laterais da ponte
       const dy = y - (tipY + .012), ry = dy > 0 ? P.tipR * 1.9 : P.tipR * .78, r2 = (x / (P.tipR * nW)) ** 2 + (dy / ry) ** 2;
       if (r2 < 1) { const k = 1 - r2; dz += P.tipH * k * k; hi += 1.0 * k * k * k * sstep(-.5, .3, dy / ry); gloss += .3 * k * k }
@@ -412,6 +414,11 @@ export function buildHead(presetId, adj, opts = {}) {
   const disposables = [], root = new THREE.Group();
   root.name = 'Head_V2_' + presetId;
   const track = o => (disposables.push(o), o);
+  { // raiz da orelha: um volume suave na cabeça onde a concha se apoia (orelha não fica "colada")
+    const s0 = makeSDF(P), eS = P.earS, Hh = (P.eyeY + .12 - P.noseTipY) / 2 * eS, yE = (P.eyeY + .12 + P.noseTipY) / 2 - .01, zE = -.19;
+    let x = 1.4; for (let k = 0; k < 80; k++) { const d = s0(x, yE - .03, zE); if (d < 1e-4) break; x -= d * .9 }
+    P._earRoot = [x - .02, yE - .03, zE + .01, .06, Hh * .55, Hh * .32];
+  }
   const sdf = makeSDF(P), frontZ = makeFrontZ(sdf);
   const eyes = [-1, 1].map(s => eyeFrame(P, s));
   const field = makeFaceField(P, eyes);
@@ -560,30 +567,38 @@ export function buildHead(presetId, adj, opts = {}) {
     return new THREE.Vector3(-dzx, -dzy, 1).normalize();
   };
 
-  // ---- orelhas ----
+  // ---- orelhas: peça única em "C" — hélice (borda), anti-hélice, concha, trago e lóbulo; tamanho anatômico ----
   {
-    const eS = P.earS, yE = P.eyeY - .1, zE = -.1;
-    let xs = 1.3; for (let k = 0; k < 60; k++) { const d = sdf(xs, yE, zE); if (d < 1e-4) break; xs -= d * .9 }
-    // concha única: elipsoide achatado, face externa escavada (cavidade + anti-hélice), borda grossa = hélice, lóbulo cheio
-    const H = .225 * eS, Wd = .13 * eS, T = .05 * eS, shell = new THREE.SphereGeometry(1, 72, 56), sp = shell.attributes.position, depth = new Float32Array(sp.count);
-    for (let i = 0; i < sp.count; i++) {
-      const ux = sp.getX(i), uy = sp.getY(i), uz = sp.getZ(i), r = Math.min(1, Math.hypot(uy, uz));
-      const lobe = sstep(-.5, -.82, uy), dish = (1 - sstep(.6, .9, r)) * (1 - lobe);
-      const anti = gau(r - .56, .11) * sstep(-.35, .15, uy) * (1 - lobe), concha = gau(uy + .12, .3) * gau(uz - .15, .32) * dish;
-      const dd = ux > 0 ? ux * (1.0 * dish - .45 * anti + .45 * concha) : 0;
-      const wz = Wd * (.7 + .3 * sstep(-.95, .15, uy));
-      sp.setXYZ(i, (ux - dd) * T + T * .45 + .012 * eS * sstep(.2, 1, -uz) * (1 - lobe), uy * H, uz * wz - .03 * eS * uy);
-      depth[i] = dd;
+    const eS = P.earS, Hh = (P.eyeY + .12 - P.noseTipY) / 2 * eS, Wd = Hh * .6, T = Hh * .26;
+    const yE = (P.eyeY + .12 + P.noseTipY) / 2 - .01, zE = -.19;
+    const surfX = (y, z) => { let x = 1.4; for (let k = 0; k < 80; k++) { const d = sdf(x, y, z); if (d < 1e-4) break; x -= d * .9 } return x };
+    let xs = 0; for (const fy of [-.6, -.3, 0, .3, .6]) for (const fz of [-.3, 0, .3]) xs = Math.max(xs, surfX(yE + fy * Hh, zE + fz * Wd)); // maior largura da cabeça sob a orelha
+    const NR = 18, NT = 96, W = NT + 1, rows = 2 * NR + 1, pos = new Float32Array(rows * W * 3), cl = new Float32Array(rows * W * 3), c = new THREE.Color();
+    const rimC = skin.clone().lerp(blush, .32), bowlC = skin.clone().lerp(shade, .5).lerp(blush, .25);
+    for (let i = 0; i < rows; i++) for (let j = 0; j < W; j++) {
+      const front = i <= NR, r = front ? i / NR : (2 * NR - i) / NR, th = -Math.PI + 2 * Math.PI * j / NT; // th = 0 em cima, >0 para trás
+      const cy = Math.cos(th), sz = Math.sin(th);
+      const Yo = Hh * cy, Zo = -Wd * sz * (sz < 0 ? .72 : 1) * (1 - .35 * sstep(.2, 1, -cy)); // contorno: frente mais reta, lóbulo mais estreito
+      const Y = r * Yo, Z = r * Zo, E = Math.sqrt(Math.max(0, 1 - Math.pow(r, 8)));
+      const lobe = sstep(-.55, -.85, cy), helix = sstep(-.9, -.35, th) * (1 - sstep(2.55, 3.0, th)) * (1 - lobe);
+      let h, depth = 0;
+      if (front) {
+        const bowl = (1 - sstep(.55, .82, r)) * (1 - lobe), anti = gau(r - .6, .1) * sstep(.15, .6, th) * (1 - sstep(2.0, 2.5, th));
+        const concha = gau(Y / Hh + .12, .32) * gau(Z / Wd - .22, .34) * bowl, trag = gau(Y / Hh + .14, .13) * gau(Z / Wd - .62, .12);
+        depth = .85 * bowl + .6 * concha - .6 * anti;
+        h = T * (.55 + .45 * Math.sqrt(Math.max(0, 1 - r * r))) + T * 1.1 * gau(r - .87, .085) * helix + T * .6 * anti - T * .8 * bowl - T * .3 * concha + T * 1.0 * trag + T * .5 * lobe * (1 - r * r);
+      } else h = -T * .95 * Math.pow(Math.max(0, 1 - r * r), .7);
+      const k = (i * W + j) * 3; pos[k] = h * E; pos[k + 1] = Y; pos[k + 2] = Z;
+      c.copy(front ? (depth > 0 ? skin.clone().lerp(bowlC, clamp(depth, 0, 1) * .7) : skin.clone().lerp(rimC, clamp(-depth + gau(r - .87, .1) * helix, 0, 1))) : skin).lerp(blush, .12);
+      cl[k] = c.r; cl[k + 1] = c.g; cl[k + 2] = c.b;
     }
-    shell.computeVertexNormals();
-    const parts = [setColors(shell, (c, x, y, z, i) => c.copy(skin).lerp(blush, .28).lerp(shade, clamp(depth[i] * .45, 0, .5)))];
-    const tr = new THREE.SphereGeometry(1, 20, 14); tr.scale(.018 * eS, .03 * eS, .02 * eS); tr.translate(T * .9, -.045 * eS, Wd * .82); // trago
-    parts.push(setColors(tr, c => c.copy(skin).lerp(blush, .25)));
-    const geoR = mergeGeos(parts);
+    const idx = []; for (let i = 0; i < rows - 1; i++) for (let j = 0; j < NT; j++) { const a2 = i * W + j, b2 = a2 + 1, c2 = a2 + W, d2 = c2 + 1; idx.push(a2, b2, c2, b2, d2, c2) }
+    const g0 = new THREE.BufferGeometry(); g0.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g0.setIndex(idx); g0.computeVertexNormals(); fixNormals(g0);
+    g0.setAttribute('color', new THREE.BufferAttribute(cl, 3)); g0.setAttribute('gloss', new THREE.BufferAttribute(new Float32Array(rows * W), 1));
     for (const s of [-1, 1]) {
-      const g = s > 0 ? geoR : mirrorX(geoR);
+      const g = s > 0 ? g0 : mirrorX(g0);
       const m = new THREE.Mesh(track(g), skinMat); m.name = 'Ear_' + (s < 0 ? 'L' : 'R');
-      m.position.set(s * (xs + .018 * eS), yE, zE); m.rotation.set(0, s * -.2, s * .08); root.add(m);
+      m.position.set(s * (xs - T * .2), yE, zE); m.rotation.set(-.14, s * -.5, s * .04); root.add(m);
     }
   }
 

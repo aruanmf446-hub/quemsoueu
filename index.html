@@ -110,7 +110,7 @@ document.getElementById('download').onclick=async e=>{
   catch(err){alert('Falha na exportação: '+(err&&err.message||err))}
   finally{btn.disabled=false;btn.textContent=label}
 };
-window.__atelie={timings:()=>current.group.userData.timings,setPreset,aim,VIEWS,camera,orbit,clay:on=>current.group.traverse(o=>{if(o.isMesh&&o.material.vertexColors!==undefined&&o.material.name==='Skin'){o.material.vertexColors=!on;o.material.sheen=on?0:.6;if(on)o.material.color.set('#d8d4cf');else o.material.color.set('#ffffff');o.material.needsUpdate=true}}),exportGLB};
+window.__atelie={group:()=>current.group,timings:()=>current.group.userData.timings,setPreset,aim,VIEWS,camera,orbit,clay:on=>current.group.traverse(o=>{if(o.isMesh&&o.material.vertexColors!==undefined&&o.material.name==='Skin'){o.material.vertexColors=!on;o.material.sheen=on?0:.6;if(on)o.material.color.set('#d8d4cf');else o.material.color.set('#ffffff');o.material.needsUpdate=true}}),exportGLB};
 
 rebuild();
 function resize(){const w=host.clientWidth,h=host.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}addEventListener('resize',resize);resize();
