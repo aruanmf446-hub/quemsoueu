@@ -1,0 +1,285 @@
+// Acessórios da Head V2 — peças prontas que se encaixam na cabeça e no cabelo de cada personagem.
+// Encaixe: anéis (coroa, tiara, chapéus) medidos na superfície externa real (pele + cabelo, por raios);
+// brincos no lóbulo da orelha; enfeite de testa na linha do cabelo; flores e coral sobre o cabelo.
+// Cores por material (metal, pedra principal, pedras menores, chapéu, flores) → trocar cor é instantâneo.
+import * as THREE from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+
+const { clamp } = THREE.MathUtils;
+const sstep = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t) };
+const V = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z), DEG = Math.PI / 180;
+
+const GEMS = [['Rubi', '#c0182a'], ['Safira', '#2453c4'], ['Esmeralda', '#16935a'], ['Ametista', '#8e3fd0'], ['Turquesa', '#2fa6c9'], ['Topázio', '#e8a020'], ['Diamante', '#e6f0ff']];
+export const ACC_COLORS = {
+  metal: { label: 'Metal', list: [['Ouro', '#d4a640'], ['Ouro rosé', '#d9967a'], ['Prata', '#c9ccd1'], ['Bronze', '#a8723e'], ['Latão velho', '#b5893f'], ['Preto', '#2a2a2e']] },
+  gem: { label: 'Pedra principal', list: GEMS },
+  gem2: { label: 'Pedras menores', list: GEMS },
+  fabric: { label: 'Chapéu', list: [['Couro', '#6b4228'], ['Café', '#3e2a1e'], ['Preto', '#1d1b1f'], ['Vermelho', '#9e2420'], ['Bege', '#c8b08a'], ['Azul', '#2b3f7a'], ['Verde', '#2f5a3a']] },
+  flower: { label: 'Flores / coral', list: [['Branco', '#f6f1e6'], ['Rosa', '#f19bb8'], ['Amarelo', '#f2cf4a'], ['Lilás', '#b79be6'], ['Coral', '#d63a22'], ['Azul', '#7fb2f0']] }
+};
+export const ACC_SLOTS = [{ id: 'head', label: 'Cabeça' }, { id: 'ears', label: 'Orelhas' }, { id: 'forehead', label: 'Testa' }, { id: 'hairpin', label: 'Enfeite de cabelo' }, { id: 'face', label: 'Rosto' }];
+export const ACCESSORIES = {
+  tiara: { slot: 'head', label: 'Tiara', colors: ['metal', 'gem', 'gem2'] },
+  crown: { slot: 'head', label: 'Coroa', colors: ['metal', 'gem', 'gem2'] },
+  cowboy: { slot: 'head', label: 'Chapéu de cowboy', colors: ['fabric', 'metal'] },
+  tophat: { slot: 'head', label: 'Cartola', colors: ['fabric', 'metal'] },
+  bubbles: { slot: 'head', label: 'Coroa de bolhas', colors: ['metal', 'gem'] },
+  drop: { slot: 'ears', label: 'Brinco gota', colors: ['metal', 'gem2'], ears: true },
+  hoops: { slot: 'ears', label: 'Argola', colors: ['metal'], ears: true },
+  studs: { slot: 'ears', label: 'Ponto de luz', colors: ['metal', 'gem2'], ears: true },
+  tikka: { slot: 'forehead', label: 'Joia de testa', colors: ['metal', 'gem'] },
+  flowers: { slot: 'hairpin', label: 'Flores', colors: ['flower'] },
+  coral: { slot: 'hairpin', label: 'Coral', colors: ['flower', 'metal'] },
+  glasses: { slot: 'face', label: 'Óculos redondos', colors: ['metal'] }
+};
+
+// ---------- geometria básica ----------
+function tube(pts, r, seg = 8) { // r: número ou função(t)
+  const n = pts.length, pos = [], idx = [], T = V(), N = V(), B = V(), up = V(0, 1, 0);
+  let prevN = null;
+  for (let i = 0; i < n; i++) {
+    T.copy(pts[Math.min(n - 1, i + 1)]).sub(pts[Math.max(0, i - 1)]).normalize();
+    if (!prevN) { N.copy(Math.abs(T.y) > .9 ? V(1, 0, 0) : up).addScaledVector(T, -(Math.abs(T.y) > .9 ? T.x : T.y)).normalize() } else N.copy(prevN).addScaledVector(T, -prevN.dot(T)).normalize();
+    prevN = N.clone(); B.crossVectors(T, N);
+    const rr = typeof r === 'function' ? r(i / (n - 1)) : r;
+    for (let j = 0; j < seg; j++) { const a = j / seg * Math.PI * 2, c = Math.cos(a) * rr, s = Math.sin(a) * rr; pos.push(pts[i].x + N.x * c + B.x * s, pts[i].y + N.y * c + B.y * s, pts[i].z + N.z * c + B.z * s) }
+  }
+  for (let i = 0; i < n - 1; i++) for (let j = 0; j < seg; j++) { const a = i * seg + j, b = i * seg + (j + 1) % seg, c = a + seg, d = b + seg; idx.push(a, c, b, b, c, d) }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals(); return g;
+}
+const sphere = (p, r, sx = 1, sy = 1, sz = 1, ws = 16, hs = 12) => { const g = new THREE.SphereGeometry(r, ws, hs); g.scale(sx, sy, sz); g.translate(p.x, p.y, p.z); return g };
+function gemGeo(p, r, dir = V(0, 0, 1), stretch = 1) { // pedra lapidada (octaedro alongado), virada para dir
+  const g = new THREE.OctahedronGeometry(r, 0); g.scale(1, stretch, .55); g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(V(0, 0, 1), dir.clone().normalize())); g.translate(p.x, p.y, p.z); return g;
+}
+function place(g, p, dir, up = V(0, 1, 0)) { // geometria local (z = frente) orientada para dir
+  const z = dir.clone().normalize(), x = up.clone().cross(z).normalize(), y = z.clone().cross(x);
+  g.applyMatrix4(new THREE.Matrix4().makeBasis(x, y, z).setPosition(p)); return g;
+}
+function traceR(sdf, y, ph, zc) { const dx = Math.sin(ph), dz = Math.cos(ph); let r = 1.6; for (let k = 0; k < 80; k++) { const d = sdf(dx * r, y, zc + dz * r); if (Math.abs(d) < 1e-4) break; r -= d * .9 } return r }
+
+// ---------- montagem ----------
+export function buildAccessories(fit, sel = {}, cols = {}, hairMeshes = []) {
+  const group = new THREE.Group(); group.name = 'Accessories';
+  const mats = {
+    metal: new THREE.MeshPhysicalMaterial({ name: 'Acc_Metal', color: cols.metal || '#d4a640', metalness: 1, roughness: .26, clearcoat: .3 }),
+    gem: new THREE.MeshPhysicalMaterial({ name: 'Acc_Gem', color: cols.gem || '#c0182a', metalness: 0, roughness: .06, clearcoat: 1, clearcoatRoughness: .02, specularIntensity: 1, ior: 2.2, flatShading: true }),
+    gem2: new THREE.MeshPhysicalMaterial({ name: 'Acc_Gem2', color: cols.gem2 || '#2fa6c9', metalness: 0, roughness: .06, clearcoat: 1, clearcoatRoughness: .02, specularIntensity: 1, ior: 2.2, flatShading: true }),
+    pearl: new THREE.MeshPhysicalMaterial({ name: 'Acc_Pearl', color: '#f4eee2', roughness: .25, sheen: 1, sheenColor: new THREE.Color('#ffe8f0'), clearcoat: .8 }),
+    fabric: new THREE.MeshPhysicalMaterial({ name: 'Acc_Fabric', color: cols.fabric || '#6b4228', roughness: .82, sheen: .5, sheenRoughness: .6, sheenColor: new THREE.Color('#ffffff').multiplyScalar(.25) }),
+    band: new THREE.MeshPhysicalMaterial({ name: 'Acc_Band', color: new THREE.Color(cols.fabric || '#6b4228').multiplyScalar(.45), roughness: .7 }),
+    flower: new THREE.MeshPhysicalMaterial({ name: 'Acc_Flower', color: cols.flower || '#f6f1e6', roughness: .55, sheen: .6, sheenColor: new THREE.Color('#ffffff') }),
+    pollen: new THREE.MeshPhysicalMaterial({ name: 'Acc_Pollen', color: '#e8b52c', roughness: .7 }),
+    glass: new THREE.MeshPhysicalMaterial({ name: 'Acc_Glass', color: '#dfe9f2', roughness: .05, metalness: 0, transparent: true, opacity: .28, specularIntensity: 1, clearcoat: 1, clearcoatRoughness: 0, depthWrite: false, side: THREE.DoubleSide }),
+    liquid: new THREE.MeshPhysicalMaterial({ name: 'Acc_Liquid', color: cols.gem || '#8e3fd0', emissive: cols.gem || '#8e3fd0', emissiveIntensity: .55, roughness: .3, transparent: true, opacity: .85 })
+  };
+  const setColors = c => {
+    if (c.metal) mats.metal.color.set(c.metal);
+    if (c.gem) { mats.gem.color.set(c.gem); mats.liquid.color.set(c.gem); mats.liquid.emissive.set(c.gem) }
+    if (c.gem2) mats.gem2.color.set(c.gem2);
+    if (c.fabric) { mats.fabric.color.set(c.fabric); mats.band.color.set(c.fabric).multiplyScalar(.45) }
+    if (c.flower) mats.flower.color.set(c.flower);
+  };
+  const dispose = () => { group.traverse(o => { if (o.isMesh) o.geometry.dispose() }); Object.values(mats).forEach(m => m.dispose()) };
+  if (!fit) return { group, setColors, dispose };
+
+  const P = fit.P, sdf = fit.sdf, zc = fit.cz, top = fit.top, brow = fit.browY;
+  // mapa do cabelo: maior raio (a partir do eixo vertical da cabeça) por faixa de altura e ângulo — 1 passada nos vértices
+  const hm = hairMeshes.filter(m => m.isMesh), YB = .02, NPH = 120, y0m = -2.2, NY = 200;
+  let hmap = null;
+  if (hm.length) {
+    const key = hm[0].geometry; hmap = key.userData.radMap;
+    if (!hmap) {
+      hmap = new Float32Array(NY * NPH);
+      for (const m of hm) { const a = m.geometry.attributes.position.array; for (let i = 0; i < a.length; i += 3) {
+        const x = a[i], y = a[i + 1], z = a[i + 2] - zc, iy = Math.floor((y - y0m) / YB); if (iy < 0 || iy >= NY) continue;
+        const ip = Math.floor(((Math.atan2(x, z) + Math.PI) / (2 * Math.PI)) * NPH) % NPH, r = Math.hypot(x, z), k = iy * NPH + ip; if (r > hmap[k]) hmap[k] = r } }
+      key.userData.radMap = hmap;
+    }
+  }
+  const hairR = (y, ph) => {
+    if (!hmap) return 0; const iy = Math.floor((y - y0m) / YB), ip = Math.floor(((ph + Math.PI) / (2 * Math.PI)) * NPH); let r = 0;
+    for (let dy = -1; dy <= 1; dy++) for (let dp = -1; dp <= 1; dp++) { const yy = iy + dy; if (yy < 0 || yy >= NY) continue; r = Math.max(r, hmap[yy * NPH + ((ip + dp) % NPH + NPH) % NPH]) }
+    return r;
+  };
+  // raio externo (pele ou cabelo) na altura y e ângulo ph em volta da cabeça
+  const outerR = (y, ph) => Math.max(traceR(sdf, y, ph, zc), hairR(y, ph) + .006);
+  // anel em volta da cabeça: y(ph) = y0 + tilt·cos(ph) (tilt < 0 → mais baixo na frente), raio suavizado + folga
+  function ring(y0, tilt, gap = .012, N = 64) {
+    const rs = [], ys = [];
+    for (let i = 0; i < N; i++) { const ph = -Math.PI + 2 * Math.PI * i / N, y = y0 + tilt * Math.cos(ph); ys.push(y); rs.push(outerR(y, ph)) }
+    const sm = rs.map((_, i) => { let s = 0, w = 0; for (let k = -3; k <= 3; k++) { const ww = 1 - Math.abs(k) / 4; s += Math.max(rs[(i + k + N) % N], rs[i] * .97) * ww; w += ww } return s / w + gap });
+    const at = ph => { const f = ((ph + Math.PI) / (2 * Math.PI)) * N, i = Math.floor(f), t = f - i, a = (i % N + N) % N, b = (a + 1) % N; const r = sm[a] + (sm[b] - sm[a]) * t, y = y0 + tilt * Math.cos(ph); return V(Math.sin(ph) * r, y, zc + Math.cos(ph) * r) };
+    return { at, out: ph => V(Math.sin(ph), 0, Math.cos(ph)) };
+  }
+  const geos = {}; const add = (k, g) => { (geos[k] || (geos[k] = [])).push(g) };
+  const hasHair = hm.length > 0;
+
+  // ---------------- cabeça ----------------
+  const head = sel.head;
+  if (head === 'crown') {
+    const R = ring(top - (P.lathe ? .26 : .36), -.08, .008), H = .12, N = 8;
+    const band = [], bandT = [];
+    for (let i = 0; i <= 96; i++) { const ph = -Math.PI + 2 * Math.PI * i / 96; band.push(R.at(ph)) }
+    for (const dy of [0, H]) add('metal', tube(band.map(p => p.clone().add(V(0, dy, 0)).addScaledVector(V(p.x, 0, p.z - zc).normalize(), dy * .12)), .016, 8));
+    // faixa (anel cônico levemente aberto para cima)
+    { const pos = [], idx = []; for (let i = 0; i <= 96; i++) for (const v of [0, 1]) { const p = band[i], o = V(p.x, 0, p.z - zc).normalize(); pos.push(p.x + o.x * v * H * .12, p.y + v * H, p.z + o.z * v * H * .12) }
+      for (let i = 0; i < 96; i++) { const a = i * 2; idx.push(a, a + 2, a + 1, a + 1, a + 2, a + 3) }
+      const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals(); add('metalD', g) }
+    for (let k = 0; k < N; k++) { // pontas (prisma triangular afinando), mais alta na frente
+      const ph = k / N * Math.PI * 2, p = R.at(ph), o = V(p.x, 0, p.z - zc).normalize(), front = Math.max(0, Math.cos(ph)), h = .2 + .1 * front, w = .085 + .02 * front;
+      const shape = new THREE.Shape(); shape.moveTo(-w, 0); shape.quadraticCurveTo(-w * .35, h * .45, 0, h); shape.quadraticCurveTo(w * .35, h * .45, w, 0); shape.lineTo(-w, 0);
+      const g = new THREE.ExtrudeGeometry(shape, { depth: .02, bevelEnabled: true, bevelThickness: .006, bevelSize: .006, bevelSegments: 1, curveSegments: 6 });
+      g.translate(0, 0, -.01); g.rotateX(-.12); add('metal', place(g, p.clone().add(V(0, H * .85, 0)).addScaledVector(o, H * .1), o));
+      add('pearl', sphere(p.clone().add(V(0, H * .85 + h + .02, 0)).addScaledVector(o, H * .1 + .03), .022));
+      add(k === 0 ? 'gem' : 'gem2', gemGeo(p.clone().add(V(0, H * .5, 0)).addScaledVector(o, .02), k === 0 ? .055 : .032, o, k === 0 ? 1.5 : 1.2));
+      const ph2 = ph + Math.PI / N, p2 = R.at(ph2), o2 = V(p2.x, 0, p2.z - zc).normalize();
+      add('pearl', sphere(p2.clone().add(V(0, H * .5, 0)).addScaledVector(o2, .018), .016));
+    }
+  }
+  if (head === 'tiara') {
+    const R = ring(top - (hasHair ? .17 : .2), -.15, .006), span = 105 * DEG, pts = [];
+    for (let i = 0; i <= 80; i++) pts.push(R.at(-span + 2 * span * i / 80));
+    add('metal', tube(pts, .011, 8));
+    for (let i = 0; i <= 26; i++) { const ph = -span + 2 * span * i / 26, p = R.at(ph), o = V(p.x, 0, p.z - zc).normalize(); add('pearl', sphere(p.clone().addScaledVector(o, .012).add(V(0, .014, 0)), .014, 1, 1, 1, 10, 8)) }
+    // arcos de filigrana subindo para o centro
+    const arch = (ph0, ph1, h, thick) => { const a = []; for (let i = 0; i <= 20; i++) { const t = i / 20, ph = ph0 + (ph1 - ph0) * t, p = R.at(ph), o = V(p.x, 0, p.z - zc).normalize(); a.push(p.clone().add(V(0, .01 + h * Math.sin(Math.PI * t) ** .8, 0)).addScaledVector(o, .006 + .03 * Math.sin(Math.PI * t) * h)) } add('metal', tube(a, thick, 6)); return a };
+    const K = 4, step = 13 * DEG;
+    for (let k = -K; k < K; k++) { const f = 1 - Math.abs(k + .5) / (K + .5), a = arch(k * step, (k + 1) * step, .05 + .13 * f * f, .007); const tip = a[10]; add('gem2', gemGeo(tip.clone().add(V(0, .014, 0)), .016 + .01 * f, V(tip.x, 0, tip.z - zc), 1.3)) }
+    for (const s of [-1, 1]) for (let k = 0; k < 3; k++) arch(s * (k * step + step * .5), s * ((k + 1.6) * step), .05 + .08 * (1 - k / 3), .005);
+    const c = R.at(0), o = V(0, 0, 1);
+    add('gem', gemGeo(c.clone().add(V(0, .12, .035)), .055, o, 1.45));
+    { const g = new THREE.TorusGeometry(1, .14, 6, 28); g.scale(.058, .085, .058); add('metal', place(g, c.clone().add(V(0, .12, .028)), o)) }
+    for (const s of [-1, 1]) add('gem2', gemGeo(c.clone().add(V(s * .085, .07, .03)), .026, o, 1.3));
+    add('pearl', sphere(c.clone().add(V(0, .235, .03)), .02)); add('gem2', gemGeo(c.clone().add(V(0, .27, .03)), .022, o, 1.6));
+  }
+  if (head === 'cowboy') {
+    const y0 = top - (P.lathe ? .42 : .36), R = ring(y0, -.05, .02), Hc = .42, Wb = .42;
+    // copa: do anel até o topo com vinco central e "beliscões" na frente
+    const NA = 72, NV = 16, cpos = [], cidx = [];
+    for (let j = 0; j <= NV; j++) for (let i = 0; i <= NA; i++) {
+      const v = j / NV, ph = -Math.PI + 2 * Math.PI * i / NA, b = R.at(ph), o = V(Math.sin(ph), 0, Math.cos(ph)), r0 = Math.hypot(b.x, b.z - zc);
+      const pinch = .06 * Math.max(0, Math.cos(ph)) ** 3 * sstep(.3, 1, v) * Math.abs(Math.sin(ph * 2)) * 2, rr = r0 * (1 - .14 * v * v) - pinch - (v > .92 ? (v - .92) * 2 * r0 * 1.4 : 0);
+      const crease = v > .85 ? .07 * (1 - Math.abs(Math.sin(ph))) * sstep(.85, 1, v) : 0;
+      cpos.push(o.x * Math.max(rr, .02), b.y + v * Hc - crease - .02 * Math.cos(ph) * v, zc + o.z * Math.max(rr, .02));
+    }
+    for (let j = 0; j < NV; j++) for (let i = 0; i < NA; i++) { const a = j * (NA + 1) + i, b = a + 1, c = a + NA + 1, d = c + 1; cidx.push(a, b, c, b, d, c) }
+    const cg = new THREE.BufferGeometry(); cg.setAttribute('position', new THREE.Float32BufferAttribute(cpos, 3)); cg.setIndex(cidx); cg.computeVertexNormals(); add('fabric', cg);
+    { const last = []; for (let i = 0; i <= NA; i++) last.push(V(cpos[(NV * (NA + 1) + i) * 3], cpos[(NV * (NA + 1) + i) * 3 + 1], cpos[(NV * (NA + 1) + i) * 3 + 2])); const cen = last.reduce((a, b) => a.add(b), V()).multiplyScalar(1 / last.length); cen.y -= .03;
+      const pos = [cen.x, cen.y, cen.z], idx = []; last.forEach(p => pos.push(p.x, p.y, p.z)); for (let i = 1; i <= NA; i++) idx.push(0, i, i + 1); const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals(); add('fabric', g) }
+    // aba: larga, laterais viradas para cima, frente e trás levemente para baixo; com espessura
+    const NB = 10, bpos = [], bidx = [];
+    for (const side of [0, 1]) for (let j = 0; j <= NB; j++) for (let i = 0; i <= NA; i++) {
+      const w = j / NB, ph = -Math.PI + 2 * Math.PI * i / NA, b = R.at(ph), o = V(Math.sin(ph), 0, Math.cos(ph)), r0 = Math.hypot(b.x, b.z - zc) - .01;
+      const ext = Wb * (.85 + .15 * Math.abs(Math.cos(ph))), up = .2 * Math.sin(ph) ** 2 * w * w - .05 * Math.cos(ph) ** 2 * w;
+      bpos.push(o.x * (r0 + ext * w), b.y + up - side * .018 * (1 - .5 * w), zc + o.z * (r0 + ext * w));
+    }
+    const off = (NB + 1) * (NA + 1);
+    for (let j = 0; j < NB; j++) for (let i = 0; i < NA; i++) { const a = j * (NA + 1) + i, b = a + 1, c = a + NA + 1, d = c + 1; bidx.push(a, c, b, b, c, d); bidx.push(off + a, off + b, off + c, off + b, off + d, off + c) }
+    for (let i = 0; i < NA; i++) { const a = NB * (NA + 1) + i, b = a + 1; bidx.push(a, a + off, b, b, a + off, b + off) } // borda
+    const bg = new THREE.BufferGeometry(); bg.setAttribute('position', new THREE.Float32BufferAttribute(bpos, 3)); bg.setIndex(bidx); bg.computeVertexNormals(); add('fabric', bg);
+    // fita + estrela de metal na frente
+    const bandP = []; for (let i = 0; i <= NA; i++) { const ph = -Math.PI + 2 * Math.PI * i / NA, b = R.at(ph), o = V(Math.sin(ph), 0, Math.cos(ph)); bandP.push(b.clone().addScaledVector(o, .006).add(V(0, .045, 0))) }
+    add('band', tube(bandP, .035, 8).scale(1, 1, 1));
+    const f = R.at(0).add(V(0, .05, .04)), star = new THREE.Shape(); for (let k = 0; k < 16; k++) { const a = k / 16 * Math.PI * 2, r = k % 2 ? .022 : .055; k ? star.lineTo(Math.sin(a) * r, Math.cos(a) * r) : star.moveTo(Math.sin(a) * r, Math.cos(a) * r) }
+    const sg = new THREE.ExtrudeGeometry(star, { depth: .01, bevelEnabled: true, bevelThickness: .004, bevelSize: .004, bevelSegments: 1 }); add('metal', place(sg, f, V(0, 0, 1)));
+    { const g = new THREE.TorusGeometry(.06, .009, 6, 24); add('metal', place(g, f.clone().add(V(0, 0, -.002)), V(0, 0, 1))) }
+  }
+  if (head === 'tophat') { // cartolinha inclinada sobre um lado
+    const base = V(-.26, 0, zc + .05); let y = top + .6; // apoia na superfície (pele ou cabelo) logo abaixo
+    for (let k = 0; k < 200; k++) { const ph = Math.atan2(base.x, base.z - zc), rr = Math.hypot(base.x, base.z - zc); if (outerR(y, ph) >= rr) break; y -= .01 }
+    const g = new THREE.Group(); const hatGeo = [];
+    const cyl = new THREE.CylinderGeometry(.19, .17, .34, 40, 1, false); cyl.translate(0, .17, 0); hatGeo.push(['fabric', cyl]);
+    const top2 = new THREE.CylinderGeometry(.19, .19, .012, 40); top2.translate(0, .345, 0); hatGeo.push(['fabric', top2]);
+    const brim = new THREE.CylinderGeometry(.3, .3, .02, 48); brim.translate(0, .01, 0); hatGeo.push(['fabric', brim]);
+    const band = new THREE.CylinderGeometry(.176, .174, .07, 40, 1, true); band.translate(0, .06, 0); hatGeo.push(['band', band]);
+    const st = new THREE.Shape(); for (let k = 0; k < 10; k++) { const a = k / 10 * Math.PI * 2, r = k % 2 ? .02 : .05; k ? st.lineTo(Math.sin(a) * r, Math.cos(a) * r) : st.moveTo(Math.sin(a) * r, Math.cos(a) * r) }
+    const sg = new THREE.ExtrudeGeometry(st, { depth: .008, bevelEnabled: false }); sg.translate(0, .19, .172); hatGeo.push(['metal', sg]);
+    const M = new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(-.12, .2, .3)).multiply(new THREE.Matrix4().makeScale(1.25, 1.25, 1.25)).setPosition(base.x, y - .06, base.z + .02);
+    for (const [k, gg] of hatGeo) add(k, gg.applyMatrix4(M));
+  }
+  if (head === 'bubbles') { // tiara de latão com globos de vidro e líquido brilhante
+    const R = ring(top - .3, -.12, .004), band = []; for (let i = 0; i <= 96; i++) band.push(R.at(-Math.PI + 2 * Math.PI * i / 96));
+    add('metal', tube(band, .03, 10)); add('metal', tube(band.map(p => p.clone().add(V(0, .045, 0))), .016, 8));
+    const globes = [[0, .3, .2], [-.6, .12, .12], [.6, .12, .12], [-1.5, .1, .1], [1.5, .1, .1], [Math.PI, .14, .15]];
+    for (const [ph, lift, r] of globes) {
+      const p = R.at(ph), o = V(p.x, 0, p.z - zc).normalize(), c = p.clone().add(V(0, lift + r * .7, 0)).addScaledVector(o, .02 - r * .25);
+      add('glass', sphere(c, r, 1, 1, 1, 28, 20)); { const g = new THREE.SphereGeometry(r * .9, 24, 12, 0, Math.PI * 2, Math.PI * .45, Math.PI * .55); g.translate(c.x, c.y, c.z); add('liquid', g); const lid = new THREE.CircleGeometry(r * .89 * Math.sin(Math.PI * .45), 24); lid.rotateX(-Math.PI / 2); lid.translate(c.x, c.y + r * .9 * Math.cos(Math.PI * .45), c.z); add('liquid', lid) }
+      const ringG = new THREE.TorusGeometry(r * .55, .012, 6, 24); ringG.rotateX(Math.PI / 2); ringG.translate(c.x, c.y - r * .82, c.z); add('metal', ringG);
+      add('metal', tube([p.clone().add(V(0, .03, 0)), c.clone().add(V(0, -r * .85, 0))], .012, 6));
+    }
+  }
+
+  // ---------------- orelhas ----------------
+  const ears = fit.ears || [];
+  if (sel.ears && ears.length) for (const e of ears) {
+    const s = e.s, lobe = e.lobe.clone().add(V(s * .015, -.012, .01));
+    if (sel.ears === 'drop') {
+      add('metal', sphere(lobe, .018));
+      add('metal', tube([lobe, lobe.clone().add(V(0, -.05, 0))], .006, 6));
+      const c = lobe.clone().add(V(0, -.12, 0)), fr = new THREE.TorusGeometry(1, .16, 6, 24); fr.scale(.05, .072, .05); add('metal', place(fr, c, V(s, 0, .25)));
+      add('gem2', gemGeo(c, .042, V(s, 0, .25), 1.45));
+      for (let k = -1; k <= 1; k++) { const q = c.clone().add(V(0, -.085 - (k ? 0 : .025), k * .03)); add('metal', tube([c.clone().add(V(0, -.07, k * .022)), q], .004, 5)); add('pearl', sphere(q.add(V(0, -.012, 0)), .014)) }
+    }
+    if (sel.ears === 'hoops') { const g = new THREE.TorusGeometry(.075, .01, 8, 40); add('metal', place(g, lobe.clone().add(V(0, -.07, 0)), V(s, 0, .5))) }
+    if (sel.ears === 'studs') { add('metal', sphere(lobe, .02, 1, 1, .5)); add('gem2', gemGeo(lobe.clone().add(V(s * .012, 0, 0)), .022, V(s, 0, .3), 1)) }
+  }
+  // ---------------- testa ----------------
+  if (sel.forehead === 'tikka') {
+    const yA = Math.min(top - .2, fit.P.eyeY + .95), yB = brow + .2, pts = [];
+    for (let i = 0; i <= 24; i++) { const y = yA + (yB - yA) * i / 24; pts.push(V(0, y, fit.surfZ(0, y) + .012 + .03 * sstep(yB + .15, yA, y))) }
+    for (let i = 0; i < pts.length; i += 2) add('metal', sphere(pts[i], .008, 1, 1, 1, 8, 6));
+    const end = pts[pts.length - 1].clone(); end.z = fit.surfZ(0, end.y - .05) + .02;
+    add('metal', sphere(end, .016)); const g = end.clone().add(V(0, -.065, .006));
+    { const fr = new THREE.TorusGeometry(1, .17, 6, 20); fr.scale(.036, .05, .036); add('metal', place(fr, g, V(0, 0, 1))) }
+    add('gem', gemGeo(g, .03, V(0, 0, 1), 1.5)); add('gem', sphere(g.clone().add(V(0, -.07, .004)), .012));
+  }
+  // ---------------- enfeites de cabelo ----------------
+  if (sel.hairpin === 'flowers') {
+    const spots = [[.95, .42, .075], [1.2, .22, .065], [1.05, .05, .055], [1.35, .48, .05]];
+    for (const [ph, yy, r] of spots) {
+      const y = brow + yy, rr = outerR(y, ph), o = V(Math.sin(ph), 0, Math.cos(ph)), c = V(o.x * rr, y, zc + o.z * rr).addScaledVector(o, .005);
+      const n = o.clone().add(V(0, .25, .15)).normalize();
+      for (let k = 0; k < 10; k++) { const a = k / 10 * Math.PI * 2, g = new THREE.SphereGeometry(1, 10, 6); g.scale(r * .23, r * .58, r * .07); g.translate(0, r * .55, 0); g.rotateZ(a); g.rotateX(.18); add('flower', place(g, c, n)) }
+      const cg = new THREE.SphereGeometry(r * .26, 12, 8); cg.scale(1, 1, .55); add('pollen', place(cg, c.clone().addScaledVector(n, .01), n));
+    }
+  }
+  if (sel.hairpin === 'coral') { // galho de coral preso no alto de um lado, com correntinha de contas
+    const ph = .62, y = top - .22, rr = outerR(y, ph), o = V(Math.sin(ph), 0, Math.cos(ph)), base = V(o.x * rr, y, zc + o.z * rr);
+    let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    const branch = (p, d, len, r, lvl) => {
+      const pts = [p.clone()], q = p.clone(), dir = d.clone();
+      for (let i = 0; i < 8; i++) { dir.add(V(rnd() - .5, rnd() - .3, rnd() - .5).multiplyScalar(.35)).normalize(); q.addScaledVector(dir, len / 8); pts.push(q.clone()) }
+      add('flower', tube(pts, t => r * (1 - .6 * t) + .003, 7)); add('flower', sphere(q, r * .45 + .003, 1, 1, 1, 8, 6));
+      if (lvl < 3) for (let k = 0; k < 2 + (lvl < 1 ? 1 : 0); k++) { const i = 3 + Math.floor(rnd() * 4); branch(pts[i], dir.clone().add(V(rnd() - .5, .4, rnd() - .5)).normalize(), len * .62, r * .62, lvl + 1) }
+    };
+    branch(base, o.clone().add(V(0, 1.1, -.3)).normalize(), .26, .022, 0);
+    const chain = []; for (let i = 0; i <= 12; i++) { const t = i / 12; chain.push(base.clone().add(V(o.x * .02, -t * .5, -t * .1)).addScaledVector(o, .03 + .05 * Math.sin(Math.PI * t))) }
+    chain.forEach((p, i) => add('metal', sphere(p, i % 3 ? .009 : .014, 1, 1, 1, 8, 6)));
+  }
+  // ---------------- rosto ----------------
+  if (sel.face === 'glasses' && fit.eyes && fit.eyes.length === 2) {
+    const R = fit.eyes[0].R * 1.42, zF = Math.max(...fit.eyes.map(e => e.z)) + fit.eyes[0].R + .07;
+    for (const e of fit.eyes) {
+      const c = V(e.x, e.y - .01, zF), g = new THREE.TorusGeometry(R, .014, 8, 48); g.translate(c.x, c.y, c.z); add('metal', g);
+      const lens = new THREE.CircleGeometry(R, 40); lens.translate(c.x, c.y, c.z - .003); add('glass', lens);
+      const s = Math.sign(e.x), hinge = V(e.x + s * R, e.y, zF - .01), back = V(s * (traceR(sdf, e.y, s * 80 * DEG, zc) * Math.sin(80 * DEG) + .04), e.y + .02, (fit.ears[0] ? fit.ears[0].center.z : zc - .1) + .05);
+      add('metal', tube([hinge, hinge.clone().lerp(back, .5).add(V(s * .03, 0, 0)), back], .011, 6));
+    }
+    const a = fit.eyes[0], b = fit.eyes[1], mid = V(0, a.y + .04, zF + .01), pts = [];
+    for (let i = 0; i <= 10; i++) { const t = i / 10; pts.push(V(a.x + (b.x - a.x) * t - Math.sign(a.x - b.x) * 0, 0, 0)) }
+    const l = V(Math.sign(a.x) * (Math.abs(a.x) - R), a.y + .02, zF), r2 = V(Math.sign(b.x) * (Math.abs(b.x) - R), b.y + .02, zF);
+    add('metal', tube([l, l.clone().lerp(mid, .5).add(V(0, .02, 0)), mid, r2.clone().lerp(mid, .5).add(V(0, .02, 0)), r2], .011, 6));
+  }
+
+  // ---------------- malhas por material ----------------
+  const matOf = k => k === 'metalD' ? mats.metal : mats[k];
+  for (const [k, list] of Object.entries(geos)) {
+    const norm = list.map(g => { if (g.attributes.uv) g.deleteAttribute('uv'); if (!g.attributes.normal) g.computeVertexNormals(); return g.index ? g.toNonIndexed() : g });
+    const merged = mergeGeometries(norm, false); norm.forEach(g => g.dispose()); list.forEach(g => g.dispose());
+    if (!merged) continue;
+    const m = new THREE.Mesh(merged, matOf(k)); m.name = 'Acc_' + (sel.head && ['metal', 'metalD', 'fabric', 'band', 'glass', 'liquid'].includes(k) ? '' : '') + k; m.castShadow = !matOf(k).transparent; m.receiveShadow = true;
+    if (k === 'glass') m.renderOrder = 2;
+    group.add(m);
+  }
+  return { group, setColors, dispose };
+}

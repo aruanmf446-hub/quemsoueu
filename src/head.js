@@ -459,12 +459,49 @@ function skinMaterial(P = {}) {
   return m;
 }
 
+// ---------- visual escolhido no ateliê: cor de pele e barba (o resto do visual — cabelo e acessórios — fica em look.js) ----------
+// Trocar a pele desloca junto as cores que nascem dela (blush, sombra da pálpebra, olheira, sulcos de vegetal),
+// mantendo a relação de tom do preset. Lábios escurecem/clareiam só um pouco.
+function shiftLike(hex, from, to, k = 1) {
+  const a = {}, b = {}, c = {}; col(from).getHSL(a); col(to).getHSL(b); const o = col(hex); o.getHSL(c);
+  const dh = ((b.h - a.h + 1.5) % 1) - .5, sr = b.s / Math.max(a.s, .02), lr = b.l / Math.max(a.l, .02);
+  return '#' + new THREE.Color().setHSL((c.h + dh * k + 1) % 1, clamp(c.s * (1 + (sr - 1) * k), 0, 1), clamp(c.l * (1 + (lr - 1) * k), 0, .95)).getHexString();
+}
+export const BEARD_STYLES = {
+  default: 'Do personagem', none: 'Sem barba', shadow: 'Sombreada', full: 'Cheia', stache: 'Bigode', goatee: 'Bigode + cavanhaque'
+};
+function applyLook(P, o) {
+  if (o.skin && o.skin !== P.skin) {
+    const from = P.skin, to = o.skin, veg = !!P.lathe;
+    for (const k of ['blush', 'lidShadow', 'bag']) if (P[k]) P[k] = shiftLike(P[k], from, to);
+    if (P.patternColor) P.patternColor = P.patternColor.map(h => shiftLike(h, from, to));
+    if (veg) { P.lip = shiftLike(P.lip, from, to); P.lipLine = shiftLike(P.lipLine, from, to); P.brow = shiftLike(P.brow, from, to, .5) }
+    else P.lip = shiftLike(P.lip, from, to, .35);
+    if (P.paint) P.paint = { ...P.paint };
+    P.skin = to;
+  }
+  const hc = o.hairColor, b = o.beard && o.beard !== 'default' ? o.beard : null, mw = P.mouthW || .22;
+  if (b) {
+    P.beard = 0; P.beardVol = null; P.stache = null; P.goatee = null;
+    if (b === 'shadow') P.beard = .32;
+    if (b === 'full') { P.beardVol = { thick: .055, len: .38, color: '#3a2618', stache: true }; P.beard = .12 }
+    if (b === 'stache' || b === 'goatee') P.stache = { w: mw * 1.15, th: .036, curl: .05, droop: .05, color: '#2a1a12' };
+    if (b === 'goatee') P.goatee = { w: .06, len: .13, color: '#2a1a12' };
+  }
+  if (hc && (b || o.beardFollowsHair)) { // barba, bigode e cavanhaque na cor do cabelo
+    if (P.beardVol) P.beardVol = { ...P.beardVol, color: hc };
+    if (P.stache) P.stache = { ...P.stache, color: hc };
+    if (P.goatee) P.goatee = { ...P.goatee, color: hc };
+  }
+}
+
 // ---------- construção principal ----------
 export function buildHead(presetId, adj, opts = {}) {
   const T0 = performance.now(), marks = {}, mark = l => { marks[l] = Math.round(performance.now() - T0) };
   const Q = opts.quality || 1;
   const P = resolve(presetId, adj);
   if (P.kind === 'robot') return buildRobot(P, opts);
+  applyLook(P, opts);
   const disposables = [], root = new THREE.Group();
   root.name = 'Head_V2_' + presetId;
   const track = o => (disposables.push(o), o);
@@ -1125,6 +1162,19 @@ export function buildHead(presetId, adj, opts = {}) {
   }
   mark('morphs');
 
+  // ---- dados de encaixe para cabelo e acessórios (espaço da cabeça, pose neutra) ----
+  const fit = { P, sdf, surfZ, eyes: eyes.map(e => ({ x: e.ex, y: e.ey, z: e.zc, R: P.Re })), cz: P.cran[1], cy: P.cran[0], ears: [] };
+  fit.top = P.cran[0] + traceOut(sdf, 0, P.cran[0], P.cran[1], 0, 1, 0);
+  fit.browY = P.eyeY + P.browGap + P.browTh;
+  for (const obj of root.children) {
+    if (obj.name === 'Head_Skin') { fit.skinGeo = obj.geometry; fit.skinN = obj.userData.vinfo.N }
+    if (obj.name.startsWith('Ear_')) {
+      obj.updateMatrix(); const pa = obj.geometry.attributes.position, v = new THREE.Vector3(), lo = new THREE.Vector3(0, 9, 0), hi = new THREE.Vector3(0, -9, 0), out = new THREE.Vector3();
+      for (let i = 0; i < pa.count; i++) { v.fromBufferAttribute(pa, i).applyMatrix4(obj.matrix); if (v.y < lo.y) lo.copy(v); if (v.y > hi.y) hi.copy(v); if (Math.abs(v.x) > Math.abs(out.x)) out.copy(v) }
+      fit.ears.push({ s: Math.sign(obj.position.x), center: obj.position.clone(), lobe: lo, top: hi, out });
+    }
+  }
+
   // ================= rig facial: esqueleto + pesos =================
   const rig = createRig(P, { eyes, MC: MCv, surfZ });
   root.add(rig.root); root.updateMatrixWorld(true);
@@ -1167,9 +1217,10 @@ export function buildHead(presetId, adj, opts = {}) {
     root.remove(obj); root.add(sm); sm.bind(skeleton);
   }
   rig.morphMeshes = morphMeshes; rig.apply({});
+  fit.headBone = Bn('Head'); fit.jawBone = Bn('Jaw');
 
   root.traverse(o => { if (o.isMesh) { const transp = o.material.transparent; o.castShadow = !transp && o.name !== 'Catchlight'; o.receiveShadow = !transp } });
   mark('total'); root.userData.params = P; root.userData.timings = marks;
   const dispose = () => { root.traverse(o => { if (o.isMesh && o.geometry) o.geometry.dispose() }); disposables.forEach(d => d.dispose && d.dispose()) };
-  return { group: root, dispose, params: P, rig };
+  return { group: root, dispose, params: P, rig, fit };
 }

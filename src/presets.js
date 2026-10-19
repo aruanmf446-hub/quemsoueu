@@ -116,6 +116,14 @@ PRESETS.dwarf_bard = derive('cute_round', {
   earS: .85, earPoint: .55, earTipA: .55
 });
 
+PRESETS.old_king = derive('masculine_soft', {
+  id: 'old_king', label: 'Rei', family: 'Humanos', sub: 'Olhar firme, testa marcada, barba e cabelo brancos', 
+  skin: '#a8714f', blush: '#a8584e', lip: '#8e5046', brow: '#141010', lidShadow: '#6e3e30',
+  iris: ['#a8784a', '#4a2a14', '#1a0e08'],
+  eyeX: .358, Re: .2, openU: deg(12), openL: deg(-15), peakU: .08, tilt: deg(3), crease: .011, browTh: .05, browArch: .01, browSlope: .02, browRidge: .07,
+  noseH: .11, tipR: .068, mouthW: .22, smile: -.1, hollow: .03, fold: .9, beard: 0
+});
+
 PRESETS.sad_clown = derive('cute_round', {
   id: 'sad_clown', label: 'Palhaço triste', family: 'Humanos', sub: 'Pintura branca, nariz vermelho, sobrancelhas tristes, boca caída',
   skin: '#e6b596', blush: '#e48a86', lip: '#b8202a', lipLine: '#5a0a10', brow: '#3a2a2a', liner: '#2a1a1a', lidShadow: '#9a8a9a',
@@ -202,7 +210,7 @@ PRESETS.robot_ball = {
 };
 
 export const FAMILY_ORDER = ['Humanos', 'Criaturas', 'Vegetais', 'Robôs'];
-export const PRESET_ORDER = ['feminine_soft', 'masculine_soft', 'cute_round', 'feminine_bold', 'alchemist_villain', 'dwarf_bard', 'sad_clown',
+export const PRESET_ORDER = ['feminine_soft', 'masculine_soft', 'old_king', 'cute_round', 'feminine_bold', 'alchemist_villain', 'dwarf_bard', 'sad_clown',
   'orc_warrior', 'cactus_cowboy', 'pepper_king', 'chili_bandit', 'robot_ball'];
 
 export const DEFAULT_ADJ = { headWidth: 1, cheeks: 1, jaw: 1, eyes: 1, eyeGap: 1, nose: 1, mouth: 1 };

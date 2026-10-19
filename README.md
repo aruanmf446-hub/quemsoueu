@@ -15,7 +15,7 @@ Para rodar localmente, sirva a pasta com qualquer servidor estático (ex.: `pyth
 - **Relevo do rosto** sobre essa base: planos de estrutura (zigomático, cavado abaixo dele, têmporas), órbitas, arcada, prega da pálpebra, nariz com ponte / ponta / asas / narinas, **lábios paramétricos com arco do cupido**, filtro, cantos da boca, sulco do queixo, maçãs e dobra nasolabial.
 - **Olhos**: a pele envolve o globo (pálpebras na própria malha, abertura recortada nela), **íris côncava sob a córnea** (profundidade e brilho), íris procedural com fibras e luz entrando por baixo, carúncula no canto interno, linha d'água, **delineado com asa** e **tufos de cílios** curvados; sobrancelhas espessas e afinadas na cauda.
 - **Pele**: variação orgânica de tom (manchas suaves por ruído, testa mais clara, nariz/maçãs/orelhas mais rosados, olheira sutil, barba sombreada no masculino), blush ajustável por preset nas maçãs e na ponta do nariz, microrrelevo no shader que quebra o brilho como pele real, zona T e lábios mais brilhantes, segunda camada especular suave, "wrap" avermelhado no terminador (falso espalhamento subsuperficial), oclusão por cavidade e sombras suaves projetadas.
-- **12 personagens em 4 famílias**, trocados por botões agrupados:
+- **13 personagens em 4 famílias** (inclui o Rei), trocados por botões agrupados:
   - **Humanos**: `feminine_soft`, `masculine_soft`, `cute_round`, `feminine_bold`, `alchemist_villain` (rosto longo, queixo pontudo, nariz adunco, sorriso torto, olheiras), `dwarf_bard` (nariz grande, barba e bigode, orelhas pontudas), `sad_clown` (pintura branca, marcas azuis, nariz bola, boca caída).
   - **Criaturas**: `orc_warrior` (testa pesada, olhos amarelos, presas, orelhas pontudas, barba, mandíbula larga).
   - **Vegetais** (forma própria por perfil girado — `lathe` —, sem o molde de cabeça humana; olhos saltados; cor acompanhando o relevo): `cactus_cowboy` (coluna com cúpula, 8 nervuras e espinhos, olhar sonolento, sorriso de canto), `pepper_king` (pimentão de 4 gomos com covinha e talo no topo, bigode de guidão, cavanhaque), `chili_bandit` (pimenta afinando para baixo, olhos arregalados, sorriso aberto com dentes e língua para fora).
@@ -29,14 +29,23 @@ Para rodar localmente, sirva a pasta com qualquer servidor estático (ex.: `pyth
   - **Clipes no GLB**: `Blink`, `Wink_R`, `Talk`, `LookAround` e `Expr_*` para cada expressão (trilhas de ossos e de blendshapes).
   - Robô: o rig é o próprio rosto da tela (a mesma pose redesenha olhos, boca e "sobrancelhas" de luz).
   - Código em `src/rig.js` (ossos, pesos, mapeamento pose → blendshapes, expressões, visemas, clipes); as formas são geradas em `src/head.js`. Expressões novas: acrescente em `EXPRESSIONS`.
-- **Ajuste fino** por sliders (largura do crânio, bochechas, mandíbula, olhos, distância entre olhos, nariz, boca) aplicados por cima do preset, com limites para os olhos nunca saírem da silhueta. Trocar de preset zera os sliders. Durante o arraste é usada uma malha de prévia mais leve; ao soltar volta a malha completa.
+- **Visual por catálogo (clica e troca)** — nada de esticar olho, nariz ou boca; o rosto continua o do personagem:
+  - **Pele**: amostras de tom (humanos, fantasia, vegetais). Blush, sombra da pálpebra, olheira e sulcos acompanham o novo tom.
+  - **Cabelo**: 10 modelos — careca, curto, para trás, real, longo ondulado, longo com tranças, cachos volumosos, coque, coque guerreiro (com rabo e tranças com argolas) e cachinhos de palhaço — com 13 cores, trocadas na hora. Cada modelo se encaixa em qualquer cabeça: uma touca fina dentro da linha do cabelo e mechas em faixa contínua que nascem na risca / linha da frente / redemoinho / coque, abraçam o crânio, contornam rosto e orelhas e caem com a gravidade (ondas, cachos em espiral, tranças de 3 fios, pontas em mecha).
+  - **Barba**: do personagem, sem barba, sombreada, cheia, bigode, bigode + cavanhaque. Quando o personagem tem cabelo, barba e bigode seguem a cor do cabelo.
+  - **Acessórios** por encaixe: cabeça (tiara, coroa, chapéu de cowboy, cartola, coroa de bolhas), orelhas (brinco gota, argola, ponto de luz), testa (joia de testa), enfeite de cabelo (flores, coral) e rosto (óculos redondos). Coroas e chapéus são medidos na superfície real (pele + cabelo), brincos penduram no lóbulo de cada orelha. **Cores trocáveis na hora**: metal, pedra principal, pedras menores, chapéu, flores/coral.
+  - Cada personagem tem um visual padrão (ex.: tiara + joia de testa + brincos + flores no feminino, coroa e barba branca no Rei, cartola no palhaço, chapéu no cacto, coroa no rei pimentão) e guarda as escolhas ao trocar de personagem e voltar. "Visual padrão" restaura.
+  - Cabelo e acessórios ficam presos no osso `Bone_Head` e vão juntos no GLB (malhas `Hair_*` e `Acc_*`).
 - **Câmera**: rotação livre, zoom e botões Frente / Perfil / 3/4.
 - **Exportação GLB** da cabeça (≈10 MB com o rig, 24 malhas nomeadas: `Head_Skin` com pescoço, `Eye_L/R` com `Sclera`/`Iris`/`Cornea`, `Lashes_L/R`, `Brow_L/R`, `Ear_L/R` (orelha em C com hélice, anti-hélice, concha, trago e lóbulo, no tamanho anatômico — da sobrancelha à ponta do nariz — apoiada numa raiz modelada na cabeça), `Mouth_Line`…), gerada com densidade um pouco menor que a do visualizador.
 
 ## Estrutura
 ```
 index.html        interface, cena (luzes, sombras) e exportação
-src/presets.js    dados dos presets (crânio, curvas do rosto, olhos, nariz, boca, pele…) e aplicação dos sliders
+src/presets.js    dados dos presets (crânio, curvas do rosto, olhos, nariz, boca, pele…)
+src/look.js       visual por catálogo: tons de pele, visual padrão de cada personagem, monta cabelo + acessórios
+src/hair.js       cabelos (touca + mechas em faixa, cachos, tranças, coques) e cores
+src/accessories.js acessórios (tiara, coroa, chapéus, brincos, joia de testa, flores, coral, óculos) e cores
 src/rig.js        rig facial: esqueleto, pesos, poses de expressão e clipes de animação
 src/robot.js      gerador da cabeça de robô (casco, tela emissiva, orelhas de luz)
 src/head.js       geração procedural: SDF (crânio + casca facial por curvas), projeção da malha, relevo do rosto, olhos, cílios, shader de pele
@@ -44,7 +53,7 @@ src/head.js       geração procedural: SDF (crânio + casca facial por curvas),
 Para criar um personagem novo, o caminho mais curto é herdar de um existente e trocar só o que muda, por exemplo `PRESETS.meu_ogro = derive('orc_warrior', { id: 'meu_ogro', label: 'Ogro', family: 'Criaturas', sub: '…', skin: '#7a9a5a', tusks: null })`, e incluir o id em `PRESET_ORDER`. Para um preset do zero, copie uma entrada de `PRESETS` (`src/presets.js`), ajuste o crânio (`cran`, `occ`), as curvas da casca facial (`loft`: `a`, `zf`, `zb`), o pescoço (`neck`, `scm`) e os traços, e inclua o id em `PRESET_ORDER` (a família e a descrição do botão vêm de `family` e `sub`).
 
 ## Limites desta versão
-Base de rosto, não personagem final: não há cabelo, corpo, figurino nem topologia de produção (a malha é uma grade procedural densa, não *edge loops* de animação). Pele com cor por vértice, sem textura pintada; o shader de pele e as sombras ficam no visualizador (o GLB leva geometria, cores por vértice e materiais PBR padrão). A geração completa (com blendshapes) leva ~1,5 s ao trocar de personagem. As referências aprovadas são direção de arte para revisão manual, não um resultado reproduzido.
+Cabeça de personagem, ainda sem corpo e figurino; também não há nem topologia de produção (a malha é uma grade procedural densa, não *edge loops* de animação). Pele com cor por vértice, sem textura pintada; o shader de pele e as sombras ficam no visualizador (o GLB leva geometria, cores por vértice e materiais PBR padrão). Trocar de personagem, pele ou barba remonta a cabeça (~1,5 s); trocar cabelo leva ~0,3–0,6 s; cores de cabelo e acessórios são instantâneas. Com cabelo longo o GLB fica maior (≈14–18 MB). As referências aprovadas são direção de arte para revisão manual, não um resultado reproduzido.
 
 ## GitHub Pages
 Em **Settings → Pages → Build and deployment**, selecione **GitHub Actions** se ainda não estiver ativo. O workflow em `.github/workflows/pages.yml` publica a cada commit da main.
