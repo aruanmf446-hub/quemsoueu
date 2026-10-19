@@ -165,4 +165,3 @@ export function buildLegacyClothes(body, look, slot) {
   }
   return result;
 }
-
