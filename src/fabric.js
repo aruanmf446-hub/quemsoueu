@@ -17,7 +17,8 @@ export function clothSurface(nr, nc, point, { closed = false, thickness = .025 }
   const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(faces); g.computeVertexNormals();
   const normal = g.attributes.normal, count = pos.length / 3;
   for (let i = 0; i < count; i++) pos.push(pos[i * 3] - normal.getX(i) * thickness, pos[i * 3 + 1] - normal.getY(i) * thickness, pos[i * 3 + 2] - normal.getZ(i) * thickness);
-  ids.push(...faces);
+  // Copia os mesmos índices sem ultrapassar o limite de argumentos do Worker.
+  for (let i = 0; i < faces.length; i++) ids.push(faces[i]);
   for (let i = 0; i < faces.length; i += 3) ids.push(faces[i] + count, faces[i + 2] + count, faces[i + 1] + count);
   const join = (a, b) => ids.push(a, b, a + count, b, b + count, a + count);
   for (let j = 0; j < nc; j++) { const b = (j + 1) % cols; join(j, b); join(nr * cols + b, nr * cols + j) }
