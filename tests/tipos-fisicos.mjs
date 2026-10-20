@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import {buildHead} from '../src/head.js';
 import {buildBody,headScale,BODIES,normalizeBuild} from '../src/body.js';
-import {defaultClothes,OUTFITS,buildClothes} from '../src/clothes.js';
+import {defaultClothes,OUTFITS} from '../src/clothes.js';
 globalThis.document={createElement:()=>({getContext:()=>new Proxy({},{get:(_,k)=>k==='createLinearGradient'?()=>({addColorStop(){}}):()=>{}})})};
 export const BUILDS={magro:{weight:-1,muscle:0},padrao:{weight:0,muscle:0},gordo:{weight:1,muscle:0},musculoso:{weight:0,muscle:1}};
 assert.deepEqual(normalizeBuild({weight:20,muscle:-2}),{weight:1,muscle:0});

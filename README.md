@@ -123,3 +123,22 @@ node tests/comparacao.cjs
 Os PNGs e as matrizes ficam em `renders/comparacao/{caa45f5,nova}/`. A câmera das sereias é afastada igualmente nas duas versões para incluir a nadadeira inteira. `ATELIE_BASELINE` permite indicar outro caminho para o checkout da referência; `ATELIE_COMPARACOES` muda a pasta de saída e `ATELIE_PERSONAGENS` limita a captura por IDs separados por vírgula. O teste geométrico principal também executa a verificação de cobertura e protege a independência das normais externas em relação à espessura do tecido.
 
 Verificação desta correção (19/10/2026): 13 personagens no navegador, 688 trocas de peças e cores, nenhum erro de console, 12 clipes preservados em cada personagem com rig facial. Maior p95 de troca em cache: 46 ms no SwiftShader. O teste de cobertura verificou 79.011 vértices das calças padrão, sem falhas. Esses números descrevem esta execução, não um limite de desempenho para qualquer dispositivo.
+
+## Validação dos tipos físicos
+
+```sh
+node tests/figurinos.mjs
+# Servidor local na porta 8000; three@0.180.0, playwright e Chromium instalado (Pillow para as pranchas):
+node tests/visuais-tipos.cjs
+node tests/corpos-completos.cjs
+node tests/desempenho-tipos.cjs
+python3 tests/galeria-tipos.py renders/tipos-fisicos
+```
+
+`figurinos.mjs` inclui a comparação de juntas, volume e pescoço nos quatro tipos e a cobertura da malha real nos builds `{-1,0}`, `{1,0}` e `{0,1}` dos 12 personagens orgânicos. A cobertura inclui calças/saias/caudas, troncos e trechos das mangas; recortes intencionalmente abertos do orc são excluídos. As mulheres adultas preservam os seios e Cute continua sem eles.
+
+`visuais-tipos.cjs` captura frente e perfil dos 13 personagens nos quatro tipos, com e sem roupa, e verifica o GLB de cada combinação, a escala da cabeça, os 12 clipes, os 11 blendshapes e a identidade dos objetos preservados. `corpos-completos.cjs` acrescenta a variante humana com pernas das duas sereias, sem reconstruir o visual. O robô não ganha corpo humano: seu casco permanece igual. A galeria reúne pranchas por personagem, imagens originais e um ZIP. `ATELIE_CAPTURAR=0` permite validar apenas o GLB sem gerar novas imagens.
+
+Execute `desempenho-tipos.cjs` sozinho para medir geração completa abaixo de 3 s e cache abaixo de 500 ms. `ATELIE_RENDERS` altera a pasta de saída; `ATELIE_PERSONAGENS` limita personagens. Ao capturar em paralelo com a suíte de geometria, use `ATELIE_COBRAR_TEMPO=0` em `visuais-tipos.cjs` e mantenha a medição exclusiva separada. Os tempos dependem do dispositivo; os valores desta execução ficam em `desempenho.json`. Os renders servem à avaliação do usuário, sem aprovação estética automática.
+
+Verificação desta etapa (20/10/2026): 12 corpos × 14 conjuntos; 36 casos de cobertura com 386.486 vértices consultados e nenhuma falha. Juntas e encaixe preservados, volume crescente de magro → padrão → gordo. Foram capturadas 224 imagens dos 13 personagens, com validação de 52 GLBs (48 com 12 clipes faciais e 4 do robô). Nenhum erro de console. Na medição exclusiva, o maior tempo de corpo + roupas foi 2,794 s; maior volta ao cache: 136 ms. Os arquivos `desempenho.json` e `relatorio.json` acompanham a galeria.

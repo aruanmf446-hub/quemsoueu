@@ -1,7 +1,7 @@
 // Verificação geométrica sem WebGL. Instale three@0.180.0 localmente para executar.
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
-import {clothSurface} from '../src/fabric.js';
+import {clothSurface,shellCloth} from '../src/fabric.js';
 import { buildHead } from '../src/head.js';
 import { buildBody, headScale } from '../src/body.js';
 import { buildClothes, defaultClothes, OUTFITS, CLOTH_SLOTS, pieceOptions } from '../src/clothes.js';
@@ -13,6 +13,14 @@ const point=(t,u)=>new THREE.Vector3(Math.sin(u*Math.PI*2)*(1+t*.2),-t,Math.cos(
 const thin=clothSurface(16,48,point,{closed:true,thickness:.01}),thick=clothSurface(16,48,point,{closed:true,thickness:.2});
 for(let i=0;i<17*48*3;i++)assert.equal(thin.attributes.normal.array[i],thick.attributes.normal.array[i],'A barra contaminou a normal externa');
 thin.dispose();thick.dispose();
+// Aberturas recortadas depois da malhagem: a parede fina deve fechar e preservar as normais externas.
+const shellA=shellCloth(new THREE.SphereGeometry(1,32,24),(x,y,z)=>y-.2,.01,3);
+const shellB=shellCloth(new THREE.SphereGeometry(1,32,24),(x,y,z)=>y-.2,.15,3);
+const sp=shellA.attributes.position,sn=shellA.attributes.normal,tp=shellB.attributes.position,tn=shellB.attributes.normal;
+for(let i=0;i<sp.count;i++)if(sp.getX(i)===tp.getX(i)&&sp.getY(i)===tp.getY(i)&&sp.getZ(i)===tp.getZ(i)&&sp.getX(i)*sn.getX(i)+sp.getY(i)*sn.getY(i)+sp.getZ(i)*sn.getZ(i)>.85)for(let k=0;k<3;k++)assert.equal(sn.array[i*3+k],tn.array[i*3+k],'O avesso alterou a normal externa');
+const geometricIds=new Map(),vertexIds=[];for(let i=0;i<sp.count;i++){const key=[sp.getX(i),sp.getY(i),sp.getZ(i)].map(v=>Math.round(v*1e6)).join(':');if(!geometricIds.has(key))geometricIds.set(key,geometricIds.size);vertexIds.push(geometricIds.get(key))}
+const shellEdges=new Map(),six=shellA.index.array;for(let i=0;i<six.length;i+=3)for(let k=0;k<3;k++){const a=vertexIds[six[i+k]],b=vertexIds[six[i+(k+1)%3]];if(a===b)continue;const key=Math.min(a,b)+':'+Math.max(a,b);shellEdges.set(key,(shellEdges.get(key)||0)+1)}
+assert([...shellEdges.values()].every(n=>n===2),'A casca tem uma abertura sem espessura');shellA.dispose();shellB.dispose();
 for (const id of Object.keys(PRESETS)) {
   if (PRESETS[id].kind === 'robot') {
     const clothes = buildClothes(null, defaultClothes(id));
@@ -62,4 +70,6 @@ for (const id of Object.keys(PRESETS)) {
   body.geo.dispose(); head.dispose(); console.log(`${id}: ${Object.keys(OUTFITS).length} conjuntos; pele preservada`);
 }
 
+await import('./tipos-fisicos.mjs');
+process.env.ATELIE_COBERTURA_TIPOS='1';
 await import('./cobertura.mjs');
