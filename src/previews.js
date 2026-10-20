@@ -24,7 +24,9 @@ export class PreviewCatalog {
       const context=this.getContext(),spec=JSON.parse(button.dataset.preview);
       // Os personagens mostram o visual salvo de cada um; as outras opções usam a skin atual.
       const request={...context,spec};if(spec.kind==='character')request.look=window.__atelie.savedLook(spec.value);
-      const key=VERSION+':'+stable(previewChoice(request));button._preview={key,request};
+      // O enquadramento novo dos brincos invalida somente as quatro miniaturas desse slot.
+      const versao=spec.kind==='accessory'&&spec.slot==='ears'?'menu-v2-orelhas':VERSION;
+      const key=versao+':'+stable(previewChoice(request));button._preview={key,request};
       if(frame.dataset.key!==key){frame.dataset.key=key;frame.replaceChildren(Object.assign(document.createElement('div'),{className:'preview-wait',textContent:'Gerando prévia…'}));frame.classList.add('loading');delete frame.dataset.ready}
       if(this.cache.has(key))this.display(button,key,this.cache.get(key));else this.observer.observe(button);
     }
