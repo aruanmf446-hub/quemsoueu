@@ -35,19 +35,20 @@ function assemble(id,look){
   const ck=JSON.stringify([look.outfit,look.clothColors,look.pieces,look.pieceColors,bodyKey]);
   if(ck!==clothesKey){if(clothes){clothes.group.removeFromParent();clothes.dispose()}clothes=buildClothes(body,look);root.add(clothes.group);clothesKey=ck}
 }
-function focusHead(){
-  // O enquadramento fixo conserva a escala entre penteados e acessórios.
+function focusHead(ears=false){
+  // O mesmo personagem, visto de lado e com mais margem apenas nas miniaturas de brincos.
   const hs=body?.hs||1,pv=body?.pivot||new THREE.Vector3();
   const center=new THREE.Vector3(0,.18,0).multiplyScalar(hs).addScaledVector(pv,1-hs);
-  const height=Math.max(2.8,(head.fit?.top||1.2)+1.6)*hs,dist=height/(2*Math.tan(THREE.MathUtils.degToRad(15)))*1.15;
-  camera.position.copy(center).add(new THREE.Vector3(.12,.04,1).normalize().multiplyScalar(dist));camera.lookAt(center);
+  if(ears)center.y-=.18*hs;
+  const height=Math.max(2.8,(head.fit?.top||1.2)+1.6)*hs,dist=height/(2*Math.tan(THREE.MathUtils.degToRad(15)))*(ears?1.33:1.15);
+  camera.position.copy(center).add(new THREE.Vector3(ears?1.25:.12,.04,1).normalize().multiplyScalar(dist));camera.lookAt(center);
 }
 function focusBody(){const box=new THREE.Box3().setFromObject(root),size=box.getSize(new THREE.Vector3()),center=box.getCenter(new THREE.Vector3());const dist=Math.max(size.y,size.x/camera.aspect)/(2*Math.tan(THREE.MathUtils.degToRad(15)))*1.12;camera.position.copy(center).add(new THREE.Vector3(.08,.015,1).normalize().multiplyScalar(dist));camera.lookAt(center)}
 onmessage=async({data})=>{
   try{
     const {id,look,frame,expression}=previewChoice(data);
     assemble(id,look);head.rig?.apply(expression?EXPRESSIONS[expression]:{});root.updateMatrixWorld(true);
-    if(frame==='head')focusHead();else focusBody();
+    if(frame==='head')focusHead(data.spec?.kind==='accessory'&&data.spec?.slot==='ears');else focusBody();
     renderer.render(scene,camera);const blob=await canvas.convertToBlob({type:'image/webp',quality:.88});postMessage({blob});
   }catch(error){postMessage({message:error.message+'\n'+error.stack})}
 };
