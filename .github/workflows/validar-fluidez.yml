@@ -1,0 +1,47 @@
+name: Testar fluidez do Ateliê
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/validar-fluidez.yml
+      - src/editor.js
+      - src/previews.js
+      - tests/fluidez.cjs
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  interacao:
+    name: Rotação, zoom, fila e prévias sem perda visual
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar dependências locais
+        run: npm install --no-save --package-lock=false --no-audit --no-fund three@0.180.0 playwright
+      - name: Preparar Chromium
+        run: |
+          npx playwright install --with-deps chromium
+          sudo ln -sf "$(node -p "require('playwright').chromium.executablePath()")" /usr/bin/chromium
+      - name: Conferir sintaxe
+        run: |
+          node --check src/editor.js
+          node --check src/previews.js
+          node --check tests/fluidez.cjs
+      - name: Servir Ateliê
+        run: |
+          python3 -m http.server 8000 > /tmp/atelie-http.log 2>&1 &
+          for tentativa in $(seq 1 30); do
+            if curl -fsS http://localhost:8000/ -o /dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/atelie-http.log
+          exit 1
+      - name: Verificar gestos e geração íntegra das prévias
+        run: timeout 12m node tests/fluidez.cjs
