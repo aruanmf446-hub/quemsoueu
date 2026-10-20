@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="pt-BR"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Ateliê Facial — Head V2 · Quem Sou Eu</title>
+<title>Ateliê — Quem Sou Eu?</title>
+<link rel="stylesheet" href="./src/editor.css"/>
 <style>
 :root{font-family:Inter,system-ui,sans-serif;color:#21202b;background:#e7e6e9}*{box-sizing:border-box}body{margin:0}
 .shell{display:grid;grid-template-columns:minmax(0,1fr) 336px;height:100dvh;min-height:560px}
@@ -67,6 +68,7 @@ button:hover{background:#f6eaee}.preset.active:hover{background:#4a3642}
 </div>
 <script type="module">
 import * as THREE from 'three';
+import {mountEditor} from './src/editor.js';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {GLTFExporter} from 'three/addons/exporters/GLTFExporter.js';
 import {RoomEnvironment} from 'three/addons/environments/RoomEnvironment.js';
@@ -105,9 +107,9 @@ light(0xffffff,.9,-3.5,2.5,-4);
 // cada personagem guarda o próprio visual (pele, cabelo, barba, acessórios, cores); trocar de personagem e voltar mantém as escolhas
 let presetId='feminine_soft',current=null,lookObj=null,clothesObj=null;const looks={};
 const getLook=()=>looks[presetId]||(looks[presetId]=defaultLook(presetId));
-let activeClothSlot='upper';
+let activeClothSlot='upper',editor=null;
 const statusEl=document.getElementById('status');
-function busy(msg,fn){statusEl.textContent=msg;requestAnimationFrame(()=>setTimeout(()=>{fn();statusEl.textContent='Head V2 · '+PRESETS[presetId].label},0))}
+function busy(msg,fn){statusEl.textContent=msg;requestAnimationFrame(()=>setTimeout(()=>{fn();statusEl.textContent=PRESETS[presetId].label},0))}
 function rebuildHead(){
   if(clothesObj){clothesObj.dispose();clothesObj=null}
   if(current){scene.remove(current.root);if(current.body)current.body.geo.dispose();current.dispose()}if(lookObj){lookObj.dispose();lookObj=null}
@@ -151,7 +153,7 @@ function refreshBuildUI(){
   el('bodyWeightValue').textContent=build.weight===0?'Padrão':(build.weight>0?'+':'')+Math.round(build.weight*100)+'%';
   el('bodyMuscleValue').textContent=Math.round(build.muscle*100)+'%';
   el('bodyHint').textContent=robot?'O robô usa o próprio casco.':'Ajuste peso e músculo ou escolha um tipo físico.';
-  el('bodyBuilds').replaceChildren(...Object.entries(BUILD_PRESETS).map(([label,value])=>chip(label,build.weight===value.weight&&build.muscle===value.muscle,()=>setBuild(value))));
+  el('bodyBuilds').replaceChildren(...Object.entries(BUILD_PRESETS).map(([label,value])=>chip(label,build.weight===value.weight&&build.muscle===value.muscle,()=>setBuild(value),{kind:'build',value,label})));
 }
 let buildSliderTimer;
 for(const [id,key] of [['bodyWeight','weight'],['bodyMuscle','muscle']])document.getElementById(id).oninput=e=>{
@@ -196,10 +198,10 @@ const poseDefs=[['lookX','Olhar ↔',-1,1],['lookY','Olhar ↕',-1,1],['blinkL',
 let pose={...NEUTRAL},exprName='neutro',blinkT=0,nextBlink=2.5,talkT=0;
 const EXPR_LABEL={neutro:'Neutro',feliz:'Feliz',triste:'Triste',bravo:'Bravo',surpreso:'Surpreso',piscadela:'Piscadela',desconfiado:'Desconfiado',beijo:'Beijo',risada:'Risada'};
 const exprsEl=document.getElementById('exprs');
-for(const k of Object.keys(EXPRESSIONS)){const b=document.createElement('button');b.textContent=EXPR_LABEL[k]||k;b.dataset.expr=k;b.onclick=()=>setExpression(k);exprsEl.append(b)}
+for(const k of Object.keys(EXPRESSIONS)){const b=document.createElement('button');b.textContent=EXPR_LABEL[k]||k;b.dataset.expr=k;b.dataset.preview=JSON.stringify({kind:'expression',value:k,label:EXPR_LABEL[k]||k});b.onclick=()=>setExpression(k);exprsEl.append(b)}
 const poseEl=document.getElementById('poseCtrls');
 for(const [id,title,min,max] of poseDefs){const d=document.createElement('div');d.className='ctrl';d.innerHTML='<label for="p_'+id+'">'+title+' <output id="p_'+id+'-value">0.00</output></label><input id="p_'+id+'" type="range" min="'+min+'" max="'+max+'" step=".01" value="0"/>';poseEl.append(d);d.querySelector('input').oninput=e=>{pose[id]=Number(e.target.value);exprName=null;syncPoseUI()}}
-function syncPoseUI(){for(const [id] of poseDefs){document.getElementById('p_'+id).value=pose[id]||0;document.getElementById('p_'+id+'-value').textContent=(pose[id]||0).toFixed(2)}document.querySelectorAll('.exprs button').forEach(b=>b.classList.toggle('on',b.dataset.expr===exprName))}
+function syncPoseUI(){for(const [id] of poseDefs){document.getElementById('p_'+id).value=pose[id]||0;document.getElementById('p_'+id+'-value').textContent=(pose[id]||0).toFixed(2)}document.querySelectorAll('.exprs button').forEach(b=>{const on=b.dataset.expr===exprName;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on)})}
 function setExpression(k){pose={...NEUTRAL,...EXPRESSIONS[k]};exprName=k;syncPoseUI()}
 function livePose(dt){
   const p={...pose};
@@ -213,7 +215,7 @@ syncPoseUI();
 // ---------- UI ----------
 const presetsEl=document.getElementById('presets');
 for(const fam of FAMILY_ORDER){const ids=PRESET_ORDER.filter(id=>PRESETS[id].family===fam);if(!ids.length)continue;const h=document.createElement('div');h.className='fam';h.textContent=fam;presetsEl.append(h);
-  for(const id of ids){const b=document.createElement('button');b.className='preset';b.dataset.preset=id;b.innerHTML='<b>'+PRESETS[id].label+'</b>';b.title=PRESETS[id].sub;b.onclick=()=>setPreset(id);presetsEl.append(b)}}
+  for(const id of ids){const b=document.createElement('button');b.className='preset';b.dataset.preset=id;b.dataset.family=fam;b.dataset.preview=JSON.stringify({kind:'character',value:id,label:PRESETS[id].label});b.innerHTML='<b>'+PRESETS[id].label+'</b>';b.title=PRESETS[id].sub;b.onclick=()=>setPreset(id);presetsEl.append(b)}}
 function setPreset(id){++buildRevision;clearTimeout(buildSliderTimer);presetId=id;busy('Montando '+PRESETS[id].label+'…',()=>{rebuildHead();aim(...VIEWS.three)})}
 document.getElementById('front').onclick=()=>aim(...VIEWS.front);
 document.getElementById('bodyView').onclick=()=>{if(!el('showBody').checked){el('showBody').checked=true;busy('Montando…',()=>{rebuildHead();aim(...VIEWS.three)})}else{frameBody();aim(...VIEWS.three)}};
@@ -226,8 +228,9 @@ document.getElementById('reset').onclick=()=>{looks[presetId]=defaultLook(preset
 // ---------- catálogo: clica e troca ----------
 const el=id=>document.getElementById(id);
 function swatch(hex,name,on,click){const b=document.createElement('button');b.className='sw'+(on?' on':'');b.style.background=hex;b.title=name;b.setAttribute('aria-label',name);b.onclick=click;return b}
-function card(label,sub,on,click){const b=document.createElement('button');b.className=on?'on':'';b.innerHTML='<b>'+label+'</b>'+(sub?'<span>'+sub+'</span>':'');b.onclick=click;return b}
-function chip(label,on,click){const b=document.createElement('button');b.className=on?'on':'';b.textContent=label;b.onclick=click;return b}
+function previewData(b,spec){if(spec)b.dataset.preview=JSON.stringify({...spec,label:spec.label||b.textContent});b.setAttribute('aria-pressed',b.classList.contains('on'));return b}
+function card(label,sub,on,click,spec){const b=document.createElement('button');b.className=on?'on':'';b.innerHTML='<b>'+label+'</b>'+(sub?'<span>'+sub+'</span>':'');b.onclick=click;return previewData(b,spec)}
+function chip(label,on,click,spec){const b=document.createElement('button');b.className=on?'on':'';b.textContent=label;b.onclick=click;return previewData(b,spec)}
 function refreshUI(){
   refreshBuildUI();
   const P=PRESETS[presetId],look=getLook(),robot=P.kind==='robot',veg=P.family==='Vegetais';
@@ -236,33 +239,42 @@ function refreshUI(){
   el('gBeard').style.display=veg?'none':'';
   el('gClothes').classList.toggle('off',!current.body);
   el('clothesHint').textContent=robot?'O robô usa o próprio casco.':!current.body?'Ative Mostrar corpo para experimentar as roupas.':'Escolha um conjunto ou combine peças e cores por categoria.';
-  el('outfits').replaceChildren(...Object.entries(OUTFITS).map(([id,def])=>card(def.label,def.sub,look.outfit===id&&!Object.keys(look.pieces||{}).length,()=>chooseOutfit(id))));
+  el('outfits').replaceChildren(...Object.entries(OUTFITS).map(([id,def])=>card(def.label,def.sub,look.outfit===id&&!Object.keys(look.pieces||{}).length,()=>chooseOutfit(id),{kind:'outfit',value:id,label:def.label})));
   el('clothSlots').replaceChildren(...Object.entries(CLOTH_SLOTS).map(([id,label])=>chip(label,activeClothSlot===id,()=>{activeClothSlot=id;refreshUI()})));
   const selected=pieceSelection(look,current.body)[activeClothSlot];
-  el('clothPieces').replaceChildren(...pieceOptions(current.body,activeClothSlot).map(p=>card(p.label,'',selected===p.id,()=>choosePiece(activeClothSlot,p.id))));
+  el('clothPieces').replaceChildren(...pieceOptions(current.body,activeClothSlot).map(p=>card(p.label,'',selected===p.id,()=>choosePiece(activeClothSlot,p.id),{kind:'piece',slot:activeClothSlot,value:p.id,label:p.label})));
   const clothColors=el('clothColors');clothColors.replaceChildren();
+  // Exibe somente as cores que realmente afetam a peça selecionada.
+  const pieceChannels=new Set();
+  clothesObj?.group.getObjectByName('RoupaSlot_'+activeClothSlot)?.traverse(mesh=>{
+    if(!mesh.isMesh)return;const channel=mesh.userData.channel;
+    if(channel?.startsWith('stripes'))['fabric','secondary',...(channel==='stripesV'?['accent']:[])].forEach(c=>pieceChannels.add(c));
+    else if(['tail','fin','veil'].includes(channel)){
+      pieceChannels.add(channel==='veil'?(mesh.userData.style==='mermaid_ruby'?'accent':'secondary'):'fabric');pieceChannels.add('accent');
+    }else if(!['pearl','glass'].includes(channel))pieceChannels.add(mesh.material.userData.colorKey||channel);
+  });
   if(selected!=='none')for(const [key,label] of Object.entries(CLOTH_CHANNELS)){
-    const style=selected.split(':')[0], channels=OUTFITS[style].channels||['fabric','secondary','trim','leather','pants'];if(!channels.includes(key))continue;
+    const style=selected.split(':')[0];if(!pieceChannels.has(key))continue;
     const colors={...outfitColors(style),...(style===look.outfit?look.clothColors:{}),...(look.pieceColors?.[activeClothSlot]||{})};
-    const h=document.createElement('div');h.className='sub';h.textContent=CLOTH_SLOTS[activeClothSlot]+' · '+label;clothColors.append(h);
+    const h=document.createElement('div');h.className='sub';h.textContent=label;clothColors.append(h);
     const row=document.createElement('div');row.className='sws';clothColors.append(row);
     row.append(...CLOTH_COLORS.map(([name,hex])=>swatch(hex,name,colors[key]===hex,()=>{setPieceColors(activeClothSlot,{[key]:hex});refreshUI()})));
   }
   const skins=el('skins');skins.replaceChildren(...skinPalette(P).map(([n,h])=>swatch(h,n,(look.skin||'').toLowerCase()===h,()=>{look.skin=h;busy('Aplicando pele…',rebuildHead)})));
   if(P.skin&&!skinPalette(P).some(([,h])=>h===P.skin))skins.prepend(swatch(P.skin,'Original',look.skin===P.skin,()=>{look.skin=P.skin;busy('Aplicando pele…',rebuildHead)}));
   el('hairs').replaceChildren(...Object.entries(HAIR_STYLES).map(([k,S])=>card(S.label,S.sub,look.hair===k,()=>{
-    const flip=(look.hair==='none')!==(k==='none');look.hair=k;busy('Trocando cabelo…',()=>{flip&&hasFacialHair()?rebuildHead():(rebuildLook(),refreshUI())})})));
+    const flip=(look.hair==='none')!==(k==='none');look.hair=k;busy('Trocando cabelo…',()=>{flip&&hasFacialHair()?rebuildHead():(rebuildLook(),refreshUI())})},{kind:'hair',value:k,label:S.label})));
   el('hairColors').replaceChildren(...HAIR_COLORS.map(([n,h])=>swatch(h,n,look.hairColor===h,()=>{look.hairColor=h;lookObj&&lookObj.setHairColor(h);
     if(hasFacialHair()&&look.hair!=='none')busy('Pintando barba…',rebuildHead);else refreshUI()})));
-  el('beards').replaceChildren(...Object.entries(BEARD_STYLES).map(([k,l])=>chip(l,look.beard===k,()=>{look.beard=k;busy('Trocando barba…',rebuildHead)})));
+  el('beards').replaceChildren(...Object.entries(BEARD_STYLES).map(([k,l])=>chip(l,look.beard===k,()=>{look.beard=k;busy('Trocando barba…',rebuildHead)},{kind:'beard',value:k,label:l})));
   const accs=el('accs');accs.replaceChildren();
   for(const slot of ACC_SLOTS){const items=Object.entries(ACCESSORIES).filter(([,a])=>a.slot===slot.id);if(!items.length)continue;
-    const h=document.createElement('div');h.className='sub';h.textContent=slot.label;accs.append(h);
-    const row=document.createElement('div');row.className='chips';accs.append(row);
-    row.append(chip('Nenhum',!look.acc[slot.id],()=>{delete look.acc[slot.id];busy('Trocando…',()=>{lookObj.rebuildAcc(look);refreshUI()})}));
-    for(const [k,a] of items)row.append(chip(a.label,look.acc[slot.id]===k,()=>{look.acc[slot.id]=k;busy('Trocando…',()=>{lookObj.rebuildAcc(look);refreshUI()})}));
+    const h=document.createElement('div');h.className='sub';h.textContent=slot.label;h.dataset.accSlot=slot.id;accs.append(h);
+    const row=document.createElement('div');row.className='chips';row.dataset.accSlot=slot.id;accs.append(row);
+    row.append(chip('Nenhum',!look.acc[slot.id],()=>{delete look.acc[slot.id];busy('Trocando…',()=>{lookObj.rebuildAcc(look);refreshUI()})},{kind:'accessory',slot:slot.id,value:null,label:'Nenhum'}));
+    for(const [k,a] of items)row.append(chip(a.label,look.acc[slot.id]===k,()=>{look.acc[slot.id]=k;busy('Trocando…',()=>{lookObj.rebuildAcc(look);refreshUI()})},{kind:'accessory',slot:slot.id,value:k,label:a.label}));
   }
-  const used=new Set();for(const k of Object.values(look.acc))(ACCESSORIES[k]?.colors||[]).forEach(c=>used.add(c));
+  const used=new Set();for(const k of Object.entries(look.acc).filter(([slot])=>!editor||editor.accessorySlot()===slot).map(([,value])=>value))(ACCESSORIES[k]?.colors||[]).forEach(c=>used.add(c));
   const ac=el('accColors');ac.replaceChildren();
   for(const [key,def] of Object.entries(ACC_COLORS)){if(!used.has(key))continue;
     const h=document.createElement('div');h.className='sub';h.textContent='Cor · '+def.label;ac.append(h);
@@ -270,6 +282,7 @@ function refreshUI(){
     row.append(...def.list.map(([n,hex])=>swatch(hex,n,look.colors[key]===hex,()=>{look.colors[key]=hex;lookObj.setColors(look.colors);refreshUI()})));
   }
   if(!used.size&&!robot){const m=document.createElement('p');m.className='muted';m.textContent='Escolha um acessório para trocar as cores.';ac.append(m)}
+  editor?.refresh();
 }
 // exportação: malha com densidade um pouco menor que a do visualizador (arquivo mais leve, mesma forma)
 // o GLB vai em pose neutra, com o esqueleto facial e os clipes de animação (piscar, falar, expressões…)
@@ -283,10 +296,13 @@ document.getElementById('download').onclick=async e=>{
   catch(err){alert('Falha na exportação: '+(err&&err.message||err))}
   finally{btn.disabled=false;btn.textContent=label}
 };
-window.__atelie={clothes:()=>clothesObj,setPiece:choosePiece,setPieceColors,pieceOptions:slot=>pieceOptions(current.body,slot),setOutfit:chooseOutfit,setClothColors:colors=>{Object.assign(getLook().clothColors,colors);for(const piece of Object.values(getLook().pieceColors||{}))Object.assign(piece,colors);clothesObj.setColors(getLook().clothColors);refreshUI()},frame:()=>frame,body:()=>current.body,getLook,setBuild,bodyTiming:()=>bodyTiming,setLook,rebuildLook,lookObj:()=>lookObj,setExpression,setPose:p=>{pose={...NEUTRAL,...p};exprName=null;syncPoseUI();applyPose()},stopAuto:()=>{document.getElementById('autoBlink').checked=false;document.getElementById('talk').checked=false},group:()=>current.group,timings:()=>current.group.userData.timings,setPreset,aim,VIEWS,camera,orbit,clay:on=>current.group.traverse(o=>{if(o.isMesh&&o.material.vertexColors!==undefined&&o.material.name==='Skin'){o.material.vertexColors=!on;o.material.sheen=on?0:.6;if(on)o.material.color.set('#d8d4cf');else o.material.color.set('#ffffff');o.material.needsUpdate=true}}),exportGLB};
+window.__atelie={savedLook:id=>structuredClone(looks[id]||defaultLook(id)),clothes:()=>clothesObj,setPiece:choosePiece,setPieceColors,pieceOptions:slot=>pieceOptions(current.body,slot),setOutfit:chooseOutfit,setClothColors:colors=>{Object.assign(getLook().clothColors,colors);for(const piece of Object.values(getLook().pieceColors||{}))Object.assign(piece,colors);clothesObj.setColors(getLook().clothColors);refreshUI()},frame:()=>frame,body:()=>current.body,getLook,setBuild,bodyTiming:()=>bodyTiming,setLook,rebuildLook,lookObj:()=>lookObj,setExpression,setPose:p=>{pose={...NEUTRAL,...p};exprName=null;syncPoseUI();applyPose()},stopAuto:()=>{document.getElementById('autoBlink').checked=false;document.getElementById('talk').checked=false},group:()=>current.group,timings:()=>current.group.userData.timings,setPreset,aim,VIEWS,camera,orbit,clay:on=>current.group.traverse(o=>{if(o.isMesh&&o.material.vertexColors!==undefined&&o.material.name==='Skin'){o.material.vertexColors=!on;o.material.sheen=on?0:.6;if(on)o.material.color.set('#d8d4cf');else o.material.color.set('#ffffff');o.material.needsUpdate=true}}),exportGLB};
 
-rebuildHead();aim(...VIEWS.three);
-function resize(){const w=host.clientWidth,h=host.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}addEventListener('resize',resize);resize();
+rebuildHead();aim(...VIEWS.three);statusEl.textContent=PRESETS[presetId].label;
+editor=mountEditor({families:FAMILY_ORDER,slots:CLOTH_SLOTS,accessories:ACC_SLOTS,getContext:()=>({id:presetId,look:structuredClone(getLook())}),selectSlot:slot=>{activeClothSlot=slot},refresh:refreshUI,onLayout:()=>resize()});
+refreshUI();
+window.__atelie.editor=editor;
+function resize(){const w=host.clientWidth,h=Math.max(1,host.clientHeight-(host.querySelector('.stage-controls')?.offsetHeight||0));renderer.domElement.style.height=h+'px';renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}addEventListener('resize',resize);resize();
 let lastT=performance.now();
 (function frame(){requestAnimationFrame(frame);const t=performance.now(),dt=Math.min(.1,(t-lastT)/1000);lastT=t;applyPose(dt);orbit.update();renderer.render(scene,camera)})();
 </script></body></html>

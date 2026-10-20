@@ -142,3 +142,20 @@ python3 tests/galeria-tipos.py renders/tipos-fisicos
 Execute `desempenho-tipos.cjs` sozinho para medir geração completa abaixo de 3 s e cache abaixo de 500 ms. `ATELIE_RENDERS` altera a pasta de saída; `ATELIE_PERSONAGENS` limita personagens. Ao capturar em paralelo com a suíte de geometria, use `ATELIE_COBRAR_TEMPO=0` em `visuais-tipos.cjs` e mantenha a medição exclusiva separada. Os tempos dependem do dispositivo; os valores desta execução ficam em `desempenho.json`. Os renders servem à avaliação do usuário, sem aprovação estética automática.
 
 Verificação desta etapa (20/10/2026): 12 corpos × 14 conjuntos; 36 casos de cobertura com 386.486 vértices consultados e nenhuma falha. Juntas e encaixe preservados, volume crescente de magro → padrão → gordo. Foram capturadas 224 imagens dos 13 personagens, com validação de 52 GLBs (48 com 12 clipes faciais e 4 do robô). Nenhum erro de console. Na medição exclusiva, o maior tempo de corpo + roupas foi 2,794 s; maior volta ao cache: 136 ms. Os arquivos `desempenho.json` e `relatorio.json` acompanham a galeria.
+
+## Menu por categorias e prévias visuais
+
+A interface foi reorganizada em **Personagem, Corpo, Aparência, Roupas, Acessórios e Expressões**. Cada categoria abre suas subcategorias na coluna esquerda e mostra somente os controles daquela seleção. A câmera, a opção de mostrar o corpo, restaurar o visual e exportar GLB ficam junto do personagem. Há também uma vista de costas.
+
+Os modelos são cartões com prévias do próprio personagem, visíveis antes de clicar: personagens, quatro tipos físicos, cabelos, barbas, conjuntos, peças, acessórios e expressões. Peso e músculo continuam por controles de arrastar; cores usam amostras. As cores da roupa ficam dentro da peça selecionada, em uma seção expansível, e mostram somente os canais utilizados por ela. Os acessórios mostram as cores do slot aberto.
+
+`src/editor.js` e `src/editor.css` organizam a navegação. `src/previews.js` gera a fila visível, reutiliza imagens em memória e no IndexedDB e monta o worker a partir do mesmo import map. `src/preview-worker.js` renderiza uma cena independente em OffscreenCanvas; `src/preview-spec.js` aplica as escolhas apenas à cópia usada na miniatura. Não há imagens externas, build ou serviço novo. As miniaturas aparecem progressivamente na primeira visita. Se o navegador não oferecer o recurso necessário, o catálogo continua selecionável e informa que a prévia está indisponível.
+
+Depuração: `window.__atelie.editor.select('body','type')`, `.select('clothes','upper')`, `.sections()` e `.previews.stats()`. `.previews.pause()` interrompe a geração para testes isolados do personagem, sem alterar a skin.
+
+```sh
+# Com o servidor local na porta 8000:
+node tests/menu-previas.cjs
+```
+
+Esse teste foi acrescentado para percorrer as subcategorias, capturar suas telas em `renders/menu/`, conferir a independência da cena principal, o cache, controles, layout móvel e GLB. **A execução completa deste teste e a revisão de todas as imagens ainda estão pendentes nesta publicação intermediária**, solicitada pelo usuário para transferência de continuidade. A checagem inicial mostrou os quatro cartões de tipo físico renderizados. `node tests/figurinos.mjs` foi executado novamente, incluindo os 36 casos de cobertura, sem falhas registradas. Rosto, rig, corpo, cabelos, acessórios e geometria das roupas permanecem com os mesmos geradores da versão anterior.
