@@ -71,3 +71,21 @@ Não há mais pendências de testes do menu de base ou dos 52 GLBs. Para qualque
 O trabalho pode ser executado por GitHub Actions mesmo quando o terminal local `/workspace/quemsoueu` não estiver disponível. Em outros ambientes, clonar a branch `main` e rodar servidor estático `python3 -m http.server 8000`, Three.js 0.180, Playwright e Chromium. Os scripts assumem Chromium em `/usr/bin/chromium`.
 
 **Design é de propriedade do usuário:** direção estética cartoon 3D estilizado, comparação com referências, e escolha do visual precisam de revisão humana.
+
+## Nova prioridade — fluidez com qualidade visual preservada
+
+A integração com o jogo foi adiada pelo usuário; **não** desenvolver loja, skins comerciais ou integração com o jogo nesta fase. O foco do Ateliê é resposta fluida sem diminuir resolução, densidade geométrica, sombras, iluminação, rig, materiais ou qualidade de exportação.
+
+Mudanças implementadas em 20/10/2026:
+
+- `src/previews.js`: o agendador das miniaturas ganhou `hold(motivo, ativo)` e estado `waitingForInteraction` em `stats()`. Enquanto há um gesto no canvas, somente a **próxima tarefa do Worker** é adiada; uma geração já em andamento prossegue até terminar. Fila, cache e imagens produzidas são mantidos.
+- `src/editor.js`: pausa de agendamento de novos trabalhos durante rotação por mouse/toque, zoom (até 220 ms após o último scroll), perda de foco e aba em segundo plano. Retomada ao fim do gesto; nenhum ajuste de renderização do personagem.
+- `src/previews.js`: uma única cópia do estado-base por atualização dos cartões, preservando os visuais individuais dos personagens.
+- `tests/fluidez.cjs` e `.github/workflows/validar-fluidez.yml`: suíte específica de interação usando Playwright, além das verificações existentes.
+- `README.md`: documentação da estratégia sem queda de fidelidade.
+
+**Regressão aprovada:** o CI do menu, modelos e geometria já passou para o código de `src/editor.js` e `src/previews.js` modificados, na execução https://github.com/aruanmf446-hub/quemsoueu/actions/runs/39504990256 . Esses testes cobrem todas as 26 subcategorias e as 118 prévias, rig, 13 personagens, GLB, cache e 36 casos geométricos.
+
+**Teste extra de gestos:** https://github.com/aruanmf446-hub/quemsoueu/actions/workflows/validar-fluidez.yml . A suíte nova foi ajustada para não exigir eventos artificiais de `setPointerCapture` e para respeitar o carregamento preguiçoso (`IntersectionObserver`). Conferir o resultado da execução mais recente antes de reportá-la como aprovada. Não confundir falha de teste de captura sintética com defeito do render 3D.
+
+A versão publicada mantém exatamente os mesmos parâmetros do renderizador WebGL original: **nada de reduzir qualidade para conseguir FPS**. Avaliar os ganhos reais no dispositivo do usuário antes de atribuir qualquer percentual de aceleração. Quando precisar prosseguir, priorizar testes de interação, tempo de resposta e fluidez do menu, sem mexer no conteúdo visual.
