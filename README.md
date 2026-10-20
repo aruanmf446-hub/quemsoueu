@@ -180,3 +180,10 @@ A geração das miniaturas continua a usar a **mesma** cena, malha, materiais, e
 **Nenhuma estratégia de redução dinâmica de resolução, sombras, densidade da malha, rig ou qualidade de imagem foi introduzida.** A otimização controla prioridade de execução, não fidelidade. A medição de FPS depende da GPU e do navegador do visitante; não há promessa de ganho percentual universal. O teste CI usa SwiftShader e reduz a sombra apenas na execução de teste, como as suítes anteriores; a produção continua com os parâmetros originais.
 
 **Resultado de validação de fluidez:** [GitHub Actions #39507159296](https://github.com/aruanmf446-hub/quemsoueu/actions/runs/39507159296) aprovado. O teste de gestos reais validou rotação, zoom, liberação ao perder foco, retomada da fila e quatro miniaturas de tipo físico, mantendo inalterado o visual do personagem. A navegação entre quatro subcategorias levou **16,7 ms** nessa execução de Chromium/SwiftShader; não confundir essa medição com FPS ou ganho percentual no dispositivo final. A suíte completa do menu, rig, GLB e geometria também passou [#39504990256](https://github.com/aruanmf446-hub/quemsoueu/actions/runs/39504990256). O objetivo de desempenho foi atingido nos testes de CI disponíveis, mas a aprovação subjetiva de fluidez e acabamento depende da revisão no dispositivo do usuário.
+
+## Encaixe das roupas no tipo físico
+
+A envoltória de tecido limita quanto da largura dos ombros pode ser carregado até o peito e a cintura. A folga também considera a espessura medida da seção e o peso selecionado. Mangas, pregas, saias rodadas e camadas continuam com seus volumes próprios; o campo do corpo permanece apenas como limite de segurança para a cobertura da pele.
+
+Nas sereias, o cós e o quadril da cauda usam o contorno do corpo escolhido, incluindo profundidades diferentes na frente e nas costas. A extensão da cauda afina a partir desse encaixe, e os filetes dourados seguem a superfície medida. O saiote do orc teve a folga e a abertura reduzidas. As imagens antigas do catálogo recebem uma nova chave de cache; as melhorias de prioridade dos gestos de câmera foram preservadas.
+

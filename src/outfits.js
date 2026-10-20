@@ -236,15 +236,19 @@ export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot 
   function envelope(yTop, yBot, o = {}) {
     const NA = 96, NY = Math.max(4, Math.ceil((yTop - yBot) / (.025 * clamp(W, 1, 1.3)))), dy = (yTop - yBot) / NY, R = new Float32Array((NY + 1) * NA);
     const hang = o.hang ?? .3, ease = o.ease ?? .08 * W;
+    // A folga acompanha a espessura real da seção, inclusive no corpo magro.
+    // A queda tem limite: a largura do ombro não pode virar uma caixa até a cintura.
+    const fitScale = clamp(1 + .22 * (body.build?.weight || 0), .75, 1.22);
+    const bridge = (o.drape ?? .025 * W) * fitScale;
     let prev = null;
     for (let i = 0; i <= NY; i++) {
       const y = yTop - i * dy, raw = [], pts = [];
       for (let k = 0; k < NA; k++) { const a = -PI + 2 * PI * k / NA, r = radAt(y, a); raw.push(r); pts.push([Math.sin(a) * r, Math.cos(a) * r]) }
       const h = hull2(pts), row = new Float32Array(NA);
-      for (let k = 0; k < NA; k++) { const a = -PI + 2 * PI * k / NA, rh = h.length > 2 ? rayHull(h, Math.sin(a), Math.cos(a)) || raw[k] : raw[k]; let r = prev ? Math.max(rh, prev[k] - hang * dy) : rh; if (o.cinch) r = lerp(r, rh, (o.cinchK ?? .8) * Math.exp(-(((y - o.cinch) / (o.cinchW ?? .12)) ** 2))); row[k] = r }
+      for (let k = 0; k < NA; k++) { const a = -PI + 2 * PI * k / NA, rh = h.length > 2 ? rayHull(h, Math.sin(a), Math.cos(a)) || raw[k] : raw[k]; let r = prev ? Math.max(rh, Math.min(prev[k] - hang * dy, rh + bridge)) : rh; if (o.cinch) r = lerp(r, rh, (o.cinchK ?? .8) * Math.exp(-(((y - o.cinch) / (o.cinchW ?? .12)) ** 2))); row[k] = r }
       prev = row;
       const below = o.flareFrom != null ? Math.max(0, o.flareFrom - y) : 0;
-      for (let k = 0; k < NA; k++) { const a = -PI + 2 * PI * k / NA; R[i * NA + k] = row[k] + ease + (o.flare || 0) * below + (o.folds || 0) * Math.sin(a * (o.foldN || 14) + (o.foldTwist || 0) * y) * Math.min(1, below * 2) + (o.back || 0) * Math.max(0, -Math.cos(a)) * below }
+      for (let k = 0; k < NA; k++) { const a = -PI + 2 * PI * k / NA; R[i * NA + k] = row[k] + ease * fitScale * clamp(row[k] / (.8 * W), .55, 1) + (o.flare || 0) * below + (o.folds || 0) * Math.sin(a * (o.foldN || 14) + (o.foldTwist || 0) * y) * Math.min(1, below * 2) + (o.back || 0) * Math.max(0, -Math.cos(a)) * below }
     }
     // alisa a tabela (ângulo e altura) para não sobrar degrau de medida
     const tmp = new Float32Array(R.length);
@@ -503,7 +507,7 @@ export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot 
     // tanga: cinto grosso de couro com rebites, saiote de tiras de couro, estandarte vermelho na frente
     const yBelt = Y(.4);
     band('Cinto', 'leather', yBelt, .16 * W, .1 * W);
-    cone('Saiote', 'leather', { top: .4, bottom: .62, pad: .08 * W, flare: .05, th: .04, ragged: .18, pleat: .04, pleatN: 13, only: ph => Math.abs(Math.sin(ph * 6.5)) < .2 ? .05 : -1 });
+    cone('Saiote', 'leather', { top: .4, bottom: .62, pad: .035 * W, flare: .025, th: .04, ragged: .18, pleat: .018, pleatN: 13, only: ph => Math.abs(Math.sin(ph * 6.5)) < .2 ? .05 : -1 });
     { const zf = frontZ(0, yBelt) + .1 * W, rows = []; for (let i = 0; i <= 26; i++) { const t = i / 26, y = yBelt - .06 - t * .3 * Lb, row = []; for (let j = 0; j <= 16; j++) { const s = j / 16 - .5, w = (.42 - .08 * t) * W; row.push(V(s * 2 * w, y - (t > .85 ? (.5 + .5 * Math.sin(j * 2.3)) * .12 * W : 0), Math.max(frontZ(s * 2 * w * .8, Math.max(y, Y(.47))) + .06, zf - .05 * t) + .04 * Math.sin(s * 6 + t * 3) * t)) } rows.push(row) } sheet('Estandarte', 'fabric', rows, null, (t, s) => .78 + .22 * Math.cos((s - .5) * 3)) }
     detailSlot = 'belt';
     // caveira de fivela com chifres e presas penduradas
@@ -587,27 +591,36 @@ export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot 
     const ruby = style === 'mermaid_ruby';
     // cauda: começa nos quadris (cós em V na frente), afina até o "tornozelo" e abre na nadadeira; S suave de lado
     const yT = Y(.36), yAnk = ySole + .17 * Lb, yEnd = ySole + .08 * Lb;
-    const wAt = y => { const u = clamp((yT - y) / (yT - yAnk), 0, 1); return W * (1.02 * B.hip - (1.02 * B.hip - .2) * Math.pow(u, 1.15) + .12 * Math.sin(PI * Math.min(u * 1.4, 1)) * (1 - u)) };
-    const zc = y => z0 - .02 + .12 * Math.sin(clamp((yT - y) / (yT - yEnd), 0, 1) * PI * 1.1);
+    // Cós e quadril medidos no corpo escolhido; a extensão da cauda nasce desse encaixe.
+    // Frente e costas conservam suas profundidades, sem impor uma elipse larga de tamanho fixo.
+    const yJoin = Y(.43), tailFit = envelope(yT + .12, yJoin - .04, { ease: .025 * W, hang: 3, drape: .012 * W, smooth: 6 });
+    const tailRadius = (y, ph) => {
+      if (y >= yJoin) return tailFit.radius(y, ph);
+      const u = clamp((yJoin - y) / (yJoin - yAnk), 0, 1);
+      return lerp(tailFit.radius(yJoin, ph), .15 * W, Math.pow(u, 1.12));
+    };
+    const wAt = y => tailRadius(y, PI / 2);
+    const zc = y => z0 + .1 * Math.sin(clamp((yJoin - y) / (yJoin - yEnd), 0, 1) * PI * 1.1);
+    const tailPoint = (y, ph, off = 0) => { const r = tailRadius(y, ph) + off; return V(Math.sin(ph) * r, y, zc(y) + Math.cos(ph) * r) };
     activeSlot='lower';
     if(!onlySlot||onlySlot==='lower'){
     const tail = (x, y, z) => {
-      const w = Math.max(wAt(y), .1), d = w * .78, q = Math.hypot(x / w, (z - zc(y)) / d);
-      let dd = (q - 1) * Math.min(w, d) * .9;
+      const ph = Math.atan2(x, z - zc(y));
+      let dd = (Math.hypot(x, z - zc(y)) - tailRadius(y, ph)) * .9;
       const vcut = yT + .06 - .16 * Math.max(0, 1 - Math.abs(x) / (.5 * W)) * sstep(z0, z0 + .3, z);
-      const hipCover = armSide(Math.abs(x), y) > -.02 ? 1 : bf(x, y, z) - .045 * W; // cobre quadril/glúteos do corpo
-      dd = smin(dd, hipCover, .06);
+      const hipCover = armSide(Math.abs(x), y) > -.02 ? 1 : bf(x, y, z) - .035 * W; // piso de segurança no contato com quadril/glúteos
+      dd = Math.min(dd, hipCover);
       dd = smax(dd, y - vcut, .02); dd = smax(dd, yEnd - y, .05);
       return dd;
     };
-    const tg = sdfMesh(tail, { x: 1.4 * W + .5, y0: yEnd - .2, y1: yT + .3, z0: z0 - 1.4 * W - .3, z1: z0 + 1.4 * W + .4 }, cellBase);
+    const tg = refinedSdfMesh(tail, { x: 1.4 * W + .5, y0: yEnd - .2, y1: yT + .3, z0: z0 - 1.4 * W - .3, z1: z0 + 1.4 * W + .4 }, cellBase);
     { const pa = tg.attributes.position, n = pa.count, mixc = new Float32Array(n), shade = new Float32Array(n); for (let i = 0; i < n; i++) { const y = pa.getY(i); mixc[i] = Math.pow(sstep(yT, yEnd, y), ruby ? .9 : 1.3); shade[i] = 1 } tg.setAttribute('mixc', new THREE.BufferAttribute(mixc, 1)); tg.setAttribute('shade', new THREE.BufferAttribute(shade, 1)) }
     add('Cauda', smoothCloth(tg,3), 'tail', 'lower');
     }
     detailSlot='lower';
     // linhas douradas no cós e descendo a cauda
-    { const pts = []; for (let i = 0; i <= 40; i++) { const t = i / 40, ph = -1.25 + 2.5 * t, x = Math.sin(ph), y = yT + .06 - .16 * Math.max(0, 1 - Math.abs(Math.sin(ph) * radAt(yT, ph)) / (.5 * W)) - .02; const r = radAt(y, ph, zc(y)) + .03; pts.push(V(Math.sin(ph) * r, y, zc(y) + Math.cos(ph) * r)) } addGeo('trim', tubeG(pts, .022 * W, 6)) }
-    mirror(s => { const pts = []; for (let i = 0; i <= 30; i++) { const t = i / 30, y = yT - .1 - t * (yT - yAnk - .1), w = wAt(y); pts.push(V(s * (.35 * w * (1 - t) + .08 * w), y, zc(y) + w * .78 * Math.sqrt(1 - Math.pow(.35 * (1 - t) + .08, 2)) + .015)) } addGeo('trim', tubeG(pts, .012 * W, 5)) });
+    { const pts = []; for (let i = 0; i <= 40; i++) { const t = i / 40, ph = -1.25 + 2.5 * t, x = Math.sin(ph), y = yT + .06 - .16 * Math.max(0, 1 - Math.abs(Math.sin(ph) * radAt(yT, ph)) / (.5 * W)) - .02; pts.push(tailPoint(y, ph, .012 * W)) } addGeo('trim', tubeG(pts, .022 * W, 6)) }
+    mirror(s => { const pts = []; for (let i = 0; i <= 30; i++) { const t = i / 30, y = yT - .1 - t * (yT - yAnk - .1), ph = s * Math.asin(.35 * (1 - t) + .08); pts.push(tailPoint(y, ph, .015)) } addGeo('trim', tubeG(pts, .012 * W, 5)) });
     // nadadeira da cauda: dois lóbulos em leque com raios, borda recortada e ondulada
     const finSheet = (name, base, dirMain, side, len, spread, n, ruffleAmp) => {
       const rows = [], NR = 48, NC = 96; const up = V(0, 0, 1);

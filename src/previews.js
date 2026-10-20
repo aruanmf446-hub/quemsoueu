@@ -1,6 +1,6 @@
 // Prévias locais: imagens procedurais em segundo plano, sem mudar a cena principal.
 import {previewChoice} from './preview-spec.js';
-const VERSION='menu-v1';
+const VERSION='menu-v2-encaixe';
 const stable=value=>JSON.stringify(value,(_,v)=>v&&typeof v==='object'&&!Array.isArray(v)?Object.fromEntries(Object.entries(v).sort(([a],[b])=>a.localeCompare(b))):v);
 
 export class PreviewCatalog {
