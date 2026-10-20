@@ -2,6 +2,14 @@
 
 Protótipo separado do jogo principal para aprovar a anatomia facial de personagens cartoon 3D. A V2 reúne cabeça, rig facial, corpo, cabelo, acessórios e figurinos procedurais personalizáveis, sem assets externos.
 
+## Tipos físicos
+
+`buildBody(fit, id, { build: { weight, muscle } })` aplica deltas sobre o corpo original de cada personagem. `weight` vai de **-1 (magro)** a **1 (gordo)**; `muscle` vai de **0 (musculatura original)** a **1 (musculoso)**. `{weight:0,muscle:0}` mantém a forma original. Peso e músculo podem ser combinados.
+
+As alterações afetam largura e volume: cintura, barriga, quadril, braços, pernas, ombros e peitoral. Altura, comprimentos, juntas, escala da cabeça e tamanho dos seios permanecem iguais; Cute continua sem seios. A seção do pescoço junto à cabeça usa exatamente o campo original, com transição suave para o volume abaixo. O rosto, os ossos faciais e seus blendshapes não são modificados.
+
+O cache do corpo diferencia personagem, densidade, escala da cabeça, cauda, peso e músculo e conserva até 64 geometrias. `node tests/tipos-fisicos.mjs` verifica juntas, emenda, cache e volume crescente de magro → padrão → gordo nos 12 personagens orgânicos. O robô conserva seu casco.
+
 ## Ver no navegador
 https://aruanmf446-hub.github.io/quemsoueu/
 

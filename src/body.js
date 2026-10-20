@@ -73,9 +73,31 @@ export const BODIES = {
 // escala da cabeça com corpo (a cabeça é desenhada grande para o close do rosto; no corpo inteiro ela diminui)
 export const headScale = id => (BODIES[id] && BODIES[id].head) || 1;
 
+// Valores normalizados também identificam os caches; NaN e valores fora da faixa não chegam à geometria.
+export function normalizeBuild(build = {}) {
+  const number = (value, lo, hi) => Number.isFinite(Number(value)) ? clamp(Number(value), lo, hi) : 0;
+  return { weight: number(build?.weight, -1, 1), muscle: number(build?.muscle, 0, 1) };
+}
+function buildProportions(base, build) {
+  const { weight: w, muscle: m } = build, thin = Math.max(0, -w), fat = Math.max(0, w);
+  return { ...base,
+    sh: base.sh - .08 * thin + .08 * fat + .20 * m,
+    chest: base.chest - .12 * thin + .12 * fat + .22 * m,
+    waist: base.waist - .26 * thin + .38 * fat - .08 * m,
+    hip: base.hip - .16 * thin + .24 * fat,
+    depth: base.depth - .10 * thin + .16 * fat,
+    belly: Math.max(0, base.belly * (1 - .75 * thin) + .95 * fat - .15 * m),
+    muscle: base.muscle + .85 * m,
+    glute: Math.max(.1, base.glute - .12 * thin + .20 * fat + .06 * m),
+    armWidth: 1 - .24 * thin + .30 * fat + .10 * m,
+    legWidth: 1 - .21 * thin + .28 * fat + .08 * m
+  };
+}
+
 // ---------- SDF do corpo ----------
-function makeBodySDF(fit, presetId, hs = 1, mermaid = false) { // hs: escala da cabeça (a cabeça diminui em volta da base do pescoço; o corpo não muda)
-  const P = fit.P, B = { ...BASE, ...(BODIES[presetId] || {}) };
+function makeBodySDF(fit, presetId, hs = 1, mermaid = false, build = normalizeBuild()) { // hs: escala da cabeça (a cabeça diminui em volta da base do pescoço; o corpo não muda)
+  const P = fit.P, original = { ...BASE, ...(BODIES[presetId] || {}) }, B = buildProportions(original, build);
+  const fat = Math.max(0, build.weight), thin = Math.max(0, -build.weight);
   const prims = []; // { f(x,y,z) com x ≥ 0 (corpo simétrico), b: esfera envolvente, k }
   const add = (f, b, k) => prims.push({ f, b, k });
   const bs = (c, r) => ({ x: c.x, y: c.y, z: c.z, r });
@@ -89,7 +111,7 @@ function makeBodySDF(fit, presetId, hs = 1, mermaid = false) { // hs: escala da 
   joints.ySole = ySole; joints.Lb = Lb; joints.yNeck = yN; joints.zCenter = z0;
 
   // ---- pescoço: continua o da cabeça (mesma seção oval), alargando para dentro do trapézio ----
-  { const a = V(0, nby + .26 * hs, nbz - .02 * hs), b = V(0, nby - .1, nbz - .06), r1 = nr * hs * 1.14, r2 = nr * (.3 + .7 * hs) * 1.24;
+  { const a = V(0, nby + .26 * hs, nbz - .02 * hs), b = V(0, nby - .1, nbz - .06), r1 = nr * hs * 1.14, r2 = nr * (.3 + .7 * hs) * (1.24 + .22 * fat + .16 * build.muscle);
     add((x, y, z) => roundCone(x * 1.14, y, z, a, r1, b, r2) * .92, bs(V(0, nby, nbz), .8), .1) }
 
   // ---- tronco por curvas ----
@@ -111,10 +133,14 @@ function makeBodySDF(fit, presetId, hs = 1, mermaid = false) { // hs: escala da 
   const hunchZ = f => -B.hunch * sstep(.0, .2, f) * (1 - sstep(.2, .45, f)) * .9;
   const tTop = 0, tBot = .505, torsoB = bs(V(0, Y(.25), z0), Lb * .3 + 1.2 * W);
   const cactus = !!B.cactus, PT = cactus && P.pattern;
+  let sectionY=NaN,sectionA,sectionZ,sectionH;
   add((x, y, z) => {
     const f = (yN - y) / Lb; if (f < tTop - .2 || f > tBot + .2) return Math.max(Math.abs(f - .25) * Lb - .3 * Lb, .05);
-    const ff = clamp(f, tTop, tBot), a = Math.max(fA(ff), .05), zf = fF(ff), zb = fB(ff), zc = z0 + (zf + zb) / 2 + hunchZ(ff);
-    const hz = Math.max((zf - zb) / 2, .05), X = x / a, Z = (z - zc) / hz, q = sqrt(X * X + Z * Z);
+    if(y!==sectionY){
+      const ff=clamp(f,tTop,tBot),zf=fF(ff),zb=fB(ff);
+      sectionY=y;sectionA=Math.max(fA(ff),.05);sectionZ=z0+(zf+zb)/2+hunchZ(ff);sectionH=Math.max((zf-zb)/2,.05);
+    }
+    const a=sectionA,zc=sectionZ,hz=sectionH,X = x / a, Z = (z - zc) / hz, q = sqrt(X * X + Z * Z);
     let d = (q - 1) * Math.min(a, hz) * .92;
     if (f < tTop) d = Math.max(d, (tTop - f) * Lb); if (f > tBot - .03) d = smax(d, (f - tBot) * Lb, .25);
     if (PT) { const phi = Math.atan2(x, z - zc); d += PT.depth * .7 * (1 - sqrt(.5 + .5 * Math.cos(PT.n * phi))) }
@@ -127,33 +153,43 @@ function makeBodySDF(fit, presetId, hs = 1, mermaid = false) { // hs: escala da 
     const c = V(.31 * W, Y(f) - .04 * s, zf - .1 * s), u = V(.96, 0, .28).normalize(), v = V(0, 1, 0), w = V(-.28, 0, .96).normalize();
     add((x, y, z) => ellipO(x, y, z, c, u, v, w, .3 * s, .27 * s, .25 * s), bs(c, .4 * s), .22 * s);
   }
-  if (mu > 0) { // peitoral, abdômen e serrátil discretos
+  if (mu > 0 && !B.breasts) { // peitoral, abdômen e serrátil discretos
     const f = .15, c = V(.32 * W * M.ch, Y(f) + .02, fF(f) + z0 - .12);
     add((x, y, z) => ellip(x, y, z, c, .42 * W, .22 * W, .1 * W * (1 + .5 * mu)), bs(c, .5 * W), .22 * W);
     if (mu >= .8) for (let r = 0; r < 3; r++) for (const xx of [.11]) { const cc = V(xx * W, Y(.215 + r * .045), fF(.215 + r * .045) + z0 - .05); add((x, y, z) => ellip(x, y, z, cc, .1 * W, .07 * W, .025 * W * mu), bs(cc, .14 * W), .12 * W) }
   }
-  if (bel > 0) { const c = V(0, Y(.33), fF(.33) + z0 - .3 * bel * W); add((x, y, z) => ellip(x, y, z, c, .55 * W * (.8 + .3 * bel), .5 * W * (.8 + .3 * bel), .38 * W * (.8 + .4 * bel)), bs(c, .8 * W), .25 * W) }
+  if (bel > 0) { const c = V(0, Y(.33 + .018 * fat), fF(.33) + z0 - .3 * bel * W); add((x, y, z) => ellip(x, y, z, c, .55 * W * (.8 + .3 * bel), .5 * W * (.8 + .3 * bel), .38 * W * (.8 + .4 * bel)), bs(c, Math.max(.8, .55 * (.8 + .4 * bel)) * W), (.25 + .08 * fat) * W) }
   if (B.glute > 0) { const g = B.glute, c = V(.26 * W * M.hi, Y(.455), fB(.455) + z0 + .16 * W); add((x, y, z) => ellip(x, y, z, c, .3 * W * g, .32 * W * g, .26 * W * g), bs(c, .45 * W * g), .22 * W) }
 
+  if (thin > 0) {
+    for (const f of [.19, .22, .25]) {
+      const xx=.45*W*M.ch,zf=fF(f),zb=fB(f),front=z0+(zf+zb)/2+(zf-zb)/2*Math.sqrt(Math.max(0,1-(xx/fA(f))**2))+hunchZ(f);
+      const c = V(xx, Y(f), front - .04 * W);
+      add((x, y, z) => ellip(x, y, z, c, .14 * W, .020 * W, .035 * W * thin), bs(c, .16 * W), .09 * W);
+    }
+    const c = V(.42 * W * M.sh, Y(.075), z0 + fF(.075) - .07 * W);
+    add((x, y, z) => ellip(x, y, z, c, .32 * W, .035 * W, .045 * W * thin), bs(c, .35 * W), .09 * W);
+  }
+
   // ---- braços em pose A ----
-  const shX = .98 * W * M.sh, shJ = V(shX, Y(.07), z0 - .04 + hunchZ(.07)), ang = B.aPose * DEG;
-  const up = .19 * Lb * B.arm, fo = .165 * Lb * B.arm, rA = .23 * W * (1 + .35 * mu);
+  const shX = .98 * W * original.sh, shJ = V(shX, Y(.07), z0 - .04 + hunchZ(.07)), ang = B.aPose * DEG;
+  const up = .19 * Lb * B.arm, fo = .165 * Lb * B.arm, rA = .23 * W * (1 + .35 * mu) * B.armWidth;
   const dir = V(Math.cos(ang), -Math.sin(ang), .02).normalize(), elbow = shJ.clone().addScaledVector(dir, up);
   const dir2 = V(Math.cos(ang + 14 * DEG), -Math.sin(ang + 14 * DEG), .16).normalize(), wrist = elbow.clone().addScaledVector(dir2, fo);
   joints.elbow = elbow; joints.wrist = wrist; joints.shoulder = shJ;
   { const c = shJ.clone().add(V(.02 * W, .03, 0)); add((x, y, z) => ellip(x, y, z, c, rA * 1.15, rA * 1.05, rA * 1.1), bs(c, rA * 1.4), .26 * W) } // deltoide
   add((x, y, z) => roundCone(x, y, z, shJ, rA, elbow, rA * .74), bs(shJ.clone().lerp(elbow, .5), up / 2 + rA), .14 * W);
-  if (mu > 0) { const c = shJ.clone().lerp(elbow, .52).add(V(0, 0, .05)); add((x, y, z) => ellipO(x, y, z, c, dir, V(0, 0, 1), V(0, 0, 1).cross(dir).normalize(), up * .3, rA * (.9 + .35 * mu), rA * .9), bs(c, up * .35), .16 * W) }
+  if (mu > 0) { const c = shJ.clone().lerp(elbow, .52).add(V(0, 0, .05)); add((x, y, z) => ellipO(x, y, z, c, dir, V(0, 0, 1), V(0, 0, 1).cross(dir).normalize(), up * .3, rA * (.9 + .35 * mu), rA * .9), bs(c, build.weight || build.muscle ? Math.max(up * .35, rA * (.9 + .35 * mu) + .02) : up * .35), .16 * W) }
   add((x, y, z) => roundCone(x, y, z, elbow, rA * .76, wrist, rA * .54), bs(elbow.clone().lerp(wrist, .5), fo / 2 + rA), .1 * W);
-  { const c = elbow.clone().lerp(wrist, .28); add((x, y, z) => ellipO(x, y, z, c, dir2, V(0, 0, 1), V(0, 0, 1).cross(dir2).normalize(), fo * .3, rA * .8, rA * .7), bs(c, fo * .35), .16 * W) } // antebraço
+  { const c = elbow.clone().lerp(wrist, .28); add((x, y, z) => ellipO(x, y, z, c, dir2, V(0, 0, 1), V(0, 0, 1).cross(dir2).normalize(), fo * .3, rA * .8, rA * .7), bs(c, build.weight || build.muscle ? Math.max(fo * .35, rA * .8 + .02) : fo * .35), .16 * W) } // antebraço
   hand(wrist, dir2, .095 * Lb * B.hand * (.85 + .15 * W), rA * .5, B.fingers);
 
   // ---- pernas ----
-  const hipJ = V(.45 * W * M.hi, Y(.465), z0 + .02), lk = (.735 - .465) * B.leg, la = (.955 - .735) * B.leg;
-  const fK = .465 + (.49 * (lk / (lk + la))), knee = V(.4 * W * (.9 + .1 * M.hi), Y(fK), z0 + .05), ankle = V(.36 * W, ySole + .033 * Lb * (.9 + .1 * B.foot), z0 - .02);
+  const hipJ = V(.45 * W * original.hip, Y(.465), z0 + .02), lk = (.735 - .465) * B.leg, la = (.955 - .735) * B.leg;
+  const fK = .465 + (.49 * (lk / (lk + la))), knee = V(.4 * W * (.9 + .1 * original.hip), Y(fK), z0 + .05), ankle = V(.36 * W, ySole + .033 * Lb * (.9 + .1 * B.foot), z0 - .02);
   joints.knee = knee; joints.ankle = ankle; joints.hip = hipJ; joints.W = W; joints.Y = Y; joints.M = M; joints.mermaid = mermaid;
   if (!mermaid) { // sereia: sem pernas (a cauda é uma peça do figurino)
-  const rT = .38 * W * (1 + .15 * mu) * (.92 + .12 * M.hi), rK = .25 * W * (1 + .15 * mu), rAn = .125 * W * (1 + .15 * mu);
+  const rT = .38 * W * (1 + .15 * mu) * (.92 + .12 * original.hip) * B.legWidth, rK = .25 * W * (1 + .15 * mu) * B.legWidth, rAn = .125 * W * (1 + .15 * mu) * (1 + .10 * fat);
   add((x, y, z) => roundCone(x, y, z, hipJ, rT, knee, rK), bs(hipJ.clone().lerp(knee, .5), hipJ.distanceTo(knee) / 2 + rT), .14 * W);
   { const c = hipJ.clone().lerp(knee, .35).add(V(.0, 0, .08 * W)); add((x, y, z) => ellip(x, y, z, c, rT * .8, hipJ.distanceTo(knee) * .36, rT * .78), bs(c, Math.max(rT * .8, hipJ.distanceTo(knee) * .36) + .05), .3 * W) } // quadríceps
   add((x, y, z) => roundCone(x, y, z, knee, rK * .97, ankle, rAn), bs(knee.clone().lerp(ankle, .5), knee.distanceTo(ankle) / 2 + rK), .12 * W);
@@ -190,8 +226,20 @@ function makeBodySDF(fit, presetId, hs = 1, mermaid = false) { // hs: escala da 
     add((x, y, z) => roundCone(x, y, z, an, Lf * .12 * Wd ** .3, ball.clone().add(V(0, Lf * .04, -Lf * .15)), Lf * .1), bs(an.clone().lerp(ball, .5), Lf * .5), .08 * Wd);
     add((x, y, z) => smax(ellip(x, y, z, toe, Lf * .19, Lf * .09, Lf * .17), yS - y, .02), bs(toe, Lf * .25), .05 * Wd);
   }
-  joints.bounds = { x: Math.max(wrist.x + .5 * Lb * .1 * B.hand + .4, 1.4 * W + .4), y0: ySole - .1, y1: nby + .5, z0: z0 - 1.0 * W * B.depth - .6, z1: z0 + 1.2 * W * B.depth + .5 + bel * .4 };
-  return finish(prims, joints, B);
+  joints.bounds = { x: Math.max(wrist.x + .5 * Lb * .1 * B.hand + .4, 1.4 * W + .4, shJ.x + rA * 1.6), y0: ySole - .1, y1: nby + .5, z0: z0 - 1.0 * W * B.depth - .6, z1: z0 + 1.2 * W * B.depth + .5 + bel * .4 };
+  const result = finish(prims, joints, B);
+  if (build.weight || build.muscle) {
+    // A faixa que encosta na cabeça conserva exatamente o campo original. A largura extra nasce abaixo dela.
+    const neutral = makeBodySDF(fit, presetId, hs, mermaid), changed = result.f;
+    const low = nby - .20 * hs, high = nby + .08 * hs;
+    result.f = (x, y, z) => {
+      if (y <= low) return changed(x, y, z);
+      if (y >= high) return neutral.f(x, y, z);
+      const t = sstep(low, high, y);
+      return changed(x, y, z) * (1 - t) + neutral.f(x, y, z) * t;
+    };
+  }
+  return result;
 }
 
 // vegetais: o vegetal inteiro é a "cabeça"; braços e pernas finos de desenho animado (luva-mão com 4 dedos)
@@ -221,13 +269,26 @@ function makeVegSDF(fit, B, prims, add, bs, joints) {
 }
 
 function finish(prims, joints, B) {
-  const n = prims.length;
+  // Blocos consecutivos mantêm a ordem das uniões suaves. A caixa elimina de uma vez dedos/pernas
+  // distantes, sem aproximar o campo nem mudar a superfície ou a margem consultada pelas roupas.
+  const blocks=[];
+  for(let i=0;i<prims.length;i+=8){
+    const items=prims.slice(i,i+8),lo=[Infinity,Infinity,Infinity],hi=[-Infinity,-Infinity,-Infinity];
+    for(const p of items)for(const [axis,key]of ['x','y','z'].entries()){
+      lo[axis]=Math.min(lo[axis],p.b[key]-p.b.r-p.k);hi[axis]=Math.max(hi[axis],p.b[key]+p.b.r+p.k);
+    }
+    blocks.push({items,lo,hi});
+  }
   const f = (x, y, z) => {
-    const ax = x < 0 ? -x : x; let d = 1e9;
-    for (let i = 0; i < n; i++) {
-      const p = prims[i], b = p.b, dx = ax - b.x, dy = y - b.y, dz = z - b.z, db = sqrt(dx * dx + dy * dy + dz * dz) - b.r;
-      if (db > d + p.k) continue;
-      d = smin(d, p.f(ax, y, z), p.k);
+    const ax = Math.abs(x); let d = 1e9;
+    for(const block of blocks){
+      const {lo,hi,items}=block;
+      if(ax<lo[0]-d||ax>hi[0]+d||y<lo[1]-d||y>hi[1]+d||z<lo[2]-d||z>hi[2]+d)continue;
+      for (let i = 0; i < items.length; i++) {
+        const p = items[i], b = p.b, dx = ax - b.x, dy = y - b.y, dz = z - b.z, limit = d + p.k + b.r;
+        if (limit >= 0 && dx * dx + dy * dy + dz * dz > limit * limit) continue;
+        d = smin(d, p.f(ax, y, z), p.k);
+      }
     }
     return d;
   };
@@ -320,12 +381,13 @@ const cache = new Map();
 export function buildBody(fit, presetId, opts = {}) {
   if (!fit || !fit.P || fit.P.kind === 'robot' || !BODIES[presetId]) return null;
   const T0 = performance.now(), P = fit.P;
-  const hs = opts.headScale ?? 1, mer = !!opts.mermaid, key = presetId + '|' + (opts.cell || 0) + '|' + hs + '|' + mer;
+  const hs = opts.headScale ?? 1, mer = !!opts.mermaid, build = normalizeBuild(opts.build);
+  const key = [presetId, opts.cell || 0, hs, mer, build.weight, build.muscle].join('|');
   let geo, S;
   const hit = cache.get(key);
-  if (hit) { geo = hit.geo.clone(); S = hit.S }
+  if (hit) { cache.delete(key); cache.set(key, hit); geo = hit.geo.clone(); S = hit.S }
   else {
-    S = makeBodySDF(fit, presetId, hs, mer);
+    S = makeBodySDF(fit, presetId, hs, mer, build);
     const B = S.joints.bounds, cell = opts.cell || (S.joints.limb ? .014 : .028 * clamp(S.B.W, 1, 1.3));
     const m = mesh(S.f, B, cell);
     // projeta cada vértice na superfície (2 passos de Newton com gradiente numérico)
@@ -339,6 +401,7 @@ export function buildBody(fit, presetId, opts = {}) {
     geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(p, 3)); geo.setIndex(m.idx); geo.computeVertexNormals();
     // remove partes escondidas dentro da cabeça/pescoço (economiza vértices; o pescoço do corpo cruza o da cabeça por dentro)
     cache.set(key, { geo: geo.clone(), S });
+    if (cache.size > 64) { const oldest = cache.keys().next().value; cache.get(oldest).geo.dispose(); cache.delete(oldest) }
   }
   // cores: pele (ou cor dos membros nos vegetais) com variação suave, oclusão nas dobras, joelhos/cotovelos/mãos rosados
   const pa = geo.attributes.position, na = geo.attributes.normal, n = pa.count, colors = new Float32Array(n * 3), gloss = new Float32Array(n);
@@ -365,7 +428,7 @@ export function buildBody(fit, presetId, opts = {}) {
   }
   geo.setAttribute('color', new THREE.BufferAttribute(colors, 3)); geo.setAttribute('gloss', new THREE.BufferAttribute(gloss, 1));
   const pv = new THREE.Vector3(0, P.neck[3], P.neck[4]); // pivô da escala da cabeça (base do pescoço)
-  const out = { proportions: { ...S.B }, vegSkin: !!S.B.vegSkin, geo, sdf: S.f, ySole: S.joints.ySole, timing: Math.round(performance.now() - T0), joints: S.joints, hs, pivot: pv,
+  const out = { build, cacheKey: key, proportions: { ...S.B }, vegSkin: !!S.B.vegSkin, geo, sdf: S.f, ySole: S.joints.ySole, timing: Math.round(performance.now() - T0), joints: S.joints, hs, pivot: pv,
     sdfHead: (x, y, z) => S.f(pv.x + hs * (x - pv.x), pv.y + hs * (y - pv.y), pv.z + hs * (z - pv.z)) / hs }; // corpo visto do espaço da cabeça (colisão do cabelo)
   return out;
 }
