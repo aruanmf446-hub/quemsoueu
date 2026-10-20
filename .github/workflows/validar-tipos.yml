@@ -1,0 +1,51 @@
+name: Validar GLB dos quatro tipos físicos
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/validar-tipos.yml
+      - tests/visuais-tipos.cjs
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tipos:
+    name: 13 personagens × 4 tipos físicos
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      NODE_OPTIONS: --max-old-space-size=6144
+      ATELIE_CAPTURAR: '0'
+      ATELIE_COBRAR_TEMPO: '0'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar dependências dos testes
+        run: npm install --no-save --package-lock=false --no-audit --no-fund three@0.180.0 playwright
+      - name: Preparar Chromium
+        run: |
+          npx playwright install --with-deps chromium
+          sudo ln -sf "$(node -p "require('playwright').chromium.executablePath()")" /usr/bin/chromium
+      - name: Subir servidor estático
+        run: |
+          python3 -m http.server 8000 > /tmp/atelie-http.log 2>&1 &
+          for tentativa in $(seq 1 30); do
+            if curl -fsS http://localhost:8000/ -o /dev/null; then exit 0; fi
+            sleep 1
+          done
+          exit 1
+      - name: Conferir identidade do rosto, tipos e exportações GLB
+        run: timeout 50m node tests/visuais-tipos.cjs
+      - name: Arquivar relatório das combinações
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: relatorio-glb-tipos
+          path: renders/tipos-fisicos/relatorio.json
+          if-no-files-found: warn
+          retention-days: 30
