@@ -167,3 +167,14 @@ A primeira rodada encontrou `RangeError: Maximum call stack size exceeded` nas m
 **Capturas públicas, sem ZIP:** [galeria de todas as subcategorias](https://aruanmf446-hub.github.io/quemsoueu/capturas/menu/index.html) e [galeria dos 13 personagens](https://aruanmf446-hub.github.io/quemsoueu/capturas/personagens/index.html). Os PNGs são publicados em branch independente `capturas-atelie`, sem adicionar binários à `main`. O workflow `.github/workflows/validar-menu.yml` executa os testes; `publicar-capturas.yml` publica os resultados aprovados e `pages.yml` incorpora a galeria ao site.
 
 **Aprovação estética permanece com o usuário.** Os testes comprovam o funcionamento técnico, não que todos os enquadramentos ou o acabamento artístico estejam visualmente aprovados. A suíte específica de 52 combinações de tipo físico e GLB também pode ser reproduzida com `tests/visuais-tipos.cjs` ou seu workflow dedicado `validar-tipos.yml`.
+
+## Fluidez do Ateliê sem perda de qualidade (20/10/2026)
+
+A geração das miniaturas continua a usar a **mesma** cena, malha, materiais, enquadramento, resolução e parâmetros de renderização procedural. O motor principal do Ateliê (câmera, iluminação, sombras, geometria, rig facial e exportação GLB) **não foi modificado** nesta etapa.
+
+- `src/previews.js` implementa `previews.hold(motivo, ativo)`: não inicia a próxima renderização do Worker enquanto o jogador interage com a cena. Os trabalhos já em andamento terminam normalmente, preservando as imagens originais e os mesmos conteúdos de cache.
+- `src/editor.js` mantém a fila em espera enquanto o jogador gira o personagem (pointerdown → pointerup/pointercancel ou perda de foco), durante o gesto de zoom (liberação 220 ms após o último scroll) e com a aba em segundo plano.
+- `src/previews.js` obtém a skin-base uma única vez por atualização dos cartões, evitando múltiplas cópias completas do mesmo estado. As opções de personagem continuam usando seus looks individuais.
+- `tests/fluidez.cjs` executa no Playwright com mouse real, rotação/zoom, retomada de fila, navegação entre categorias, quatro miniaturas completas e integridade do visual; o CI está em `.github/workflows/validar-fluidez.yml`.
+
+**Nenhuma estratégia de redução dinâmica de resolução, sombras, densidade da malha, rig ou qualidade de imagem foi introduzida.** A otimização controla prioridade de execução, não fidelidade. A medição de FPS depende da GPU e do navegador do visitante; não há promessa de ganho percentual universal. O teste CI usa SwiftShader e reduz a sombra apenas na execução de teste, como as suítes anteriores; a produção continua com os parâmetros originais.
