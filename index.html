@@ -133,6 +133,16 @@ function setBuild(value){
     }catch(error){reject(error)}finally{statusEl.textContent='Head V2 · '+PRESETS[presetId].label}
   },0)));
 }
+function setLook(value){
+  const look=getLook(),bodyKeys=new Set(['build','outfit','clothColors','pieces','pieceColors']);
+  const visualChanged=Object.keys(value).some(key=>!bodyKeys.has(key)&&JSON.stringify(value[key])!==JSON.stringify(look[key]));
+  const build=normalizeBuild('build' in value?{...look.build,...value.build}:look.build);
+  Object.assign(look,value);look.build=build;
+  if(visualChanged)return rebuildHead();
+  // Um visual completo obtido por getLook também pode trocar apenas o tipo físico.
+  if('build' in value)return setBuild(look.build);
+  rebuildClothes();refreshUI();
+}
 const BUILD_PRESETS={Magro:{weight:-1,muscle:0},Padrão:{weight:0,muscle:0},Gordo:{weight:1,muscle:0},Musculoso:{weight:0,muscle:1}};
 function refreshBuildUI(){
   const build=normalizeBuild(getLook().build),robot=PRESETS[presetId].kind==='robot';
@@ -273,7 +283,7 @@ document.getElementById('download').onclick=async e=>{
   catch(err){alert('Falha na exportação: '+(err&&err.message||err))}
   finally{btn.disabled=false;btn.textContent=label}
 };
-window.__atelie={clothes:()=>clothesObj,setPiece:choosePiece,setPieceColors,pieceOptions:slot=>pieceOptions(current.body,slot),setOutfit:chooseOutfit,setClothColors:colors=>{Object.assign(getLook().clothColors,colors);for(const piece of Object.values(getLook().pieceColors||{}))Object.assign(piece,colors);clothesObj.setColors(getLook().clothColors);refreshUI()},frame:()=>frame,body:()=>current.body,getLook,setBuild,bodyTiming:()=>bodyTiming,setLook:o=>{if(Object.keys(o).every(k=>k==='build'))return setBuild(o.build);Object.assign(getLook(),o);getLook().build=normalizeBuild(getLook().build);rebuildHead()},rebuildLook,lookObj:()=>lookObj,setExpression,setPose:p=>{pose={...NEUTRAL,...p};exprName=null;syncPoseUI();applyPose()},stopAuto:()=>{document.getElementById('autoBlink').checked=false;document.getElementById('talk').checked=false},group:()=>current.group,timings:()=>current.group.userData.timings,setPreset,aim,VIEWS,camera,orbit,clay:on=>current.group.traverse(o=>{if(o.isMesh&&o.material.vertexColors!==undefined&&o.material.name==='Skin'){o.material.vertexColors=!on;o.material.sheen=on?0:.6;if(on)o.material.color.set('#d8d4cf');else o.material.color.set('#ffffff');o.material.needsUpdate=true}}),exportGLB};
+window.__atelie={clothes:()=>clothesObj,setPiece:choosePiece,setPieceColors,pieceOptions:slot=>pieceOptions(current.body,slot),setOutfit:chooseOutfit,setClothColors:colors=>{Object.assign(getLook().clothColors,colors);for(const piece of Object.values(getLook().pieceColors||{}))Object.assign(piece,colors);clothesObj.setColors(getLook().clothColors);refreshUI()},frame:()=>frame,body:()=>current.body,getLook,setBuild,bodyTiming:()=>bodyTiming,setLook,rebuildLook,lookObj:()=>lookObj,setExpression,setPose:p=>{pose={...NEUTRAL,...p};exprName=null;syncPoseUI();applyPose()},stopAuto:()=>{document.getElementById('autoBlink').checked=false;document.getElementById('talk').checked=false},group:()=>current.group,timings:()=>current.group.userData.timings,setPreset,aim,VIEWS,camera,orbit,clay:on=>current.group.traverse(o=>{if(o.isMesh&&o.material.vertexColors!==undefined&&o.material.name==='Skin'){o.material.vertexColors=!on;o.material.sheen=on?0:.6;if(on)o.material.color.set('#d8d4cf');else o.material.color.set('#ffffff');o.material.needsUpdate=true}}),exportGLB};
 
 rebuildHead();aim(...VIEWS.three);
 function resize(){const w=host.clientWidth,h=host.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}addEventListener('resize',resize);resize();

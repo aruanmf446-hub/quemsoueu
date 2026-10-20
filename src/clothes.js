@@ -70,10 +70,12 @@ export function pieceSelection(look, body) {
 }
 
 // Cache limitado e com referências: as instâncias compartilham somente geometria imutável.
+// A identidade de body.sdf inclui peso, músculo, escala e cauda; nunca reaproveita peças de outro tipo físico.
 const templates = new Map(), bodyKeys = new WeakMap(); let nextBodyKey = 0;
 function template(body, style, slot) {
   if (!bodyKeys.has(body.sdf)) bodyKeys.set(body.sdf, ++nextBodyKey);
-  const key = bodyKeys.get(body.sdf) + ':' + style + ':' + slot;
+  // Gera um conjunto uma única vez: os slots compartilham medidas e campos de camada.
+  const key = bodyKeys.get(body.sdf) + ':' + style + ':' + (SDF_OUTFITS[style] ? '*' : slot);
   if (templates.has(key)) { const item = templates.get(key); templates.delete(key); templates.set(key, item); return item }
   const descriptors = [], details = new Map();
   const add = (name, geo, channel) => descriptors.push({ name, geo, channel, slot: geo.userData.slot || 'extras' });
@@ -85,7 +87,7 @@ function template(body, style, slot) {
   }else buildSdfOutfit(body, style, {}, {}, add, (ch, geo) => {
     const key = (geo.userData.slot || 'extras') + ':' + ch;
     if (!details.has(key)) details.set(key, []); details.get(key).push(geo);
-  }, slot);
+  }, null);
   for (const [key, geos] of details) {
     const [slot, channel] = key.split(':'), normalized = geos.map(g => { const c = g.clone(); for (const k of Object.keys(c.attributes)) if (!['position', 'normal'].includes(k)) c.deleteAttribute(k); return c.index ? c.toNonIndexed() : c });
     const merged = mergeGeometries(normalized, false); normalized.forEach(g => g.dispose()); geos.forEach(g => g.dispose());
@@ -97,7 +99,7 @@ function template(body, style, slot) {
     g.setAttribute('color', new THREE.BufferAttribute(colors, 3));
   }
   const item = { descriptors, refs: 0 }; templates.set(key, item);
-  for (const [k, old] of templates) if (templates.size > 96 && !old.refs && old !== item) { old.descriptors.forEach(d => d.geo.dispose()); templates.delete(k) }
+  for (const [k, old] of templates) if (templates.size > 24 && !old.refs && old !== item) { old.descriptors.forEach(d => d.geo.dispose()); templates.delete(k) }
   return item;
 }
 

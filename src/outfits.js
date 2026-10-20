@@ -5,8 +5,8 @@
 // Suavização só no tecido, com pregas, avesso e barras próprias.
 // Luvas usam recortes com folga nas normais; o corpo é somente consultado, nunca alterado.
 import * as THREE from 'three';
-import { sdfMesh } from './body.js';
-import { smoothCloth } from './fabric.js';
+import { sdfMesh, refinedSdfMesh } from './body.js';
+import { smoothCloth, shellCloth } from './fabric.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { clothSurface, handPatch } from './fabric.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
@@ -16,8 +16,11 @@ const sqrt = Math.sqrt, PI = Math.PI;
 const sstep = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t) };
 const smin = (a, b, k) => { const h = Math.max(k - Math.abs(a - b), 0) / k; return Math.min(a, b) - h * h * k * .25 };
 const smax = (a, b, k) => -smin(-a, -b, k);
+// Cada tipo físico tem seu próprio campo (e portanto seu próprio contorno), inclusive nos acertos de cache.
 const contourCache = new WeakMap();
 const V = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
+// Os campos de camadas são imutáveis; várias paredes consultam a mesma amostra durante a malhagem.
+const memoField = fn => { let px=NaN,py,pz,value;return (x,y,z)=>{if(x===px&&y===py&&z===pz)return value;value=fn(x,y,z);px=x;py=y;pz=z;return value} };
 
 // ---------- catálogo ----------
 export const SDF_OUTFITS = {
@@ -98,9 +101,11 @@ export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot 
   add = (name, g, ch, slot = 'extras') => { if(onlySlot&&onlySlot!==slot){g.dispose();return} g.userData.slot = slot; return emit(name, g, ch) };
   addGeo = (ch, g) => { if(onlySlot&&onlySlot!==detailSlot){g.dispose();return} g.userData.slot = detailSlot; detail(ch, g) };
   let activeSlot='extras';
-  const piece=(name,ch,field,bounds,cell=cellBase)=>{
+  const piece=(name,ch,field,bounds,cell=cellBase,shell=null)=>{
     const slot=activeSlot;if(onlySlot&&onlySlot!==slot)return;
-    const g=smoothCloth(sdfMesh(field,bounds,cell),3);
+    const narrow=/Cinto|Faixa|Aro|Tira|Polaina|Bracadeira/.test(name);
+    const base=(narrow?sdfMesh:refinedSdfMesh)(shell?shell.solid:field,bounds,cell,false);
+    const g=shell?shellCloth(base,shell.clip,shell.thickness,3):smoothCloth(base,3);
     if(g.attributes.position.count){add(name,g,ch,slot);return g}g.dispose();return null;
   };
   function fabric(name, ch, g, slot) {
@@ -134,7 +139,7 @@ export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot 
       if (o.stripes) d = Math.max(d, o.stripes(x, y, z));
       return d;
     };
-    piece(name, ch, f, { x: Math.max(bx + .3 * W, Math.max(H.x, K.x) + .6 * W + (o.puff || 0) * 1.5), y0: yBot - .2, y1: yTop + .2, z0: zA - .3, z1: zB + .3 + (o.puff || 0) }, o.cell);
+    piece(name, ch, f, { x: Math.max(W * Math.max(B.hip, B.waist) * 1.2 + .4 * W, Math.max(H.x, K.x) + .6 * W + (o.puff || 0) * 1.5), y0: yBot - .2, y1: yTop + .2, z0: zA - .3, z1: zB + .3 + (o.puff || 0) }, o.cell);
   }
   // bota/meia: pé + perna até a altura h (acima do tornozelo), cano largo no topo, sola
   function boots(name, ch, o) {
@@ -162,7 +167,10 @@ export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot 
     const d0 = b.clone().sub(a), Lseg = d0.length(), dir = d0.clone().normalize(), p0 = a.clone().addScaledVector(dir, Lseg * t0), p1 = a.clone().addScaledVector(dir, Lseg * t1);
     const R = limbR(a.clone().lerp(b, (t0 + t1) / 2), dir) + t + .35;
     const f = (x, y, z) => { const ax = Math.abs(x); let tt = t + (o.flare || 0) * sstep(.6, 1, along(ax, y, z, p0, dir) / (Lseg * (t1 - t0))); if (o.rings) tt += o.rings * (Math.cos(along(ax, y, z, p0, dir) / (Lseg * (t1 - t0)) * PI * 2 * o.ringsN) > .6 ? 1 : 0); return Math.max(bf(x, y, z) - tt, -along(ax, y, z, p0, dir), along(ax, y, z, p1, dir), segD(ax, y, z, p0, p1) - R) };
-    const lo = V(Math.min(p0.x, p1.x) - R, Math.min(p0.y, p1.y) - R, Math.min(p0.z, p1.z) - R), hi = V(Math.max(p0.x, p1.x) + R, Math.max(p0.y, p1.y) + R, Math.max(p0.z, p1.z) + R);
+    // O corte por planos limita a peça ao cilindro entre p0 e p1. A projeção radial evita malhar
+    // caixas enormes em volta de tiras finas, sem mudar o campo nem a resolução do acabamento.
+    const rx=R*Math.sqrt(Math.max(0,1-dir.x**2)),ry=R*Math.sqrt(Math.max(0,1-dir.y**2)),rz=R*Math.sqrt(Math.max(0,1-dir.z**2));
+    const lo = V(Math.min(p0.x, p1.x) - rx, Math.min(p0.y, p1.y) - ry, Math.min(p0.z, p1.z) - rz), hi = V(Math.max(p0.x, p1.x) + rx, Math.max(p0.y, p1.y) + ry, Math.max(p0.z, p1.z) + rz);
     piece(name, ch, f, { x: hi.x + .1, y0: lo.y - .1, y1: hi.y + .1, z0: lo.z - .1, z1: hi.z + .1 }, o.cell ?? cellBase * .8);
   }
   // casca cônica (saia, abas de casaco, tanga em volta): raio = contorno do corpo + folga + abertura com a altura
@@ -171,8 +179,11 @@ export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot 
     if(onlySlot&&onlySlot!==slot)return;
     const yt=Y(o.top),yb=Y(o.bottom),N=144,base=Array.from({length:N},(_,i)=>radAt(yt,2*PI*i/N)+(o.pad??.06));
     const radius=a=>{const f=((a/(2*PI))%1+1)%1*N,i=Math.floor(f),t=f-i,at=k=>base[(k+N)%N];return ((2*at(i))+(-at(i-1)+at(i+1))*t+(2*at(i-1)-5*at(i)+4*at(i+1)-at(i+2))*t*t+(-at(i-1)+3*at(i)-3*at(i+1)+at(i+2))*t*t*t)*.5};
+    // A cintura magra pode ser mais estreita que a coxa. As tiras mantêm o desenho, mas caem
+    // sobre a envoltória de toda a região coberta, em vez de copiar só o anel da cintura.
+    const support=slot==='lower'?envelope(yt,yb,{ease:o.pad??.06,hang:.12,flareFrom:yt,flare:o.flare||0}):null;
     const point=(t,u,a0=o.open||0,a1=2*PI-(o.open||0))=>{
-      const a=lerp(a0,a1,u),r=radius(a)+(o.flare||0)*t*(yt-yb)+(o.pleat||0)*Math.sin(a*(o.pleatN||16))*t;
+      const a=lerp(a0,a1,u),r=Math.max(radius(a)+(o.flare||0)*t*(yt-yb),support?.radius(lerp(yt,yb,t),a)||0)+(o.pleat||0)*Math.sin(a*(o.pleatN||16))*t;
       const rag=o.ragged?o.ragged*(.5+.5*Math.sin(a*23)*Math.sin(a*7)):0;
       return V(Math.sin(a)*r,lerp(yt,yb,t)+(rag+(o.tails?o.tails(a):0))*t**6,z0+Math.cos(a)*r);
     };
@@ -243,7 +254,7 @@ export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot 
       for (let i = 0; i <= NY; i++) for (let k = 0; k < NA; k++) { const a = Math.max(0, i - 1), b = Math.min(NY, i + 1); R[i * NA + k] = (tmp[a * NA + k] + 2 * tmp[i * NA + k] + tmp[b * NA + k]) / 4 }
     }
     const fn = (x, y, z) => {
-      const ph = Math.atan2(x, z - z0), rho = Math.hypot(x, z - z0);
+      const ph = Math.atan2(x, z - z0), rho = sqrt(x*x+(z-z0)*(z-z0));
       const fy = clamp((yTop - y) / dy, 0, NY), i0 = Math.min(NY - 1, Math.floor(fy)), ty = fy - i0;
       const fa = (ph + PI) / (2 * PI) * NA, k0 = Math.floor(fa), ta = fa - k0, ka = ((k0 % NA) + NA) % NA, kb = (ka + 1) % NA;
       const r = lerp(lerp(R[i0 * NA + ka], R[i0 * NA + kb], ta), lerp(R[(i0 + 1) * NA + ka], R[(i0 + 1) * NA + kb], ta), ty);
@@ -252,7 +263,7 @@ export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot 
     fn.radius = (y, ph) => { const fy = clamp((yTop - y) / dy, 0, NY), i0 = Math.min(NY - 1, Math.floor(fy)), ty = fy - i0, fa = (ph + PI) / (2 * PI) * NA, k0 = Math.floor(fa), ta = fa - k0, ka = ((k0 % NA) + NA) % NA, kb = (ka + 1) % NA; return lerp(lerp(R[i0 * NA + ka], R[i0 * NA + kb], ta), lerp(R[(i0 + 1) * NA + ka], R[(i0 + 1) * NA + kb], ta), ty) };
     return fn;
   }
-  const capR = (px, py, pz, a, b, ra, rb) => { const abx = b.x - a.x, aby = b.y - a.y, abz = b.z - a.z, t = clamp(((px - a.x) * abx + (py - a.y) * aby + (pz - a.z) * abz) / (abx * abx + aby * aby + abz * abz), 0, 1); return { d: Math.hypot(px - a.x - abx * t, py - a.y - aby * t, pz - a.z - abz * t) - lerp(ra, rb, t), t } };
+  const capR = (px, py, pz, a, b, ra, rb) => { const abx = b.x - a.x, aby = b.y - a.y, abz = b.z - a.z, t = clamp(((px - a.x) * abx + (py - a.y) * aby + (pz - a.z) * abz) / (abx * abx + aby * aby + abz * abz), 0, 1); return { d: sqrt((px-a.x-abx*t)**2+(py-a.y-aby*t)**2+(pz-a.z-abz*t)**2) - lerp(ra, rb, t), t } };
   // Peça com caimento. Retorna o campo sólido (para cintos/detalhes assentarem por cima) e o campo final.
   function garment(name, ch, slot, o) {
     const yTop = o.top, yBot = o.bottom, env = envelope(yTop + .15, yBot - .05, o.env || {}), t = o.t ?? .05 * W;
@@ -264,6 +275,8 @@ export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot 
       const rS = limbR(S.clone().lerp(E, .2), dU) + ease + .04 * W, rE = limbR(E, dF) + ease, rEnd = limbR(end, dirEnd) + ease + (o.bell || 0);
       const rMid = o.sleeve === 'short' ? lerp(rS, rE, o.short ?? .55) + (o.bell || 0) : rE + (o.bell || 0) * .25;
       sl = { s0, se, end, dirEnd, rS, rE: rMid, rEnd, puff: o.puff || 0 };
+      const r=Math.max(rS,rMid,rEnd)+(o.puff||0),pts=[s0,end,...(se?[se]:[])];
+      sl.box={lo:V(...['x','y','z'].map(k=>Math.min(...pts.map(p=>p[k]))-r)),hi:V(...['x','y','z'].map(k=>Math.max(...pts.map(p=>p[k]))+r))};
     }
     const sleeveF = (ax, y, z) => {
       if (!sl) return 9;
@@ -271,17 +284,20 @@ export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot 
       const a = capR(ax, y, z, sl.s0, sl.se, sl.rS, sl.rE), b = capR(ax, y, z, sl.se, sl.end, sl.rE, sl.rEnd);
       return Math.min(a.d - sl.puff * Math.sin(PI * a.t), b.d);
     };
-    const solid = (x, y, z) => {
+    const over=o.over?memoField(o.over):null;
+    const solid = memoField((x, y, z) => {
       const ax = Math.abs(x), as = armSide(ax, y);
       let d = env(x, y, z);
       if (as > -.1 * W) d = Math.max(d, as - (o.shoulderPad ?? .1) * W); // o tronco não engole o braço
-      if (sl) d = smin(d, sleeveF(ax, y, z), o.blend ?? .14 * W);
+      if (sl) { const {lo,hi}=sl.box,k=o.blend??.14*W;
+        if(Math.max(lo.x-ax,ax-hi.x,lo.y-y,y-hi.y,lo.z-z,z-hi.z)<=d+k)d=smin(d,sleeveF(ax,y,z),k);
+      }
       d = Math.min(d, bf(x, y, z) - t);
-      if (o.over && as < -.05 * W) d = Math.min(d, o.over(x, y, z) - (o.overGap ?? .09 * W)); // camada de fora: sempre acima da de dentro
+      if (o.over && as < -.05 * W) d = Math.min(d, over(x, y, z) - (o.overGap ?? .09 * W)); // camada de fora: sempre acima da de dentro
       return d;
-    };
+    });
     const cut = (x, y, z, d) => {
-      const ax = Math.abs(x), as = armSide(ax, y), ph = Math.abs(phiOf(x, z));
+      const ax = Math.abs(x), as = armSide(ax, y), ph = o.open||o.hemCurve ? Math.abs(phiOf(x, z)) : 0;
       const neck = y - yTop + (o.vneck ? o.vneck * Math.max(0, 1 - ax / (.28 * W)) * sstep(z0, z0 + .2, z) : 0) + (o.backNeck || 0) * sstep(z0, z0 - .3, z);
       d = smax(d, neck - (o.edge ? o.edge(ax, y, z) : 0), .02);
       d = Math.max(d, sl ? Math.min(yBot - y - (o.hemCurve || 0) * (1 - Math.cos(ph)) * .5, -as - .02 * W) : yBot - y - (o.hemCurve || 0) * (1 - Math.cos(ph)) * .5); // barra (as mangas continuam abaixo dela)
@@ -290,13 +306,13 @@ export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot 
       return d;
     };
     const th = o.thick ?? .09 * W, hollow = !!o.hollow; // oco: só o vão entre (corpo + folga) e a parede interna do pano
-    const field = (x, y, z) => { const s = solid(x, y, z); let d = cut(x, y, z, s); if (hollow) d = Math.max(d, Math.min(-(s + th), bf(x, y, z) - t - .01)); if (o.over && armSide(Math.abs(x), y) < -.05 * W) d = Math.max(d, .012 - o.over(x, y, z)); return d };
+    const field = (x, y, z) => { const s = solid(x, y, z); let d = cut(x, y, z, s); if (hollow) d = Math.max(d, Math.min(-(s + th), bf(x, y, z) - t - .01)); if (o.over && armSide(Math.abs(x), y) < -.05 * W) d = Math.max(d, .012 - over(x, y, z)); return d };
     let geo = null;
     const pad = (o.env?.flare || 0) * (yTop - yBot) + (o.bell || 0) + .5;
     const bounds = { x: bx + pad, y0: yBot - .1 - (o.hemCurve || 0), y1: yTop + .25, z0: zA - pad, z1: zB + pad };
-    if (o.split != null) { const sp = o.split; for (const part of ['upper', 'lower']) { const oo = o; activeSlot = part; const f2 = (x, y, z) => { const s = solid(x, y, z); let d = cut(x, y, z, s); d = Math.max(d, part === 'upper' ? sp - .012 - y : y - sp - .012); if (hollow) d = Math.max(d, Math.min(-(s + th), bf(x, y, z) - t - .01)); if (o.over && armSide(Math.abs(x), y) < -.05 * W) d = Math.max(d, .012 - o.over(x, y, z)); return d }; piece(name + (part === 'upper' ? '' : '_Saia'), ch, f2, part === 'upper' ? { ...bounds, y0: sp - .1 } : { ...bounds, y1: sp + .1 }, o.cell) } }
-    else { activeSlot = slot; geo = piece(name, ch, field, bounds, o.cell) }
-    const outer = (x, y, z) => cut(x, y, z, solid(x, y, z));
+    if (o.split != null) { const sp = o.split; for (const part of ['upper', 'lower']) { const oo = o; activeSlot = part; const f2 = (x, y, z) => { const s = solid(x, y, z); let d = cut(x, y, z, s); d = Math.max(d, part === 'upper' ? sp - .012 - y : y - sp - .012); if (hollow) d = Math.max(d, Math.min(-(s + th), bf(x, y, z) - t - .01)); if (o.over && armSide(Math.abs(x), y) < -.05 * W) d = Math.max(d, .012 - over(x, y, z)); return d }; piece(name + (part === 'upper' ? '' : '_Saia'), ch, f2, part === 'upper' ? { ...bounds, y0: sp - .1 } : { ...bounds, y1: sp + .1 }, o.cell) } }
+    else { activeSlot = slot; geo = piece(name, ch, field, bounds, o.cell, hollow?{solid,clip:(x,y,z)=>cut(x,y,z,-1e9),thickness:Math.min(.04*W,t*.6)}:null) }
+    const outer = memoField((x, y, z) => cut(x, y, z, solid(x, y, z)));
     return { solid, outer, env, sl, geo, o };
   }
   // ponto na superfície de um campo, vindo pela frente (ou pela direção ph)
@@ -336,7 +352,7 @@ export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot 
       if (run.length > 3) { if (start < 0) run.push(run[0].clone()); lines.push(run) }
     } else {
       const yTop = o.top, yBot = o.bottom, NB = 60, best = new Array(NB).fill(null), openAt = y => o.open * (o.openTaper ? lerp(1, o.openTaper, clamp((yTop - y) / (yTop - yBot), 0, 1)) : 1);
-      for (let i = 0; i < p.count; i++) { const x = p.getX(i), y = p.getY(i), z = p.getZ(i); if (x <= 0 || z < z0) continue; const rho = Math.hypot(x, z - z0); if (Math.abs(Math.abs(phiOf(x, z)) - openAt(y)) * rho > tol) continue; const k = Math.floor(clamp((yTop - y) / (yTop - yBot), 0, .9999) * NB); if (!best[k] || rho > best[k].d) best[k] = { d: rho, v: V(x, y, z) } }
+      for (let i = 0; i < p.count; i++) { const x = p.getX(i), y = p.getY(i), z = p.getZ(i); if (x <= 0 || z < z0) continue; const rho = sqrt(x*x+(z-z0)*(z-z0)); if (Math.abs(Math.abs(phiOf(x, z)) - openAt(y)) * rho > tol) continue; const k = Math.floor(clamp((yTop - y) / (yTop - yBot), 0, .9999) * NB); if (!best[k] || rho > best[k].d) best[k] = { d: rho, v: V(x, y, z) } }
       let run = []; for (const b of best) { if (b) run.push(b.v.clone().add(V(b.v.x, 0, b.v.z - z0).normalize().multiplyScalar(r * .3))); else { if (run.length > 3) lines.push(run); run = [] } } if (run.length > 3) lines.push(run);
     }
     for (const line of lines) {
@@ -358,8 +374,8 @@ export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot 
       if (o.under && y > o.under.y) d = Math.max(d, o.under.fn(x, y, z) + .02 * W); // por dentro da túnica: não atravessa
       return Math.max(d, y - yTop, yBot - y);
     };
-    piece(name, ch, f, { x: bx + .3, y0: yBot - .2, y1: yTop + .2, z0: zA - .3, z1: zB + .3 }, o.cell);
-    return f;
+    piece(name, ch, f, { x: Math.max(W*Math.max(B.hip,B.waist)*1.2+.4*W,H.x+rH+(o.puff||0)+.3*W), y0: yBot - .2, y1: yTop + .2, z0: zA - .3, z1: zB + .3 }, o.cell);
+    return memoField(f);
   }
 
   // ================= figurinos =================
@@ -400,7 +416,9 @@ export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot 
     const vest = garment('Colete', 'secondary', 'upper', { top: yN + .02, bottom: Y(.42), t: .04 * W, vneck: .2, env: { ease: .05 * W, hang: .3 } });
     for (const f of [.17, .22, .27, .32]) button('upper', 'trim', vest.outer, 0, Y(f), .03 * W);
     const legs = trousers('Calca', 'secondary', { top: .4, ease: .05 * W, cuff: .1, under: { fn: vest.solid, y: Y(.42) + .03 } });
-    const coat = garment('Jaleco', 'fabric', 'upper', { over: (x, y, z) => Math.min(vest.outer(x, y, z), legs(x, y, z)), overGap: .07 * W, top: yN + .06, bottom: Y(.76), t: .1 * W, sleeve: 'wrist', sleeveEase: .07 * W, bell: .03 * W, open: .3, openTaper: 1.25, hollow: true, cell: cellBase * .8, env: { ease: .14 * W, hang: .2, flareFrom: Y(.4), flare: .12, folds: .012 * W, foldN: 9, back: .03 }, backNeck: -.06 });
+    // Fora dos recortes verticais uma camada interna já não pode apoiar a superfície do jaleco.
+    const lining=(x,y,z)=>Math.min(y>=Y(.42)-.16*W?vest.outer(x,y,z):1000,y<=Y(.4)+.16*W?legs(x,y,z):1000);
+    const coat = garment('Jaleco', 'fabric', 'upper', { over: lining, overGap: .07 * W, top: yN + .06, bottom: Y(.76), t: .1 * W, sleeve: 'wrist', sleeveEase: .07 * W, bell: .03 * W, open: .3, openTaper: 1.25, hollow: true, cell: cellBase, env: { ease: .14 * W, hang: .2, flareFrom: Y(.4), flare: .12, folds: .012 * W, foldN: 9, back: .03 }, backNeck: -.06 });
     sleeveCuffs(coat, 'upper', 'fabric', .07 * W);
     edgeTube(coat, 'open', 'fabric', 'upper', .03 * W);
     if (!onlySlot || onlySlot === 'upper') {

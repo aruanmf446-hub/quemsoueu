@@ -27,6 +27,18 @@ function roundCone(px, py, pz, a, ra, b, rb) {
   if (Math.sign(y) * a2 * y2 < k) return sqrt(x2 + y2) * il2 - ra;
   return (sqrt(x2 * a2 * il2) + y * rr) * il2 - ra;
 }
+// Os pontos e raios não mudam durante a malhagem: prepara os coeficientes só uma vez.
+function coneField(a, ra, b, rb) {
+  const bax = b.x - a.x, bay = b.y - a.y, baz = b.z - a.z, l2 = bax * bax + bay * bay + baz * baz, rr = ra - rb, a2 = l2 - rr * rr, il2 = 1 / l2;
+  return (px, py, pz) => {
+    const pax = px - a.x, pay = py - a.y, paz = pz - a.z, y = pax * bax + pay * bay + paz * baz, z = y - l2;
+    const qx = pax * l2 - bax * y, qy = pay * l2 - bay * y, qz = paz * l2 - baz * y, x2 = qx * qx + qy * qy + qz * qz, y2 = y * y * l2, z2 = z * z * l2;
+    const k = Math.sign(rr) * rr * rr * x2;
+    if (Math.sign(z) * a2 * z2 > k) return sqrt(x2 + z2) * il2 - rb;
+    if (Math.sign(y) * a2 * y2 < k) return sqrt(x2 + y2) * il2 - ra;
+    return (sqrt(x2 * a2 * il2) + y * rr) * il2 - ra;
+  };
+}
 function ellip(px, py, pz, c, rx, ry, rz) {
   const x = (px - c.x) / rx, y = (py - c.y) / ry, z = (pz - c.z) / rz, k0 = sqrt(x * x + y * y + z * z);
   const k1 = sqrt(x * x / (rx * rx) + y * y / (ry * ry) + z * z / (rz * rz)); return k1 > 1e-9 ? k0 * (k0 - 1) / k1 : -Math.min(rx, ry, rz);
@@ -112,7 +124,11 @@ function makeBodySDF(fit, presetId, hs = 1, mermaid = false, build = normalizeBu
 
   // ---- pescoço: continua o da cabeça (mesma seção oval), alargando para dentro do trapézio ----
   { const a = V(0, nby + .26 * hs, nbz - .02 * hs), b = V(0, nby - .1, nbz - .06), r1 = nr * hs * 1.14, r2 = nr * (.3 + .7 * hs) * (1.24 + .22 * fat + .16 * build.muscle);
-    add((x, y, z) => roundCone(x * 1.14, y, z, a, r1, b, r2) * .92, bs(V(0, nby, nbz), .8), .1) }
+    const neckField=coneField(a,r1,b,r2);
+    add((x, y, z) => neckField(x * 1.14, y, z) * .92, bs(V(0, nby, nbz), .8), .1);
+    const radius=Math.max(r1,r2),loY=Math.min(a.y,b.y)-radius,hiY=Math.max(a.y,b.y)+radius,loZ=Math.min(a.z,b.z)-radius,hiZ=Math.max(a.z,b.z)+radius;
+    prims[0].lower=(x,y,z)=>.92*Math.max(Math.abs(x*1.14)-radius,loY-y,y-hiY,loZ-z,z-hiZ);
+  }
 
   // ---- tronco por curvas ----
   const M = { sh: B.sh, ch: B.chest, wa: B.waist, hi: B.hip }, mu = B.muscle, bel = B.belly;
@@ -133,15 +149,18 @@ function makeBodySDF(fit, presetId, hs = 1, mermaid = false, build = normalizeBu
   const hunchZ = f => -B.hunch * sstep(.0, .2, f) * (1 - sstep(.2, .45, f)) * .9;
   const tTop = 0, tBot = .505, torsoB = bs(V(0, Y(.25), z0), Lb * .3 + 1.2 * W);
   const cactus = !!B.cactus, PT = cactus && P.pattern;
-  let sectionY=NaN,sectionA,sectionZ,sectionH;
+  let sectionY=NaN,sectionA,sectionZ,sectionH,sectionRib=0;
   add((x, y, z) => {
     const f = (yN - y) / Lb; if (f < tTop - .2 || f > tBot + .2) return Math.max(Math.abs(f - .25) * Lb - .3 * Lb, .05);
     if(y!==sectionY){
       const ff=clamp(f,tTop,tBot),zf=fF(ff),zb=fB(ff);
       sectionY=y;sectionA=Math.max(fA(ff),.05);sectionZ=z0+(zf+zb)/2+hunchZ(ff);sectionH=Math.max((zf-zb)/2,.05);
+      sectionRib=0;if(thin>0)for(const row of [.19,.22,.25]){const t=Math.max(0,1-Math.abs(ff-row)/.007);sectionRib+=t*t*(3-2*t)*.005*W*thin}
     }
     const a=sectionA,zc=sectionZ,hz=sectionH,X = x / a, Z = (z - zc) / hz, q = sqrt(X * X + Z * Z);
     let d = (q - 1) * Math.min(a, hz) * .92;
+    // Relevo raso acompanhando a seção do tronco; não acrescenta nódulos nas laterais.
+    if(sectionRib)d-=sectionRib*sstep(.35,.65,X)*(1-sstep(.8,1.05,X))*sstep(0,.4,Z);
     if (f < tTop) d = Math.max(d, (tTop - f) * Lb); if (f > tBot - .03) d = smax(d, (f - tBot) * Lb, .25);
     if (PT) { const phi = Math.atan2(x, z - zc); d += PT.depth * .7 * (1 - sqrt(.5 + .5 * Math.cos(PT.n * phi))) }
     return d;
@@ -153,20 +172,17 @@ function makeBodySDF(fit, presetId, hs = 1, mermaid = false, build = normalizeBu
     const c = V(.31 * W, Y(f) - .04 * s, zf - .1 * s), u = V(.96, 0, .28).normalize(), v = V(0, 1, 0), w = V(-.28, 0, .96).normalize();
     add((x, y, z) => ellipO(x, y, z, c, u, v, w, .3 * s, .27 * s, .25 * s), bs(c, .4 * s), .22 * s);
   }
-  if (mu > 0 && !B.breasts) { // peitoral, abdômen e serrátil discretos
+  if (mu > 0 && !B.breasts && presetId !== 'cute_round') { // Cute mantém o peito plano; seios permanecem independentes
     const f = .15, c = V(.32 * W * M.ch, Y(f) + .02, fF(f) + z0 - .12);
     add((x, y, z) => ellip(x, y, z, c, .42 * W, .22 * W, .1 * W * (1 + .5 * mu)), bs(c, .5 * W), .22 * W);
+  }
+  { // abdômen definido também nas mulheres adultas, abaixo dos seios
     if (mu >= .8) for (let r = 0; r < 3; r++) for (const xx of [.11]) { const cc = V(xx * W, Y(.215 + r * .045), fF(.215 + r * .045) + z0 - .05); add((x, y, z) => ellip(x, y, z, cc, .1 * W, .07 * W, .025 * W * mu), bs(cc, .14 * W), .12 * W) }
   }
   if (bel > 0) { const c = V(0, Y(.33 + .018 * fat), fF(.33) + z0 - .3 * bel * W); add((x, y, z) => ellip(x, y, z, c, .55 * W * (.8 + .3 * bel), .5 * W * (.8 + .3 * bel), .38 * W * (.8 + .4 * bel)), bs(c, Math.max(.8, .55 * (.8 + .4 * bel)) * W), (.25 + .08 * fat) * W) }
   if (B.glute > 0) { const g = B.glute, c = V(.26 * W * M.hi, Y(.455), fB(.455) + z0 + .16 * W); add((x, y, z) => ellip(x, y, z, c, .3 * W * g, .32 * W * g, .26 * W * g), bs(c, .45 * W * g), .22 * W) }
 
   if (thin > 0) {
-    for (const f of [.19, .22, .25]) {
-      const xx=.45*W*M.ch,zf=fF(f),zb=fB(f),front=z0+(zf+zb)/2+(zf-zb)/2*Math.sqrt(Math.max(0,1-(xx/fA(f))**2))+hunchZ(f);
-      const c = V(xx, Y(f), front - .04 * W);
-      add((x, y, z) => ellip(x, y, z, c, .14 * W, .020 * W, .035 * W * thin), bs(c, .16 * W), .09 * W);
-    }
     const c = V(.42 * W * M.sh, Y(.075), z0 + fF(.075) - .07 * W);
     add((x, y, z) => ellip(x, y, z, c, .32 * W, .035 * W, .045 * W * thin), bs(c, .35 * W), .09 * W);
   }
@@ -178,10 +194,11 @@ function makeBodySDF(fit, presetId, hs = 1, mermaid = false, build = normalizeBu
   const dir2 = V(Math.cos(ang + 14 * DEG), -Math.sin(ang + 14 * DEG), .16).normalize(), wrist = elbow.clone().addScaledVector(dir2, fo);
   joints.elbow = elbow; joints.wrist = wrist; joints.shoulder = shJ;
   { const c = shJ.clone().add(V(.02 * W, .03, 0)); add((x, y, z) => ellip(x, y, z, c, rA * 1.15, rA * 1.05, rA * 1.1), bs(c, rA * 1.4), .26 * W) } // deltoide
-  add((x, y, z) => roundCone(x, y, z, shJ, rA, elbow, rA * .74), bs(shJ.clone().lerp(elbow, .5), up / 2 + rA), .14 * W);
-  if (mu > 0) { const c = shJ.clone().lerp(elbow, .52).add(V(0, 0, .05)); add((x, y, z) => ellipO(x, y, z, c, dir, V(0, 0, 1), V(0, 0, 1).cross(dir).normalize(), up * .3, rA * (.9 + .35 * mu), rA * .9), bs(c, build.weight || build.muscle ? Math.max(up * .35, rA * (.9 + .35 * mu) + .02) : up * .35), .16 * W) }
-  add((x, y, z) => roundCone(x, y, z, elbow, rA * .76, wrist, rA * .54), bs(elbow.clone().lerp(wrist, .5), fo / 2 + rA), .1 * W);
-  { const c = elbow.clone().lerp(wrist, .28); add((x, y, z) => ellipO(x, y, z, c, dir2, V(0, 0, 1), V(0, 0, 1).cross(dir2).normalize(), fo * .3, rA * .8, rA * .7), bs(c, build.weight || build.muscle ? Math.max(fo * .35, rA * .8 + .02) : fo * .35), .16 * W) } // antebraço
+  add(coneField(shJ, rA, elbow, rA * .74), bs(shJ.clone().lerp(elbow, .5), up / 2 + rA), .14 * W);
+  const armFront=V(0,0,1),armNormal=armFront.clone().cross(dir).normalize(),foreNormal=armFront.clone().cross(dir2).normalize();
+  if (mu > 0) { const c = shJ.clone().lerp(elbow, .52).add(V(0, 0, .05)); add((x, y, z) => ellipO(x, y, z, c, dir, armFront, armNormal, up * .3, rA * (.9 + .35 * mu), rA * .9), bs(c, build.weight || build.muscle ? Math.max(up * .35, rA * (.9 + .35 * mu) + .02) : up * .35), .16 * W) }
+  add(coneField(elbow, rA * .76, wrist, rA * .54), bs(elbow.clone().lerp(wrist, .5), fo / 2 + rA), .1 * W);
+  { const c = elbow.clone().lerp(wrist, .28); add((x, y, z) => ellipO(x, y, z, c, dir2, armFront, foreNormal, fo * .3, rA * .8, rA * .7), bs(c, build.weight || build.muscle ? Math.max(fo * .35, rA * .8 + .02) : fo * .35), .16 * W) } // antebraço
   hand(wrist, dir2, .095 * Lb * B.hand * (.85 + .15 * W), rA * .5, B.fingers);
 
   // ---- pernas ----
@@ -190,9 +207,9 @@ function makeBodySDF(fit, presetId, hs = 1, mermaid = false, build = normalizeBu
   joints.knee = knee; joints.ankle = ankle; joints.hip = hipJ; joints.W = W; joints.Y = Y; joints.M = M; joints.mermaid = mermaid;
   if (!mermaid) { // sereia: sem pernas (a cauda é uma peça do figurino)
   const rT = .38 * W * (1 + .15 * mu) * (.92 + .12 * original.hip) * B.legWidth, rK = .25 * W * (1 + .15 * mu) * B.legWidth, rAn = .125 * W * (1 + .15 * mu) * (1 + .10 * fat);
-  add((x, y, z) => roundCone(x, y, z, hipJ, rT, knee, rK), bs(hipJ.clone().lerp(knee, .5), hipJ.distanceTo(knee) / 2 + rT), .14 * W);
+  add(coneField(hipJ, rT, knee, rK), bs(hipJ.clone().lerp(knee, .5), hipJ.distanceTo(knee) / 2 + rT), .14 * W);
   { const c = hipJ.clone().lerp(knee, .35).add(V(.0, 0, .08 * W)); add((x, y, z) => ellip(x, y, z, c, rT * .8, hipJ.distanceTo(knee) * .36, rT * .78), bs(c, Math.max(rT * .8, hipJ.distanceTo(knee) * .36) + .05), .3 * W) } // quadríceps
-  add((x, y, z) => roundCone(x, y, z, knee, rK * .97, ankle, rAn), bs(knee.clone().lerp(ankle, .5), knee.distanceTo(ankle) / 2 + rK), .12 * W);
+  add(coneField(knee, rK * .97, ankle, rAn), bs(knee.clone().lerp(ankle, .5), knee.distanceTo(ankle) / 2 + rK), .12 * W);
   { const c = knee.clone().lerp(ankle, .26).add(V(-.01, 0, -.08 * W)); add((x, y, z) => ellip(x, y, z, c, rK * .9, knee.distanceTo(ankle) * .28, rK * .9), bs(c, Math.max(rK * .9, knee.distanceTo(ankle) * .28) + .05), .22 * W) } // panturrilha
   { const c = knee.clone().add(V(0, -.02, rK * .5)); add((x, y, z) => ellip(x, y, z, c, rK * .55, rK * .6, rK * .4), bs(c, rK), .14 * W) } // joelho
   foot(ankle, ySole, .105 * Lb * B.foot * (.9 + .1 * W), W);
@@ -206,24 +223,25 @@ function makeBodySDF(fit, presetId, hs = 1, mermaid = false, build = normalizeBu
     const at = (a, b, c) => wr.clone().addScaledVector(u, a).addScaledVector(v, b).addScaledVector(w, c);
     const pc = at(Lh * .3, 0, 0);
     add((x, y, z) => ellipO(x, y, z, pc, u, v, w, Lh * .3, Lh * .11, Lh * .24), bs(pc, Lh * .35), .05 * Lh);
-    add((x, y, z) => roundCone(x, y, z, wr, rw, at(Lh * .14, 0, 0), rw * 1.05), bs(wr, Lh * .25), .06 * Lh);
+    add(coneField(wr, rw, at(Lh * .14, 0, 0), rw * 1.05), bs(wr, Lh * .25), .06 * Lh);
     const rf = Lh * .062, fingers = nF === 4 ? [[.17, .95, .1], [0, 1, 0], [-.17, .9, -.1]] : [[.2, .93, .07], [.065, 1, .02], [-.07, .95, -.03], [-.2, .78, -.1]];
     for (const [wo, len, spread] of fingers) {
       let p = at(Lh * .54, Lh * .01, Lh * wo), d = u.clone().addScaledVector(w, spread * .35).normalize();
       const segs = [.25, .17, .13].map(s => s * Lh * len); let r = rf * (len < .85 ? .9 : 1);
       for (let k = 0; k < 3; k++) {
         d = d.clone().addScaledVector(v, .22 + .1 * k).normalize(); const q = p.clone().addScaledVector(d, segs[k]), a0 = p.clone(), r0 = r, r1 = r * (k === 2 ? .86 : .94);
-        add((x, y, z) => roundCone(x, y, z, a0, r0, q, r1), bs(a0.clone().lerp(q, .5), segs[k] / 2 + r0), .012 * Lh);
+        add(coneField(a0, r0, q, r1), bs(a0.clone().lerp(q, .5), segs[k] / 2 + r0), .012 * Lh);
         p = q; r = r1;
       }
     }
     { let p = at(Lh * .1, Lh * .04, Lh * .2), d = u.clone().multiplyScalar(.55).addScaledVector(w, .7).addScaledVector(v, .25).normalize(); let r = rf * 1.15; // polegar
-      for (const s of [.2, .16, .13]) { const q = p.clone().addScaledVector(d, s * Lh), a0 = p.clone(), r0 = r; add((x, y, z) => roundCone(x, y, z, a0, r0, q, r0 * .9), bs(a0.clone().lerp(q, .5), s * Lh / 2 + r0), .02 * Lh); p = q; r *= .9; d = d.clone().addScaledVector(u, .35).addScaledVector(v, .15).normalize() } }
+      for (const s of [.2, .16, .13]) { const q = p.clone().addScaledVector(d, s * Lh), a0 = p.clone(), r0 = r; add(coneField(a0, r0, q, r0 * .9), bs(a0.clone().lerp(q, .5), s * Lh / 2 + r0), .02 * Lh); p = q; r *= .9; d = d.clone().addScaledVector(u, .35).addScaledVector(v, .15).normalize() } }
   }
   function foot(an, yS, Lf, Wd) { // pé com calcanhar, peito do pé e dedos arredondados; sola plana
     const heel = V(an.x, yS + Lf * .14, an.z - Lf * .12), ball = V(an.x + Lf * .05, yS + Lf * .1, an.z + Lf * .58), toe = V(an.x + Lf * .07, yS + Lf * .08, an.z + Lf * .78);
-    add((x, y, z) => smax(roundCone(x, y, z, heel, Lf * .15, ball, Lf * .14), yS - y, .02), bs(heel.clone().lerp(ball, .5), Lf * .55), .06 * Wd);
-    add((x, y, z) => roundCone(x, y, z, an, Lf * .12 * Wd ** .3, ball.clone().add(V(0, Lf * .04, -Lf * .15)), Lf * .1), bs(an.clone().lerp(ball, .5), Lf * .5), .08 * Wd);
+    const soleField=coneField(heel,Lf*.15,ball,Lf*.14);
+    add((x, y, z) => smax(soleField(x,y,z), yS - y, .02), bs(heel.clone().lerp(ball, .5), Lf * .55), .06 * Wd);
+    add(coneField(an, Lf * .12 * Wd ** .3, ball.clone().add(V(0, Lf * .04, -Lf * .15)), Lf * .1), bs(an.clone().lerp(ball, .5), Lf * .5), .08 * Wd);
     add((x, y, z) => smax(ellip(x, y, z, toe, Lf * .19, Lf * .09, Lf * .17), yS - y, .02), bs(toe, Lf * .25), .05 * Wd);
   }
   joints.bounds = { x: Math.max(wrist.x + .5 * Lb * .1 * B.hand + .4, 1.4 * W + .4, shJ.x + rA * 1.6), y0: ySole - .1, y1: nby + .5, z0: z0 - 1.0 * W * B.depth - .6, z1: z0 + 1.2 * W * B.depth + .5 + bel * .4 };
@@ -246,22 +264,22 @@ function makeBodySDF(fit, presetId, hs = 1, mermaid = false, build = normalizeBu
 function makeVegSDF(fit, B, prims, add, bs, joints) {
   const P = fit.P, L = P.lathe, yBot = Math.max(L.y[0], P.neck[3] + .08), rBot = L.r[0], zc = L.cz, r = B.limbR;
   const hip = V(rBot * .5, yBot + .2, zc), knee = V(rBot * .65, yBot - B.legLen * .5, zc + .06), ankle = V(rBot * .62, yBot - B.legLen, zc - .02);
-  add((x, y, z) => roundCone(x, y, z, hip, r * 1.1, knee, r), bs(hip.clone().lerp(knee, .5), B.legLen * .3 + r), .04);
-  add((x, y, z) => roundCone(x, y, z, knee, r, ankle, r * .85), bs(knee.clone().lerp(ankle, .5), B.legLen * .3 + r), .03);
+  add(coneField(hip, r * 1.1, knee, r), bs(hip.clone().lerp(knee, .5), B.legLen * .3 + r), .04);
+  add(coneField(knee, r, ankle, r * .85), bs(knee.clone().lerp(ankle, .5), B.legLen * .3 + r), .03);
   const ySole = ankle.y - .1 * B.foot, fc = V(ankle.x + .02, ySole + .1 * B.foot, ankle.z + .14 * B.foot);
   add((x, y, z) => Math.max(ellip(x, y, z, fc, .17 * B.foot, .12 * B.foot, .27 * B.foot), ySole - y), bs(fc, .3 * B.foot), .05);
   // braço: sai do lado do vegetal na altura armY
   let rr = 0, yA = B.armY; for (let i = 0; i < L.y.length - 1; i++) if (yA >= L.y[i] && yA <= L.y[i + 1]) { const t = (yA - L.y[i]) / (L.y[i + 1] - L.y[i]); rr = L.r[i] + (L.r[i + 1] - L.r[i]) * t }
   const sh = V(rr * .9, yA, zc), ang = 48 * DEG, d1 = V(Math.cos(ang), -Math.sin(ang), .05).normalize(), el = sh.clone().addScaledVector(d1, B.armLen * .5);
   const d2 = V(Math.cos(ang + 18 * DEG), -Math.sin(ang + 18 * DEG), .2).normalize(), wr = el.clone().addScaledVector(d2, B.armLen * .5);
-  add((x, y, z) => roundCone(x, y, z, sh, r * .95, el, r * .85), bs(sh.clone().lerp(el, .5), B.armLen * .3), .03);
-  add((x, y, z) => roundCone(x, y, z, el, r * .85, wr, r * .75), bs(el.clone().lerp(wr, .5), B.armLen * .3), .03);
+  add(coneField(sh, r * .95, el, r * .85), bs(sh.clone().lerp(el, .5), B.armLen * .3), .03);
+  add(coneField(el, r * .85, wr, r * .75), bs(el.clone().lerp(wr, .5), B.armLen * .3), .03);
   { // mão em luva: palma + 3 dedos + polegar
     const Lh = .42, u = d2.clone(), v = u.clone().cross(V(0, 0, 1)).normalize(); if (v.x > 0) v.negate(); const w = v.clone().cross(u).normalize(); if (w.z < 0) w.negate();
     const at = (a, b, c) => wr.clone().addScaledVector(u, a).addScaledVector(v, b).addScaledVector(w, c), pc = at(Lh * .3, 0, 0);
     add((x, y, z) => ellipO(x, y, z, pc, u, v, w, Lh * .32, Lh * .17, Lh * .3), bs(pc, Lh * .4), .04);
-    for (const wo of [.17, 0, -.17]) { const a0 = at(Lh * .5, 0, Lh * wo), q = a0.clone().addScaledVector(u.clone().addScaledVector(v, .35).addScaledVector(w, wo * .6).normalize(), Lh * .36); add((x, y, z) => roundCone(x, y, z, a0, Lh * .09, q, Lh * .08), bs(a0.clone().lerp(q, .5), Lh * .3), .02) }
-    { const a0 = at(Lh * .15, 0, Lh * .22), q = a0.clone().addScaledVector(w.clone().addScaledVector(u, .8).normalize(), Lh * .3); add((x, y, z) => roundCone(x, y, z, a0, Lh * .095, q, Lh * .08), bs(a0.clone().lerp(q, .5), Lh * .3), .02) }
+    for (const wo of [.17, 0, -.17]) { const a0 = at(Lh * .5, 0, Lh * wo), q = a0.clone().addScaledVector(u.clone().addScaledVector(v, .35).addScaledVector(w, wo * .6).normalize(), Lh * .36); add(coneField(a0, Lh * .09, q, Lh * .08), bs(a0.clone().lerp(q, .5), Lh * .3), .02) }
+    { const a0 = at(Lh * .15, 0, Lh * .22), q = a0.clone().addScaledVector(w.clone().addScaledVector(u, .8).normalize(), Lh * .3); add(coneField(a0, Lh * .095, q, Lh * .08), bs(a0.clone().lerp(q, .5), Lh * .3), .02) }
   }
   joints.ySole = ySole; joints.Lb = yBot - ySole; joints.limb = true;
   joints.bounds = { x: wr.x + .7, y0: ySole - .1, y1: yA + .3, z0: zc - .8, z1: zc + .8 };
@@ -271,16 +289,28 @@ function makeVegSDF(fit, B, prims, add, bs, joints) {
 function finish(prims, joints, B) {
   // Blocos consecutivos mantêm a ordem das uniões suaves. A caixa elimina de uma vez dedos/pernas
   // distantes, sem aproximar o campo nem mudar a superfície ou a margem consultada pelas roupas.
-  const blocks=[];
-  for(let i=0;i<prims.length;i+=8){
+  const pair=!!prims[0]?.lower,neck=pair?prims[0]:null,torso=pair?prims[1]:null,start=pair?2:0,blocks=[];
+  for(let i=start;i<prims.length;i+=8){
     const items=prims.slice(i,i+8),lo=[Infinity,Infinity,Infinity],hi=[-Infinity,-Infinity,-Infinity];
     for(const p of items)for(const [axis,key]of ['x','y','z'].entries()){
       lo[axis]=Math.min(lo[axis],p.b[key]-p.b.r-p.k);hi[axis]=Math.max(hi[axis],p.b[key]+p.b.r+p.k);
     }
     blocks.push({items,lo,hi});
   }
+  let lastX=NaN,lastY,lastZ,lastDistance;
   const f = (x, y, z) => {
-    const ax = Math.abs(x); let d = 1e9;
+    const ax = Math.abs(x);
+    // Camadas (calça sob túnica, colete sob jaleco) consultam o mesmo ponto consecutivamente.
+    if(ax===lastX&&y===lastY&&z===lastZ)return lastDistance;
+    let d = 1e9;
+    if(pair){
+      // O tronco costuma estar mais perto. Um limite analítico elimina o pescoço distante, mantendo
+      // a mesma ordem da união e o mesmo descarte por esfera da avaliação original.
+      const td=torso.f(ax,y,z),lower=neck.lower(ax,y,z),b=torso.b;
+      const dx=ax-b.x,dy=y-b.y,dz=z-b.z,distance2=dx*dx+dy*dy+dz*dz,limit=lower+torso.k+b.r;
+      if(lower>td+torso.k&&limit>=0&&distance2<=limit*limit)d=td;
+      else{const nd=neck.f(ax,y,z),radius=nd+torso.k+b.r;d=radius>=0&&distance2>radius*radius?nd:smin(nd,td,torso.k)}
+    }
     for(const block of blocks){
       const {lo,hi,items}=block;
       if(ax<lo[0]-d||ax>hi[0]+d||y<lo[1]-d||y>hi[1]+d||z<lo[2]-d||z>hi[2]+d)continue;
@@ -290,7 +320,7 @@ function finish(prims, joints, B) {
         d = smin(d, p.f(ax, y, z), p.k);
       }
     }
-    return d;
+    lastX=ax;lastY=y;lastZ=z;lastDistance=d;return d;
   };
   return { f, joints, B };
 }
@@ -310,8 +340,16 @@ function mesh(sdf, bounds, cell) {
     for (let c = 0; c < 8; c++) { const v = coarse[((k + (c >> 2 & 1)) * cy + (j + (c >> 1 & 1))) * cx + i + (c & 1)]; mn = Math.min(mn, Math.abs(v)); if (v > 0) pos = true; else neg = true }
     if (mn > thr && !(pos && neg)) continue;
     const P1 = BS + 1, arr = new Float32Array(P1 * P1 * P1), bx = x0 + i * S, by = y0 + j * S, bz = z0 + k * S;
-    for (let c = 0; c < P1; c++) for (let b = 0; b < P1; b++) for (let a = 0; a < P1; a++) arr[(c * P1 + b) * P1 + a] = sdf(bx + a * cell, by + b * cell, bz + c * cell);
-    blocks.set((k * NBy + j) * NBx + i, arr);
+    const key=(k*NBy+j)*NBx+i,left=i>0?blocks.get(key-1):null,below=j>0?blocks.get(key-NBx):null,behind=k>0?blocks.get(key-NBx*NBy):null;
+    // As faces entre blocos são a mesma grade: reutiliza as amostras, em vez de consultar o campo duas vezes.
+    for (let c = 0; c < P1; c++) for (let b = 0; b < P1; b++) for (let a = 0; a < P1; a++) {
+      const offset=(c*P1+b)*P1+a;
+      if(a===0&&left)arr[offset]=left[(c*P1+b)*P1+BS];
+      else if(b===0&&below)arr[offset]=below[(c*P1+BS)*P1+a];
+      else if(c===0&&behind)arr[offset]=behind[(BS*P1+b)*P1+a];
+      else arr[offset]=sdf(bx+a*cell,by+b*cell,bz+c*cell);
+    }
+    blocks.set(key, arr);
   }
   const P1 = BS + 1, val = (ix, iy, iz) => { // valor num ponto fino (pode estar em qualquer bloco ativo)
     let bi = Math.min(Math.floor(ix / BS), NBx - 1), bj = Math.min(Math.floor(iy / BS), NBy - 1), bk = Math.min(Math.floor(iz / BS), NBz - 1);
@@ -363,7 +401,7 @@ function mesh(sdf, bounds, cell) {
 }
 
 // malha de qualquer campo de distância (usada pelo corpo e pelos figurinos): surface nets + 1 passo de Newton + normais
-export function sdfMesh(f, bounds, cell) {
+export function sdfMesh(f, bounds, cell, normals = true) {
   const m = mesh(f, bounds, cell), p = m.pos, e = cell * .5;
   for (let i = 0; i < p.length; i += 3) {
     const x = p[i], y = p[i + 1], z = p[i + 2];
@@ -371,9 +409,32 @@ export function sdfMesh(f, bounds, cell) {
     const d = (a1 + a2 + a3 + a4) / 4, gx = a1 - a2 - a3 + a4, gy = -a1 - a2 + a3 + a4, gz = -a1 + a2 - a3 + a4, gl = sqrt(gx * gx + gy * gy + gz * gz) || 1;
     const st = clamp(d, -cell, cell); p[i] -= gx / gl * st; p[i + 1] -= gy / gl * st; p[i + 2] -= gz / gl * st;
   }
-  const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(p, 3)); geo.setIndex(m.idx); geo.computeVertexNormals();
+  const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(p, 3)); geo.setIndex(m.idx); if(normals)geo.computeVertexNormals();
   return geo;
 }
+// Tecido largo: encontra a topologia numa grade maior e refina só a superfície. A densidade final
+// continua próxima de cell, mas o espaço vazio e o interior não precisam de uma grade fina inteira.
+export function refinedSdfMesh(f,bounds,cell,computeNormals=true) {
+  const coarse=sdfMesh(f,bounds,cell*2),original=coarse.attributes.position.array,count=original.length/3;
+  const normals=Array.from(coarse.attributes.normal.array),p=Array.from(original),indices=[],edges=new Map(),ix=coarse.index.array;
+  const middle=(a,b)=>{const key=Math.min(a,b)*count+Math.max(a,b);if(edges.has(key))return edges.get(key);
+    const n=p.length/3;let length=0;for(let k=0;k<3;k++){p.push((original[a*3+k]+original[b*3+k])*.5);const v=normals[a*3+k]+normals[b*3+k];normals.push(v);length+=v*v}
+    length=Math.sqrt(length)||1;for(let k=0;k<3;k++)normals[n*3+k]/=length;edges.set(key,n);return n};
+  for(let i=0;i<ix.length;i+=3){const a=ix[i],b=ix[i+1],c=ix[i+2],ab=middle(a,b),bc=middle(b,c),ca=middle(c,a);indices.push(a,ab,ca,ab,b,bc,ca,bc,c,ab,bc,ca)}
+  const positions=new Float32Array(p),e=cell*.25;
+  for(let i=count*3;i<positions.length;i+=3){let x=positions[i],y=positions[i+1],z=positions[i+2];
+    // A normal interpolada já fornece a direção de projeção nas áreas lisas. Só a quina pede gradiente novo.
+    const step=clamp(f(x,y,z),-cell*2,cell*2)/.95;x-=normals[i]*step;y-=normals[i+1]*step;z-=normals[i+2]*step;
+    if(Math.abs(f(x,y,z))>cell*.04){
+      const a=f(x+e,y-e,z-e),b=f(x-e,y-e,z+e),c=f(x-e,y+e,z-e),d=f(x+e,y+e,z+e);
+      const gx=a-b-c+d,gy=-a-b+c+d,gz=-a+b-c+d,gl=Math.hypot(gx,gy,gz);
+      if(gl>1e-9){const distance=clamp((a+b+c+d)*e/gl,-cell*2,cell*2);x-=gx/gl*distance;y-=gy/gl*distance;z-=gz/gl*distance}
+    }
+    positions[i]=x;positions[i+1]=y;positions[i+2]=z;
+  }
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(positions,3));g.setIndex(indices);if(computeNormals)g.computeVertexNormals();coarse.dispose();return g;
+}
+
 export { roundCone, ellip, ellipO };
 
 // ---------- montagem ----------
