@@ -3,6 +3,9 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  workflow_run:
+    workflows: ["Publicar capturas do Ateliê"]
+    types: [completed]
 permissions:
   contents: read
   pages: write
@@ -12,12 +15,22 @@ concurrency:
   cancel-in-progress: true
 jobs:
   publicar:
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+      - name: Incluir capturas já aprovadas
+        run: |
+          if git ls-remote --exit-code --heads origin refs/heads/capturas-atelie > /dev/null; then
+            git fetch --depth=1 origin refs/heads/capturas-atelie
+            mkdir -p capturas
+            git archive FETCH_HEAD | tar -x -C capturas
+          else
+            echo 'Ainda não há capturas aprovadas para publicar.'
+          fi
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
         with:
