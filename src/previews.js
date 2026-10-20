@@ -5,13 +5,15 @@ const stable=value=>JSON.stringify(value,(_,v)=>v&&typeof v==='object'&&!Array.i
 
 export class PreviewCatalog {
   constructor(getContext){
-    this.getContext=getContext;this.paused=false;this.cache=new Map();this.queue=new Map();this.targets=new Map();this.running=null;this.worker=null;this.ready=false;this.failed=false;this.serial=0;
+    this.getContext=getContext;this.paused=false;this.holds=new Set();this.cache=new Map();this.queue=new Map();this.targets=new Map();this.running=null;this.worker=null;this.ready=false;this.failed=false;this.serial=0;
     this.observer=new IntersectionObserver(entries=>{for(const e of entries)if(e.isIntersecting){this.observer.unobserve(e.target);this.request(e.target)}},{rootMargin:'160px'});
     this.db=typeof indexedDB==='undefined'?Promise.resolve(null):new Promise(resolve=>{const r=indexedDB.open('atelie-previas',1);r.onupgradeneeded=()=>r.result.createObjectStore('imagens');r.onsuccess=()=>resolve(r.result);r.onerror=()=>resolve(null)});
   }
   refresh(root){
     if(this.paused)return;
     this.cancelView();
+    // A skin desta atualização é a mesma para todos os cartões, salvo os personagens com visual próprio.
+    const context=this.getContext();
     for(const button of root.querySelectorAll('[data-preview]')){
       if(button.closest('[hidden]')||button.closest('.off'))continue;
       let frame=button.querySelector('.preview-frame');
@@ -21,7 +23,7 @@ export class PreviewCatalog {
         for(const n of [...button.childNodes])if(n.nodeType===Node.TEXT_NODE){const label=document.createElement('b');label.className='preview-label';label.textContent=n.textContent;n.replaceWith(label)}
         button.prepend(frame);
       }
-      const context=this.getContext(),spec=JSON.parse(button.dataset.preview);
+      const spec=JSON.parse(button.dataset.preview);
       // Os personagens mostram o visual salvo de cada um; as outras opções usam a skin atual.
       const request={...context,spec};if(spec.kind==='character')request.look=window.__atelie.savedLook(spec.value);
       // O enquadramento novo dos brincos invalida somente as quatro miniaturas desse slot.
@@ -80,7 +82,13 @@ export class PreviewCatalog {
     const imports=JSON.parse(document.querySelector('script[type="importmap"]').textContent).imports;
     this.worker.postMessage({entry:new URL('./preview-worker.js',import.meta.url).href,imports});
   }
-  pump(){if(!this.ready||this.running||!this.queue.size)return;const [key,request]=this.queue.entries().next().value;this.queue.delete(key);this.running={key};this.worker.postMessage(request)}
+  // Enquanto o jogador gira/aproxima o personagem, a fila espera; nenhum detalhe 3D é simplificado.
+  hold(reason,enabled){
+    if(this.paused)return;
+    if(enabled)this.holds.add(reason);else this.holds.delete(reason);
+    if(!this.holds.size)this.pump();
+  }
+  pump(){if(!this.ready||this.running||!this.queue.size||this.holds.size)return;const [key,request]=this.queue.entries().next().value;this.queue.delete(key);this.running={key};this.worker.postMessage(request)}
   complete(key,blob){
     if(!this.cache.has(key))this.cache.set(key,URL.createObjectURL(blob));
     for(const b of this.targets.get(key)||[])this.display(b,key,this.cache.get(key));this.targets.delete(key);this.queue.delete(key);
@@ -92,8 +100,8 @@ export class PreviewCatalog {
     for(const [key,url]of this.cache){if(this.cache.size<=100)break;if(!visible.has(key)){URL.revokeObjectURL(url);this.cache.delete(key)}}
   }
   cancelView(){this.queue.clear();this.targets.clear();this.observer.disconnect()}
-  pause(){this.paused=true;this.cancelView();this.worker?.terminate();this.worker=null;this.ready=false;this.running=null;if(this.bootstrapURL)URL.revokeObjectURL(this.bootstrapURL)}
+  pause(){this.paused=true;this.holds.clear();this.cancelView();this.worker?.terminate();this.worker=null;this.ready=false;this.running=null;if(this.bootstrapURL)URL.revokeObjectURL(this.bootstrapURL)}
   unavailable(button){if(!button.isConnected)return;const f=button.querySelector('.preview-frame');f.classList.remove('loading');f.replaceChildren(Object.assign(document.createElement('div'),{className:'preview-wait',textContent:'Prévia indisponível. Clique para aplicar no personagem.'}))}
   fail(message){this.failed=true;this.ready=false;this.worker?.terminate();this.worker=null;console.warn('Prévias:',message);for(const set of this.targets.values())for(const b of set)this.unavailable(b);this.queue.clear();this.targets.clear()}
-  stats(){return {cached:this.cache.size,queued:this.queue.size,running:!!this.running,ready:this.ready,failed:this.failed}}
+  stats(){return {cached:this.cache.size,queued:this.queue.size,running:!!this.running,ready:this.ready,failed:this.failed,waitingForInteraction:this.holds.size>0}}
 }
