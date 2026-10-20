@@ -66,7 +66,8 @@ const threeRoot=path.resolve(path.dirname(require.resolve('three')),'..');
     assert.equal(await options.count(),4);
     for(let i=0;i<4;i++){
       const card=options.nth(i);
-      await card.scrollIntoViewIfNeeded();
+      // Sem a espera de estabilidade geométrica do Playwright sob SwiftShader lento.
+      await card.evaluate(element=>element.scrollIntoView({block:'center',behavior:'instant'}));
       await card.locator('.preview-frame[data-ready="true"] img').waitFor({state:'visible',timeout:120000});
       console.log('Miniatura pronta:',i+1,'de 4');
     }
