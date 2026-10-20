@@ -1,61 +1,73 @@
-# Prompt para continuar no ChatGPT
+# Continuidade — Ateliê Quem Sou Eu
 
-Continue o desenvolvimento de `aruanmf446-hub/quemsoueu`, branch `main`. Leia este arquivo e o README. O usuário pediu para publicar o trabalho intermediário agora e transferir a conclusão para outro chat. Não reverta o menu nem o trabalho anterior de tipos físicos.
+Repositório: `aruanmf446-hub/quemsoueu`, branch `main`.
+Site: https://aruanmf446-hub.github.io/quemsoueu/
 
-## Objetivo atual
+## Etapa concluída — menu FIFA/PES
 
-Concluir a organização do editor no estilo FIFA/PES: categoria → subcategoria → opções por cartões com **prévias reais da skin atual, visíveis antes de clicar ou passar o mouse**. O usuário aprovou a estrutura e um mockup azul-marinho com seleção turquesa.
+O ateliê tem interface azul-marinho/turquesa com categoria → subcategoria → opções por cartões com **prévias 3D reais da aparência atual antes de clicar ou passar o mouse**:
 
-Categorias implementadas:
+- **Personagem:** Humanos, Criaturas, Vegetais, Robôs.
+- **Corpo:** Tipo físico (Magro, Padrão, Gordo, Musculoso), Ajuste de peso e músculo.
+- **Aparência:** Pele, Cabelo, Barba.
+- **Roupas:** Conjuntos completos, Parte de cima, Parte de baixo, Calçado, Capa e manto, Cinto, Extras.
+- **Acessórios:** Cabeça, Orelhas, Testa, Enfeite de cabelo, Rosto.
+- **Expressões:** Expressões prontas, Olhos e olhar, Boca e sorriso, Sobrancelhas, Piscar e falar.
 
-- Personagem → Humanos / Criaturas / Vegetais / Robôs.
-- Corpo → Tipo físico (Magro, Padrão, Gordo, Musculoso) / Ajuste de peso e músculo (arrastar).
-- Aparência → Pele / Cabelo / Barba.
-- Roupas → Conjuntos / Parte de cima / Parte de baixo / Calçado / Capa e manto / Cinto / Extras.
-- Acessórios → Cabeça / Orelhas / Testa / Enfeite de cabelo / Rosto.
-- Expressões → Prontas / Olhos e olhar / Boca e sorriso / Sobrancelhas / Piscar e falar.
+Câmera (corpo, rosto, frente, perfil, 3/4, costas), mostrar corpo, restaurar visual e exportar GLB continuam junto da visualização. Cores da roupa só aparecem na peça aberta, em seção expansível, e apenas nos canais usados. O menu mantém escolhas e identidade de cada personagem.
 
-Câmera, Mostrar corpo, Restaurar visual e Exportar GLB ficam sempre junto da visualização. Foi acrescentada a vista Costas. As cores aparecem apenas na peça ou no slot aberto; as cores da roupa estão em uma seção expansível e filtradas pelos canais efetivamente usados.
+## Regras a preservar
 
-## Regras
+Português do Brasil no código, comentários, interface e atendimento. Three.js 0.180, JavaScript puro, import map CDN, sem build, sem assets de modelo externos, sem APIs de geração ou cobrança.
 
-Português do Brasil na conversa, interface e comentários. Three.js 0.180, JavaScript puro, import map CDN, sem build, sem assets externos nem APIs de terceiros. Não alterar rosto, rig, blendshapes, clipes, corpo, cabelo, acessórios, proporções nem roupas nesta etapa: o trabalho é a organização da interface e suas prévias. Os módulos de geometria existentes não foram modificados. Preservar cores ao vivo, combinações válidas, cache e exportação GLB.
+**Não modificar geometria, rosto, rig, blendshapes, clipes, corpo, cabelo, acessórios, proporções nem modelagem de roupas sem autorização nova.** Nunca reverter o trabalho de tipos físicos, figurinos ou menu. Preservar cores ao vivo, combinações válidas, cache e exportação GLB. Não aplicar nem descartar o stash histórico `Refinamento de roupas em andamento antes dos tipos físicos`.
 
-## Implementação intermediária já na main
+## Arquivos da etapa
 
-- `index.html`: integra a navegação, anota os botões com descritores de prévia, preserva os controles e métodos existentes. Exportação continua pelo mesmo código. A área de renderização desconta a barra inferior, evitando cortar os pés. Adiciona `savedLook(id)` no debug.
-- `src/editor.js`: monta cabeçalho, categorias e navegação; reaproveita os controles existentes, escondendo as outras seções. Disponível em `window.__atelie.editor`.
-- `src/editor.css`: tema e layout responsivo.
-- `src/previews.js`: IntersectionObserver para gerar os cartões próximos da área visível; fila em Worker; cache de URLs em memória e blobs no IndexedDB. Imagens WebP procedurais, não arquivos baixados.
-- `src/preview-worker.js`: uma segunda cena Three.js, OffscreenCanvas, textura de íris/tela por canvas local. Reutiliza cabeça/corpo/look/roupa entre tarefas quando possível. Usa os mesmos geradores; corpo da miniatura usa célula .05, rosto quality 1 para representar as expressões.
-- `src/preview-spec.js`: cópia da escolha que será renderizada e chave normalizada, para clicar em um tipo físico não invalidar as outras imagens.
-- Workers não leem import maps: `previews.js` resolve o grafo de módulos em memória com URLs Blob e o mesmo mapeamento de Three.js. A expressão regular só reconhece imports/exports no começo de linha. **Não ampliar indiscriminadamente a regex**: os addons de Three.js têm exemplos de import em comentários que podem introduzir falsas dependências circulares.
-- Navegadores sem Worker/OffscreenCanvas mostram mensagem; os botões continuam aplicando a opção.
+- `index.html`: integração do editor e seus controles originais; cena e exportação mantidas.
+- `src/editor.js`: categorias/subcategorias, seleção e visibilidade de controles; `window.__atelie.editor`.
+- `src/editor.css`: design responsivo em azul-marinho/turquesa.
+- `src/previews.js`: fila lazy via IntersectionObserver, Worker, URLs em memória, cache persistente IndexedDB, chave por aparência; invalidação específica das prévias de brincos.
+- `src/preview-spec.js`: copia escolha e visual para renderização sem tocar o personagem principal.
+- `src/preview-worker.js`: cena própria Three.js/OffscreenCanvas com geradores já existentes. Miniatura de brincos usa câmera 3/4 lateral e enquadramento com margem.
+- `src/fabric.js`: correção apenas de cópia dos índices de tecido, substituindo `ids.push(...faces)` por laço equivalente. **As mesmas faces, posição e orientação** são preservadas; evita `Maximum call stack size exceeded` quando há muitos índices no Worker.
+- `tests/menu-previas.cjs`: percorre todo o catálogo, confere miniaturas e cenário independente, grava imagens, verifica cache, mobile, controles e GLB; em falha salva diagnóstico e captura.
+- `tests/visuais.cjs`, `tests/visuais-tipos.cjs`, `tests/figurinos.mjs`: regressão 3D, rig, roupas, tipos físicos e GLBs.
+- `.github/workflows/validar-menu.yml`: três suítes em GitHub Actions com Chromium/Playwright e relatórios PNG; `validar-tipos.yml`: 52 combinações de personagem/tipo físico e GLB.
+- `.github/workflows/publicar-capturas.yml`: só após validação bem-sucedida gera galeria HTML e publica PNGs na branch isolada `capturas-atelie`.
+- `.github/workflows/pages.yml`: inclui a galeria validada no Pages sob `/capturas/`, sem acrescentar binários à branch `main`.
 
-## Estado de validação — seja honesto
+**Import maps e Workers:** `previews.js` resolve imports em URLs blob, usando a regex limitada a imports/exports no começo da linha. Não ampliar a regex indiscriminadamente: comentários em addons do Three.js têm exemplos de imports falsos.
 
-- `node --check` dos módulos novos e scripts editados passou; `git diff --check` passou.
-- `node tests/figurinos.mjs` foi executado até o fim. Log em `/tmp/figurinos-menu.log`, incluindo os 36 casos de cobertura dos builds sem falhas registradas. Os geradores geométricos não mudaram.
-- Smoke test de Chromium/SwiftShader mostrou os quatro cartões Magro/Padrão/Gordo/Musculoso gerados e a cena principal preservada. Estatísticas: 4 imagens, fila vazia, worker pronto, sem falha. Captura em `/workspace/outputs/menu-smoke.png`. Script temporário `/workspace/atelie-tests/menu-smoke.cjs`.
-- **A suíte completa de interface ainda NÃO terminou nem foi aprovada.** `tests/menu-previas.cjs` foi criado e iniciado, mas a execução foi interrompida para publicar imediatamente, conforme solicitação do usuário. Não tratar interrupção como aprovação ou como defeito de código.
-- `tests/visuais.cjs` e `tests/visuais-tipos.cjs` foram adaptados para selecionar as categorias antes de clicar nos controles agora ocultos. Essa adaptação ainda precisa ser executada e revisada. O teste de personagem pausa as miniaturas para isolar seus testes geométricos; o teste novo verifica as miniaturas separadamente.
-- Não houve validação estética completa, nem capturas de cada subcategoria, nem nova rodada completa de exportação no estado final deste menu.
+## Resultados medidos em 20/10/2026
 
-## Próximas ações concretas
+**Validação completa aprovada** na execução https://github.com/aruanmf446-hub/quemsoueu/actions/runs/39499185385 :
 
-1. Conferir a main e continuar a partir dela; verificar o deploy do Pages.
-2. Executar `node tests/menu-previas.cjs` com servidor na porta 8000. Corrigir o que falhar, especialmente fila/cache ao trocar subcategoria, miniaturas de todas as opções e mobile. O teste usa `context.route` para o CDN, pois os workers também precisam do Three.js local. Pode levar vários minutos para renderizar todos os cartões.
-3. Conferir visualmente frente/3-4 dos 13 personagens e exportação, usando `node tests/visuais.cjs`, corrigindo os seletores de navegação do teste se necessário. Não modificar a geometria para corrigir problemas de interface.
-4. Rever se os closes mostram bem brincos/joias e se os controles e mensagens para robô/vegetais fazem sentido. Melhorar enquadramento da miniatura se necessário.
-5. Conferir que os quatro tipos físicos ficam simultaneamente visíveis, as prévias não aplicam opções à cena e o cache funciona após clicar e recarregar. As cores não devem remontar corpo ou cabeça.
-6. Gerar e entregar ao usuário capturas de **cada subcategoria**. `tests/menu-previas.cjs` já gera uma galeria em `renders/menu/index.html` quando termina. Copiar para `/workspace/outputs/` para entrega; os renders são ignorados no Git.
-7. Atualizar README e este estado, fazer commits pequenos em português, push main, verificar Pages. O visual depende da avaliação do usuário.
+- **26 telas de subcategoria**, com **118 miniaturas reais renderizadas**; imagens de 26 telas e 6 estados especiais (mobile e mudanças de personagem).
+- **144 imagens** encontradas no cache persistente, teste de cache após recarga concluído.
+- Os quatro tipos físicos aparecem simultaneamente sem precisar hover/clicar, e prévias não aplicam alterações ao personagem.
+- Controles de peso/músculo, expressões, cores ao vivo, troca de personagem, câmera e mobile 390 px sem rolagem horizontal passaram.
+- GLB do teste de menu preservou os **12 clipes faciais**; teste visual aprovado nos **13 personagens** (frente/3/4), com GLB, rig, materiais, acessórios e roupas. Robô tem casco e exportação própria.
+- `tests/figurinos.mjs` passou, incluindo os **36 casos de cobertura** geométrica.
+- A suíte adicional `tests/visuais-tipos.cjs` passou em https://github.com/aruanmf446-hub/quemsoueu/actions/runs/39501492507 — **52 GLBs (13 × 4 tipos físicos)**, identidade do rosto e rig preservadas. Essa execução não gerou 224 imagens repetidas (`ATELIE_CAPTURAR=0`), mas verificou todas as exportações.
 
-## Ambiente e acessos
+**Histórico do defeito corrigido:** duas miniaturas da seleção Humanos (anão e palhaço) falharam no Worker por exceder o número máximo de argumentos de `Array.push(...faces)`, não por problema de geometria. Copiar os mesmos índices com laço resolveu; a rodada completa posterior passou.
 
-Repositório local `/workspace/quemsoueu`. Dependências em `node_modules` apontam para `/workspace/atelie-tests/node_modules`: Three.js 0.180 e Playwright. Chromium `/usr/bin/chromium`, SwiftShader. Servidor `python3 -m http.server 8000` pode já estar ativo; log `/tmp/atelie-http.log`. GitHub CLI e git autenticados.
+**Atenção:** a aprovação técnica não é a aprovação estética definitiva do usuário. Ele ainda pode pedir ajustes de UI/câmera, mantendo o modelo 3D intacto.
 
-Produção: https://aruanmf446-hub.github.io/quemsoueu/
-Workflow `.github/workflows/pages.yml` publica a cada push na main. Não é necessário novo pedido de permissão para concluir o trabalho autorizado.
+## Capturas e produção
 
-Há um stash antigo chamado `Refinamento de roupas em andamento antes dos tipos físicos`: **não aplicar nem descartar**, não pertence a esta etapa.
+Aplicação: https://aruanmf446-hub.github.io/quemsoueu/
+Galeria geral: https://aruanmf446-hub.github.io/quemsoueu/capturas/
+**Todas as 26 subcategorias:** https://aruanmf446-hub.github.io/quemsoueu/capturas/menu/index.html
+**13 personagens, frente/3/4:** https://aruanmf446-hub.github.io/quemsoueu/capturas/personagens/index.html
+
+Cada imagem abre individualmente, sem precisar baixar ZIP. A branch `capturas-atelie` guarda os arquivos, a `main` permanece apenas código, testes, documentação e workflows. Também há artefatos de cada suíte no GitHub Actions.
+
+## Continuação segura
+
+Não há mais pendências de testes do menu de base ou dos 52 GLBs. Para qualquer ajuste solicitado no futuro, ler o estado atual da `main`, preservar os módulos de modelagem e executar novamente os testes em GitHub Actions; entregar screenshots novos e verificar o Pages.
+
+O trabalho pode ser executado por GitHub Actions mesmo quando o terminal local `/workspace/quemsoueu` não estiver disponível. Em outros ambientes, clonar a branch `main` e rodar servidor estático `python3 -m http.server 8000`, Three.js 0.180, Playwright e Chromium. Os scripts assumem Chromium em `/usr/bin/chromium`.
+
+**Design é de propriedade do usuário:** direção estética cartoon 3D estilizado, comparação com referências, e escolha do visual precisam de revisão humana.
