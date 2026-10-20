@@ -12,7 +12,7 @@ const page=await browser.newPage({viewport:{width:1000,height:760}}),errors=[],r
 page.on('pageerror',e=>{errors.push(e.message);console.error(e.message)});page.on('console',m=>{if(m.type()==='error'&&!m.text().includes('favicon'))errors.push(m.text())});
 await page.route('https://cdn.jsdelivr.net/npm/three@0.180.0/**',async route=>route.fulfill({path:threeRoot+'/'+route.request().url().split('three@0.180.0/')[1],contentType:'application/javascript'}));
 await page.route('http://localhost:8000/',route=>{let source=fs.readFileSync(path.join(root,'index.html'),'utf8');source=source.replace('mapSize.set(4096,4096)','mapSize.set(1024,1024)').replace('(function frame(){requestAnimationFrame(frame);','window.__render=function(){').replace('renderer.render(scene,camera)})();','renderer.render(scene,camera)};');route.fulfill({body:source,contentType:'text/html'})});
-await page.goto('http://localhost:8000');await page.waitForFunction(()=>window.__atelie,null,{timeout:120000});await page.evaluate(()=>window.__atelie.stopAuto());await page.addStyleTag({content:'.brand,.help{visibility:hidden}'});console.log('Inicialização concluída');
+await page.goto('http://localhost:8000');await page.waitForFunction(()=>window.__atelie,null,{timeout:120000});await page.evaluate(()=>{window.__atelie.stopAuto();window.__atelie.editor.previews.pause()});await page.addStyleTag({content:'.brand,.help{visibility:hidden}'});console.log('Inicialização concluída');
 const ids=process.env.ATELIE_PERSONAGENS?.split(',')||await page.evaluate(async()=>Object.keys((await import('/src/presets.js')).PRESETS));
 for(const id of ids){
  await page.evaluate(id=>window.__atelie.setPreset(id),id);
@@ -64,16 +64,22 @@ for(const id of ids){
 await page.evaluate(()=>window.__atelie.setPreset('masculine_soft'));
 await page.waitForFunction(()=>window.__atelie.group().name==='Head_V2_masculine_soft'&&!document.getElementById('status').textContent.includes('…'));
 const ready=()=>page.waitForFunction(()=>!document.getElementById('status').textContent.includes('…'));
+await page.evaluate(()=>window.__atelie.editor.select('appearance','hair'));
 for(let i=0;i<await page.locator('#hairs button').count();i++){await page.locator('#hairs button').nth(i).click();await ready()}
 await page.locator('#hairColors button').nth(2).click();await ready();
+await page.evaluate(()=>window.__atelie.editor.select('appearance','skin'));
 await page.locator('#skins button').nth(3).click();await ready();
+await page.evaluate(()=>window.__atelie.editor.select('appearance','beard'));
 await page.locator('#beards button').nth(1).click();await ready();
 for(let slot=0;slot<await page.locator('#accs .chips').count();slot++){
+  const id=await page.locator('#accs .chips').nth(slot).getAttribute('data-acc-slot');await page.evaluate(id=>window.__atelie.editor.select('accessories',id),id);
   const count=await page.locator('#accs .chips').nth(slot).locator('button').count();
   for(let i=0;i<count;i++){await page.locator('#accs .chips').nth(slot).locator('button').nth(i).click();await ready()}
 }
 for(let row=0;row<await page.locator('#accColors .sws').count();row++){await page.locator('#accColors .sws').nth(row).locator('button').nth(2).click();await ready()}
+await page.evaluate(()=>window.__atelie.editor.select('clothes','sets'));
 for(let i=0;i<await page.locator('#outfits button').count();i++){await page.locator('#outfits button').nth(i).click();await ready()}
+await page.evaluate(()=>{window.__atelie.editor.select('clothes','upper');document.querySelector('.piece-colors').open=true});
 await page.locator('#clothColors .sws').first().locator('button').nth(3).click();await ready();
 const saved=await page.evaluate(()=>JSON.stringify(window.__atelie.getLook()));
 await page.evaluate(()=>window.__atelie.setPreset('cute_round'));await ready();

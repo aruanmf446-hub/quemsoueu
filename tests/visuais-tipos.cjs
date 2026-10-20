@@ -14,7 +14,7 @@ fs.mkdirSync(output,{recursive:true});
  page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error'&&!m.text().includes('favicon'))errors.push(m.text())});
  await page.route('https://cdn.jsdelivr.net/npm/three@0.180.0/**',r=>r.fulfill({path:threeRoot+'/'+r.request().url().split('three@0.180.0/')[1],contentType:'application/javascript'}));
  await page.route('http://localhost:8000/',r=>r.fulfill({contentType:'text/html',body:fs.readFileSync(path.join(root,'index.html'),'utf8').replace('mapSize.set(4096,4096)','mapSize.set(1024,1024)').replace('(function frame(){requestAnimationFrame(frame);','window.__render=function(){').replace('renderer.render(scene,camera)})();','renderer.render(scene,camera)};')}));
- await page.goto('http://localhost:8000');await page.waitForFunction(()=>window.__atelie);await page.addStyleTag({content:'.brand,.help,.status{visibility:hidden}'});
+ await page.goto('http://localhost:8000');await page.waitForFunction(()=>window.__atelie);await page.evaluate(()=>window.__atelie.editor.previews.pause());await page.addStyleTag({content:'.brand,.help,.status{visibility:hidden}'});
  const ready=()=>page.waitForFunction(()=>!document.getElementById('status').textContent.includes('…'));
  const ids=process.env.ATELIE_PERSONAGENS?.split(',')||await page.evaluate(async()=>Object.keys((await import('/src/presets.js')).PRESETS));
  for(const id of ids){
@@ -62,6 +62,7 @@ fs.mkdirSync(output,{recursive:true});
  // Controles reais: botões, sliders, persistência por personagem e cores por slot.
  if(process.env.ATELIE_TESTAR_UI!=='0'){
  await page.evaluate(()=>window.__atelie.setPreset('cute_round'));await ready();
+ await page.evaluate(()=>window.__atelie.editor.select('body','type'));
  for(const label of ['Magro','Padrão','Gordo','Musculoso']){await page.locator('#bodyBuilds button',{hasText:label}).click();await ready()}
  await page.locator('#bodyWeight').evaluate(input=>{input.value='.5';input.dispatchEvent(new Event('input',{bubbles:true}))});
  await page.waitForFunction(()=>window.__atelie.body()?.build.weight===.5);await ready();
