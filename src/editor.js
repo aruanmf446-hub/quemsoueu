@@ -28,6 +28,22 @@ export function mountEditor(api) {
   };
   let category='character',sub=api.families[0];const remembered={};
   const previews=new PreviewCatalog(api.getContext);
+  // O personagem tem prioridade sobre a fila de miniaturas durante rotação e zoom.
+  // Apenas adia novos trabalhos do Worker: resolução, geometria e render ficam iguais.
+  let zoomRelease;
+  stage.addEventListener('pointerdown',event=>{
+    if(event.target===stage.querySelector('canvas'))previews.hold('giro',true);
+  });
+  const liberarGiro=()=>previews.hold('giro',false);
+  window.addEventListener('pointerup',liberarGiro);
+  window.addEventListener('pointercancel',liberarGiro);
+  window.addEventListener('blur',liberarGiro);
+  stage.addEventListener('wheel',()=>{
+    previews.hold('zoom',true);
+    clearTimeout(zoomRelease);
+    zoomRelease=setTimeout(()=>previews.hold('zoom',false),220);
+  },{passive:true});
+  document.addEventListener('visibilitychange',()=>previews.hold('segundo-plano',document.hidden));
   const colorDetails=make('details','piece-colors'),summary=make('summary','','Cores da peça selecionada');colorDetails.append(summary);el('clothColors').before(colorDetails);colorDetails.append(el('clothColors'));
   function select(cat,section){
     if(!configs[cat])return false;
