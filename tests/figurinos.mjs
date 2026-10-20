@@ -73,3 +73,4 @@ for (const id of Object.keys(PRESETS)) {
 await import('./tipos-fisicos.mjs');
 process.env.ATELIE_COBERTURA_TIPOS='1';
 await import('./cobertura.mjs');
+await import('./ajuste-roupas.mjs');

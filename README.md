@@ -187,3 +187,14 @@ A envoltória de tecido limita quanto da largura dos ombros pode ser carregado a
 
 Nas sereias, o cós e o quadril da cauda usam o contorno do corpo escolhido, incluindo profundidades diferentes na frente e nas costas. A extensão da cauda afina a partir desse encaixe, e os filetes dourados seguem a superfície medida. O saiote do orc teve a folga e a abertura reduzidas. As imagens antigas do catálogo recebem uma nova chave de cache; as melhorias de prioridade dos gestos de câmera foram preservadas.
 
+`node tests/ajuste-roupas.mjs` verifica limites de folga em seções do tronco/cauda, resposta aos quatro tipos físicos, preservação da pele, cores e troca em cache. Ele também integra `node tests/figurinos.mjs`. A comparação visual usa o checkout `8655440` como referência:
+
+```sh
+# Referência servida na porta 8001, versão atual na 8000:
+ATELIE_BASELINE=/caminho/da/referencia ATELIE_PORT=8001 ATELIE_FASE=antes node tests/encaixe-roupas.cjs
+node tests/encaixe-roupas.cjs
+```
+
+`ATELIE_RENDERS` define a pasta compartilhada das duas capturas. O teste registra frente, perfil e 3/4, compara a malha do corpo entre as versões e confere GLB nos casos principais. Esses renders servem à avaliação do usuário; testes de cobertura, por si só, não aprovam a estética do encaixe.
+
+Verificação do encaixe (20/10/2026): 36 casos de cobertura, 386.486 vértices e zero falhas; 12 casos adicionais de limites de folga. Foram comparados dez casos de orc/sereias em frente, perfil e 3/4, com o corpo idêntico ao da referência. Os 13 personagens passaram na regressão visual e de GLB; 700 trocas de peças e cores, maior p95 em cache de 18 ms nesta execução, sem erros de console. As prévias reais do catálogo preservaram o orc magro. A aprovação estética final continua com o usuário.

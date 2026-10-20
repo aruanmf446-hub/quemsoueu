@@ -12,6 +12,9 @@ on:
       - src/preview-spec.js
       - src/preview-worker.js
       - src/fabric.js
+      - src/outfits.js
+      - tests/figurinos.mjs
+      - tests/ajuste-roupas.mjs
       - tests/menu-previas.cjs
       - tests/visuais.cjs
       - tests/visuais-tipos.cjs
