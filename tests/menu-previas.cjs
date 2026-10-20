@@ -21,8 +21,28 @@ fs.mkdirSync(out,{recursive:true});
    const cards=page.locator('.sidebar button[data-preview]:visible');const count=await cards.count();
    for(let i=0;i<count;i++){
     const card=cards.nth(i);await card.scrollIntoViewIfNeeded();
-    await card.locator('.preview-frame[data-ready="true"] img').waitFor({state:'visible'});
-    await card.locator('img').evaluate(img=>img.decode());
+    try {
+      await card.locator('.preview-frame[data-ready="true"] img').waitFor({state:'visible',timeout:60000});
+      await card.locator('img').evaluate(img=>img.decode());
+    } catch (error) {
+      const diagnostico=await page.evaluate(()=>({
+        secao:window.__atelie.editor.state(),
+        worker:window.__atelie.editor.previews.stats(),
+        trabalho:window.__atelie.editor.previews.running,
+        fila:[...window.__atelie.editor.previews.queue.keys()],
+        cartoes:[...document.querySelectorAll('.sidebar button[data-preview]')].filter(b=>b.getClientRects().length).map(b=>({
+          nome:b.textContent.trim().slice(0,120),
+          tipo:JSON.parse(b.dataset.preview).kind,
+          chave:b._preview?.key,
+          pronto:b.querySelector('.preview-frame')?.dataset.ready,
+          conteudo:b.querySelector('.preview-wait')?.textContent
+        }))
+      }));
+      fs.writeFileSync(path.join(out,'diagnostico-falha.json'),JSON.stringify({indice:i,contagem:count,diagnostico,errors,warnings},null,2));
+      try {await page.screenshot({path:path.join(out,'diagnostico-falha.png'),timeout:30000});} catch {}
+      console.error('Prévia travada',JSON.stringify({indice:i,diagnostico,errors,warnings}));
+      throw error;
+    }
    }
    await page.locator('.sidebar').evaluate(n=>n.scrollTop=0);return count;
   };
