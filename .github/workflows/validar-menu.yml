@@ -1,0 +1,115 @@
+name: Validar menu e capturas do Ateliê
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/validar-menu.yml
+      - index.html
+      - src/editor.js
+      - src/editor.css
+      - src/previews.js
+      - src/preview-spec.js
+      - src/preview-worker.js
+      - tests/menu-previas.cjs
+      - tests/visuais.cjs
+      - tests/visuais-tipos.cjs
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  menu:
+    name: Prévias e subcategorias
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      NODE_OPTIONS: --max-old-space-size=6144
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar Three.js e Playwright para os testes
+        run: npm install --no-save --package-lock=false --no-audit --no-fund three@0.180.0 playwright
+      - name: Preparar Chromium
+        run: |
+          npx playwright install --with-deps chromium
+          sudo ln -sf "$(node -p "require('playwright').chromium.executablePath()")" /usr/bin/chromium
+      - name: Validar sintaxe e arquivos
+        run: |
+          node --check src/editor.js
+          node --check src/previews.js
+          node --check src/preview-spec.js
+          node --check src/preview-worker.js
+          node --check tests/menu-previas.cjs
+      - name: Servir página estática
+        run: |
+          python3 -m http.server 8000 > /tmp/atelie-http.log 2>&1 &
+          for tentativa in $(seq 1 30); do
+            if curl -fsS http://localhost:8000/ -o /dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/atelie-http.log
+          exit 1
+      - name: Testar miniaturas, navegação, cache, mobile e GLB
+        run: timeout 48m node tests/menu-previas.cjs
+      - name: Registrar resultado no GitHub Actions
+        if: always()
+        run: |
+          {
+            echo '## Teste do menu FIFA/PES'
+            echo 'Cada subcategoria gera uma captura e um relatório detalhado.'
+            if test -f renders/menu/relatorio.json; then
+              node -e "const d=require('./renders/menu/relatorio.json'); console.log('Total de subcategorias:',d.reports.length,'| Prévia(s):',d.reports.reduce((n,r)=>n+r.previews,0),'| Cache:',d.cached,'| Clipes GLB:',d.glb?.animations)"
+            else
+              echo 'Relatório não criado: consultar logs e capturas parciais.'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Disponibilizar capturas individuais e galeria
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: capturas-menu-atelie
+          path: renders/menu/
+          if-no-files-found: warn
+          retention-days: 30
+
+  personagens:
+    name: Personagens, câmeras e exportação GLB
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      NODE_OPTIONS: --max-old-space-size=6144
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar dependências dos testes
+        run: npm install --no-save --package-lock=false --no-audit --no-fund three@0.180.0 playwright
+      - name: Preparar Chromium
+        run: |
+          npx playwright install --with-deps chromium
+          sudo ln -sf "$(node -p "require('playwright').chromium.executablePath()")" /usr/bin/chromium
+      - name: Servir aplicação
+        run: |
+          python3 -m http.server 8000 > /tmp/atelie-http.log 2>&1 &
+          for tentativa in $(seq 1 30); do
+            if curl -fsS http://localhost:8000/ -o /dev/null; then exit 0; fi
+            sleep 1
+          done
+          exit 1
+      - name: Conferir os 13 personagens, roupas, rig e GLB
+        run: timeout 48m node tests/visuais.cjs
+      - name: Disponibilizar capturas de frente e 3/4
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: capturas-personagens-atelie
+          path: |
+            renders/*.png
+            renders/reports.json
+          if-no-files-found: warn
+          retention-days: 30
