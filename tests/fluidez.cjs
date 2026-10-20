@@ -30,23 +30,29 @@ const threeRoot=path.resolve(path.dirname(require.resolve('three')),'..');
     const original=await page.evaluate(()=>JSON.stringify(window.__atelie.getLook()));
     const canvas=page.locator('#stage canvas');
 
-    await canvas.dispatchEvent('pointerdown',{pointerId:10,pointerType:'mouse',button:0});
+    // Eventos físicos reais: OrbitControls precisa de captura de ponteiro ativa.
+    const area=await canvas.boundingBox();
+    assert(area,'Canvas não encontrado');
+    const pos={x:area.x+area.width*.6,y:area.y+area.height*.45};
+    await page.mouse.move(pos.x,pos.y);
+    await page.mouse.down();
     assert.equal(await page.evaluate(()=>window.__atelie.editor.previews.stats().waitingForInteraction),true,'Arrastar não segurou a fila');
 
     // Trocar de categoria não pode ignorar a interação em andamento.
     assert(await page.evaluate(()=>window.__atelie.editor.select('body','type')));
     assert.equal(await page.evaluate(()=>window.__atelie.editor.previews.stats().waitingForInteraction),true,'Fila reiniciou durante o giro');
 
-    await canvas.dispatchEvent('pointerup',{pointerId:10,pointerType:'mouse',button:0});
+    await page.mouse.up();
     assert.equal(await page.evaluate(()=>window.__atelie.editor.previews.stats().waitingForInteraction),false,'Fila não retomou após soltar');
 
     await canvas.dispatchEvent('wheel',{deltaY:100,deltaMode:0});
     assert.equal(await page.evaluate(()=>window.__atelie.editor.previews.stats().waitingForInteraction),true,'Zoom não segurou a fila');
     await page.waitForFunction(()=>!window.__atelie.editor.previews.stats().waitingForInteraction,null,{timeout:30000,polling:200});
 
-    await canvas.dispatchEvent('pointerdown',{pointerId:11,pointerType:'mouse',button:0});
-    await canvas.dispatchEvent('pointercancel',{pointerId:11,pointerType:'mouse'});
-    assert.equal(await page.evaluate(()=>window.__atelie.editor.previews.stats().waitingForInteraction),false,'Pointer cancel não liberou a fila');
+    await page.mouse.down();
+    await page.evaluate(()=>window.dispatchEvent(new Event('blur')));
+    assert.equal(await page.evaluate(()=>window.__atelie.editor.previews.stats().waitingForInteraction),false,'Blur não liberou a fila');
+    await page.mouse.up();
 
     const navigation=await page.evaluate(()=>{
       const e=window.__atelie.editor,now=performance.now();
