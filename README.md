@@ -8,6 +8,8 @@ Protótipo separado do jogo principal para aprovar a anatomia facial de personag
 
 As alterações afetam largura e volume: cintura, barriga, quadril, braços, pernas, ombros e peitoral. Altura, comprimentos, juntas, escala da cabeça e tamanho dos seios permanecem iguais; Cute continua sem seios. A seção do pescoço junto à cabeça usa exatamente o campo original, com transição suave para o volume abaixo. O rosto, os ossos faciais e seus blendshapes não são modificados.
 
+A seção **Corpo** oferece os controles **Peso** e **Músculo** e os atalhos **Magro, Padrão, Gordo e Musculoso**. A escolha fica em `look.build`, é preservada por personagem e pode ser lida/trocada por `window.__atelie.getLook()`, `setLook({build:{weight,muscle}})` ou `await setBuild({weight,muscle})`. A troca remonta só corpo e roupas: as instâncias da cabeça, do rig facial, do cabelo e dos acessórios permanecem iguais. O status mostra “Montando corpo…” durante a troca; o GLB leva o build escolhido em `Body.extras.build`.
+
 O cache do corpo diferencia personagem, densidade, escala da cabeça, cauda, peso e músculo e conserva até 64 geometrias. `node tests/tipos-fisicos.mjs` verifica juntas, emenda, cache e volume crescente de magro → padrão → gordo nos 12 personagens orgânicos. O robô conserva seu casco.
 
 ## Ver no navegador
