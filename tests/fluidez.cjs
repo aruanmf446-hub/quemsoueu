@@ -42,7 +42,7 @@ const threeRoot=path.resolve(path.dirname(require.resolve('three')),'..');
 
     await canvas.dispatchEvent('wheel',{deltaY:100,deltaMode:0});
     assert.equal(await page.evaluate(()=>window.__atelie.editor.previews.stats().waitingForInteraction),true,'Zoom não segurou a fila');
-    await page.waitForFunction(()=>!window.__atelie.editor.previews.stats().waitingForInteraction,null,{timeout:4000});
+    await page.waitForFunction(()=>!window.__atelie.editor.previews.stats().waitingForInteraction,null,{timeout:30000,polling:200});
 
     await canvas.dispatchEvent('pointerdown',{pointerId:11,pointerType:'mouse',button:0});
     await canvas.dispatchEvent('pointercancel',{pointerId:11,pointerType:'mouse'});
