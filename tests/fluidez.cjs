@@ -55,9 +55,16 @@ const threeRoot=path.resolve(path.dirname(require.resolve('three')),'..');
     });
     assert(navigation<3000,'Navegação demorou demais: '+navigation.toFixed(1)+' ms');
 
+    // Lazy loading correto: cada cartão deve entrar na área visível antes de aguardar sua imagem.
+    const options=page.locator('#bodyBuilds button[data-preview]');
+    assert.equal(await options.count(),4);
+    for(let i=0;i<4;i++){
+      const card=options.nth(i);
+      await card.scrollIntoViewIfNeeded();
+      await card.locator('.preview-frame[data-ready="true"] img').waitFor({state:'visible',timeout:120000});
+      console.log('Miniatura pronta:',i+1,'de 4');
+    }
     const cards=page.locator('#bodyBuilds .preview-frame img');
-    await page.waitForFunction(()=>[...document.querySelectorAll('#bodyBuilds .preview-frame')].length===4 &&
-      [...document.querySelectorAll('#bodyBuilds .preview-frame')].every(f=>f.dataset.ready==='true'),null,{timeout:240000});
     assert.equal(await cards.count(),4);
     await cards.first().evaluate(img=>img.decode());
 
