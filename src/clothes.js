@@ -22,9 +22,9 @@ const DEFAULTS = { fabric: '#324c78', secondary: '#e8d9b6', accent: '#8e3326', p
 export const outfitColors = id => ({ ...DEFAULTS, ...(SDF_DEFAULT_COLORS[id] || {}) });
 export function defaultClothes(id) {
   const styles = { feminine_soft: 'dress', feminine_bold: 'dress', cute_round: 'casual', masculine_soft: 'casual', old_king: 'royal', alchemist_villain: 'inventor', dwarf_bard: 'casual', sad_clown: 'clown', orc_warrior: 'warrior', cactus_cowboy: 'cowboy', pepper_king: 'royal', chili_bandit: 'cowboy' };
-  const colors = id === 'sad_clown' ? { fabric: '#822e42', secondary: '#e8d9b6', leather: '#822e42' } : id === 'pepper_king' || id === 'old_king' ? { fabric: '#822e42' } : id === 'alchemist_villain' ? { fabric: '#e6e3de', secondary: '#324c78' } : id === 'orc_warrior' || id === 'cactus_cowboy' ? { fabric: '#93613c', secondary: '#30323c' } : {};
+  const colors = { chili_bandit: { fabric: '#34507e', pants: '#e8dcbf', secondary: '#1f1d22' }, pepper_king: { fabric: '#7a2436', accent: '#3e2a6e' } }[id] || {};
   if (SDF_DEFAULT_OUTFIT[id]) return { outfit: SDF_DEFAULT_OUTFIT[id], clothColors: outfitColors(SDF_DEFAULT_OUTFIT[id]) };
-  return { outfit: styles[id] || 'none', clothColors: { ...DEFAULTS, ...colors } };
+  return { outfit: styles[id] || 'none', clothColors: { ...outfitColors(styles[id]), ...colors } };
 }
 
 // Slots independentes. Um conjunto é apenas um atalho que preenche estes slots.
@@ -35,7 +35,7 @@ const SLOT_STYLES = {
   feet: ['circus', 'orc', 'adventurer', 'desert', 'casual', 'dress', 'warrior', 'cowboy', 'royal', 'inventor'],
   cape: ['adventurer', 'desert', 'mermaid_pearl', 'mermaid_ruby', 'royal'],
   belt: ['orc', 'adventurer', 'desert', 'mermaid_pearl', 'mermaid_ruby', 'casual', 'dress', 'warrior', 'cowboy', 'royal', 'inventor'],
-  extras: ['circus', 'orc', 'adventurer', 'desert', 'mermaid_pearl', 'mermaid_ruby']
+  extras: ['circus', 'orc', 'adventurer', 'desert', 'mermaid_pearl', 'mermaid_ruby', 'cowboy']
 };
 const PIECE_LABELS = {
   circus: { upper: 'Casaca de circo', lower: 'Bombacha listrada', feet: 'Sapatões e meias', extras: 'Gola, punhos e luvas' },
@@ -44,7 +44,11 @@ const PIECE_LABELS = {
   desert: { upper: 'Túnica e tabardos', lower: 'Bombacha do deserto', feet: 'Botas trançadas', cape: 'Manto do deserto', belt: 'Faixa e medalhão', extras: 'Lenço e luva' },
   mermaid_pearl: { upper: 'Top pérola', lower: 'Cauda pérola', cape: 'Véus pérola', belt: 'Joias de pérola', extras: 'Colar e braceletes pérola' },
   mermaid_ruby: { upper: 'Top rubi', lower: 'Cauda rubi', cape: 'Véus rubi', belt: 'Joias e frascos rubi', extras: 'Colar e braceletes rubi' },
-  casual: { upper: 'Túnica básica', lower: 'Calça básica', feet: 'Botas básicas', belt: 'Cinto básico' }
+  casual: { upper: 'Túnica com cinto', lower: 'Calça reta', feet: 'Botas de cano curto', belt: 'Cinto de fivela' },
+  dress: { upper: 'Corpete bufante', lower: 'Saia rodada', feet: 'Sapatilhas', belt: 'Faixa' },
+  royal: { upper: 'Manto real e arminho', lower: 'Saia do manto', feet: 'Sapatos reais', cape: 'Capa real', belt: 'Cinto real' },
+  inventor: { upper: 'Jaleco e colete', lower: 'Calça social', feet: 'Sapatos', belt: 'Cinto fino' },
+  cowboy: { upper: 'Camisa e colete', lower: 'Calça de montaria', feet: 'Botas de caubói', belt: 'Cinturão', extras: 'Lenço' }
 };
 const STYLE_ALIAS = { clown: 'circus' };
 const styleOf = id => STYLE_ALIAS[id] || id;

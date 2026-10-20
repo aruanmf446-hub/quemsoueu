@@ -1,4 +1,6 @@
 // Consulta a malha real: cada vértice coberto deve encontrar tecido à frente da pele.
+// Conta a primeira face de SAÍDA do tecido no raio (paredes internas de peças em camadas, como o avesso de
+// uma saia por dentro da bombacha, não escondem nem expõem a pele).
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import {buildHead} from '../src/head.js';
@@ -14,16 +16,23 @@ function tree(g){
  return branch(tri);
 }
 function first(root,ray){let best=Infinity,orientation=0;const hit=V(),ab=V(),ac=V();
- function visit(n){if(!ray.intersectBox(n.box,hit))return;if(n.items){for(const t of n.items){if(ray.intersectTriangle(...t.v,false,hit)){const d=hit.distanceTo(ray.origin);if(d<best){best=d;orientation=ab.subVectors(t.v[1],t.v[0]).cross(ac.subVectors(t.v[2],t.v[0])).dot(ray.direction)}}}}else{visit(n.left);visit(n.right)}}visit(root);return{distance:best,orientation};}
+ function visit(n){if(!ray.intersectBox(n.box,hit))return;if(n.items){for(const t of n.items){if(ray.intersectTriangle(...t.v,false,hit)){const d=hit.distanceTo(ray.origin),o=ab.subVectors(t.v[1],t.v[0]).cross(ac.subVectors(t.v[2],t.v[0])).dot(ray.direction);if(d<best&&o>0&&d>.001){best=d;orientation=o}}}}else{visit(n.left);visit(n.right)}}visit(root);return{distance:best,orientation};}
 const ids=process.env.ATELIE_PERSONAGENS?.split(',')||['cute_round','cactus_cowboy','chili_bandit','masculine_soft','sad_clown','dwarf_bard','alchemist_villain'];
 for(const id of ids){const h=buildHead(id,{}, {quality:.35}),look=defaultClothes(id),b=buildBody(h.fit,id,{cell:.045,headScale:headScale(id),mermaid:!!OUTFITS[look.outfit]?.mermaid}),c=buildClothes(b,look),meshes=[];
  c.group.updateMatrixWorld(true);c.group.traverse(m=>{if(m.isMesh&&m.parent.name==='RoupaSlot_lower'&&/Calca|Bombacha|Macacao/.test(m.name))meshes.push(tree(m.geometry))});
  assert(meshes.length,`${id}: calça ausente`);
+ // A pele pode estar coberta pela calça ou pela peça de cima (túnica, colete, jaleco) que desce sobre o quadril.
+ c.group.traverse(m=>{if(m.isMesh&&!m.material.transparent&&['RoupaSlot_upper','RoupaSlot_belt','RoupaSlot_feet'].includes(m.parent.name))meshes.push(tree(m.geometry))});
  const p=b.geo.attributes.position,n=b.geo.attributes.normal,J=b.joints;let checked=0,min=Infinity;const misses=[];
  const top=J.Y(id==='sad_clown'?.42:id==='dwarf_bard'?.36:id==='masculine_soft'?.42:.41),bottom=J.ankle.y+(id==='masculine_soft'?.27:id==='dwarf_bard'?.21:id==='sad_clown'?.1:.015)*J.Lb+.04;
  for(let i=0;i<p.count;i++){if(p.getY(i)>top||p.getY(i)<bottom||Math.abs(p.getX(i))>J.W*(b.proportions.hip+.28))continue;
+ // contato entre as coxas (pele na linha do meio, normal apontando para a outra perna): ocluída pela própria perna
+ if(p.getY(i)<J.hip.y&&Math.abs(p.getX(i))<.55*J.hip.x&&Math.abs(n.getX(i))>.55&&(n.getX(i)*p.getX(i)<0||Math.abs(p.getX(i))<.02))continue;
  const origin=V().fromBufferAttribute(p,i),dir=V().fromBufferAttribute(n,i).normalize(),hits=meshes.map(t=>first(t,new THREE.Ray(origin,dir))).filter(h=>Number.isFinite(h.distance)).sort((a,b)=>a.distance-b.distance),hit=hits[0];checked++;
- if(!hit||hit.distance<=.001||hit.orientation<=0)misses.push(i);else min=Math.min(min,hit.distance);
+ const ok=h=>h&&h.distance>.001&&h.orientation>0;
+ // raio exatamente no plano de uma borda (cano da bota, barra) passa rente às duas peças: confere logo acima e abaixo
+ const near=ok(hit)?hit:[-.012,.012].map(dy=>meshes.map(t=>first(t,new THREE.Ray(origin.clone().add(new THREE.Vector3(0,dy,0)),dir))).filter(h=>Number.isFinite(h.distance)).sort((a,b)=>a.distance-b.distance)[0]).find(ok);
+ if(!near)misses.push(i);else min=Math.min(min,near.distance);
  }
 
 

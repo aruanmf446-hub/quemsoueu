@@ -26,7 +26,12 @@ export const SDF_OUTFITS = {
   adventurer: { label: 'Aventureiro', sub: 'Camisa, gibão, capa, bolsas, bússola e botas', channels: ['fabric', 'secondary', 'accent', 'pants', 'leather', 'trim'] },
   desert: { label: 'Falcoeiro do deserto', sub: 'Túnica, faixa e capa azuis, bombacha, botas trançadas', channels: ['fabric', 'secondary', 'pants', 'leather', 'trim'] },
   mermaid_pearl: { label: 'Sereia pérola', sub: 'Cauda de escamas, top de pérolas, véus nos braços', channels: ['fabric', 'accent', 'secondary', 'trim'], mermaid: true },
-  mermaid_ruby: { label: 'Sereia rubi', sub: 'Cauda negra e vermelha, joias, frascos, véus rubi', channels: ['fabric', 'accent', 'secondary', 'trim'], mermaid: true }
+  mermaid_ruby: { label: 'Sereia rubi', sub: 'Cauda negra e vermelha, joias, frascos, véus rubi', channels: ['fabric', 'accent', 'secondary', 'trim'], mermaid: true },
+  casual: { label: 'Aventureiro', sub: 'Túnica com caimento, cinto, calça reta e botas', channels: ['fabric', 'secondary', 'leather', 'trim'] },
+  dress: { label: 'Vestido', sub: 'Corpete, mangas bufantes e saia rodada', channels: ['fabric', 'secondary', 'leather', 'trim'] },
+  royal: { label: 'Realeza', sub: 'Manto longo, mangas em sino, arminho, capa e broche', channels: ['fabric', 'accent', 'secondary', 'leather', 'trim'] },
+  inventor: { label: 'Inventor', sub: 'Jaleco longo aberto, colete, gravata e calça', channels: ['fabric', 'secondary', 'accent', 'leather', 'trim'] },
+  cowboy: { label: 'Faroeste', sub: 'Camisa, colete de couro, lenço, cinturão e botas', channels: ['fabric', 'leather', 'secondary', 'pants', 'trim'] }
 };
 export const SDF_DEFAULT_COLORS = {
   circus: { fabric: '#9e2a2b', secondary: '#eadcbf', accent: '#3d4f8a', leather: '#8e2a26', trim: '#d4a640' },
@@ -34,7 +39,12 @@ export const SDF_DEFAULT_COLORS = {
   adventurer: { fabric: '#34507e', secondary: '#ece4d4', accent: '#8e3326', pants: '#3a3836', leather: '#6b4228', trim: '#c99a3e' },
   desert: { fabric: '#2f4fb5', secondary: '#f1e9d8', pants: '#ece2cc', leather: '#5a3a24', trim: '#d4a640' },
   mermaid_pearl: { fabric: '#f3f1ee', accent: '#4f8fd8', secondary: '#f5efe6', trim: '#d4a640' },
-  mermaid_ruby: { fabric: '#17111a', accent: '#c4161f', secondary: '#1c1418', trim: '#d4a640' }
+  mermaid_ruby: { fabric: '#17111a', accent: '#c4161f', secondary: '#1c1418', trim: '#d4a640' },
+  casual: { fabric: '#34507e', secondary: '#e8dcbf', leather: '#5a3a24', trim: '#c99a3e' },
+  dress: { fabric: '#7a3b5e', secondary: '#e8d9b6', leather: '#493028', trim: '#c99a3e' },
+  royal: { fabric: '#8a2a3c', accent: '#5e1626', secondary: '#f4efe6', leather: '#3a2418', trim: '#d4a640' },
+  inventor: { fabric: '#ece9e2', secondary: '#2f3f63', accent: '#7a2030', leather: '#3a2a22', trim: '#b8913f' },
+  cowboy: { fabric: '#c9873e', leather: '#5a3826', secondary: '#a8282a', pants: '#2c3446', trim: '#c9a24a' }
 };
 export const SDF_DEFAULT_OUTFIT = { sad_clown: 'circus', orc_warrior: 'orc', dwarf_bard: 'adventurer', masculine_soft: 'desert', feminine_soft: 'mermaid_pearl', feminine_bold: 'mermaid_ruby' };
 
@@ -104,24 +114,10 @@ export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot 
       add(name + '_Dobra', tubeG(pts, .016 * W, 8), ch, slot);
     }
   }
+  // parte de cima com caimento (usa a envoltória das roupas; ver garment)
   function top(name, ch, o) {
-    if(onlySlot&&onlySlot!=='upper')return;
-    activeSlot='upper';
-    const sleeveEnd = o.sleeve === 'wrist' ? Wr.clone().addScaledVector(dF, -.02) : o.sleeve === 'elbow' ? E.clone().addScaledVector(dF, .15 * Lb * .1) : o.sleeve === 'short' ? S.clone().addScaledVector(dU, S.distanceTo(E) * (o.short ?? .55)) : null;
-    const sDir = o.sleeve === 'wrist' || o.sleeve === 'elbow' ? dF : dU;
-    const yTop = yN + (o.collar ?? .02), yBot = Y(o.bottom);
-    const f = (x, y, z) => {
-      const ax = Math.abs(x), as = armSide(ax, y);
-      let t = o.t + (o.loose || 0) * sstep(Y(.2), Y(.38), y) + (o.puff || 0) * sstep(-.1, .4, as) * (sleeveEnd ? Math.sin(PI * clamp(along(ax, y, z, S, sDir) / Math.max(.01, along(sleeveEnd.x, sleeveEnd.y, sleeveEnd.z, S, sDir)), 0, 1)) : 1);
-      if (o.folds) t += o.folds * (.5 + .5 * Math.sin(phiOf(x, z) * 14 + y * 3)) * sstep(Y(.3), Y(.5), y);
-      let d = bf(x, y, z) - t;
-      const neck = y - yTop + (o.vneck ? o.vneck * Math.max(0, 1 - ax / .25) * sstep(z0, z0 + .3, z) : 0) * 1;
-      d = smax(d, neck, .02); d = Math.max(d, yBot - y);
-      if (sleeveEnd) d = Math.max(d, Math.min(along(ax, y, z, sleeveEnd, sDir), as + .1 * W)); else d = Math.max(d, as - (o.shoulderPad ?? .08) * W);
-      if (o.open) { const ph = Math.abs(phiOf(x, z)); d = Math.max(d, (o.open - ph) * .4) }
-      return d;
-    };
-    piece(name, ch, f, { x: bx + .3, y0: yBot - .3, y1: yTop + .3, z0: zA - .3, z1: zB + .4 }, o.cell);
+    if (onlySlot && onlySlot !== 'upper') return;
+    return garment(name, ch, 'upper', { top: yN + (o.collar ?? .02), bottom: Y(o.bottom), t: o.t, sleeve: o.sleeve, short: o.short, puff: o.puff, vneck: o.vneck, open: o.open, hollow: (o.open || 0) > .25, shoulderPad: o.shoulderPad, sleeveEase: o.t * .7, cell: o.cell, env: { ease: o.t * .55 + (o.loose || 0), hang: .3, folds: o.folds || 0, foldN: 14, flareFrom: Y(.36), flare: o.flare || 0 } });
   }
   // calça: pernas + espessura; bombacha (volume no meio, franzida no tornozelo); termina acima do tornozelo
   function pants(name, ch, o) {
@@ -150,7 +146,7 @@ export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot 
       if (o.stripes) d = Math.max(d, o.stripes(x, y, z));
       return d;
     };
-    piece(name, ch, f, { x: A.x + .9 * W, y0: ySole - .15, y1: yTop + .1, z0: A.z - .7 * W, z1: A.z + 1.3 * W + (o.toe || 0) }, o.cell);
+    piece(name, ch, f, { x: A.x + .9 * W, y0: ySole - .15, y1: yTop + .1, z0: A.z - .7 * W, z1: Math.max(A.z + 1.3 * W, zB) + .3 + (o.toe || 0) }, o.cell);
   }
   // faixa em volta do corpo (cinto, faixa, gola baixa)
   function band(name, ch, yc, h, t, o = {}) {
@@ -215,7 +211,209 @@ export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot 
     sheet(name, ch, rows, null, (t, s) => .75 + .25 * (.5 + .5 * Math.sin(s * PI * (o.pleats ?? 9) + t * 2)));
   }
 
+  // ================= roupas com caimento (envoltória) =================
+  // O pano não copia o corpo: cada seção do tronco vira o contorno CONVEXO (passa por cima do vão entre
+  // seios, sulcos do cacto, coluna e entre as pernas), cai do ponto mais largo com inclinação limitada
+  // (não "gruda" na cintura) e só é puxado para dentro onde há cinto. Mangas são cones pelo eixo do braço
+  // unidos ao tronco com transição suave. O corpo + folga entra só como piso: a pele nunca atravessa.
+  const hull2 = pts => { pts = pts.slice().sort((a, b) => a[0] - b[0] || a[1] - b[1]); const cr = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]); const lo = [], up = []; for (const p of pts) { while (lo.length >= 2 && cr(lo[lo.length - 2], lo[lo.length - 1], p) <= 0) lo.pop(); lo.push(p) } for (let i = pts.length - 1; i >= 0; i--) { const p = pts[i]; while (up.length >= 2 && cr(up[up.length - 2], up[up.length - 1], p) <= 0) up.pop(); up.push(p) } up.pop(); lo.pop(); return lo.concat(up) };
+  const rayHull = (h, dx, dz) => { let best = 0; for (let i = 0; i < h.length; i++) { const a = h[i], b = h[(i + 1) % h.length], ex = b[0] - a[0], ez = b[1] - a[1], den = dx * ez - dz * ex; if (Math.abs(den) < 1e-9) continue; const t = (a[0] * ez - a[1] * ex) / den, s = (a[0] * dz - a[1] * dx) / den; if (t > 0 && s >= -1e-6 && s <= 1 + 1e-6) best = Math.max(best, t) } return best };
+  function envelope(yTop, yBot, o = {}) {
+    const NA = 96, NY = Math.max(4, Math.ceil((yTop - yBot) / (.025 * clamp(W, 1, 1.3)))), dy = (yTop - yBot) / NY, R = new Float32Array((NY + 1) * NA);
+    const hang = o.hang ?? .3, ease = o.ease ?? .08 * W;
+    let prev = null;
+    for (let i = 0; i <= NY; i++) {
+      const y = yTop - i * dy, raw = [], pts = [];
+      for (let k = 0; k < NA; k++) { const a = -PI + 2 * PI * k / NA, r = radAt(y, a); raw.push(r); pts.push([Math.sin(a) * r, Math.cos(a) * r]) }
+      const h = hull2(pts), row = new Float32Array(NA);
+      for (let k = 0; k < NA; k++) { const a = -PI + 2 * PI * k / NA, rh = h.length > 2 ? rayHull(h, Math.sin(a), Math.cos(a)) || raw[k] : raw[k]; let r = prev ? Math.max(rh, prev[k] - hang * dy) : rh; if (o.cinch) r = lerp(r, rh, (o.cinchK ?? .8) * Math.exp(-(((y - o.cinch) / (o.cinchW ?? .12)) ** 2))); row[k] = r }
+      prev = row;
+      const below = o.flareFrom != null ? Math.max(0, o.flareFrom - y) : 0;
+      for (let k = 0; k < NA; k++) { const a = -PI + 2 * PI * k / NA; R[i * NA + k] = row[k] + ease + (o.flare || 0) * below + (o.folds || 0) * Math.sin(a * (o.foldN || 14) + (o.foldTwist || 0) * y) * Math.min(1, below * 2) + (o.back || 0) * Math.max(0, -Math.cos(a)) * below }
+    }
+    // alisa a tabela (ângulo e altura) para não sobrar degrau de medida
+    const tmp = new Float32Array(R.length);
+    for (let pass = 0; pass < (o.smooth ?? 10); pass++) {
+      if (pass < 5) for (let i = 0; i <= NY; i++) for (let k = 0; k < NA; k++) R[i * NA + k] = Math.max(R[i * NA + k], 0);
+      for (let i = 0; i <= NY; i++) for (let k = 0; k < NA; k++) tmp[i * NA + k] = (R[i * NA + (k + NA - 1) % NA] + 2 * R[i * NA + k] + R[i * NA + (k + 1) % NA]) / 4;
+      for (let i = 0; i <= NY; i++) for (let k = 0; k < NA; k++) { const a = Math.max(0, i - 1), b = Math.min(NY, i + 1); R[i * NA + k] = (tmp[a * NA + k] + 2 * tmp[i * NA + k] + tmp[b * NA + k]) / 4 }
+    }
+    const fn = (x, y, z) => {
+      const ph = Math.atan2(x, z - z0), rho = Math.hypot(x, z - z0);
+      const fy = clamp((yTop - y) / dy, 0, NY), i0 = Math.min(NY - 1, Math.floor(fy)), ty = fy - i0;
+      const fa = (ph + PI) / (2 * PI) * NA, k0 = Math.floor(fa), ta = fa - k0, ka = ((k0 % NA) + NA) % NA, kb = (ka + 1) % NA;
+      const r = lerp(lerp(R[i0 * NA + ka], R[i0 * NA + kb], ta), lerp(R[(i0 + 1) * NA + ka], R[(i0 + 1) * NA + kb], ta), ty);
+      return (rho - r) * .9;
+    };
+    fn.radius = (y, ph) => { const fy = clamp((yTop - y) / dy, 0, NY), i0 = Math.min(NY - 1, Math.floor(fy)), ty = fy - i0, fa = (ph + PI) / (2 * PI) * NA, k0 = Math.floor(fa), ta = fa - k0, ka = ((k0 % NA) + NA) % NA, kb = (ka + 1) % NA; return lerp(lerp(R[i0 * NA + ka], R[i0 * NA + kb], ta), lerp(R[(i0 + 1) * NA + ka], R[(i0 + 1) * NA + kb], ta), ty) };
+    return fn;
+  }
+  const capR = (px, py, pz, a, b, ra, rb) => { const abx = b.x - a.x, aby = b.y - a.y, abz = b.z - a.z, t = clamp(((px - a.x) * abx + (py - a.y) * aby + (pz - a.z) * abz) / (abx * abx + aby * aby + abz * abz), 0, 1); return { d: Math.hypot(px - a.x - abx * t, py - a.y - aby * t, pz - a.z - abz * t) - lerp(ra, rb, t), t } };
+  // Peça com caimento. Retorna o campo sólido (para cintos/detalhes assentarem por cima) e o campo final.
+  function garment(name, ch, slot, o) {
+    const yTop = o.top, yBot = o.bottom, env = envelope(yTop + .15, yBot - .05, o.env || {}), t = o.t ?? .05 * W;
+    let sl = null;
+    if (o.sleeve) {
+      const s0 = S.clone().add(V(-.18 * W, .04, 0)), endT = o.sleeve === 'wrist' ? 1 : o.sleeve === 'forearm' ? .72 : o.sleeve === 'elbow' ? 0 : null;
+      const end = endT != null ? E.clone().lerp(Wr, endT).addScaledVector(dF, endT === 1 ? -.04 : 0) : S.clone().lerp(E, o.short ?? .55);
+      const se = o.sleeve === 'short' ? null : E, dirEnd = o.sleeve === 'short' ? dU : dF, ease = o.sleeveEase ?? .07 * W;
+      const rS = limbR(S.clone().lerp(E, .2), dU) + ease + .04 * W, rE = limbR(E, dF) + ease, rEnd = limbR(end, dirEnd) + ease + (o.bell || 0);
+      const rMid = o.sleeve === 'short' ? lerp(rS, rE, o.short ?? .55) + (o.bell || 0) : rE + (o.bell || 0) * .25;
+      sl = { s0, se, end, dirEnd, rS, rE: rMid, rEnd, puff: o.puff || 0 };
+    }
+    const sleeveF = (ax, y, z) => {
+      if (!sl) return 9;
+      if (!sl.se) { const q = capR(ax, y, z, sl.s0, sl.end, sl.rS, sl.rEnd); return q.d - sl.puff * Math.sin(PI * q.t) }
+      const a = capR(ax, y, z, sl.s0, sl.se, sl.rS, sl.rE), b = capR(ax, y, z, sl.se, sl.end, sl.rE, sl.rEnd);
+      return Math.min(a.d - sl.puff * Math.sin(PI * a.t), b.d);
+    };
+    const solid = (x, y, z) => {
+      const ax = Math.abs(x), as = armSide(ax, y);
+      let d = env(x, y, z);
+      if (as > -.1 * W) d = Math.max(d, as - (o.shoulderPad ?? .1) * W); // o tronco não engole o braço
+      if (sl) d = smin(d, sleeveF(ax, y, z), o.blend ?? .14 * W);
+      d = Math.min(d, bf(x, y, z) - t);
+      if (o.over && as < -.05 * W) d = Math.min(d, o.over(x, y, z) - (o.overGap ?? .09 * W)); // camada de fora: sempre acima da de dentro
+      return d;
+    };
+    const cut = (x, y, z, d) => {
+      const ax = Math.abs(x), as = armSide(ax, y), ph = Math.abs(phiOf(x, z));
+      const neck = y - yTop + (o.vneck ? o.vneck * Math.max(0, 1 - ax / (.28 * W)) * sstep(z0, z0 + .2, z) : 0) + (o.backNeck || 0) * sstep(z0, z0 - .3, z);
+      d = smax(d, neck, .02);
+      d = Math.max(d, sl ? Math.min(yBot - y - (o.hemCurve || 0) * (1 - Math.cos(ph)) * .5, -as - .02 * W) : yBot - y - (o.hemCurve || 0) * (1 - Math.cos(ph)) * .5); // barra (as mangas continuam abaixo dela)
+      if (sl) d = Math.max(d, Math.min(along(ax, y, z, sl.end, sl.dirEnd), as + .1 * W)); else d = Math.max(d, as - (o.shoulderPad ?? .1) * W);
+      if (o.open) d = Math.max(d, (o.open * (o.openTaper ? lerp(1, o.openTaper, clamp((yTop - y) / (yTop - yBot), 0, 1)) : 1) - ph) * .5 * Math.hypot(x, z - z0));
+      return d;
+    };
+    const th = o.thick ?? .09 * W, hollow = !!o.hollow; // oco: só o vão entre (corpo + folga) e a parede interna do pano
+    const field = (x, y, z) => { const s = solid(x, y, z); let d = cut(x, y, z, s); if (hollow) d = Math.max(d, Math.min(-(s + th), bf(x, y, z) - t - .01)); if (o.over && armSide(Math.abs(x), y) < -.05 * W) d = Math.max(d, .012 - o.over(x, y, z)); return d };
+    const pad = (o.env?.flare || 0) * (yTop - yBot) + (o.bell || 0) + .5;
+    const bounds = { x: bx + pad, y0: yBot - .1 - (o.hemCurve || 0), y1: yTop + .25, z0: zA - pad, z1: zB + pad };
+    if (o.split != null) { const sp = o.split; for (const part of ['upper', 'lower']) { const oo = o; activeSlot = part; const f2 = (x, y, z) => { const s = solid(x, y, z); let d = cut(x, y, z, s); d = Math.max(d, part === 'upper' ? sp - .012 - y : y - sp - .012); if (hollow) d = Math.max(d, Math.min(-(s + th), bf(x, y, z) - t - .01)); if (o.over && armSide(Math.abs(x), y) < -.05 * W) d = Math.max(d, .012 - o.over(x, y, z)); return d }; piece(name + (part === 'upper' ? '' : '_Saia'), ch, f2, part === 'upper' ? { ...bounds, y0: sp - .1 } : { ...bounds, y1: sp + .1 }, o.cell) } }
+    else { activeSlot = slot; piece(name, ch, field, bounds, o.cell) }
+    const outer = (x, y, z) => cut(x, y, z, solid(x, y, z));
+    return { solid, outer, env, sl };
+  }
+  // ponto na superfície de um campo, vindo pela frente (ou pela direção ph)
+  const surfAt = (fn, y, ph = 0, off = 0, cx = 0) => { const dx = Math.sin(ph), dz = Math.cos(ph); let r = 2.5 * W + 1.2; for (let k = 0; k < 160; k++) { const d = fn(cx + dx * r, y, z0 + dz * r); if (d < 1e-3) break; r -= Math.max(d * .9, .004); if (r < .01) break } r += off; return V(cx + dx * r, y, z0 + dz * r) };
+  const gradN = (fn, p) => { const e = .02; return V(fn(p.x + e, p.y, p.z) - fn(p.x - e, p.y, p.z), fn(p.x, p.y + e, p.z) - fn(p.x, p.y - e, p.z), fn(p.x, p.y, p.z + e) - fn(p.x, p.y, p.z - e)).normalize() };
+  // cinto/faixa assentado sobre uma peça (não sobre a pele)
+  function beltOn(name, ch, base, yc, h, t, o = {}) {
+    if (onlySlot && onlySlot !== 'belt') return; activeSlot = 'belt';
+    t = Math.max(t, .045 * W);
+    const f = (x, y, z) => { const b0 = base(x, y, z); let d = Math.max(b0 - t, .003 - b0, Math.abs(y - yc - (o.tilt || 0) * Math.abs(x)) - h / 2); if (armSide(Math.abs(x), y) > -.03 * W) d = Math.max(d, .05); return d };
+    piece(name, ch, f, bodyBounds(yc - h - .4, yc + h + .4, .8), o.cell ?? cellBase * .6);
+  }
+  const addGeoS = (slot, ch, g) => { const prev = detailSlot; detailSlot = slot; addGeo(ch, g); detailSlot = prev };
+  function sleeveCuffs(gm, slot, ch, w = .06 * W) {
+    if (!gm.sl || (onlySlot && onlySlot !== slot)) return;
+    mirror(s => { const c = gm.sl.end, d = gm.sl.dirEnd, g = new THREE.TorusGeometry(gm.sl.rEnd + .005, w * .5, 10, 40); addGeoS(slot, ch, orient(g, V(s * c.x, c.y, c.z).addScaledVector(V(s * d.x, d.y, d.z), -w * .4), V(s * d.x, d.y, d.z))) });
+  }
+  // borda (gola, barra) seguindo o contorno da peça numa altura
+  function rim(slot, ch, fn, y, r = .03 * W, o = {}) {
+    if (onlySlot && onlySlot !== slot) return;
+    const pts = [], a0 = o.a0 ?? -PI, a1 = o.a1 ?? PI, n = 96;
+    for (let i = 0; i <= n; i++) { const a = lerp(a0, a1, i / n); const yy = typeof y === 'function' ? y(a) : y; pts.push(surfAt(fn, yy, a, o.off ?? r * .3)) }
+    addGeoS(slot, ch, tubeG(pts, r, 8));
+  }
+  const button = (slot, ch, fn, x, y, r = .05 * W) => { if (onlySlot && onlySlot !== slot) return; const p = surfAt(fn, y, Math.atan2(x, .5), .005); const n = gradN(fn, p); const g = new THREE.SphereGeometry(r, 16, 10); g.scale(1, 1, .45); addGeoS(slot, ch, orient(g, p, n)) };
+  const buckle = (slot, ch, fn, y, w = .2 * W, h = .15 * W) => { if (onlySlot && onlySlot !== slot) return; const p = surfAt(fn, y, 0, .01); const g = new RoundedBoxGeometry(w, h, .035, 3, .015); addGeoS(slot, ch, orient(g, p, V(0, 0, 1))); const g2 = new RoundedBoxGeometry(w * .6, h * .45, .04, 2, .01); addGeoS(slot, 'leather', orient(g2, p.clone().add(V(0, 0, .012)), V(0, 0, 1))) };
+  // calça: perna = cone pelo eixo do quadril ao tornozelo, unida ao corpo com folga (cai reta, sem marcar a coxa)
+  function trousers(name, ch, o) {
+    if (onlySlot && onlySlot !== 'lower') return; activeSlot = 'lower';
+    const yTop = Y(o.top), yBot = A.y + (o.cuff ?? .06) * Lb, ease = o.ease ?? .06 * W;
+    const rH = limbR(H.clone().lerp(K, .25), K.clone().sub(H).normalize()) + ease, rK = limbR(K, A.clone().sub(K).normalize()) + ease + (o.knee || 0), rA2 = limbR(A.clone().lerp(K, .15), A.clone().sub(K).normalize()) + ease + (o.flareLeg || 0);
+    const H2 = H.clone().add(V(0, .05, 0)), A2 = A.clone().add(V(0, -.1, 0));
+    const f = (x, y, z) => {
+      const ax = Math.abs(x); if (armSide(ax, y) > 0) return .5;
+      const a = capR(ax, y, z, H2, K, rH, rK), b = capR(ax, y, z, K, A2, rK, rA2);
+      let d = Math.min(a.d - (o.puff || 0) * Math.sin(PI * a.t), b.d - (o.puff || 0) * Math.sin(PI * b.t) * .6);
+      d = smin(d, bf(x, y, z) - (o.t ?? .045 * W), .12 * W);
+      if (o.under && y > o.under.y) d = Math.max(d, o.under.fn(x, y, z) + .02 * W); // por dentro da túnica: não atravessa
+      return Math.max(d, y - yTop, yBot - y);
+    };
+    piece(name, ch, f, { x: bx + .3, y0: yBot - .2, y1: yTop + .2, z0: zA - .3, z1: zB + .3 }, o.cell);
+    return f;
+  }
+
   // ================= figurinos =================
+  if (style === 'casual') { // túnica com caimento, cinto, calça reta e botas (Cute)
+    const g = garment('Tunica', 'fabric', 'upper', { top: yN + .03, bottom: Y(.5), t: .05 * W, sleeve: 'forearm', sleeveEase: .06 * W, puff: .03 * W, bell: .04 * W, vneck: .1, env: { ease: .08 * W, hang: .25, cinch: Y(.36), cinchK: .55, flareFrom: Y(.38), flare: .18, folds: .012 * W, foldN: 12 }, hemCurve: .03 });
+    sleeveCuffs(g, 'upper', 'trim', .05 * W);
+    rim('upper', 'trim', g.outer, a => yN + .03 - .1 * Math.max(0, Math.cos(a)) ** 6 - .01, .022 * W);
+    rim('upper', 'trim', g.outer, a => Y(.5) + .005 + .03 * (1 - Math.cos(a)) * .5, .022 * W);
+    for (const f of [.11, .17, .23]) button('upper', 'trim', g.outer, 0, Y(f), .045 * W);
+    trousers('Calca', 'secondary', { top: .36, ease: .05 * W, cuff: .18, under: { fn: g.solid, y: Y(.5) + .03 } });
+    boots('Botas', 'leather', { t: .07 * W, h: .2, cuffT: .07 * W, toe: .02 });
+    beltOn('Cinto', 'leather', g.solid, Y(.36), .1 * W, .03 * W);
+    buckle('belt', 'trim', (x, y, z) => g.solid(x, y, z) - .05 * W, Y(.36), .2 * W, .14 * W);
+  }
+
+  if (style === 'royal') { // manto real: túnica longa em A, mangas em sino, gola de arminho, capa e broche
+    const sp = Y(.37);
+    const g = garment('Manto', 'fabric', 'upper', { top: yN + .03, bottom: A.y + .1 * Lb, split: sp, t: .06 * W, sleeve: 'wrist', sleeveEase: .08 * W, bell: .22 * W, vneck: .04, env: { ease: .1 * W, hang: .22, cinch: Y(.36), cinchK: .5, flareFrom: Y(.4), flare: .3, folds: .025 * W, foldN: 11, back: .08 }, hemCurve: .02 });
+    sleeveCuffs(g, 'upper', 'secondary', .1 * W);
+    rim('lower', 'trim', g.outer, A.y + .1 * Lb + .02, .03 * W);
+    if (!onlySlot || onlySlot === 'upper') { // arminho: rolo branco em volta dos ombros com pintinhas
+      const pts = []; for (let i = 0; i <= 96; i++) { const a = -PI + 2 * PI * i / 96, y = yN - .02 - .1 * Math.max(0, Math.cos(a)) ** 4; pts.push(surfAt(g.solid, y, a, .02)) }
+      addGeoS('upper', 'secondary', tubeG(pts, .12 * W, 12));
+      for (let i = 0; i < 14; i++) { const p = pts[Math.round(i / 14 * 96)]; addGeoS('upper', 'leather', sph(p.clone().add(V(0, .1 * W, 0)), .025 * W, 1, 1.6, 1, 8, 6)) }
+    }
+    beltOn('Cinto', 'leather', g.solid, Y(.36), .1 * W, .035 * W);
+    buckle('belt', 'trim', (x, y, z) => g.solid(x, y, z) - .055 * W, Y(.36), .22 * W, .15 * W);
+    if (!onlySlot || onlySlot === 'upper') { const p = surfAt(g.outer, Y(.1), 0, .01); addGeoS('upper', 'trim', orient(new THREE.CylinderGeometry(.11 * W, .11 * W, .04, 28).rotateX(PI / 2), p, V(0, 0, 1))); addGeoS('upper', 'gem', orient(new THREE.OctahedronGeometry(.07 * W, 0).scale(1, 1.25, .5), p.clone().add(V(0, 0, .03)), V(0, 0, 1))) }
+    cape('Capa', 'accent', { top: .02, yBottom: A.y + .02 * Lb, span: 3.3, flare: .55, pleats: 8 });
+    boots('Sapatos', 'leather', { t: .05 * W, h: .07, toe: .04 });
+  }
+
+  if (style === 'inventor') { // jaleco longo aberto sobre colete, gravata, calça e sapatos (alquimista)
+    const vest = garment('Colete', 'secondary', 'upper', { top: yN + .02, bottom: Y(.42), t: .04 * W, vneck: .2, env: { ease: .05 * W, hang: .3 } });
+    for (const f of [.17, .22, .27, .32]) button('upper', 'trim', vest.outer, 0, Y(f), .03 * W);
+    const coat = garment('Jaleco', 'fabric', 'upper', { over: vest.outer, top: yN + .06, bottom: Y(.76), t: .1 * W, sleeve: 'wrist', sleeveEase: .07 * W, bell: .03 * W, open: .3, openTaper: 1.25, hollow: true, cell: cellBase * .8, env: { ease: .14 * W, hang: .2, flareFrom: Y(.4), flare: .12, folds: .012 * W, foldN: 9, back: .03 }, backNeck: -.06 });
+    sleeveCuffs(coat, 'upper', 'fabric', .07 * W);
+    if (!onlySlot || onlySlot === 'upper') {
+      mirror(s => { // lapelas largas dobradas e bolsos
+        const pts = []; for (let i = 0; i <= 20; i++) { const t = i / 20, y = lerp(yN + .02, Y(.3), t), a = s * (.3 * lerp(1, 1.25, (yN + .06 - y) / (yN + .06 - Y(.76))) + .03 + .22 * Math.sin(PI * Math.min(1, t * 1.3))); pts.push(surfAt(coat.solid, y, a, .015)) }
+        addGeoS('upper', 'fabric', tubeG(pts, .045 * W, 8));
+        const pk = surfAt(coat.outer, Y(.48), s * .75, .025); const gp = new RoundedBoxGeometry(.36 * W, .3 * W, .03, 3, .02); addGeoS('upper', 'fabric', orient(gp, pk, V(Math.sin(s * .75), 0, Math.cos(s * .75))));
+        const pk2 = surfAt(coat.outer, Y(.36) + .1 * W, s * .7, .025); addGeoS('upper', 'trim', orient(new RoundedBoxGeometry(.36 * W, .03 * W, .02, 2, .008), pk2, V(Math.sin(s * .7), 0, Math.cos(s * .7))));
+      });
+      const tie = []; for (let i = 0; i <= 10; i++) tie.push(surfAt(vest.outer, lerp(yN - .02, Y(.2), i / 10), 0, .015));
+      addGeoS('upper', 'accent', tubeG(tie, .035 * W, 6));
+    }
+    trousers('Calca', 'secondary', { top: .4, ease: .05 * W, cuff: .1, under: { fn: vest.solid, y: Y(.42) + .03 } });
+    boots('Sapatos', 'leather', { t: .07 * W, h: .1, toe: .05 });
+    beltOn('Cinto', 'leather', vest.solid, Y(.405), .07 * W, .02 * W);
+  }
+
+  if (style === 'cowboy') { // camisa, colete aberto de couro, lenço no pescoço, cinturão de fivela grande, calça e botas
+    const shirt = garment('Camisa', 'fabric', 'upper', { top: yN + .02, bottom: Y(.46), t: .045 * W, sleeve: 'wrist', sleeveEase: .06 * W, puff: .03 * W, vneck: .06, env: { ease: .06 * W, hang: .3, cinch: Y(.39), cinchK: .4 } });
+    sleeveCuffs(shirt, 'upper', 'fabric', .07 * W);
+    const vest = garment('Colete', 'leather', 'upper', { over: shirt.outer, top: yN - .02, bottom: Y(.41), t: .09 * W, open: .28, openTaper: 1.6, hollow: true, cell: cellBase * .7, env: { ease: .12 * W, hang: .25 }, shoulderPad: .02, hemCurve: .05 });
+    if (!onlySlot || onlySlot === 'upper') mirror(s => { const pk = surfAt(vest.outer, Y(.24), s * .62, .006); addGeoS('upper', 'trim', orient(new THREE.TorusGeometry(.06 * W, .012 * W, 6, 5), pk, V(Math.sin(s * .62), 0, Math.cos(s * .62)))); for (let i = 0; i < 3; i++) button('upper', 'trim', vest.outer, s * .3 * W, Y(.25 + i * .05), .03 * W) });
+    rim('upper', 'trim', vest.outer, a => Y(.41) + .005 + .05 * (1 - Math.cos(a)) * .5, .02 * W, { a0: -PI + .1, a1: -.33 });
+    rim('upper', 'trim', vest.outer, a => Y(.41) + .005 + .05 * (1 - Math.cos(a)) * .5, .02 * W, { a0: .33, a1: PI - .1 });
+    if (!onlySlot || onlySlot === 'extras') { // lenço: rolo no pescoço + ponta triangular caindo no peito
+      const pts = []; for (let i = 0; i <= 64; i++) { const a = -PI + 2 * PI * i / 64; pts.push(surfAt(shirt.solid, yN - .04 + .03 * Math.cos(a), a, .03)) } addGeoS('extras', 'secondary', tubeG(pts, .07 * W, 10));
+      const rows = []; for (let i = 0; i <= 10; i++) { const t = i / 10, row = []; for (let j = 0; j <= 10; j++) { const s2 = (j / 10 - .5) * 2 * (1 - t) * .32 * W, y = yN - .06 - t * .3 * W * 1.4; row.push(surfAt(shirt.solid, y, Math.atan2(s2, .6), .05)) } rows.push(row) }
+      sheet('Lenco', 'secondary', rows, null, (t, s2) => .85 + .15 * Math.cos((s2 - .5) * 4));
+    }
+    trousers('Calca', 'pants', { top: .38, ease: .06 * W, cuff: .245, flareLeg: .02 * W, under: { fn: shirt.solid, y: Y(.46) + .03 } });
+    boots('Botas', 'leather', { t: .07 * W, h: .27, cuffT: .1 * W, toe: .05 });
+    const beltBase = (x, y, z) => Math.min(shirt.solid(x, y, z), bf(x, y, z) - .1 * W);
+    beltOn('Cinturao', 'leather', beltBase, Y(.43), .11 * W, .02 * W, { tilt: .06 });
+    buckle('belt', 'trim', (x, y, z) => beltBase(x, y, z) - .035 * W, Y(.43), .3 * W, .22 * W);
+  }
+
+  if (style === 'dress') { // vestido: corpete justo com mangas bufantes curtas e saia rodada com pregas
+    const sp = Y(.34);
+    const g = garment('Vestido', 'fabric', 'upper', { top: yN - .06, bottom: Y(.78), split: sp, t: .035 * W, sleeve: 'short', short: .5, puff: .1 * W, sleeveEase: .06 * W, vneck: .12, env: { ease: .04 * W, hang: .5, cinch: Y(.32), cinchK: .9, flareFrom: Y(.34), flare: .55, folds: .05 * W, foldN: 14 }, hemCurve: .02 });
+    sleeveCuffs(g, 'upper', 'trim', .035 * W);
+    rim('lower', 'trim', g.outer, Y(.78) + .02, .025 * W);
+    beltOn('Faixa', 'secondary', g.solid, Y(.33), .1 * W, .025 * W);
+    boots('Sapatos', 'leather', { t: .04 * W, h: .06, toe: .03 });
+  }
+
   if (style === 'circus') {
     // macacão listrado (creme / vermelho / azul em faixas verticais) em balão, franzido no tornozelo
     const sw = .3 * W, stripe = k => (x, y, z) => { const u = (x / sw + 30.5) % 3, c = k + .5; let dd = Math.abs(u - c); dd = Math.min(dd, 3 - dd); return (dd - .5) * sw };
