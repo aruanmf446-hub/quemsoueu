@@ -12,7 +12,7 @@ A seção **Corpo** oferece os controles **Peso** e **Músculo** e os atalhos **
 
 O cache do corpo diferencia personagem, densidade, escala da cabeça, cauda, peso e músculo e conserva até 64 geometrias. As roupas consultam esse campo individual: barrigas empurram o tecido, braços mais fortes alargam mangas e a cintura magra afina os cintos. Saiotes também consideram as coxas abaixo da cintura. Peças largas usam uma grade inicial maior, refinamento da superfície e projeção no campo; cintos e tiras finas mantêm a grade direta. Coletes, gibões e jalecos recortam primeiro a face externa e depois criam avesso e bordas fechadas, com normais independentes; isso evita perder paredes finas na malhagem volumétrica. Amostras compartilhadas entre blocos e coeficientes fixos dos membros reduzem o custo sem alterar o campo. No visualizador, a célula do corpo é `.032 × clamp(W,1,1.3)`; a exportação usa `.036`.
 
-O status e `await window.__atelie.setBuild(...)` abrangem corpo **e** roupas; `bodyTiming()` expõe a última medição em milissegundos. As referências faciais continuam intactas durante essa operação. `node tests/tipos-fisicos.mjs` verifica juntas, emenda, cache e volume crescente de magro → padrão → gordo nos 23 corpos humanoides. O robô conserva seu casco; lobo e corvo usam malhas próprias.
+O status e `await window.__atelie.setBuild(...)` abrangem corpo **e** roupas; `bodyTiming()` expõe a última medição em milissegundos. As referências faciais continuam intactas durante essa operação. `node tests/tipos-fisicos.mjs` verifica juntas, emenda, cache e volume crescente de magro → padrão → gordo nos 28 corpos humanoides. O robô conserva seu casco; lobo, corvo e feneco usam malhas próprias.
 
 ## Ver no navegador
 https://aruanmf446-hub.github.io/quemsoueu/
@@ -27,10 +27,10 @@ Para rodar localmente, sirva a pasta com qualquer servidor estático (ex.: `pyth
 - **Relevo do rosto** sobre essa base: planos de estrutura (zigomático, cavado abaixo dele, têmporas), órbitas, arcada, prega da pálpebra, nariz com ponte / ponta / asas / narinas, **lábios paramétricos com arco do cupido**, filtro, cantos da boca, sulco do queixo, maçãs e dobra nasolabial.
 - **Olhos**: a pele envolve o globo (pálpebras na própria malha, abertura recortada nela), **íris côncava sob a córnea** (profundidade e brilho), íris procedural com fibras e luz entrando por baixo, carúncula no canto interno, linha d'água, **delineado com asa** e **tufos de cílios** curvados; sobrancelhas espessas e afinadas na cauda.
 - **Pele**: variação orgânica de tom (manchas suaves por ruído, testa mais clara, nariz/maçãs/orelhas mais rosados, olheira sutil, barba sombreada no masculino), blush ajustável por preset nas maçãs e na ponta do nariz, microrrelevo no shader que quebra o brilho como pele real, zona T e lábios mais brilhantes, segunda camada especular suave, "wrap" avermelhado no terminador (falso espalhamento subsuperficial), oclusão por cavidade e sombras suaves projetadas.
-- **26 personagens em 4 famílias** (inclui o Rei), trocados por botões agrupados:
-  - **Humanos**: `feminine_soft`, `masculine_soft`, `cute_round`, `feminine_bold`, `alchemist_villain` (rosto longo, queixo pontudo, nariz adunco, sorriso torto, olheiras), `dwarf_bard` (nariz grande, barba e bigode, orelhas pontudas), `sad_clown` (pintura branca, marcas azuis, nariz bola, boca caída), `old_king`, `nana_explorer`, `moon_guardian`, `nico_inventor`, `ruby_sorceress` e as sete identidades da floresta descritas abaixo.
-  - **Criaturas**: `orc_warrior` (testa pesada, olhos amarelos, presas, orelhas pontudas, barba, mandíbula larga), `paysandu_wolf` e `ruby_raven` (companheiros com geradores próprios).
-  - **Vegetais** (forma própria por perfil girado — `lathe` —, sem o molde de cabeça humana; olhos saltados; cor acompanhando o relevo): `cactus_cowboy` (coluna com cúpula, 8 nervuras e espinhos, olhar sonolento, sorriso de canto), `pepper_king` (pimentão de 4 gomos com covinha e talo no topo, bigode de guidão, cavanhaque), `chili_bandit` (pimenta afinando para baixo, olhos arregalados, sorriso aberto com dentes e língua para fora).
+- **33 personagens em 4 famílias** (inclui o Rei), trocados por botões agrupados:
+  - **Humanos**: `feminine_soft`, `masculine_soft`, `cute_round`, `feminine_bold`, `alchemist_villain` (rosto longo, queixo pontudo, nariz adunco, sorriso torto, olheiras), `dwarf_bard` (nariz grande, barba e bigode, orelhas pontudas), `sad_clown` (pintura branca, marcas azuis, nariz bola, boca caída), `old_king`, `nana_explorer`, `moon_guardian`, `nico_inventor`, `ruby_sorceress` as sete identidades da floresta descritas abaixo, `bread_baker` e `bread_vigilante`.
+  - **Criaturas**: `orc_warrior` (testa pesada, olhos amarelos, presas, orelhas pontudas, barba, mandíbula larga), `paysandu_wolf`, `ruby_raven`, `desert_fennec` e `cowboy_on_fennec` (companheiros com geradores próprios).
+  - **Vegetais** (forma própria por perfil girado — `lathe` —, sem o molde de cabeça humana; olhos saltados; cor acompanhando o relevo): `cactus_cowboy` (coluna com cúpula, 8 nervuras e espinhos, olhar sonolento, sorriso de canto), `pepper_king` (pimentão de 4 gomos com covinha e talo no topo, bigode de guidão, cavanhaque), `chili_bandit` (pimenta afinando para baixo, olhos arregalados, sorriso aberto com dentes e língua para fora), `frontier_cowboy`, `cactus_soldier` e `cactus_soldier_large`.
   - **Robôs**: `robot_ball` (casco com faixas e painéis, tela curva com rosto em luz, orelhas com anel brilhante) — gerador próprio em `src/robot.js`.
 - **Peças reutilizáveis** que qualquer personagem novo pode ligar por parâmetro: forma por perfil girado (`lathe`: largura por altura, achatamento, tampa arredondada, covinha), padrão de superfície (`pattern`: nervuras ou gomos), `spines`, `stem` (talo + cálice), orelha pontuda (`earPoint`, `earTipA`, `earFlare`) ou sem orelha (`earType: 'none'`), nariz bola ou sem nariz (`noseType`), barba esculpida (`beardVol`), bigode (`stache`), cavanhaque (`goatee`), presas (`tusks`), pintura facial (`paint`), boca aberta com dentes e língua (`open`, `teeth`, `tongue`), sorriso torto (`smirk`), sorriso invertido (`smile` negativo), olheira colorida (`bag`), pele brilhante/encerada (`skinGloss`, `clearcoat`), cor de espalhamento da pele (`sss`).
 - **Rig facial híbrido (ossos + blendshapes esculpidos)**, exportado no GLB como *skin* + *morph targets* padrão glTF (Unity, Unreal, Godot, three.js):
@@ -101,7 +101,7 @@ python3 -m http.server 8000
 node tests/visuais.cjs
 ```
 
-O teste geométrico percorre os 22 conjuntos e todas as peças compatíveis nos 23 corpos humanoides, além das malhas dos dois companheiros. Verifica índices, posições, normais completas no avesso, troca de cor, preservação da pele e manutenção dos outros slots; registra o p95 das trocas em cache. O teste de navegador gera renders de frente e 3/4 dos 26 personagens em `renders/`, valida nós, escala da cabeça, skin, blendshapes e clipes do GLB, testa todas as peças e cores, a independência dos slots, a preservação da pele e a opção de ocultar o corpo. Ele intercepta o CDN para usar o Three.js local e reduz apenas no teste a sombra para 1024 px, com renderização sob demanda, para rodar em SwiftShader. A produção mantém sombras de 4096 px e animação contínua.
+O teste geométrico percorre os 26 conjuntos e todas as peças compatíveis nos 28 corpos humanoides, além das quatro entradas de companheiros (incluindo a montaria). Verifica índices, posições, normais completas no avesso, troca de cor, preservação da pele e manutenção dos outros slots; registra o p95 das trocas em cache. O teste de navegador gera renders de frente e 3/4 dos 33 personagens em `renders/`, valida nós, escala da cabeça, skin, blendshapes e clipes do GLB, testa todas as peças e cores, a independência dos slots, a preservação da pele e a opção de ocultar o corpo. Ele intercepta o CDN para usar o Three.js local e reduz apenas no teste a sombra para 1024 px, com renderização sob demanda, para rodar em SwiftShader. A produção mantém sombras de 4096 px e animação contínua.
 
 Para gerar também os closes dos acessórios, rode `ATELIE_CLOSEUPS=1 node tests/visuais.cjs`. O teste percorre todos os modelos e canais de cor disponíveis nos slots de acessórios. O visual continua pendente da avaliação do usuário; a validação automática verifica funcionamento e integridade, não aprovação estética.
 
@@ -289,3 +289,34 @@ node tests/floresta.cjs
 O teste da floresta reutiliza a regressão do catálogo: frente, 3/4, costas, rosto e base sem roupa/acessórios; cores e peças em cache; expressões, miniaturas no Worker e GLB com 12 clipes e 11 blendshapes. A galeria fica em `renders/floresta/index.html`, ou na pasta definida em `ATELIE_RENDERS`.
 
 Verificação das primeiras versões da floresta: 22 conjuntos nos 23 corpos humanoides; 69 casos de cobertura, 904.506 vértices consultados e zero falhas. A regressão dos 26 personagens passou com renders de frente e 3/4 e exportação GLB, sem erros de console. Os sete novos personagens também têm capturas de costas, rosto e base sem equipamento; peças em cache abaixo de 500 ms e prévias no Worker. Estes resultados validam o funcionamento; os sete itens continuam pendentes de refinamento e aprovação visual.
+
+
+## Deserto — skins separadas, combinação e refinamento posterior
+
+Sete primeiras versões procedurais das novas referências, reaproveitando o Ateliê. Todas permanecem **pendentes de refinamento e aprovação visual**, por etapas: malha → rosto → corpo → roupas e acessórios.
+
+- [ ] **Cowboy do deserto** (`frontier_cowboy`): identidade independente derivada do cacto; chapéu, lenço, poncho, couro e bolsas. Refinar depois o corte do colete, franjas, cinturão, botas e ornamentos. O cacto pistoleiro anterior permanece intacto.
+- [ ] **Feneco do deserto** (`desert_fennec`): quadrúpede dourado, focinho claro, orelhas grandes e cauda; sela, alforjes, estribos e manta removíveis. Refinar depois anatomia do feneco, pelagem, arreios e acabamento da sela.
+- [ ] **Cowboy no feneco** (`cowboy_on_fennec`): combinação dos dois, com o rosto real do cowboy e uma base sentada própria para montaria. Refinar depois o encaixe de mãos, rédeas, pernas, estribos e sela. Não há animação de cavalgada nesta etapa.
+- [ ] **Padeiro** (`bread_baker`): camisa clara, chapéu branco, avental independente, faixa laranja, botas e pão. Refinar depois a bombacha, mangas dobradas, bordados, pão e utensílios.
+- [ ] **Vigilante** (`bread_vigilante`): a mesma identidade/rosto/corpo do padeiro, com outra skin: túnica e manto escuros, capuz, máscara e cristal de âmbar. Refinar depois recortes do capuz, luvas, faixas e detalhes. Efeitos de fogo ficam para outra etapa.
+- [ ] **Soldado cacto** (`cactus_soldier`): porte normal, uniforme vermelho e dourado, elmo, capa, escudo e lança. Refinar depois placas de armadura, penacho, brasão de chama e escudo.
+- [ ] **Soldado cacto grande** (`cactus_soldier_large`): mesma família de uniforme, com corpo novo mais alto e largo; peças medidas para esse porte. Refinar depois a silhueta pesada, ombreiras e equipamento proporcional.
+
+### Separar e combinar
+
+Em **Personagem → Criaturas**, há cartões separados para **Feneco do deserto** e **Cowboy no feneco**. Em **Acessórios → Cabeça**, o feneco pode alternar entre **Nenhum**, **Sela e bolsas do feneco** e **Cowboy montado no feneco**. O cowboy continua disponível sozinho em **Personagem → Vegetais**. Remover o equipamento remove também o cavaleiro; não duplica nem altera o personagem independente.
+
+Padeiro e vigilante aparecem em **Personagem → Humanos**, com visuais salvos separadamente. Os dois derivam do mesmo preset facial e usam o mesmo corpo. Seus conjuntos, peças, capuz e chapéu também podem ser combinados pelo catálogo. O avental é uma peça independente em **Roupas → Capa / manto**; chapéu e capuz ficam em **Acessórios → Cabeça**. Soldado normal e grande ficam em **Vegetais**: são dois portes próprios, sem mudar os corpos anteriores.
+
+`src/frontier.js` centraliza as identidades e quatro figurinos novos. As roupas usam `garment`, `trousers`, `beltOn` e cache por corpo/peça; cores continuam ao vivo por slot. O feneco usa a base procedural de companheiro, com rig simples de expressões. A combinação exporta o feneco e o cavaleiro no mesmo GLB, com nomes de ossos do cavaleiro prefixados para evitar conflito de animação. Equipamento é estático; não há efeitos mágicos, disparos ou locomoção nesta primeira versão.
+
+```sh
+node tests/figurinos.mjs
+# Servidor na porta 8000:
+node tests/deserto.cjs
+```
+
+A suíte do deserto gera frente, 3/4, costas, rosto e base sem equipamento; verifica peças em cache, cores, expressões, Worker e GLB. Capturas para avaliação ficam em `renders/deserto/`, ou em `ATELIE_RENDERS`.
+
+Verificação das skins do deserto: 26 conjuntos nos 28 corpos humanoides; 84 casos de cobertura consultaram 1.280.495 vértices, sem falhas. Juntas, encaixe do pescoço e volume crescente nos tipos físicos passaram; a malha do soldado grande é mais alta e larga que a normal. As sete novas skins exportaram GLB com 12 clipes, geraram prévias no Worker e passaram na troca de peças e cores em cache abaixo de 500 ms. A regressão de navegador (`ATELIE_SOMENTE_RENDERS=1`) reúne frente e 3/4 dos 33 personagens, sem erros de console. Há também costas, rosto e base sem equipamento dos sete novos. Todos continuam pendentes de refinamento e aprovação visual.
