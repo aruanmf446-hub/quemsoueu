@@ -451,7 +451,7 @@ export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot 
     sleeveCuffs(g,'upper',baker?'secondary':'leather',.07*W);
     bootFinish(.22);
     let capeSupport=g.env;
-    if(cowboy){const vest=garment('Colete_viajante','leather','upper',{top:yN+.04,bottom:Y(.45),sleeve:null,open:.25,openTaper:.7,hollow:true,over:g.solid,overGap:.06*W,t:.065*W,env:{ease:.11*W,hang:.35,cinch:Y(.33),cinchK:.86}});edgeTube(vest,'open','trim','upper',.018*W);edgeTube(vest,'arm','lining','upper',.02*W);capeSupport=vest.solid;for(const side of [-1,1])pocketOn('upper',vest.solid,.28,side*.59,.19*W,.15*W);}
+    if(cowboy){const vest=garment('Colete_viajante','leather','upper',{top:yN+.04,bottom:Y(.45),sleeve:null,open:.25,openTaper:.7,hollow:true,over:g.solid,overGap:.06*W,t:.065*W,env:{ease:.11*W,hang:.35,cinch:Y(.33),cinchK:.86}});edgeTube(vest,'open','trim','upper',.018*W);edgeTube(vest,'arm','lining','upper',.02*W);capeSupport=(x,y,z)=>Math.min(g.env(x,y,z),vest.env(x,y,z)-.05*W);for(const side of [-1,1])pocketOn('upper',vest.solid,.28,side*.59,.19*W,.15*W);}
     if(watch)for(const side of [-1,1]){seamOn('upper','lining',g.solid,.1,.58,t=>side*(.55-.1*Math.sin(PI*t)),.016*W);pocketOn('belt',g.solid,.37,side*.78,.17*W,.23*W)}
     rim('upper','trim',g.outer,Y(hem)+.015,.018*W);
     trousers('Calca_deserto','pants',{top:.35,ease:.06*W,cuff:.07,under:{fn:g.solid,y:Y(hem)+.03}});
@@ -500,7 +500,7 @@ export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot 
     });
     sleeveCuffs(g,'upper',princess?'trim':'leather',.055*W);bootFinish(princess?.06:.23);
     let capeSupport=g.env;
-    if(archer||artificer){const vest=garment('Gibao_floresta','leather','upper',{top:yN+.025,bottom:Y(artificer?.44:.38),sleeve:null,open:.30,openTaper:.75,hollow:true,over:g.solid,overGap:.055*W,t:.07*W,env:{ease:.10*W,hang:.32,cinch:Y(.32),cinchK:.9}});edgeTube(vest,'open','trim','upper',.016*W);edgeTube(vest,'arm','trim','upper',.016*W);capeSupport=vest.solid;for(const side of [-1,1]){pocketOn('belt',g.solid,.38,side*.7,.21*W,.26*W);seamOn('upper','trim',vest.solid,.07,.34,t=>side*(.55+.06*Math.sin(PI*t)),.009*W)}}
+    if(archer||artificer){const vest=garment('Gibao_floresta','leather','upper',{top:yN+.025,bottom:Y(artificer?.44:.38),sleeve:null,open:.30,openTaper:.75,hollow:true,over:g.solid,overGap:.055*W,t:.07*W,env:{ease:.10*W,hang:.32,cinch:Y(.32),cinchK:.9}});edgeTube(vest,'open','trim','upper',.016*W);edgeTube(vest,'arm','trim','upper',.016*W);capeSupport=(x,y,z)=>Math.min(g.env(x,y,z),vest.env(x,y,z)-.05*W);for(const side of [-1,1]){pocketOn('belt',g.solid,.38,side*.7,.21*W,.26*W);seamOn('upper','trim',vest.solid,.07,.34,t=>side*(.55+.06*Math.sin(PI*t)),.009*W)}}
     if(guard||artificer)pauldrons(g,false);
     rim('upper','trim',g.outer,a=>yN+.075-.08*Math.max(0,Math.cos(a))**6,.017*W);
     rim(princess?'lower':'upper','trim',g.outer,Y(hem)+.012,.018*W);

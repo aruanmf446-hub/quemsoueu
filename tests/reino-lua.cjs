@@ -56,6 +56,7 @@ for(const id of (process.env.ATELIE_PERSONAGENS?.split(',')||ids)){
   await page.evaluate(()=>{const a=window.__atelie;a.editor.previews.paused=false;a.editor.select('expressions','ready')});
   await page.locator('#exprs [data-expr="feliz"] [data-ready="true"]').waitFor();
   await page.evaluate(()=>window.__atelie.editor.previews.pause());
+  assert.deepEqual(errors,[]);fs.writeFileSync(path.join(out,'parcial.json'),JSON.stringify({reports,errors},null,2));
 }
 assert.deepEqual(errors,[]);
 // Uma repetição filtrada atualiza só os personagens afetados, preservando as outras capturas verificadas.
