@@ -4,6 +4,9 @@
 // Cores por material (metal, pedra principal, pedras menores, chapéu, flores) → trocar cor é instantâneo.
 import * as THREE from 'three';
 import { crescent } from './lunar.js';
+import {clothSurface} from './fabric.js';
+import {badge,tuft,buckleGeo,gear} from './detail.js';
+import {leafGeo} from './forest.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
@@ -21,6 +24,8 @@ export const ACC_COLORS = {
 };
 export const ACC_SLOTS = [{ id: 'head', label: 'Cabeça' }, { id: 'ears', label: 'Orelhas' }, { id: 'forehead', label: 'Testa' }, { id: 'hairpin', label: 'Enfeite de cabelo' }, { id: 'face', label: 'Rosto' }];
 export const ACCESSORIES = {
+  leaf_crown:{slot:'head',label:'Coroa de folhas',colors:['metal','gem','gem2']},
+  frontier_hat:{slot:'head',label:'Chapéu de viajante do deserto',colors:['fabric','metal']},
   chef_hat:{slot:'head',label:'Chapéu de padeiro',colors:['fabric']},
   vigilante_hood:{slot:'head',label:'Capuz e máscara do vigilante',colors:['fabric','metal']},
   guard_helmet:{slot:'head',label:'Elmo do soldado',colors:['fabric','metal','gem']},
@@ -85,6 +90,7 @@ export function buildAccessories(fit, sel = {}, cols = {}, hairMeshes = []) {
     gem2: new THREE.MeshPhysicalMaterial({ name: 'Acc_Gem2', color: cols.gem2 || '#2fa6c9', metalness: 0, roughness: .06, clearcoat: 1, clearcoatRoughness: .02, specularIntensity: 1, ior: 2.2, flatShading: true }),
     pearl: new THREE.MeshPhysicalMaterial({ name: 'Acc_Pearl', color: '#f4eee2', roughness: .25, sheen: 1, sheenColor: new THREE.Color('#ffe8f0'), clearcoat: .8 }),
     fabric: new THREE.MeshPhysicalMaterial({ name: 'Acc_Fabric', color: cols.fabric || '#6b4228', roughness: .82, sheen: .5, sheenRoughness: .6, sheenColor: new THREE.Color('#ffffff').multiplyScalar(.25) }),
+    plume: new THREE.MeshPhysicalMaterial({name:'Acc_Penacho',color:cols.gem||'#a82c2b',roughness:.87,sheen:.6}),
     band: new THREE.MeshPhysicalMaterial({ name: 'Acc_Band', color: new THREE.Color(cols.fabric || '#6b4228').multiplyScalar(.45), roughness: .7 }),
     flower: new THREE.MeshPhysicalMaterial({ name: 'Acc_Flower', color: cols.flower || '#f6f1e6', roughness: .55, sheen: .6, sheenColor: new THREE.Color('#ffffff') }),
     pollen: new THREE.MeshPhysicalMaterial({ name: 'Acc_Pollen', color: '#e8b52c', roughness: .7 }),
@@ -94,7 +100,7 @@ export function buildAccessories(fit, sel = {}, cols = {}, hairMeshes = []) {
   };
   const setColors = c => {
     if (c.metal) mats.metal.color.set(c.metal);
-    if (c.gem) { mats.gem.color.set(c.gem); mats.liquid.color.set(c.gem); mats.liquid.emissive.set(c.gem) }
+    if (c.gem) { mats.gem.color.set(c.gem); mats.liquid.color.set(c.gem); mats.liquid.emissive.set(c.gem);mats.plume.color.set(c.gem) }
     if (c.gem2) {mats.gem2.color.set(c.gem2);mats.visor.color.set(c.gem2)}
     if (c.fabric) { mats.fabric.color.set(c.fabric); mats.band.color.set(c.fabric).multiplyScalar(.45) }
     if (c.flower) mats.flower.color.set(c.flower);
@@ -168,7 +174,7 @@ export function buildAccessories(fit, sel = {}, cols = {}, hairMeshes = []) {
     }
     for(let i=0;i<64;i++){const a=i/64*Math.PI*2;for(const dy of [.012,.11])add('metal',sphere(R.at(a).add(V(0,dy,0)).addScaledVector(R.out(a),.015),.008,1,1,1,8,6))}
   }
-  if (head === 'tiara' || head === 'moon_crown') {
+  if (head === 'tiara' || head === 'moon_crown' || head==='leaf_crown') {
     const R = ring(top - (hasHair ? .17 : .2), -.15, .006), span = 105 * DEG, pts = [];
     for (let i = 0; i <= 80; i++) pts.push(R.at(-span + 2 * span * i / 80));
     add('metal', tube(pts, .011, 8));
@@ -184,8 +190,8 @@ export function buildAccessories(fit, sel = {}, cols = {}, hairMeshes = []) {
     for (const s of [-1, 1]) add('gem2', gemGeo(c.clone().add(V(s * .085, .07, .03)), .026, o, 1.3));
     add('pearl', sphere(c.clone().add(V(0, .235, .03)), .02)); add('gem2', gemGeo(c.clone().add(V(0, .27, .03)), .022, o, 1.6));
   }
-  if (head === 'cowboy') {
-    const y0 = top - (P.lathe ? .42 : .36), R = ring(y0, -.05, .02), Hc = .42, Wb = .42;
+  if (head === 'cowboy' || head === 'frontier_hat') {
+    const y0 = top - (P.lathe ? .42 : .36), R = ring(y0, -.05, .02), Hc = head==='frontier_hat'?.51:.42, Wb = head==='frontier_hat'?.56:.42;
     // copa: do anel até o topo com vinco central e "beliscões" na frente
     const NA = 72, NV = 16, cpos = [], cidx = [];
     for (let j = 0; j <= NV; j++) for (let i = 0; i <= NA; i++) {
@@ -219,7 +225,8 @@ export function buildAccessories(fit, sel = {}, cols = {}, hairMeshes = []) {
     add('band', tube(bandP, .035, 8).scale(1, 1, 1));
     const f = R.at(0).add(V(0, .05, .04)), star = new THREE.Shape(); for (let k = 0; k < 16; k++) { const a = k / 16 * Math.PI * 2, r = k % 2 ? .022 : .055; k ? star.lineTo(Math.sin(a) * r, Math.cos(a) * r) : star.moveTo(Math.sin(a) * r, Math.cos(a) * r) }
     const sg = new THREE.ExtrudeGeometry(star, { depth: .01, bevelEnabled: true, bevelThickness: .004, bevelSize: .004, bevelSegments: 3 }); add('metal', place(sg, f, V(0, 0, 1)));
-    { const g = new THREE.TorusGeometry(.06, .009, 6, 24); add('metal', place(g, f.clone().add(V(0, 0, -.002)), V(0, 0, 1))) }
+    { const g = new THREE.TorusGeometry(head==='frontier_hat'?.13:.06, .009, 6, head==='frontier_hat'?40:24); add('metal', place(g, f.clone().add(V(0, 0, -.002)), V(0, 0, 1))) }
+    if(head==='frontier_hat'){const g=badge('star',.115,.018);g.translate(f.x,f.y,f.z+.015);add('metal',g)}
   }
   if (head === 'tophat') { // cartolinha inclinada sobre um lado
     const base = V(-.26, 0, zc + .05); let y = top + .6; // apoia na superfície (pele ou cabelo) logo abaixo
@@ -310,9 +317,15 @@ export function buildAccessories(fit, sel = {}, cols = {}, hairMeshes = []) {
   }
 
   // Elementos lunares reaproveitam a medição externa do cabelo e as órbitas do rosto.
+  if(head==='leaf_crown'){
+    const R=ring(top-.29,-.04,.03);
+    for(let i=0;i<13;i++){const a=-1.2+i*.2,p=R.at(a),g=leafGeo(.09+(i===6?.05:0),.018);g.rotateZ((i%2?1:-1)*.5);add('metal',place(g,p.clone().add(V(0,.10,0)),V(Math.sin(a),0,Math.cos(a))));if(i%2===0)add('gem2',gemGeo(p.clone().add(V(0,.025,.015)),.035,V(Math.sin(a),0,Math.cos(a)),1.35))}
+    const p=R.at(0).add(V(0,.11,.025));add('gem',gemGeo(p,.07,V(0,0,1),1.5));
+  }
   if(head==='moon_crown'){
     const R=ring(top-.3,-.08,.025),p=R.at(0).add(V(0,.17,.015)),g=crescent(.2,.035);g.translate(...p.toArray());add('metal',g);
     add('gem2',gemGeo(p.clone().add(V(.045,0,.025)),.055,V(0,0,1),1.25));
+    for(const side of [-1,1]){const q=R.at(side*.63).add(V(0,.11,.02)),m=crescent(.11,.022);m.rotateZ(side*.3);add('metal',place(m,q,V(Math.sin(side*.63),0,Math.cos(side*.63))));add('gem',gemGeo(q.clone().add(V(0,.12,0)),.035,V(side*.4,0,1),1.5));}
   }
   if(head==='goggles'){
     const R=ring(top-.3,-.06,.04),band=[];for(let i=0;i<=80;i++)band.push(R.at(i/80*Math.PI*2));add('band',tube(band,.026));
@@ -327,6 +340,7 @@ export function buildAccessories(fit, sel = {}, cols = {}, hairMeshes = []) {
 
   if(sel.face==='monocle'&&fit.eyes?.length){
     const e=fit.eyes.find(e=>e.x<0)||fit.eyes[0],r=e.R*1.25,p=V(e.x,e.y,e.z+e.R+.08),g=new THREE.TorusGeometry(r,.022,10,48);g.translate(...p.toArray());add('metal',g);
+    const cog=gear(r*1.16,.021);cog.translate(p.x,p.y,p.z-.017);add('metal',cog);
     const glass=new THREE.CircleGeometry(r*.9,40);glass.translate(p.x,p.y,p.z);add('visor',glass);
     const chain=[p.clone().add(V(-r,0,0)),p.clone().add(V(-r-.06,-.2,-.01)),p.clone().add(V(-r-.04,-.36,-.1))];add('metal',tube(chain,.008));
     add('gem2',sphere(p.clone().add(V(-r,0,.02)),.035));
@@ -334,29 +348,31 @@ export function buildAccessories(fit, sel = {}, cols = {}, hairMeshes = []) {
 
   // Chapéus do deserto: somente modelos novos, sem alterar os encaixes anteriores.
   if(sel.head==='chef_hat'){
-    const y=fit.top+.06;
-    add('fabric',sphere(V(0,y+.23,0),.64,1,.58,.8));
-    for(let i=0;i<7;i++){const a=i/7*Math.PI*2;add('fabric',sphere(V(Math.sin(a)*.35,y+.36,Math.cos(a)*.27),.31,1,.85,1))}
-    const band=new THREE.CylinderGeometry(.53,.55,.18,48,1,true);band.scale(1,1,.85);band.translate(0,y,0);add('fabric',band);
+    const y=top-.20,R=ring(y,-.04,.025),profile=t=>{const pts=[[0,1],[.18,1.10],[.47,1.18],[.72,1.0],[.9,.64],[1,.035]];let i=1;while(t>pts[i][0])i++;const a=pts[i-1],b=pts[i],u=sstep(a[0],b[0],t);return a[1]+(b[1]-a[1])*u};
+    add('fabric',clothSurface(48,120,(t,u)=>{const ph=u*Math.PI*2,p=R.at(ph),r=Math.hypot(p.x,p.z-zc)*profile(t)+.014*Math.sin(ph*24)*Math.sin(Math.PI*t);return V(Math.sin(ph)*r,y+1.0*t,zc+Math.cos(ph)*r)},{closed:true,thickness:.025}));
+    for(const dy of [0,.12])add('fabric',tube(Array.from({length:97},(_,i)=>R.at(i/96*Math.PI*2).add(V(0,dy,0))),.018));
   }
   if(sel.head==='guard_helmet'){
-    const y=fit.top-.2,helm=new THREE.SphereGeometry(.92,48,24,0,Math.PI*2,0,Math.PI*.48);helm.scale(1,.58,.84);helm.translate(0,y,0);add('fabric',helm);
-    const brim=new THREE.TorusGeometry(.9,.035,10,64);brim.rotateX(Math.PI/2);brim.scale(1,1,.84);brim.translate(0,y,0);add('metal',brim);
-    for(let i=0;i<9;i++)add('gem',sphere(V(0,y+.53+Math.sin(i/8*Math.PI)*.3,-.45+i*.11),.13,.6,1.8,1));
-    const badge=new THREE.OctahedronGeometry(.13);badge.translate(0,y+.28,.7);add('metal',badge);
+    mats.fabric.metalness=.5;mats.fabric.roughness=.4;mats.fabric.clearcoat=.25;
+    const y=top-.34,R=ring(y,-.05,.035),point=(t,u)=>{const ph=u*Math.PI*2,p=R.at(ph),r=Math.hypot(p.x,p.z-zc)*Math.cos(t*Math.PI*.49);return V(Math.sin(ph)*r,y+.59*Math.sin(t*Math.PI*.5),zc+Math.cos(ph)*r)};
+    add('fabric',clothSurface(36,120,point,{closed:true,thickness:.055}));
+    add('metal',tube(Array.from({length:121},(_,i)=>point(.02,i/120)),.027));
+    for(const side of [-1,1]){const p=R.at(side*1.18),g=new THREE.Shape();g.moveTo(-.11,.05);g.lineTo(.11,.05);g.lineTo(.085,-.43);g.quadraticCurveTo(0,-.52,-.09,-.43);g.closePath();const plate=new THREE.ExtrudeGeometry(g,{depth:.04,bevelEnabled:true,bevelSize:.018,bevelThickness:.012,bevelSegments:3});add('metal',place(plate,p,V(side,0,.3)))}
+    const f=R.at(0).add(V(0,.18,.035)),mark=badge('flame',.15,.025);mark.translate(...f.toArray());add('metal',mark);
+    for(let i=0;i<15;i++)add('plume',tuft(V(0,y+.48,-.42+i*.055),V(0,y+.86+.20*Math.sin(i/14*Math.PI),-.57+i*.045),.085,.04,.08));
+    for(let i=0;i<12;i++){const p=R.at(i/12*Math.PI*2).add(V(0,.045,0));add('metal',sphere(p,.019,1,1,.65))}
   }
   if(sel.head==='vigilante_hood'){
-    // Capuz aberto na frente: a máscara cobre só a boca, deixando olhos e sobrancelhas livres.
-    const g=new THREE.SphereGeometry(.96,48,32,Math.PI*.85,Math.PI*1.3,0,Math.PI*.76);g.scale(1,1.27,.88);g.translate(0,.19,-.02);add('fabric',g);
-    const mask=new THREE.PlaneGeometry(1.15,.55,32,16),mp=mask.attributes.position;
-    for(let i=0;i<mp.count;i++){const yy=mp.getY(i),x=mp.getX(i)*(.88+.12*(yy/.55+.5)),y=P.mouthY+yy;mp.setXYZ(i,x,y,fit.surfZ(x,y)+.04+.012*Math.cos(x*18))}mask.computeVertexNormals();add('fabric',mask);
-    const edge=[V(-.79,-.5,.4),V(-.78,.4,.56),V(0,fit.top+.17,.5),V(.78,.4,.56),V(.79,-.5,.4)];add('metal',tube(edge,.018));
+    const point=(t,u)=>{const ph=Math.PI*.32+u*Math.PI*1.36,y=-1.0+(top+1.16)*t,base=.08+.92*Math.sin(Math.PI*(.16+.84*t)),r=Math.max(base,outerR(y,ph)+.085);return V(Math.sin(ph)*r,y,zc+Math.cos(ph)*r)};
+    add('fabric',clothSurface(64,96,point,{thickness:.038}));
+    for(const u of [0,1])add('band',tube(Array.from({length:65},(_,i)=>point(i/64,u)),.018));
+    const mask=clothSurface(32,48,(t,u)=>{const yy=P.mouthY+.40-.73*t,x=(u-.5)*1.17*(1-.16*t),z=Math.max(fit.surfZ(x,yy)+.12,fit.surfZ(0,Math.max(P.mouthY+.12,yy))+.10-.16*(x/.6)**2);return V(x,yy,z+.008*Math.sin(t*Math.PI*4))},{thickness:.018});add('fabric',mask);
   }
 
   // ---------------- malhas por material ----------------
   const matOf = k => k === 'metalD' ? mats.metal : mats[k];
   for (const [k, list] of Object.entries(geos)) {
-    const norm = list.map(g => { if (g.attributes.uv) g.deleteAttribute('uv'); if (!g.attributes.normal) g.computeVertexNormals(); return g.index ? g.toNonIndexed() : g });
+    const norm = list.map(g => { for (const attribute of Object.keys(g.attributes)) if (!['position','normal'].includes(attribute)) g.deleteAttribute(attribute); if (!g.attributes.normal) g.computeVertexNormals(); return g.index ? g.toNonIndexed() : g });
     const merged = mergeGeometries(norm, false); norm.forEach(g => g.dispose()); list.forEach(g => g.dispose());
     if (!merged) continue;
     if(['metal','metalD','fabric','band'].includes(k)){

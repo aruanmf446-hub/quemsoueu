@@ -223,7 +223,7 @@ function addBody(h,cell){
   const skin=h.group.getObjectByName('Head_Skin'),m=new THREE.Mesh(b.geo,b.vegSkin?new THREE.MeshPhysicalMaterial({name:'Skin_Body',vertexColors:true,roughness:.5,clearcoat:.25,clearcoatRoughness:.4,sheen:.3,sheenColor:new THREE.Color('#ffffff').multiplyScalar(.3)}):skin.material);m.name='Body';m.userData.build={...b.build};m.castShadow=true;m.receiveShadow=true;
   h.root.add(m);h.body={...b,mesh:m};return h.body;
 }
-function syncBody(){if(current?.fit?.companion){ground.visible=el('showBody').checked;ground.position.y=(['wolf','fennec'].includes(PRESETS[presetId].species)?-3.27:-2.28);frameBody();return}const b=current&&current.body;ground.visible=!!b;if(b){const box=new THREE.Box3().setFromObject(clothesObj.group);ground.position.y=Math.min(b.ySole,box.isEmpty()?b.ySole:box.min.y)-.002}frameBody()}
+function syncBody(){if(current?.fit?.companion){ground.visible=el('showBody').checked;ground.position.y=(current.fit.ySole??-2.28);frameBody();return}const b=current&&current.body;ground.visible=!!b;if(b){const box=new THREE.Box3().setFromObject(clothesObj.group);ground.position.y=Math.min(b.ySole,box.isEmpty()?b.ySole:box.min.y)-.002}frameBody()}
 const hasFacialHair=()=>{const P=current&&current.params;return !!(P&&(P.beardVol||P.stache||P.goatee))};
 
 // ---------- expressões (rig) ----------
