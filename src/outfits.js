@@ -424,8 +424,9 @@ export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot 
     }
   }
   function drapedScarf(fn,cactus=false){
-    const y=yN+(cactus?.78*W:.05*W),r0=cactus?.39*W:null;
-    const point=(t,u)=>{const a=(u-.5)*2.35,yy=y-t*(cactus?.95*(.65+.35*Math.cos(a)**2):.44)*W+.08*W*Math.abs(Math.sin(a)),p=cactus?V(Math.sin(a)*(r0+.05*W),yy,z0+Math.cos(a)*(r0+.05*W)):surfAt(fn,yy,a,.065*W);p.z+=.025*W*Math.sin(t*PI*4);return p};
+    const y=cactus?body.pivot.y+body.hs*(-.58-body.pivot.y):yN+.05*W,r0=cactus?.6*body.hs+.015*W:null;
+    const fall=cactus?y-yN+.14*W:.44*W;
+    const point=(t,u)=>{const a=(u-.5)*2.35,yy=y-t*fall*(cactus?.68+.32*Math.cos(a)**2:1)+(cactus?.03:.08)*W*Math.abs(Math.sin(a)),p=cactus?V(Math.sin(a)*(r0+.05*W),yy,z0+Math.cos(a)*(r0+.05*W)):surfAt(fn,yy,a,.065*W);p.z+=.025*W*Math.sin(t*PI*4);return p};
     addGeoS('extras','accent',clothSurface(36,64,point,{thickness:.025*W}));addGeoS('extras','trim',tubeG(Array.from({length:65},(_,i)=>point(.98,i/64)),.012*W,6));
   }
   function capeEmblem(c,geometry,t=.4,u=.5,ch='trim'){
@@ -449,7 +450,8 @@ export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot 
     const g=garment('Tunica_deserto',cowboy?'secondary':'fabric','upper',{top:yN+.06,bottom:Y(hem),t:.05*W,sleeve:'forearm',sleeveEase:.07*W,puff:baker?.12*W:.04*W,vneck:.12,env:{ease:.055*W,hang:.45,cinch:Y(.33),cinchK:.86,flareFrom:Y(.35),flare:.14,folds:.018*W,foldN:12}});
     sleeveCuffs(g,'upper',baker?'secondary':'leather',.07*W);
     bootFinish(.22);
-    if(cowboy){const vest=garment('Colete_viajante','leather','upper',{top:yN+.04,bottom:Y(.45),sleeve:'none',open:.25,openTaper:.7,hollow:true,over:g.solid,overGap:.06*W,t:.065*W,env:{ease:.11*W,hang:.35,cinch:Y(.33),cinchK:.86}});edgeTube(vest,'open','trim','upper',.018*W);edgeTube(vest,'arm','lining','upper',.02*W);for(const side of [-1,1])pocketOn('upper',vest.solid,.28,side*.59,.19*W,.15*W);}
+    let capeSupport=g.env;
+    if(cowboy){const vest=garment('Colete_viajante','leather','upper',{top:yN+.04,bottom:Y(.45),sleeve:null,open:.25,openTaper:.7,hollow:true,over:g.solid,overGap:.06*W,t:.065*W,env:{ease:.11*W,hang:.35,cinch:Y(.33),cinchK:.86}});edgeTube(vest,'open','trim','upper',.018*W);edgeTube(vest,'arm','lining','upper',.02*W);capeSupport=vest.solid;for(const side of [-1,1])pocketOn('upper',vest.solid,.28,side*.59,.19*W,.15*W);}
     if(watch)for(const side of [-1,1]){seamOn('upper','lining',g.solid,.1,.58,t=>side*(.55-.1*Math.sin(PI*t)),.016*W);pocketOn('belt',g.solid,.37,side*.78,.17*W,.23*W)}
     rim('upper','trim',g.outer,Y(hem)+.015,.018*W);
     trousers('Calca_deserto','pants',{top:.35,ease:.06*W,cuff:.07,under:{fn:g.solid,y:Y(hem)+.03}});
@@ -471,7 +473,7 @@ export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot 
       for(let i=-1;i<=1;i++)addGeoS('extras','secondary',tubeG([p.clone().add(V(i*.11*W,-.1*W,.24*W)),p.clone().add(V(i*.11*W,.08*W,.28*W)),p.clone().add(V(i*.11*W,.2*W,.2*W))],.018*W));
       for(const side of [-1,1])for(let i=0;i<3;i++)button('upper','trim',g.solid,side*.13*W,Y(.1+i*.07),.028*W);
     }else{
-      cape('Manto_deserto','accent',{top:.02,yBottom:Y(watch?.86:guard?.8:.7),span:3.8,flare:.3,pleats:8,ragged:watch?.04*W:0,over:g.env,trim:'trim'});
+      cape('Manto_deserto','accent',{top:.02,yBottom:Y(watch?.86:guard?.8:.7),span:3.8,flare:.3,pleats:8,ragged:watch?.04*W:0,over:capeSupport,trim:'trim'});
       drapedScarf(g.solid,!!B.cactus);
       if(watch){const p=surfAt(g.solid,Y(.16),0,.06*W),gem=new THREE.OctahedronGeometry(.13*W);gem.scale(.65,1.4,.4);gem.translate(...p.toArray());addGeoS('extras','trim',gem)}
       if(cowboy)for(const side of [-1,1]){const p=surfAt(g.solid,Y(.39),side*.9,.04);addGeoS('extras','leather',sph(p,.16*W,1,1.25,.5));button('extras','trim',g.solid,side*.39*W,Y(.37),.04*W)}
@@ -497,7 +499,8 @@ export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot 
       env:{ease:.055*W,hang:.45,cinch:Y(.33),cinchK:.85,flareFrom:Y(.36),flare:princess?.30:.14,folds:(princess?.047:.018)*W,foldN:14}
     });
     sleeveCuffs(g,'upper',princess?'trim':'leather',.055*W);bootFinish(princess?.06:.23);
-    if(archer||artificer){const vest=garment('Gibao_floresta','leather','upper',{top:yN+.025,bottom:Y(artificer?.44:.38),sleeve:'none',open:.30,openTaper:.75,hollow:true,over:g.solid,overGap:.055*W,t:.07*W,env:{ease:.10*W,hang:.32,cinch:Y(.32),cinchK:.9}});edgeTube(vest,'open','trim','upper',.016*W);edgeTube(vest,'arm','trim','upper',.016*W);for(const side of [-1,1]){pocketOn('belt',g.solid,.38,side*.7,.21*W,.26*W);seamOn('upper','trim',vest.solid,.07,.34,t=>side*(.55+.06*Math.sin(PI*t)),.009*W)}}
+    let capeSupport=g.env;
+    if(archer||artificer){const vest=garment('Gibao_floresta','leather','upper',{top:yN+.025,bottom:Y(artificer?.44:.38),sleeve:null,open:.30,openTaper:.75,hollow:true,over:g.solid,overGap:.055*W,t:.07*W,env:{ease:.10*W,hang:.32,cinch:Y(.32),cinchK:.9}});edgeTube(vest,'open','trim','upper',.016*W);edgeTube(vest,'arm','trim','upper',.016*W);capeSupport=vest.solid;for(const side of [-1,1]){pocketOn('belt',g.solid,.38,side*.7,.21*W,.26*W);seamOn('upper','trim',vest.solid,.07,.34,t=>side*(.55+.06*Math.sin(PI*t)),.009*W)}}
     if(guard||artificer)pauldrons(g,false);
     rim('upper','trim',g.outer,a=>yN+.075-.08*Math.max(0,Math.cos(a))**6,.017*W);
     rim(princess?'lower':'upper','trim',g.outer,Y(hem)+.012,.018*W);
@@ -506,7 +509,7 @@ export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot 
     if(guard)patchOn('upper','accent',g.env,Y(.10),Y(.49),0,.82,.04*W);
     // Brasão em geometria real, com tronco, ramos e folhas; sem textura externa.
     const crest=treeGeo(.25*W),cp=surfAt(g.solid,Y(.17),0,.08*W);crest.translate(...cp.toArray());addGeoS('upper','trim',crest);
-    const c= cape('Capa_floresta','accent',{top:.025,yBottom:Y(princess?.975:.84),span:princess?4.6:3.7,flare:princess?.45:.3,pleats:8,ragged:princess?0:.05*W,over:g.env,trim:'trim',refined:true});
+    const c= cape('Capa_floresta','accent',{top:.025,yBottom:Y(princess?.975:.84),span:princess?4.6:3.7,flare:princess?.45:.3,pleats:8,ragged:princess?0:.05*W,over:capeSupport,trim:'trim',refined:true});
     if(princess)dressFinish(g,c,true);else if(c)capeEmblem(c,treeGeo(.31*W),.37,.5);
     const cy=Y(.31),back=surfAt(g.env,cy,PI,.1*W+(princess?.45:.3)*.35),cg=treeGeo(.2*W);cg.rotateY(PI);cg.translate(...back.toArray());addGeoS('cape','trim',cg);
     if(!princess)trousers('Calca_floresta','pants',{top:.35,ease:.055*W,cuff:.07,under:{fn:g.solid,y:Y(hem)+.03}});

@@ -7,6 +7,9 @@ import { buildBody, headScale } from '../src/body.js';
 import { buildClothes, defaultClothes, OUTFITS, CLOTH_SLOTS, pieceOptions } from '../src/clothes.js';
 import { defaultLook, buildLook } from '../src/look.js';
 import { PRESETS } from '../src/presets.js';
+// Filtro opcional para repetir somente os conjuntos alterados; a execução padrão mantém todo o catálogo.
+const outfitsToTest=process.env.ATELIE_FIGURINOS?.split(',')||Object.keys(OUTFITS);
+for(const id of outfitsToTest)assert(id in OUTFITS,'Figurino desconhecido: '+id);
 // A textura procedural da íris não participa destes testes de geometria.
 globalThis.document = { createElement: () => ({ getContext: () => new Proxy({}, { get: (_, key) => key === 'createLinearGradient' ? () => ({ addColorStop() {} }) : () => {} }) }) };
 // A espessura do avesso não pode alterar a iluminação da face externa.
@@ -51,7 +54,7 @@ for (const id of (process.env.ATELIE_PERSONAGENS?.split(',')||Object.keys(PRESET
   }
   const body = buildBody(head.fit, id, { cell: .045, headScale: headScale(id), mermaid: !!OUTFITS[defaultClothes(id).outfit]?.mermaid });
   const positions = body.geo.attributes.position.array.slice();
-  for (const outfit of Object.keys(OUTFITS)) {
+  for (const outfit of outfitsToTest) {
     const clothes = buildClothes(body, { ...defaultClothes(id), outfit });
     assert.equal(clothes.group.children.length === 0, outfit === 'none');
     clothes.group.traverse(mesh => {
@@ -76,7 +79,7 @@ for (const id of (process.env.ATELIE_PERSONAGENS?.split(',')||Object.keys(PRESET
     clothes.dispose();
   }
   const outfit = buildClothes(body, defaultClothes(id)), latencies = [];
-  for (const slot of Object.keys(CLOTH_SLOTS)) for (const option of pieceOptions(body, slot)) {
+  for (const slot of Object.keys(CLOTH_SLOTS)) for (const option of pieceOptions(body, slot).filter(option=>option.id==='none'||outfitsToTest.includes(option.id.split(':')[0]))) {
     const other = outfit.group.children.find(g => g.name !== 'RoupaSlot_' + slot), start = performance.now();
     assert(outfit.setPiece(slot, option.id), `${id}/${option.id}: peça rejeitada`);
     latencies.push(performance.now() - start);
@@ -89,7 +92,7 @@ for (const id of (process.env.ATELIE_PERSONAGENS?.split(',')||Object.keys(PRESET
   latencies.sort((a,b)=>a-b);const p95=latencies[Math.floor(latencies.length*.95)];assert(p95<500, `${id}: troca em cache lenta (${p95} ms)`);
   console.log(`${id}: peças por slot, cores e cache (p95 ${p95.toFixed(1)} ms)`);
   assert.deepEqual(body.geo.attributes.position.array, positions, 'O figurino não pode alterar a pele');
-  body.geo.dispose(); head.dispose(); console.log(`${id}: ${Object.keys(OUTFITS).length} conjuntos; pele preservada`);
+  body.geo.dispose(); head.dispose(); console.log(`${id}: ${outfitsToTest.length} conjuntos; pele preservada`);
 }
 
 await import('./tipos-fisicos.mjs');

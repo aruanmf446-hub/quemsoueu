@@ -26,6 +26,13 @@ for(const id of (process.env.ATELIE_PERSONAGENS?.split(',')||ids)){
     const a=window.__atelie,companion=!a.body(),g=a.group();
     for(const name of ['feliz','triste','bravo','surpreso','piscadela'])a.setExpression(name);
     g.traverse(m=>{if(m.isMesh){if(!m.geometry.attributes.position.array.every(Number.isFinite))throw Error('Vértice inválido');if(!m.geometry.attributes.normal.array.every(Number.isFinite))throw Error('Normal inválida')}});
+    if(['frontier_cowboy','cactus_soldier','cactus_soldier_large'].includes(id)){
+      // Um lenço no pescoço não pode subir até os olhos quando aumenta o porte do corpo.
+      const THREE=await import('three'),P=(await import('/src/presets.js')).PRESETS[id],b=a.body(),pv=b.pivot,hs=b.hs;
+      const y=pv.y+hs*(P.eyeY-pv.y),z=pv.z+hs*(P.lathe.cz+P.lathe.r[2]*P.lathe.zs-pv.z);
+      a.clothes().group.updateMatrixWorld(true);
+      for(const side of [-1,1]){const ray=new THREE.Raycaster(new THREE.Vector3(side*P.eyeX*hs,y,z+3),new THREE.Vector3(0,0,-1),0,3);if(ray.intersectObject(a.clothes().group,true).length)throw Error('Roupa cobrindo o olho do cacto: '+id)}
+    }
     if(id.startsWith('forest_guard_')){
       // A madeira do escudo precisa ficar à frente de toda a mão esquerda, inclusive dos dedos.
       const THREE=await import('three'),b=a.body(),J=b.joints,p=b.geo.attributes.position,wood=[];
