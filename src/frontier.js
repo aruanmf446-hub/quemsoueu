@@ -1,6 +1,6 @@
 // Novas referências do deserto: identidades separadas, figurinos e combinação de montaria.
 export const FRONTIER_CHARACTERS=[
-  {id:'frontier_cowboy',label:'Cowboy do deserto',base:'cactus_cowboy',body:'cactus_cowboy',outfit:'frontier_cowboy',hair:'none',acc:{head:'cowboy'}},
+  {id:'frontier_cowboy',label:'Cowboy do deserto',base:'cactus_cowboy',body:'cactus_cowboy',outfit:'frontier_cowboy',hair:'none',acc:{head:'frontier_hat'}},
   {id:'bread_baker',label:'Padeiro',base:'masculine_soft',body:'masculine_soft',outfit:'bread_baker',hair:'short_curls',acc:{head:'chef_hat'}},
   {id:'bread_vigilante',label:'Vigilante',base:'masculine_soft',body:'masculine_soft',outfit:'bread_vigilante',hair:'short_curls',acc:{head:'vigilante_hood'}},
   {id:'cactus_soldier',label:'Soldado cacto',base:'cactus_cowboy',body:'cactus_cowboy',outfit:'cactus_guard',hair:'none',acc:{head:'guard_helmet'}},

@@ -42,8 +42,12 @@ export const HAIR_STYLES = {
     len: [.28, .42], grav: .25, layer: .03, curl: { r: [.03, .045], pitch: .12 }, hairline: .3, band: { top: .28 }, sideburn: -.15 }
 };
 // Variações leves do catálogo para as novas identidades; os estilos existentes permanecem iguais.
-HAIR_STYLES.lunar_curls={...HAIR_STYLES.bun,curlBun:true,label:'Cachos presos',sub:'Coque cacheado alto, com mechas soltas',knot:{y:.16,z:-.16,R:.34},tubes:true,n:64,spacing:.09,w:.047,th:.043,curl:{r:[.035,.065],pitch:.21},wisps:3};
+HAIR_STYLES.lunar_curls={...HAIR_STYLES.bun,curlBun:true,label:'Cachos presos',sub:'Coque cacheado alto, com mechas soltas',knot:{y:.18,z:-.16,R:.43},tubes:true,n:88,spacing:.085,w:.05,th:.045,curl:{r:[.04,.075],pitch:.22},wisps:5};
 HAIR_STYLES.short_curls={...HAIR_STYLES.short,label:'Curto cacheado',sub:'Cachos curtos e topete de inventor',tubes:true,n:64,spacing:.1,w:.047,th:.042,curl:{r:[.03,.055],pitch:.2},len:[1.2,1.5],topVol:1.4};
+// Novos modelos da fila de refinamento; não modificam os penteados já existentes.
+HAIR_STYLES.forest_pixie={...HAIR_STYLES.royal,label:'Curto em camadas',sub:'Risca lateral e mechas soltas',flow:'part',partX:.18,len:[1.9,2.2],endY:'nape+',topVol:1,layer:.055,wave:{a:.04,f:1.2},flare:.08,maxStrip:.18,hairline:.46,tubes:true,n:100,spacing:.065,w:.065,th:.045,curl:{r:[.012,.024],pitch:.3}};
+HAIR_STYLES.forest_locks={...HAIR_STYLES.long_braids,label:'Mechas torcidas',sub:'Mechas longas em cordões, presas para trás',braids:null,tubes:true,n:54,spacing:.12,w:.065,th:.059,curl:{r:[.008,.018],pitch:.35},len:[3.3,3.7],endY:'shoulder',topVol:.85,layer:.065};
+HAIR_STYLES.court_waves={...HAIR_STYLES.long_wavy,label:'Ondas de corte',sub:'Cabelo longo em camadas onduladas',len:[5.0,5.6],endY:-2.7,wave:{a:.085,f:.85},layer:.075,faceFrame:3,w:.075,th:.032,maxStrip:.24};
 export const HAIR_COLORS = [
   ['Preto', '#17110f'], ['Castanho escuro', '#3a2417'], ['Castanho', '#6b4027'], ['Ruivo', '#b4441c'], ['Acobreado', '#8e3b1e'],
   ['Loiro', '#d6ad62'], ['Loiro claro', '#eedbb0'], ['Grisalho', '#9c968e'], ['Branco', '#efede8'],

@@ -1,5 +1,6 @@
 // Figurinos procedurais no espaço do corpo. Nenhuma alteração na pele ou no rig facial.
 import * as THREE from 'three';
+import {finishMaterial} from './detail.js';
 import {FRONTIER_OUTFITS} from './frontier.js';
 import {FOREST_OUTFITS} from './forest.js';
 import { buildLegacyClothes } from './legacy-clothes.js';
@@ -123,17 +124,19 @@ function template(body, style, slot) {
 }
 
 function pieceMaterial(channel, colors) {
-  const colorKey = ['gem', 'liquid'].includes(channel) ? 'accent' : ['tail', 'fin'].includes(channel) ? 'fabric' : channel === 'veil' ? 'secondary' : channel;
+  const colorKey = ({sole:'leather',enamel:'fabric',lining:'accent'})[channel] || (['gem', 'liquid'].includes(channel) ? 'accent' : ['tail', 'fin'].includes(channel) ? 'fabric' : channel === 'veil' ? 'secondary' : channel);
   const metal = channel === 'trim', leather = channel === 'leather', pearl = channel === 'pearl';
   const m = new THREE.MeshPhysicalMaterial({ name: 'Roupa_' + channel, color: pearl ? '#f6eee5' : colors[colorKey] || '#ffffff', vertexColors: true, roughness: metal ? .36 : leather ? .62 : .72, metalness: metal ? .85 : 0, sheen: metal ? 0 : leather ? .1 : .3, sheenRoughness: .55, sheenColor: new THREE.Color('#eee7e2'), clearcoat: pearl ? .2 : 0, side: THREE.DoubleSide, shadowSide: THREE.FrontSide });
   if (['gem', 'pearl', 'tail', 'fin'].includes(channel)) { m.roughness = channel === 'gem' ? .13 : .32; m.clearcoat = .5 }
   if (['veil', 'glass', 'liquid'].includes(channel)) { m.side=THREE.DoubleSide; m.transparent = true; m.opacity = channel === 'glass' ? .3 : channel === 'liquid' ? .85 : .48; m.depthWrite = false }
+  if(channel==='enamel'){m.metalness=.55;m.roughness=.38;m.clearcoat=.3}
+  m.userData.colorFactor=channel==='sole'?.48:channel==='lining'?.78:1;
   m.userData.colorKey = colorKey; return m;
 }
 const patterned = new Set(['stripesV', 'stripesH', 'tail', 'fin', 'veil']);
 function paint(mesh, channel, colors, W) {
   const mat = mesh.material;
-  if (!patterned.has(channel)) { if (channel !== 'pearl') mat.color.set(colors[mat.userData.colorKey] || '#ffffff'); return }
+  if (!patterned.has(channel)) { if (channel !== 'pearl') mat.color.set(colors[mat.userData.colorKey] || '#ffffff').multiplyScalar(mat.userData.colorFactor||1); return }
   mat.color.set('#ffffff');
   const g = mesh.geometry, p = g.attributes.position, col = g.attributes.color, mix = g.attributes.mixc, shade = g.attributes.shade;
   if(channel.startsWith('stripes')){
@@ -181,6 +184,7 @@ export function buildClothes(body, look) {
     const cc = { ...outfitColors(style), ...(style === styleOf(look.outfit) ? look.clothColors || {} : {}), ...(colors || look.pieceColors?.[slot] || {}) };
     for (const d of source.descriptors.filter(d => d.slot === slot)) {
       const own = patterned.has(d.channel), geo = own ? d.geo.clone() : d.geo, mat = pieceMaterial(d.channel, cc), mesh = new THREE.Mesh(geo, mat);
+      if((FOREST_OUTFITS[style]||FRONTIER_OUTFITS[style]||style.startsWith('lunar_'))&&['fabric','secondary','pants','accent','leather','trim','sole','lining'].includes(d.channel))finishMaterial(mat,['trim'].includes(d.channel)?'metal':['leather','sole'].includes(d.channel)?'leather':'fabric');
       if(!SDF_OUTFITS[style]){mat.roughness=d.channel==='trim'?.38:d.channel==='leather'?.78:.88;mat.sheen=.15;mat.clearcoat=0}
       mesh.name = 'Roupa_' + d.name; mesh.castShadow = !mat.transparent; mesh.receiveShadow = true; mesh.userData = { ownGeometry: own, channel: d.channel, slot, style }; paint(mesh, d.channel, cc, body.proportions.W); part.add(mesh);
     }

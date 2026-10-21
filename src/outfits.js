@@ -5,6 +5,7 @@
 // Suavização só no tecido, com pregas, avesso e barras próprias.
 // Luvas usam recortes com folga nas normais; o corpo é somente consultado, nunca alterado.
 import * as THREE from 'three';
+import {badge,panel,buckleGeo,gear} from './detail.js';
 import {FRONTIER_CHARACTERS,FRONTIER_OUTFITS,FRONTIER_COLORS} from './frontier.js';
 import {FOREST_CHARACTERS,FOREST_OUTFITS,FOREST_COLORS,treeGeo,leafGeo,shieldGeo} from './forest.js';
 import { crescent } from './lunar.js';
@@ -228,7 +229,7 @@ export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot 
       const t = i / NR, y = yT + (yB - yT) * t, row = [];
       for (let j = 0; j <= NC; j++) {
         const s = j / NC, ph = PI - (o.span ?? 1.9) / 2 + (o.span ?? 1.9) * s + (o.turn || 0);
-        let rr = radAt(Math.max(y, Y(.42)), ph) + .07 + (o.flare ?? .25) * t + .05 * Math.sin(s * PI * (o.pleats ?? 9) + t * 2) * t;
+        let rr = radAt(Math.max(y, Y(.42)), ph) + .07 + (o.flare ?? .25) * t + (o.refined?.075:.05) * Math.sin(s * PI * (o.pleats ?? 9) + t * 2) * t;
         if (o.over) { const q = surfAt(o.over, y, ph); rr = Math.max(rr, Math.hypot(q.x, q.z - z0) + .05 * W + .04 * (.5 + .5 * Math.sin(s * PI * (o.pleats ?? 9) + t * 2)) * t) }
         const sw = (o.sway || 0) * t * t;
         row.push(V(Math.sin(ph) * rr + sw, y - (o.ragged ? o.ragged * t * (.5 + .5 * Math.sin(s * 40)) * sstep(.9, 1, t) : 0), z0 + Math.cos(ph) * rr));
@@ -237,6 +238,7 @@ export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot 
     }
     sheet(name, ch, rows, null, (t, s) => .75 + .25 * (.5 + .5 * Math.sin(s * PI * (o.pleats ?? 9) + t * 2)));
     if (o.trim) { const hem = rows[NR], side = rows.map(r => r[0]), side2 = rows.map(r => r[NC]); for (const line of [hem, side, side2]) addGeoS('cape', o.trim, tubeG(line, .022 * W, 6)) }
+    return {at:(t,u)=>{const fi=clamp(t,0,.9999)*NR,fj=clamp(u,0,.9999)*NC,i=Math.floor(fi),j=Math.floor(fj);return rows[i][j].clone().lerp(rows[i][j+1],fj-j).lerp(rows[i+1][j].clone().lerp(rows[i+1][j+1],fj-j),fi-i)}};
   }
 
   // ================= roupas com caimento (envoltória) =================
@@ -395,38 +397,92 @@ export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot 
     return memoField(f);
   }
 
+  // Acabamentos da fila de refinamento. Todas as peças usam a superfície medida da roupa.
+  function patchOn(slot,ch,fn,y0,y1,ph,width,off=.025*W){
+    const point=(t,u)=>{const a=ph+(u-.5)*width*(.87+.13*Math.sin(PI*t));return surfAt(fn,lerp(y0,y1,t)+.03*W*Math.sin(PI*u)*Math.sin(PI*t),a,off)};
+    addGeoS(slot,ch,clothSurface(32,28,point,{thickness:.018*W}));return point;
+  }
+  function seamOn(slot,ch,fn,f0,f1,phi,r=.009*W){const pts=[];for(let i=0;i<=32;i++){const t=i/32;pts.push(surfAt(fn,Y(lerp(f0,f1,t)),typeof phi==='function'?phi(t):phi,.035*W))}addGeoS(slot,ch,tubeG(pts,r,6));}
+  function pocketOn(slot,fn,f,phi,w=.22*W,h=.27*W){
+    const p=surfAt(fn,Y(f),phi,.08*W),n=V(Math.sin(phi),0,Math.cos(phi));
+    for(const [ch,g,dy,dz]of [['leather',panel(w,h,.10*W),0,0],['lining',panel(w*1.06,h*.34,.035*W),h*.25,.07*W],['trim',buckleGeo(w*.4,h*.28,.016*W),-.015*W,.09*W]])addGeoS(slot,ch,orient(g,p.clone().add(V(0,dy,0)).addScaledVector(n,dz),n));
+    for(const sg of [-1,1])addGeoS(slot,'trim',orient(sph(V(),.018*W),p.clone().add(V(sg*w*.35,h*.25,0)).addScaledVector(n,.09*W),n));
+  }
+  function bootFinish(h=.18,sneaker=false){
+    for(const side of [-1,1]){
+      const sole=new THREE.CylinderGeometry(1,1,.09*W,56);sole.scale(.26*W*(B.foot||1),1,.52*W*(B.foot||1));sole.translate(side*A.x,ySole+.01*W,A.z+.19*W);addGeoS('feet',sneaker?'secondary':'sole',sole);
+      const y=A.y+Math.min(h*Lb,.48*W),x=side*A.x,z=frontZ(x,y)+.10*W,b=buckleGeo(.13*W,.105*W,.017*W);b.translate(x,y,z);addGeoS('feet','trim',b);
+      for(let i=0;i<(sneaker?4:3);i++){
+        const yy=lerp(A.y+.08*W,A.y+(sneaker?.26:.38)*W,i/3),zz=frontZ(x,yy)+.10*W,pts=[V(x-.09*W,yy,zz),V(x,yy-.025*W,zz+.008*W),V(x+.09*W,yy,zz)];addGeoS('feet',sneaker?'secondary':'lining',tubeG(pts,.009*W,6));
+      }
+    }
+  }
+  function pauldrons(g,metal=false){
+    for(const side of [-1,1])for(let i=0;i<3;i++){
+      const c=S.clone().lerp(E,.025+i*.075);c.x*=side;const r=(g.sl?.rS||.35*W)*(1.15-i*.11),geo=new THREE.SphereGeometry(r,48,20,0,2*PI,.07,PI*.54);geo.scale(1.14,.68,1.12);geo.translate(c.x,c.y+r*.47,c.z);addGeoS('upper',metal?'enamel':'leather',geo);
+      const edge=[];for(let j=0;j<=64;j++){const a=j/64*2*PI;edge.push(V(c.x+Math.cos(a)*r*1.14,c.y+r*.47+Math.cos(.07+PI*.54)*r*.68,c.z+Math.sin(a)*r*1.12))}addGeoS('upper','trim',tubeG(edge,.019*W,6));
+    }
+  }
+  function drapedScarf(fn,cactus=false){
+    const y=yN+(cactus?.78*W:.05*W),r0=cactus?.39*W:null;
+    const point=(t,u)=>{const a=(u-.5)*2.35,yy=y-t*(cactus?.95*(.65+.35*Math.cos(a)**2):.44)*W+.08*W*Math.abs(Math.sin(a)),p=cactus?V(Math.sin(a)*(r0+.05*W),yy,z0+Math.cos(a)*(r0+.05*W)):surfAt(fn,yy,a,.065*W);p.z+=.025*W*Math.sin(t*PI*4);return p};
+    addGeoS('extras','accent',clothSurface(36,64,point,{thickness:.025*W}));addGeoS('extras','trim',tubeG(Array.from({length:65},(_,i)=>point(.98,i/64)),.012*W,6));
+  }
+  function capeEmblem(c,geometry,t=.4,u=.5,ch='trim'){
+    if(!c)return;const pos=geometry.attributes.position,pc=c.at(t,u),dx=c.at(t,Math.min(.99,u+.02)).distanceTo(c.at(t,Math.max(.01,u-.02)))/.04,dy=c.at(Math.max(.01,t-.02),u).distanceTo(c.at(Math.min(.99,t+.02),u))/.04;
+    for(let i=0;i<pos.count;i++){const xx=pos.getX(i),yy=pos.getY(i),zz=pos.getZ(i),p=c.at(clamp(t-yy/dy,.01,.99),clamp(u+xx/dx,.01,.99)),n=V(p.x,0,p.z-z0).normalize();p.addScaledVector(n,.02*W+zz);pos.setXYZ(i,...p.toArray())}geometry.computeVertexNormals();addGeoS('cape',ch,geometry);
+  }
+  function dressFinish(g,c,forest=false){
+    for(const side of [-1,1]){
+      patchOn('upper','secondary',g.solid,Y(.105),Y(.34),side*.52,.40,.04*W);
+      seamOn('upper','trim',g.solid,.10,.34,t=>side*(.28+.12*t),.012*W);
+      for(const phi of [side*.52,side*1.17]){const point=patchOn('lower','accent',g.env,Y(.35),Y(.94),phi,.54,.045*W);addGeoS('lower','trim',tubeG(Array.from({length:41},(_,i)=>point(i/40,side>0?0:1)),.015*W,6));}
+      for(let i=0;i<4;i++){const f=.46+i*.115,a=side*(.5+.03*Math.sin(i)),p=surfAt(g.env,Y(f),a,.075*W),geo=forest?leafGeo(.085*W,.018*W):crescent(.075*W,.018*W);geo.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(V(0,0,1),V(Math.sin(a),0,Math.cos(a))));geo.translate(...p.toArray());addGeoS('lower','trim',geo)}
+    }
+    if(c){capeEmblem(c,forest?treeGeo(.36*W):crescent(.29*W,.025*W),.35,.5);for(let i=0;i<7;i++)capeEmblem(c,forest?leafGeo(.075*W,.02*W):badge('star',.06*W,.015*W),.67+.065*Math.sin(i),.23+i*.09)}
+  }
+
   // Deserto: peças iniciais compartilhadas entre as identidades e seus dois portes.
   if(FRONTIER_OUTFITS[style]){
     const baker=style==='bread_baker',watch=style==='bread_vigilante',guard=style==='cactus_guard',cowboy=style==='frontier_cowboy';
     const hem=watch?.64:guard?.5:.46;
-    const g=garment('Tunica_deserto','fabric','upper',{top:yN+.06,bottom:Y(hem),t:.05*W,sleeve:'forearm',sleeveEase:.07*W,puff:baker?.07*W:.02*W,vneck:.1,env:{ease:.055*W,hang:.45,cinch:Y(.33),cinchK:.86,flareFrom:Y(.35),flare:.14,folds:.018*W,foldN:12}});
-    sleeveCuffs(g,'upper','leather',.05*W);
+    const g=garment('Tunica_deserto',cowboy?'secondary':'fabric','upper',{top:yN+.06,bottom:Y(hem),t:.05*W,sleeve:'forearm',sleeveEase:.07*W,puff:baker?.12*W:.04*W,vneck:.12,env:{ease:.055*W,hang:.45,cinch:Y(.33),cinchK:.86,flareFrom:Y(.35),flare:.14,folds:.018*W,foldN:12}});
+    sleeveCuffs(g,'upper',baker?'secondary':'leather',.07*W);
+    bootFinish(.22);
+    if(cowboy){const vest=garment('Colete_viajante','leather','upper',{top:yN+.04,bottom:Y(.45),sleeve:'none',open:.25,openTaper:.7,hollow:true,over:g.solid,overGap:.06*W,t:.065*W,env:{ease:.11*W,hang:.35,cinch:Y(.33),cinchK:.86}});edgeTube(vest,'open','trim','upper',.018*W);edgeTube(vest,'arm','lining','upper',.02*W);for(const side of [-1,1])pocketOn('upper',vest.solid,.28,side*.59,.19*W,.15*W);}
+    if(watch)for(const side of [-1,1]){seamOn('upper','lining',g.solid,.1,.58,t=>side*(.55-.1*Math.sin(PI*t)),.016*W);pocketOn('belt',g.solid,.37,side*.78,.17*W,.23*W)}
     rim('upper','trim',g.outer,Y(hem)+.015,.018*W);
     trousers('Calca_deserto','pants',{top:.35,ease:.06*W,cuff:.07,under:{fn:g.solid,y:Y(hem)+.03}});
     boots('Botas_deserto','leather',{t:.07*W,h:.22,cuffT:.06*W});
-    beltOn('Faixa_deserto',baker?'accent':'leather',g.solid,Y(.34),baker?.21*W:.13*W,.035*W);
+    beltOn('Faixa_deserto',baker?'accent':'leather',baker?(x,y,z)=>g.solid(x,y,z)-.085*W*Math.max(0,Math.cos(phiOf(x,z)))**4:g.solid,Y(.34),baker?.21*W:.13*W,.035*W);
     if(!baker)buckle('belt','trim',g.solid,Y(.34),.22*W,.16*W);
     if(baker){
       // Avental independente sobre a camisa, com largura medida no corpo e barra arredondada.
-      const yTop=Y(.19),yBot=Y(.66),pts=(t,u)=>{const y=lerp(yTop,yBot,t),x=(u-.5)*W*(t<.28?.7:1.08),z=Math.max(frontZ(x,y),surfAt(g.outer,y,Math.atan2(x,.5),.025*W).z)+.035*W;return V(x,y,z)};
+      const yTop=Y(.15),yBot=Y(.66),pts=(t,u)=>{
+        const y=lerp(yTop,yBot,t),x=(u-.5)*W*(.72+.48*sstep(.14,.45,t));let z=zB+.6*W;
+        // O avental acompanha a envoltória contínua também abaixo da barra da camisa.
+        for(let i=0;i<160;i++){const d=g.env(x,y,z);if(d<.001)break;z-=Math.max(d*.85,.003*W);if(z<z0)break}
+        return V(x,y,z+.065*W+.02*W*Math.cos(u*PI*10)*t);
+      };
       const apron=clothSurface(48,40,pts,{thickness:.025*W});addGeoS('cape','secondary',apron);
       addGeoS('cape','accent',tubeG(Array.from({length:41},(_,i)=>pts(.98,i/40)),.025*W));
       for(const side of [-1,1])addGeoS('upper','leather',tubeG([V(side*.34*W,Y(.04),frontZ(side*.34*W,Y(.04))+.08),V(side*.3*W,Y(.18),frontZ(side*.3*W,Y(.18))+.1),V(side*.42*W,Y(.34),frontZ(side*.42*W,Y(.34))+.09)],.035*W));
-      const p=V(-Wr.x,Wr.y+.05,Wr.z+.27*W);addGeoS('extras','accent',sph(p,.29*W,1.25,.85,1));
+      const p=V(-Wr.x-dF.x*.27*W,Wr.y+dF.y*.27*W,Wr.z+.30*W);addGeoS('extras','accent',sph(p,.29*W,1.25,.85,1));
       for(let i=-1;i<=1;i++)addGeoS('extras','secondary',tubeG([p.clone().add(V(i*.11*W,-.1*W,.24*W)),p.clone().add(V(i*.11*W,.08*W,.28*W)),p.clone().add(V(i*.11*W,.2*W,.2*W))],.018*W));
       for(const side of [-1,1])for(let i=0;i<3;i++)button('upper','trim',g.solid,side*.13*W,Y(.1+i*.07),.028*W);
     }else{
       cape('Manto_deserto','accent',{top:.02,yBottom:Y(watch?.86:guard?.8:.7),span:3.8,flare:.3,pleats:8,ragged:watch?.04*W:0,over:g.env,trim:'trim'});
-      rim('extras','accent',g.outer,yN-.035,.06*W);
+      drapedScarf(g.solid,!!B.cactus);
       if(watch){const p=surfAt(g.solid,Y(.16),0,.06*W),gem=new THREE.OctahedronGeometry(.13*W);gem.scale(.65,1.4,.4);gem.translate(...p.toArray());addGeoS('extras','trim',gem)}
       if(cowboy)for(const side of [-1,1]){const p=surfAt(g.solid,Y(.39),side*.9,.04);addGeoS('extras','leather',sph(p,.16*W,1,1.25,.5));button('extras','trim',g.solid,side*.39*W,Y(.37),.04*W)}
     }
     if(guard){
-      mirror(side=>{const r=g.sl.rS,p=V(side*S.x,S.y+r*.8,S.z);addGeoS('upper','fabric',sph(p,r,1.3,.5,1.25));addGeoS('upper','trim',tubeG([p.clone().add(V(-r,.04,r*.6)),p.clone().add(V(0,r*.3,r)),p.clone().add(V(r,.04,r*.6))],.035*W));});
+      pauldrons(g,true);
+      const crest=badge('flame',.22*W,.03*W),cp=surfAt(g.solid,Y(.17),0,.055*W);crest.translate(...cp.toArray());addGeoS('upper','trim',crest);
       limbWrap('Bracadeira_deserto','trim',E,Wr,.3,.8,.06*W);
       const r=.21*Lb,p=V(-Wr.x-.04*W,Wr.y+.3*W,Wr.z+.6*W),border=shieldGeo(r);border.translate(...p.toArray());addGeoS('extras','trim',border);
       const panel=shieldGeo(r*.88);panel.translate(p.x,p.y,p.z+.08*W);addGeoS('extras','fabric',panel);
-      const emblem=leafGeo(.28*r,.05*W);emblem.translate(p.x,p.y,p.z+.15*r+.1*W);addGeoS('extras','trim',emblem);
+      const emblem=badge('flame',.31*r,.035*W);emblem.translate(p.x,p.y,p.z+.15*r+.1*W);addGeoS('extras','trim',emblem);
       const x=Wr.x+.1*W,yt=yN+2.1*W;addGeoS('extras','leather',tubeG([V(x,ySole,.1),V(x,yt,.1)],.035*W));const point=new THREE.ConeGeometry(.13*W,.6*W,6);point.translate(x,yt+.25*W,.1);addGeoS('extras','trim',point);
     }
     return;
@@ -437,24 +493,27 @@ export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot 
     const princess=style==='forest_princess',guard=style==='forest_guard',artificer=style==='forest_artificer',archer=style==='forest_archer';
     const hem=princess?.97:artificer?.7:guard?.51:.5;
     const g=garment(princess?'Vestido_floresta':artificer?'Casaca_floresta':'Tunica_floresta',archer?'secondary':'fabric','upper',{
-      top:yN+.08,bottom:Y(hem),split:princess?Y(.34):null,t:.05*W,cell:.035*clamp(W,1,1.3),sleeve:guard?'short':'forearm',short:.7,sleeveEase:.06*W,puff:.035*W,vneck:.08,
-      env:{ease:.055*W,hang:.45,cinch:Y(.33),cinchK:.85,flareFrom:Y(.36),flare:princess?.24:.16,folds:(princess?.035:.015)*W,foldN:14}
+      top:yN+.08,bottom:Y(hem),split:princess?Y(.34):null,t:.05*W,cell:.035*clamp(W,1,1.3),sleeve:guard?'short':princess?'forearm':'forearm',short:.7,sleeveEase:.065*W,puff:archer?.1*W:.045*W,bell:princess?.17*W:0,vneck:princess?.22:.10,
+      env:{ease:.055*W,hang:.45,cinch:Y(.33),cinchK:.85,flareFrom:Y(.36),flare:princess?.30:.14,folds:(princess?.047:.018)*W,foldN:14}
     });
-    sleeveCuffs(g,'upper','leather',.045*W);
+    sleeveCuffs(g,'upper',princess?'trim':'leather',.055*W);bootFinish(princess?.06:.23);
+    if(archer||artificer){const vest=garment('Gibao_floresta','leather','upper',{top:yN+.025,bottom:Y(artificer?.44:.38),sleeve:'none',open:.30,openTaper:.75,hollow:true,over:g.solid,overGap:.055*W,t:.07*W,env:{ease:.10*W,hang:.32,cinch:Y(.32),cinchK:.9}});edgeTube(vest,'open','trim','upper',.016*W);edgeTube(vest,'arm','trim','upper',.016*W);for(const side of [-1,1]){pocketOn('belt',g.solid,.38,side*.7,.21*W,.26*W);seamOn('upper','trim',vest.solid,.07,.34,t=>side*(.55+.06*Math.sin(PI*t)),.009*W)}}
+    if(guard||artificer)pauldrons(g,false);
     rim('upper','trim',g.outer,a=>yN+.075-.08*Math.max(0,Math.cos(a))**6,.017*W);
     rim(princess?'lower':'upper','trim',g.outer,Y(hem)+.012,.018*W);
     beltOn('Cinto_floresta','leather',g.solid,Y(.34),.11*W,.03*W);
     buckle('belt','trim',g.solid,Y(.34),.2*W,.14*W);
+    if(guard)patchOn('upper','accent',g.env,Y(.10),Y(.49),0,.82,.04*W);
     // Brasão em geometria real, com tronco, ramos e folhas; sem textura externa.
-    const crest=treeGeo(.2*W),cp=surfAt(g.solid,Y(.17),0,.035*W);crest.translate(...cp.toArray());addGeoS('upper','trim',crest);
-    cape('Capa_floresta','accent',{top:.025,yBottom:Y(princess?.975:.84),span:princess?4.6:3.7,flare:princess?.45:.3,pleats:8,ragged:princess?0:.05*W,over:g.env,trim:'trim'});
+    const crest=treeGeo(.25*W),cp=surfAt(g.solid,Y(.17),0,.08*W);crest.translate(...cp.toArray());addGeoS('upper','trim',crest);
+    const c= cape('Capa_floresta','accent',{top:.025,yBottom:Y(princess?.975:.84),span:princess?4.6:3.7,flare:princess?.45:.3,pleats:8,ragged:princess?0:.05*W,over:g.env,trim:'trim',refined:true});
+    if(princess)dressFinish(g,c,true);else if(c)capeEmblem(c,treeGeo(.31*W),.37,.5);
     const cy=Y(.31),back=surfAt(g.env,cy,PI,.1*W+(princess?.45:.3)*.35),cg=treeGeo(.2*W);cg.rotateY(PI);cg.translate(...back.toArray());addGeoS('cape','trim',cg);
     if(!princess)trousers('Calca_floresta','pants',{top:.35,ease:.055*W,cuff:.07,under:{fn:g.solid,y:Y(hem)+.03}});
     boots('Botas_floresta','leather',{t:.07*W,h:princess?.06:.23,cuffT:.055*W,toe:.035});
     if(guard||artificer){
       mirror(side=>{
         const r=g.sl?.rS||.33*W,p=V(side*S.x,S.y+r*.73,S.z);
-        addGeoS('upper','trim',sph(p,r,1.2,.43,1.22));
         const leaf=leafGeo(.13*W,.025*W);leaf.rotateZ(-side*.5);leaf.translate(p.x,p.y+.04*W,p.z+r*.88);addGeoS('upper','leather',leaf);
         const sh=K.clone().lerp(A,.6);sh.x*=side;sh.z=frontZ(sh.x,sh.y)+.12*W;
         addGeoS('feet','trim',sph(sh,.22*W,1,3.6,.4));
@@ -481,12 +540,13 @@ export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot 
         const f=leafGeo(.1*W,.01*W);f.translate(tip.x,tip.y-.08*W,tip.z);addGeoS('extras','fabric',f);
       }
     }else if(artificer){
-      const p=V(0,Y(.19),backZ(0,Y(.19))-.23*W),pack=new RoundedBoxGeometry(.7*W,.85*W,.35*W,4,.08*W);pack.translate(...p.toArray());addGeoS('extras','leather',pack);
+      const p=V(0,Y(.19),Math.min(backZ(0,Y(.19))-.23*W,c?.at(.2,.5).z-.20*W||Infinity)),pack=new RoundedBoxGeometry(.96*W,1.12*W,.40*W,4,.08*W);pack.translate(...p.toArray());addGeoS('extras','leather',pack);
       for(const side of [-1,1]){
         const q=p.clone().add(V(side*.43*W,0,-.03*W)),tank=new THREE.CylinderGeometry(.13*W,.13*W,.63*W,24);tank.translate(...q.toArray());addGeoS('extras','trim',tank);
         addGeoS('extras','gem',sph(q.clone().add(V(0,.33*W,0)),.11*W));
         addGeoS('extras','leather',tubeG([q.clone().add(V(0,-.25*W,0)),p.clone().add(V(side*.22*W,-.5*W,0)),p.clone().add(V(side*.24*W,-.15*W,-.23*W))],.025*W));
       }
+      for(const side of [-1,1]){const cog=gear(.17*W,.04*W);cog.rotateY(PI);cog.translate(p.x+side*.22*W,p.y-.27*W,p.z-.25*W);addGeoS('extras','trim',cog);const band=panel(.035*W,.79*W,.025*W);band.translate(p.x+side*.21*W,p.y,p.z-.225*W);addGeoS('extras','fabric',band);}
       const vial=surfAt(g.solid,Y(.4),.65,.1*W),vg=new THREE.CylinderGeometry(.07*W,.07*W,.28*W,20);vg.translate(...vial.toArray());addGeoS('extras','gem',vg);
     }else{
       // Colar de folhas e joia: uma alternativa leve aos ornamentos da referência.
@@ -501,12 +561,14 @@ export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot 
   // Reino da Lua: quatro conjuntos novos, com as mesmas envoltórias e caches do catálogo.
   if(['lunar_explorer','lunar_guardian','lunar_inventor','lunar_ruby'].includes(style)){
     const magic=style==='lunar_guardian'||style==='lunar_ruby',nico=style==='lunar_inventor';
-    const g=garment(magic?'Vestido_lunar':nico?'Camisa_inventor':'Jaqueta_lunar',nico?'secondary':'fabric','upper',{
+    const g=garment(magic?'Vestido_lunar':nico?'Camisa_inventor':'Jaqueta_lunar',nico?'secondary':magic?'fabric':'secondary','upper',{
       top:yN+.08,bottom:Y(magic?.97:nico?.38:.37),split:magic?Y(.345):null,t:.045*W,cell:.035*clamp(W,1,1.3),
-      sleeve:magic?'short':'forearm',short:.8,sleeveEase:.045*W,puff:(magic?.025:.06)*W,vneck:magic?.14:.035,
-      env:{ease:.045*W,hang:.5,cinch:Y(.33),cinchK:.8,flareFrom:Y(.36),flare:magic?.18:.06,folds:(magic?.028:.012)*W,foldN:14}
+      sleeve:'forearm',short:.8,sleeveEase:.055*W,bell:magic?.17*W:0,puff:(magic?.045:.09)*W,vneck:magic?.22:.07,
+      env:{ease:.045*W,hang:.5,cinch:Y(.33),cinchK:.8,flareFrom:Y(.36),flare:magic?.29:.06,folds:(magic?.045:.018)*W,foldN:14}
     });
-    sleeveCuffs(g,'upper',magic?'trim':'leather',.035*W);
+    sleeveCuffs(g,'upper',magic?'trim':'leather',.05*W);bootFinish(magic?.06:.1,!magic);
+    if(!magic&&!nico){const jacket=garment('Jaqueta_aberta_lunar','fabric','upper',{top:yN+.05,bottom:Y(.36),sleeve:'forearm',sleeveEase:.085*W,puff:.07*W,open:.25,openTaper:.8,hollow:true,over:g.solid,overGap:.06*W,t:.065*W,env:{ease:.09*W,hang:.35,cinch:Y(.32),cinchK:.88}});edgeTube(jacket,'open','trim','upper',.018*W);sleeveCuffs(jacket,'upper','leather',.06*W);for(const side of [-1,1])pocketOn('upper',jacket.solid,.25,side*.68,.20*W,.18*W);}
+    if(nico){for(const side of [-1,1]){pocketOn('lower',g.solid,.45,side*.65,.20*W,.23*W);seamOn('upper','trim',g.solid,.15,.35,side*.35,.009*W);}}
     rim('upper','trim',g.outer,a=>yN+.075-(magic?.14:.035)*Math.max(0,Math.cos(a))**6,.017*W);
     const sew=(slot,y,ph=0,r=.15*W,ch='trim',fn=g.solid)=>{
       const p=surfAt(fn,y,ph,.024*W),geo=crescent(r,.018*W);geo.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(V(0,0,1),V(Math.sin(ph),0,Math.cos(ph))));geo.translate(...p.toArray());addGeoS(slot,ch,geo);
@@ -515,7 +577,7 @@ export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot 
     sew('belt',Y(.34),0,.12*W);
     if(magic){
       rim('lower','trim',g.outer,Y(.97)+.015,.02*W);
-      cape('Capa_lunar','accent',{top:.025,yBottom:Y(.975),span:4.6,flare:.45,pleats:10,over:g.env,trim:'trim'});
+      const c=cape('Capa_lunar','accent',{top:.025,yBottom:Y(.975),span:4.6,flare:.45,pleats:12,over:g.env,trim:'trim',refined:true});dressFinish(g,c,false);
       // Símbolos do manto assentados na superfície de trás, sem texturas e sem shaders exclusivos.
       for(const [f,r] of [[.13,.13],[.55,.18],[.8,.12]]){
         const y=Y(f),p=surfAt(g.env,y,PI,.10*W+.45*(f/.975)),geo=crescent(r*W,.018*W);geo.rotateY(PI);geo.translate(...p.toArray());addGeoS('cape','trim',geo);
@@ -539,16 +601,19 @@ export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot 
           for(let i=0;i<p.count;i++)p.setXYZ(i,p.getX(i)+n.getX(i)*.035*W,p.getY(i)+n.getY(i)*.035*W,p.getZ(i)+n.getZ(i)*.035*W);
           addGeoS('upper','fabric',shellCloth(source,(x,y,z)=>Math.max(y-Y(.13),Y(.35)-y,Math.abs(x)-.38*W,z0+.02-z),.018*W));
         }
-        for(const side of [-1,1]){const pts=[];for(let i=0;i<=22;i++)pts.push(surfAt(g.solid,Y(.04+i/22*.145),side*.43,.035*W));addGeoS('upper','fabric',tubeG(pts,.045*W));button('upper','trim',g.outer,side*.26*W,Y(.16),.036*W)}
+        for(const side of [-1,1]){patchOn('upper','fabric',g.solid,Y(.035),Y(.18),side*.43,.22,.04*W);button('upper','trim',g.outer,side*.26*W,Y(.16),.036*W)}
       }else{
         sew('upper',Y(.16),0,.15*W);
         for(const side of [-1,1]){const pts=[];for(let i=0;i<=24;i++)pts.push(surfAt(g.solid,Y(.065+i/24*.26),side*.55,.024*W));addGeoS('upper','trim',tubeG(pts,.009*W))}
       }
       // Mochila, bolso e rolo: poucas peças arredondadas, exportáveis e opcionais no slot Extras.
-      const p=V(0,Y(.17),backZ(0,Y(.17))-.22*W),pack=new RoundedBoxGeometry(.72*W,.82*W,.31*W,4,.09*W);pack.translate(...p.toArray());addGeoS('extras','leather',pack);
+      const p=V(0,Y(.17),backZ(0,Y(.17))-.26*W),pack=new RoundedBoxGeometry(.94*W,1.07*W,.40*W,4,.09*W);pack.translate(...p.toArray());addGeoS('extras','leather',pack);
       const flap=new RoundedBoxGeometry(.58*W,.34*W,.09*W,3,.04*W);flap.translate(p.x,p.y+.17*W,p.z-.19*W);addGeoS('extras','fabric',flap);
+      for(const side of [-1,1]){const bg=buckleGeo(.105*W,.11*W,.018*W);bg.rotateY(PI);bg.translate(side*.22*W,p.y+.10*W,p.z-.28*W);addGeoS('extras','trim',bg);const strap=panel(.045*W,.44*W,.025*W);strap.translate(side*.22*W,p.y-.08*W,p.z-.23*W);addGeoS('extras','fabric',strap);}
       const moon=crescent(.13*W,.022*W);moon.rotateY(PI);moon.translate(p.x,p.y+.17*W,p.z-.25*W);addGeoS('extras','trim',moon);
       for(const side of [-1,1]){const points=[];for(let i=0;i<=22;i++)points.push(surfAt(g.solid,Y(.035+i/22*.25),side*.48,.055*W));addGeoS('extras','leather',tubeG(points,.034*W))}
+      for(const side of [-1,1]){const cog=gear(.085*W,.025*W);cog.rotateY(PI);cog.translate(p.x+side*.32*W,p.y-.33*W,p.z-.235*W);addGeoS('extras','trim',cog);}
+      if(!nico){const w=Wr.clone().lerp(E,.16);w.z+=limbR(w,dF)+.05*W;const g=panel(.23*W,.21*W,.065*W);g.translate(...w.toArray());addGeoS('extras','trim',g);const screen=panel(.16*W,.14*W,.014*W);screen.translate(w.x,w.y,w.z+.04*W);addGeoS('extras','gem',screen);limbWrap('Pulseira_exploradora','leather',E,Wr,.78,.94,.04*W);}
       if(nico){const roll=new THREE.CylinderGeometry(.07*W,.07*W,.63*W,24);roll.translate(p.x+.43*W,p.y+.25*W,p.z);addGeoS('extras','secondary',roll)}
       // Bolsos cargo presos nas laterais da calça.
       for(const side of [-1,1]){const cp=V(side*(H.x+.16*W),Y(.48),frontZ(side*H.x,Y(.48))+.09*W),pocket=new RoundedBoxGeometry(.24*W,.3*W,.09*W,3,.03*W);pocket.translate(...cp.toArray());addGeoS('lower','leather',pocket)}

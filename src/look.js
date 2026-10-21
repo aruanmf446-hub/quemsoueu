@@ -38,9 +38,9 @@ export const DEFAULT_LOOKS = {
   pepper_king: { hair: 'none', hairColor: '#120c0c', acc: { head: 'crown' } },
   chili_bandit: { hair: 'none', hairColor: '#140a08', acc: {} },
   nana_explorer: { hair: 'lunar_curls', hairColor: '#20131c', acc: { face: 'visor', ears: 'hoops' }, colors: { gem2: '#5ab8ef' } },
-  moon_guardian: { hair: 'long_wavy', hairColor: '#201419', acc: { head: 'moon_crown', ears: 'drop' }, colors: { gem: '#416ec4', gem2: '#416ec4' } },
+  moon_guardian: { hair: 'court_waves', hairColor: '#201419', acc: { head: 'moon_crown', ears: 'drop' }, colors: { gem: '#416ec4', gem2: '#416ec4' } },
   nico_inventor: { hair: 'short_curls', hairColor: '#59311e', beard: 'none', acc: { face: 'glasses', head: 'goggles' } },
-  ruby_sorceress: { hair: 'long_braids', hairColor: '#20131a', acc: { head: 'moon_crown', ears: 'drop', forehead: 'tikka' }, colors: { gem: '#c0182a', gem2: '#c0182a' } },
+  ruby_sorceress: { hair: 'court_waves', hairColor: '#20131a', acc: { head: 'moon_crown', ears: 'drop', forehead: 'tikka' }, colors: { gem: '#c0182a', gem2: '#c0182a' } },
   paysandu_wolf: { hair: 'none', acc: { head: 'wolf_kit' }, colors: { fabric: '#253f74', gem: '#4788d9' } },
   ruby_raven: { hair: 'none', acc: { head: 'raven_kit' }, colors: { fabric: '#932d3d', gem: '#c0182a' } },
   robot_ball: { hair: 'none', hairColor: '#333', acc: {} }
