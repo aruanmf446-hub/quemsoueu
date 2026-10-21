@@ -222,6 +222,19 @@ Verificação: os 12 personagens orgânicos responderam aos toques em Magro/Padr
 
 Adaptações simplificadas das referências para o catálogo do Ateliê. Nenhum modelo, textura ou API externa foi utilizado. As novas identidades não substituem os personagens anteriores.
 
+### Lista para refinamento posterior
+
+Os seis personagens estão na primeira versão e ficam pendentes de refinamento visual, conforme solicitado pelo usuário. Os testes de funcionamento não representam aprovação estética. Retomar os ajustes quando o usuário solicitar, usando as referências enviadas e trabalhando por partes: **malha → rosto → corpo → roupas e acessórios**.
+
+- [ ] Paysandu (`paysandu_wolf`).
+- [ ] Nana exploradora (`nana_explorer`).
+- [ ] Guardiã da Lua (`moon_guardian`).
+- [ ] Nico inventor (`nico_inventor`).
+- [ ] Feiticeira rubi (`ruby_sorceress`).
+- [ ] Corvo rubi (`ruby_raven`).
+
+Reaproveitar as bases e peças do Ateliê, manter o estilo do game e apresentar renders para avaliação de cada personagem antes de marcar seu refinamento como concluído.
+
 | Personagem | Rosto e corpo | Figurino / equipamento |
 | --- | --- | --- |
 | Paysandu | Lobo quadrúpede, focinho claro, olhos âmbar, orelhas e cauda | Lenço azul, lua dourada, bolsas e braceletes |
