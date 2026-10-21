@@ -48,7 +48,9 @@ export function mountEditor(api) {
   function select(cat,section){
     if(!configs[cat])return false;
     const conf=configs[cat],next=section||remembered[cat]||conf.subs[0].id;if(!conf.subs.some(s=>s.id===next))return false;
+    const enteringBody=cat==='body'&&category!=='body';
     category=cat;sub=next;remembered[cat]=sub;
+    if(enteringBody)api.previewBody();
     if(cat==='clothes'&&sub!=='sets')api.selectSlot(sub);
     sidebar.scrollTop=0;previews.cancelView();api.refresh();api.onLayout();return true;
   }

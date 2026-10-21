@@ -198,3 +198,21 @@ node tests/encaixe-roupas.cjs
 `ATELIE_RENDERS` define a pasta compartilhada das duas capturas. O teste registra frente, perfil e 3/4, compara a malha do corpo entre as versões e confere GLB nos casos principais. Esses renders servem à avaliação do usuário; testes de cobertura, por si só, não aprovam a estética do encaixe.
 
 Verificação do encaixe (20/10/2026): 36 casos de cobertura, 386.486 vértices e zero falhas; 12 casos adicionais de limites de folga. Foram comparados dez casos de orc/sereias em frente, perfil e 3/4, com o corpo idêntico ao da referência. Os 13 personagens passaram na regressão visual e de GLB; 700 trocas de peças e cores, maior p95 em cache de 18 ms nesta execução, sem erros de console. As prévias reais do catálogo preservaram o orc magro. A aprovação estética final continua com o usuário.
+
+## Seleção de tipo físico e peso
+
+Ao abrir **Corpo**, a câmera enquadra o corpo inteiro. Selecionar um tipo físico ou ajustar peso/músculo ativa a exibição do corpo e mantém o ângulo de visão. Os cartões permanecem no DOM durante os toques; a confirmação **Aplicado** aparece junto dos controles. O arraste usa `input` com debounce e confirma o valor final em `change`, incluindo teclado e acessibilidade.
+
+Os testes anteriores confirmavam os modelos gerados; a nova regressão verifica a largura real da cintura após toques nos botões dos 12 personagens e arrastes do peso, além dos estados de corpo oculto e câmera no rosto. A API `setBuild(build)` mantém o comportamento anterior; a interface pede explicitamente a visualização do resultado. Geometria, proporções, roupas, cabelo e rig não mudaram nesta correção.
+
+```sh
+# Servidor na porta 8000:
+node tests/controles-corpo.cjs
+node tests/corpo-visivel.cjs
+# Para reproduzir os estados de visibilidade anteriores à correção:
+ATELIE_REFERENCIA=1 node tests/corpo-visivel.cjs
+```
+
+`ATELIE_MOBILE=1` executa os controles em largura de celular. `ATELIE_PERSONAGENS` permite limitar a medição por IDs; `ATELIE_RENDERS` escolhe a pasta das capturas e relatórios. Os testes de visibilidade também conferem identidade da cabeça e exportação do build escolhido com os 12 clipes faciais.
+
+Verificação: os 12 personagens orgânicos responderam aos toques em Magro/Padrão/Gordo, com cintura medida na malha e cabeça/rig preservados. Os três casos de visibilidade falharam na referência `60f7e90` e passaram após a correção; arraste e confirmação por `change` também passaram, com exportação GLB de 12 clipes e sem erros de console.

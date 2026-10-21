@@ -99,3 +99,9 @@ Novos testes: `tests/ajuste-roupas.mjs` (incluído em figurinos) e `tests/encaix
 Verificação do encaixe (20/10/2026): 36 casos de cobertura, 386.486 vértices e zero falhas; 12 casos adicionais de limites de folga. Foram comparados dez casos de orc/sereias em frente, perfil e 3/4, com o corpo idêntico ao da referência. Os 13 personagens passaram na regressão visual e de GLB; 700 trocas de peças e cores, maior p95 em cache de 18 ms nesta execução, sem erros de console. As prévias reais do catálogo preservaram o orc magro. A aprovação estética final continua com o usuário.
 
 Galeria reproduzível: `python3 tests/galeria-encaixe.py renders/encaixe` (Pillow). Nesta execução, arquivos em `/workspace/outputs/encaixe-roupas/`; produção publica pela main. Rosto, corpo, rig, cabelo, acessórios e proporções não foram modificados.
+
+## Correção posterior — controles do corpo e peso
+
+O usuário relatou que Magro/Gordo e Peso não produziam mudança visível. A medição dos controles confirmou a variação real das cinturas nos corpos originais; foram reproduzidos três estados de falha de visualização na versão `60f7e90`: aplicar após close do rosto, aplicar com o corpo oculto e entrar em Corpo após editar o rosto. A correção no `index.html` e `src/editor.js` enquadra/mostra o corpo ao usar os controles, preserva os cartões durante o toque, confirma o valor final em `change` e mostra feedback de aplicação. A causa específica no dispositivo do usuário ainda depende de sua confirmação; não afirmar que o gerador de corpos estava quebrado.
+
+Não modificar as roupas nesta etapa: o usuário pediu para ignorar esse tópico caso o encaixe já estivesse validado. Os geradores de corpo, cabeça, rig, cabelo e acessórios também permanecem intactos. Novos testes `tests/controles-corpo.cjs` e `tests/corpo-visivel.cjs`, incluídos no CI do menu, medem cintura real após cliques/toques, arraste, visibilidade e GLB. Artefatos locais em `/workspace/outputs/controles-corpo/`.

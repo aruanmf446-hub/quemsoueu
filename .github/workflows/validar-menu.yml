@@ -15,6 +15,8 @@ on:
       - src/outfits.js
       - tests/figurinos.mjs
       - tests/ajuste-roupas.mjs
+      - tests/controles-corpo.cjs
+      - tests/corpo-visivel.cjs
       - tests/menu-previas.cjs
       - tests/visuais.cjs
       - tests/visuais-tipos.cjs
@@ -59,6 +61,10 @@ jobs:
           exit 1
       - name: Testar miniaturas, navegação, cache, mobile e GLB
         run: timeout 48m node tests/menu-previas.cjs
+      - name: Conferir aplicação dos tipos físicos e peso por toque e arraste
+        run: |
+          node tests/controles-corpo.cjs
+          node tests/corpo-visivel.cjs
       - name: Registrar resultado no GitHub Actions
         if: always()
         run: |
@@ -76,7 +82,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: capturas-menu-atelie
-          path: renders/menu/
+          path: |
+            renders/menu/
+            renders/controles-corpo/
           if-no-files-found: warn
           retention-days: 30
 

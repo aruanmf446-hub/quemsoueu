@@ -55,6 +55,7 @@ button:hover{background:#f6eaee}.preset.active:hover{background:#4a3642}
     <div class="ctrl"><label for="bodyWeight">Peso <output id="bodyWeightValue">Padrão</output></label><input id="bodyWeight" type="range" min="-1" max="1" step=".05" value="0" aria-label="Peso: magro a gordo"/><div class="sub"><span>Magro</span><span>Gordo</span></div></div>
     <div class="ctrl"><label for="bodyMuscle">Músculo <output id="bodyMuscleValue">0%</output></label><input id="bodyMuscle" type="range" min="0" max="1" step=".05" value="0"/></div>
     <div class="chips" id="bodyBuilds"></div>
+    <p class="muted" id="bodyFeedback" role="status" aria-live="polite"></p>
   </div><p class="muted" id="bodyHint">Ajuste peso e músculo ou escolha um tipo físico.</p></section>
   <section class="group" id="gClothes"><h3>Roupas</h3><p class="muted" id="clothesHint"></p><div class="body"><div class="cards" id="outfits"></div><div class="sub">Personalizar peças</div><div class="chips" id="clothSlots"></div><div class="cards" id="clothPieces" style="margin-top:10px"></div><div id="clothColors"></div></div></section>
   <section class="group" id="gAcc"><h3>Acessórios</h3><div class="body"><div id="accs"></div><div id="accColors"></div></div></section>
@@ -111,6 +112,7 @@ let activeClothSlot='upper',editor=null;
 const statusEl=document.getElementById('status');
 function busy(msg,fn){statusEl.textContent=msg;requestAnimationFrame(()=>setTimeout(()=>{fn();statusEl.textContent=PRESETS[presetId].label},0))}
 function rebuildHead(){
+  el('bodyFeedback').textContent='';
   if(clothesObj){clothesObj.dispose();clothesObj=null}
   if(current){scene.remove(current.root);if(current.body)current.body.geo.dispose();current.dispose()}if(lookObj){lookObj.dispose();lookObj=null}
   const look=getLook();current=buildHead(presetId,{},{quality:1,...headOpts(look,PRESETS[presetId])});wrap(current);scene.add(current.root);
@@ -122,17 +124,20 @@ function rebuildClothes(){
 }
 // Somente corpo e roupas são substituídos; o grupo da cabeça, o rig e o visual permanecem vivos.
 let buildRevision=0,bodyTiming=0;
-function setBuild(value){
+function setBuild(value,preview=false){
+  if(preview&&PRESETS[presetId].kind!=='robot')el('showBody').checked=true;
   const look=getLook();look.build=normalizeBuild({...look.build,...value});refreshBuildUI();
   const revision=++buildRevision,id=presetId;
-  statusEl.textContent='Montando corpo…';
+  editor?.previews.hold('corpo',true);
+  statusEl.textContent='Montando corpo…';el('bodyFeedback').textContent='Aplicando tipo físico…';el('gBody').setAttribute('aria-busy','true');
   return new Promise((resolve,reject)=>requestAnimationFrame(()=>setTimeout(()=>{
     if(revision!==buildRevision||id!==presetId){resolve(false);return}
     const start=performance.now();
     try{
       if(current.body){const b=current.body;b.mesh.removeFromParent();b.geo.dispose();if(b.vegSkin)b.mesh.material.dispose();current.body=null}
-      addBody(current);rebuildClothes();refreshUI();bodyTiming=performance.now()-start;resolve(bodyTiming);
-    }catch(error){reject(error)}finally{statusEl.textContent='Head V2 · '+PRESETS[presetId].label}
+      addBody(current);rebuildClothes();if(preview)frameBodyPreview();refreshUI();bodyTiming=performance.now()-start;
+      const applied=current.body?.build;el('bodyFeedback').textContent=applied?'Aplicado: '+buildLabel(applied)+'.':'';resolve(bodyTiming);
+    }catch(error){el('bodyFeedback').textContent='Não foi possível aplicar o tipo físico. Tente novamente.';reject(error)}finally{editor?.previews.hold('corpo',false);el('gBody').setAttribute('aria-busy','false');statusEl.textContent='Head V2 · '+PRESETS[presetId].label}
   },0)));
 }
 function setLook(value){
@@ -146,6 +151,21 @@ function setLook(value){
   rebuildClothes();refreshUI();
 }
 const BUILD_PRESETS={Magro:{weight:-1,muscle:0},Padrão:{weight:0,muscle:0},Gordo:{weight:1,muscle:0},Musculoso:{weight:0,muscle:1}};
+function buildLabel(build){
+  const match=Object.entries(BUILD_PRESETS).find(([,v])=>build.weight===v.weight&&build.muscle===v.muscle);
+  return match?match[0]:'peso '+Math.round(build.weight*100)+'% · músculo '+Math.round(build.muscle*100)+'%';
+}
+// O resultado deve aparecer no corpo inteiro mesmo depois de editar o rosto ou ocultar o corpo.
+function frameBodyPreview(){
+  if(!current.body)return;
+  const direction=camera.position.clone().sub(orbit.target).normalize();frameBody();
+  TARGET.set(0,frame.ty,0);orbit.target.copy(TARGET);camera.position.copy(TARGET).addScaledVector(direction,frame.dist);orbit.update();
+}
+function previewBody(){
+  if(PRESETS[presetId].kind==='robot')return;
+  if(!current.body||!el('showBody').checked)return setBuild(getLook().build,true);
+  frameBodyPreview();
+}
 function refreshBuildUI(){
   const build=normalizeBuild(getLook().build),robot=PRESETS[presetId].kind==='robot';
   el('gBody').classList.toggle('off',robot);
@@ -153,13 +173,27 @@ function refreshBuildUI(){
   el('bodyWeightValue').textContent=build.weight===0?'Padrão':(build.weight>0?'+':'')+Math.round(build.weight*100)+'%';
   el('bodyMuscleValue').textContent=Math.round(build.muscle*100)+'%';
   el('bodyHint').textContent=robot?'O robô usa o próprio casco.':'Ajuste peso e músculo ou escolha um tipo físico.';
-  el('bodyBuilds').replaceChildren(...Object.entries(BUILD_PRESETS).map(([label,value])=>chip(label,build.weight===value.weight&&build.muscle===value.muscle,()=>setBuild(value),{kind:'build',value,label})));
+  // Preserva os cartões durante o toque e o arraste; só o estado de seleção muda.
+  const cards=el('bodyBuilds');
+  if(!cards.childElementCount)cards.append(...Object.entries(BUILD_PRESETS).map(([label,value])=>{
+    const button=chip(label,false,()=>setBuild(value,true),{kind:'build',value,label});button.dataset.buildPreset=label;return button;
+  }));
+  for(const button of cards.children){const value=BUILD_PRESETS[button.dataset.buildPreset],on=build.weight===value.weight&&build.muscle===value.muscle;button.classList.toggle('on',on);button.setAttribute('aria-pressed',on)}
 }
 let buildSliderTimer;
-for(const [id,key] of [['bodyWeight','weight'],['bodyMuscle','muscle']])document.getElementById(id).oninput=e=>{
-  const value=Number(e.target.value);getLook().build=normalizeBuild({...getLook().build,[key]:value});refreshBuildUI();
-  clearTimeout(buildSliderTimer);buildSliderTimer=setTimeout(()=>setBuild(getLook().build),100);
-};
+for(const [id,key] of [['bodyWeight','weight'],['bodyMuscle','muscle']]){
+  const input=document.getElementById(id),update=(event,commit=false)=>{
+    const value=Number(event.target.value);getLook().build=normalizeBuild({...getLook().build,[key]:value});refreshBuildUI();
+    clearTimeout(buildSliderTimer);
+    if(commit){
+      const build=getLook().build,applied=current.body?.build;
+      if(!applied||applied.weight!==build.weight||applied.muscle!==build.muscle)setBuild(build,true);
+    }else buildSliderTimer=setTimeout(()=>setBuild(getLook().build,true),100);
+  };
+  input.oninput=event=>update(event);
+  // Confirma o valor final também nos controles por toque, teclado ou acessibilidade.
+  input.onchange=event=>update(event,true);
+}
 function chooseOutfit(id){
   if(!OUTFITS[id])return;
   const look=getLook();look.outfit=id;look.clothColors=outfitColors(id);look.pieces={};look.pieceColors={};
@@ -216,7 +250,7 @@ syncPoseUI();
 const presetsEl=document.getElementById('presets');
 for(const fam of FAMILY_ORDER){const ids=PRESET_ORDER.filter(id=>PRESETS[id].family===fam);if(!ids.length)continue;const h=document.createElement('div');h.className='fam';h.textContent=fam;presetsEl.append(h);
   for(const id of ids){const b=document.createElement('button');b.className='preset';b.dataset.preset=id;b.dataset.family=fam;b.dataset.preview=JSON.stringify({kind:'character',value:id,label:PRESETS[id].label});b.innerHTML='<b>'+PRESETS[id].label+'</b>';b.title=PRESETS[id].sub;b.onclick=()=>setPreset(id);presetsEl.append(b)}}
-function setPreset(id){++buildRevision;clearTimeout(buildSliderTimer);presetId=id;busy('Montando '+PRESETS[id].label+'…',()=>{rebuildHead();aim(...VIEWS.three)})}
+function setPreset(id){editor?.previews.hold('corpo',false);el('bodyFeedback').textContent='';el('gBody').setAttribute('aria-busy','false');++buildRevision;clearTimeout(buildSliderTimer);presetId=id;busy('Montando '+PRESETS[id].label+'…',()=>{rebuildHead();aim(...VIEWS.three)})}
 document.getElementById('front').onclick=()=>aim(...VIEWS.front);
 document.getElementById('bodyView').onclick=()=>{if(!el('showBody').checked){el('showBody').checked=true;busy('Montando…',()=>{rebuildHead();aim(...VIEWS.three)})}else{frameBody();aim(...VIEWS.three)}};
 document.getElementById('faceView').onclick=()=>{frame={ty:-.2,dist:7.4};aim(...VIEWS.three)};
@@ -299,7 +333,7 @@ document.getElementById('download').onclick=async e=>{
 window.__atelie={savedLook:id=>structuredClone(looks[id]||defaultLook(id)),clothes:()=>clothesObj,setPiece:choosePiece,setPieceColors,pieceOptions:slot=>pieceOptions(current.body,slot),setOutfit:chooseOutfit,setClothColors:colors=>{Object.assign(getLook().clothColors,colors);for(const piece of Object.values(getLook().pieceColors||{}))Object.assign(piece,colors);clothesObj.setColors(getLook().clothColors);refreshUI()},frame:()=>frame,body:()=>current.body,getLook,setBuild,bodyTiming:()=>bodyTiming,setLook,rebuildLook,lookObj:()=>lookObj,setExpression,setPose:p=>{pose={...NEUTRAL,...p};exprName=null;syncPoseUI();applyPose()},stopAuto:()=>{document.getElementById('autoBlink').checked=false;document.getElementById('talk').checked=false},group:()=>current.group,timings:()=>current.group.userData.timings,setPreset,aim,VIEWS,camera,orbit,clay:on=>current.group.traverse(o=>{if(o.isMesh&&o.material.vertexColors!==undefined&&o.material.name==='Skin'){o.material.vertexColors=!on;o.material.sheen=on?0:.6;if(on)o.material.color.set('#d8d4cf');else o.material.color.set('#ffffff');o.material.needsUpdate=true}}),exportGLB};
 
 rebuildHead();aim(...VIEWS.three);statusEl.textContent=PRESETS[presetId].label;
-editor=mountEditor({families:FAMILY_ORDER,slots:CLOTH_SLOTS,accessories:ACC_SLOTS,getContext:()=>({id:presetId,look:structuredClone(getLook())}),selectSlot:slot=>{activeClothSlot=slot},refresh:refreshUI,onLayout:()=>resize()});
+editor=mountEditor({families:FAMILY_ORDER,slots:CLOTH_SLOTS,accessories:ACC_SLOTS,getContext:()=>({id:presetId,look:structuredClone(getLook())}),selectSlot:slot=>{activeClothSlot=slot},refresh:refreshUI,previewBody,onLayout:()=>resize()});
 refreshUI();
 window.__atelie.editor=editor;
 function resize(){const w=host.clientWidth,h=Math.max(1,host.clientHeight-(host.querySelector('.stage-controls')?.offsetHeight||0));renderer.domElement.style.height=h+'px';renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}addEventListener('resize',resize);resize();
