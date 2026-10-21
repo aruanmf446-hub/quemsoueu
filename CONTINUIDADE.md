@@ -105,3 +105,13 @@ Galeria reproduzível: `python3 tests/galeria-encaixe.py renders/encaixe` (Pillo
 O usuário relatou que Magro/Gordo e Peso não produziam mudança visível. A medição dos controles confirmou a variação real das cinturas nos corpos originais; foram reproduzidos três estados de falha de visualização na versão `60f7e90`: aplicar após close do rosto, aplicar com o corpo oculto e entrar em Corpo após editar o rosto. A correção no `index.html` e `src/editor.js` enquadra/mostra o corpo ao usar os controles, preserva os cartões durante o toque, confirma o valor final em `change` e mostra feedback de aplicação. A causa específica no dispositivo do usuário ainda depende de sua confirmação; não afirmar que o gerador de corpos estava quebrado.
 
 Não modificar as roupas nesta etapa: o usuário pediu para ignorar esse tópico caso o encaixe já estivesse validado. Os geradores de corpo, cabeça, rig, cabelo e acessórios também permanecem intactos. Novos testes `tests/controles-corpo.cjs` e `tests/corpo-visivel.cjs`, incluídos no CI do menu, medem cintura real após cliques/toques, arraste, visibilidade e GLB. Artefatos locais em `/workspace/outputs/controles-corpo/`.
+
+
+## Reino da Lua — novas identidades
+
+Pedido: criar versões simples das seis referências, separando malha, rosto, corpo e acessórios. IDs novos: `paysandu_wolf`, `nana_explorer`, `moon_guardian`, `nico_inventor`, `ruby_sorceress`, `ruby_raven`. Não substituir os personagens originais. Humanos derivados de presets e proporções existentes; Nico usa a base infantil sem seios. Quatro conjuntos `lunar_*` usam os mesmos geradores de caimento e slots. Dois estilos de cabelo derivados, coroa lunar, óculos de inventor e visor entram no catálogo.
+
+Os companheiros têm gerador próprio em `src/companions.js`, com grupos separados e rig simples de expressões (12 clipes, sem morphs humanos). Equipamento opcional e cores ao vivo em Acessórios → Cabeça; malha de ave/quadrúpede não recebe roupa ou tipo físico humano. Sem transformação demoníaca ou efeitos de partículas nesta etapa. `tests/reino-lua.cjs` gera os renders e valida Worker/GLB; `tests/figurinos.mjs` inclui as novas identidades e os corpos novos.
+
+
+Validação: seis novos modelos com GLB de 12 clipes e Worker real, sem erros de console; 18 conjuntos e 16 corpos na suíte geométrica, 48 casos de cobertura / 535.572 vértices / zero falhas. A jardineira do Nico usa um recorte deslocado da malha da própria camisa, não uma parede SDF fina. A máscara do corvo sai com o equipamento. Renders locais: `/workspace/outputs/reino-lua/` (frente, 3/4, costas, rosto e base sem equipamento). Avaliação estética continua com o usuário.

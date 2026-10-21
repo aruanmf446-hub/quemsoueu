@@ -17,6 +17,9 @@ on:
       - tests/ajuste-roupas.mjs
       - tests/controles-corpo.cjs
       - tests/corpo-visivel.cjs
+      - src/companions.js
+      - src/lunar.js
+      - tests/reino-lua.cjs
       - tests/menu-previas.cjs
       - tests/visuais.cjs
       - tests/visuais-tipos.cjs
@@ -65,6 +68,8 @@ jobs:
         run: |
           node tests/controles-corpo.cjs
           node tests/corpo-visivel.cjs
+      - name: Conferir os personagens do Reino da Lua
+        run: node tests/reino-lua.cjs
       - name: Registrar resultado no GitHub Actions
         if: always()
         run: |
@@ -85,6 +90,7 @@ jobs:
           path: |
             renders/menu/
             renders/controles-corpo/
+            renders/reino-lua/
           if-no-files-found: warn
           retention-days: 30
 
@@ -113,7 +119,7 @@ jobs:
             sleep 1
           done
           exit 1
-      - name: Conferir os 13 personagens, roupas, rig e GLB
+      - name: Conferir os 19 personagens, roupas, rig e GLB
         run: timeout 48m node tests/visuais.cjs
       - name: Disponibilizar capturas de frente e 3/4
         if: always()
@@ -127,7 +133,7 @@ jobs:
           retention-days: 30
 
   malhas:
-    name: Geometria preservada e 36 verificações de tipos físicos
+    name: Geometria preservada e 48 verificações de tipos físicos
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
