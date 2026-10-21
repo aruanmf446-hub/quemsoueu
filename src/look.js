@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { buildHair, HAIR_STYLES, HAIR_COLORS } from './hair.js';
 import { buildAccessories, ACCESSORIES, ACC_SLOTS, ACC_COLORS } from './accessories.js';
+import { buildCompanionLook } from './companions.js';
 import { PRESETS } from './presets.js';
 import { defaultClothes } from './clothes.js';
 export { HAIR_STYLES, HAIR_COLORS, ACCESSORIES, ACC_SLOTS, ACC_COLORS };
@@ -34,6 +35,12 @@ export const DEFAULT_LOOKS = {
   cactus_cowboy: { hair: 'none', hairColor: '#24170f', acc: { head: 'cowboy' }, colors: { fabric: '#6b4228', metal: '#b8a27a' } },
   pepper_king: { hair: 'none', hairColor: '#120c0c', acc: { head: 'crown' } },
   chili_bandit: { hair: 'none', hairColor: '#140a08', acc: {} },
+  nana_explorer: { hair: 'lunar_curls', hairColor: '#20131c', acc: { face: 'visor', ears: 'hoops' }, colors: { gem2: '#5ab8ef' } },
+  moon_guardian: { hair: 'long_wavy', hairColor: '#201419', acc: { head: 'moon_crown', ears: 'drop' }, colors: { gem: '#416ec4', gem2: '#416ec4' } },
+  nico_inventor: { hair: 'short_curls', hairColor: '#59311e', beard: 'none', acc: { face: 'glasses', head: 'goggles' } },
+  ruby_sorceress: { hair: 'long_braids', hairColor: '#20131a', acc: { head: 'moon_crown', ears: 'drop', forehead: 'tikka' }, colors: { gem: '#c0182a', gem2: '#c0182a' } },
+  paysandu_wolf: { hair: 'none', acc: { head: 'wolf_kit' }, colors: { fabric: '#253f74', gem: '#4788d9' } },
+  ruby_raven: { hair: 'none', acc: { head: 'raven_kit' }, colors: { fabric: '#932d3d', gem: '#c0182a' } },
   robot_ball: { hair: 'none', hairColor: '#333', acc: {} }
 };
 export function defaultLook(presetId) {
@@ -45,6 +52,7 @@ export const headOpts = (look, P) => ({ skin: look.skin, beard: look.beard, hair
 
 // Monta cabelo + acessórios no espaço da cabeça e prende no osso da cabeça (vão juntos no GLB)
 export function buildLook(fit, look, bodySdf = null) {
+  if(fit?.companion)return buildCompanionLook(fit,look);
   const group = new THREE.Group(); group.name = 'Look';
   if (fit && bodySdf) { const hs = fit.sdf; fit = { ...fit, sdf: (x, y, z) => y < -1.25 ? Math.min(hs(x, y, z), bodySdf(x, y, z)) : hs(x, y, z) } } // cabelo cai sobre ombros e costas
   if (!fit) return { group, dispose() { }, setColors() { }, setHairColor() { } };
@@ -62,6 +70,7 @@ export function buildLook(fit, look, bodySdf = null) {
 }
 // prende o visual no osso da cabeça mantendo a posição (a cabeça já está montada em pose neutra)
 export function attachLook(head, L) {
+  if(head.fit?.companion){head.group.add(L.group);return}
   if (!head.fit || !head.fit.headBone) { head.group.add(L.group); return }
   head.group.updateMatrixWorld(true); L.group.applyMatrix4(head.group.matrixWorld); L.group.updateMatrixWorld(true); // visual está no espaço da cabeça (que pode estar reduzida)
   head.fit.headBone.attach(L.group);

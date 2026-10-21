@@ -5,6 +5,7 @@ import {clothSurface,shellCloth} from '../src/fabric.js';
 import { buildHead } from '../src/head.js';
 import { buildBody, headScale } from '../src/body.js';
 import { buildClothes, defaultClothes, OUTFITS, CLOTH_SLOTS, pieceOptions } from '../src/clothes.js';
+import { defaultLook, buildLook } from '../src/look.js';
 import { PRESETS } from '../src/presets.js';
 // A textura procedural da íris não participa destes testes de geometria.
 globalThis.document = { createElement: () => ({ getContext: () => new Proxy({}, { get: (_, key) => key === 'createLinearGradient' ? () => ({ addColorStop() {} }) : () => {} }) }) };
@@ -21,12 +22,25 @@ for(let i=0;i<sp.count;i++)if(sp.getX(i)===tp.getX(i)&&sp.getY(i)===tp.getY(i)&&
 const geometricIds=new Map(),vertexIds=[];for(let i=0;i<sp.count;i++){const key=[sp.getX(i),sp.getY(i),sp.getZ(i)].map(v=>Math.round(v*1e6)).join(':');if(!geometricIds.has(key))geometricIds.set(key,geometricIds.size);vertexIds.push(geometricIds.get(key))}
 const shellEdges=new Map(),six=shellA.index.array;for(let i=0;i<six.length;i+=3)for(let k=0;k<3;k++){const a=vertexIds[six[i+k]],b=vertexIds[six[i+(k+1)%3]];if(a===b)continue;const key=Math.min(a,b)+':'+Math.max(a,b);shellEdges.set(key,(shellEdges.get(key)||0)+1)}
 assert([...shellEdges.values()].every(n=>n===2),'A casca tem uma abertura sem espessura');shellA.dispose();shellB.dispose();
-for (const id of Object.keys(PRESETS)) {
+for (const id of (process.env.ATELIE_PERSONAGENS?.split(',')||Object.keys(PRESETS))) {
   if (PRESETS[id].kind === 'robot') {
     const clothes = buildClothes(null, defaultClothes(id));
     assert.equal(clothes.group.children.length, 0); clothes.dispose(); continue;
   }
   const head = buildHead(id, {}, { quality: .35 });
+  if(PRESETS[id].kind==='companion'){
+    assert(head.group.getObjectByName('Body'));assert(head.group.getObjectByName('Rosto'));
+    assert.equal(head.rig.makeClips().length,12);head.rig.apply({jaw:.5,blinkL:1});
+    const look=defaultLook(id),visual=buildLook(head.fit,look);
+    if(head.fit.maskGroup)assert.equal(head.fit.maskGroup.visible,true);
+    visual.rebuildAcc({...look,acc:{}});assert.equal(visual.acc.group.children.length,0);
+    if(head.fit.maskGroup)assert.equal(head.fit.maskGroup.visible,false,'A máscara deve sair junto do equipamento');
+    visual.rebuildAcc(look);visual.setColors({metal:'#c9ccd1',fabric:'#246366'});
+    visual.acc.group.traverse(m=>{if(m.isMesh&&m.material.name==='Acc_Metal')assert.equal(m.material.color.getHexString(),'c9ccd1');if(m.isMesh&&m.material.name==='Acc_Fabric')assert.equal(m.material.color.getHexString(),'246366')});
+    visual.dispose();
+    head.group.traverse(m=>{if(m.isMesh)assert(m.geometry.attributes.position.array.every(Number.isFinite))});
+    head.dispose();console.log(id+': malha própria, rosto, corpo e clipes');continue;
+  }
   const body = buildBody(head.fit, id, { cell: .045, headScale: headScale(id), mermaid: !!OUTFITS[defaultClothes(id).outfit]?.mermaid });
   const positions = body.geo.attributes.position.array.slice();
   for (const outfit of Object.keys(OUTFITS)) {

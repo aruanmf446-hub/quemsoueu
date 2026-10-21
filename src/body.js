@@ -82,6 +82,12 @@ export const BODIES = {
   chili_bandit: { head: .95, neckUp: .42, heads: 4.3, W: .92, sh: 1.14, chest: 1.02, waist: .92, hip: .8, depth: .95, muscle: .65, arm: 1.08, hand: 1.18, leg: 1.04, glute: .7, vegSkin: true }
 };
 
+// Novas identidades reaproveitam as proporções aprovadas; apenas o Nico usa a base infantil sem seios.
+BODIES.nana_explorer = {...BODIES.feminine_bold};
+BODIES.moon_guardian = {...BODIES.feminine_soft};
+BODIES.nico_inventor = {...BODIES.cute_round};
+BODIES.ruby_sorceress = {...BODIES.feminine_bold};
+
 // escala da cabeça com corpo (a cabeça é desenhada grande para o close do rosto; no corpo inteiro ela diminui)
 export const headScale = id => (BODIES[id] && BODIES[id].head) || 1;
 

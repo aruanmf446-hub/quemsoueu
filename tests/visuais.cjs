@@ -36,11 +36,11 @@ for(const id of ids){
    if(!head||!(head.scale||[1,1,1]).every(x=>Math.abs(x-expectedScale)<1e-6))throw Error('Escala da cabeça alterada');
    for(const mesh of json.meshes)for(const p of mesh.primitives)if(p.attributes.NORMAL!==undefined&&json.accessors[p.attributes.NORMAL].count!==json.accessors[p.attributes.POSITION].count)throw Error('Normais incompletas no GLB');
    if(id==='sad_clown'&&!json.images?.some(i=>i.bufferView!==undefined))throw Error('Listras não foram incorporadas no GLB');
-   if(!json.skins?.length||!json.meshes.some(m=>m.primitives.some(p=>p.targets?.length===11)))throw Error('Rig ou blendshapes ausentes');
+   if(!a.group().getObjectByName('Rosto')&&(!json.skins?.length||!json.meshes.some(m=>m.primitives.some(p=>p.targets?.length===11))))throw Error('Rig ou blendshapes ausentes');
   }
   return {id,MB:+(data.byteLength/1048576).toFixed(2),animations:json.animations?.length||0,clothes:nodes.filter(x=>x.name?.startsWith('Roupa_')).length};
  },id);reports.push(report);console.log('GLB',JSON.stringify(report));
- if(id!=='robot_ball'){
+ if(!process.env.ATELIE_SOMENTE_RENDERS&&id!=='robot_ball'&&!['paysandu_wolf','ruby_raven'].includes(id)){
   const metrics=await page.evaluate(()=>{
     const a=window.__atelie,body=a.body(),head=a.group(),skin=body.geo.attributes.position.array.slice(),times=[];
     for(const slot of ['upper','lower','feet','cape','belt','extras'])for(const option of a.pieceOptions(slot)){

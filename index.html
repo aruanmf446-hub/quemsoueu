@@ -90,7 +90,7 @@ const TARGET=new THREE.Vector3(0,-.2,0);
 let frame={ty:-.2,dist:7.4};
 function aim(x,y,z){const k=frame.dist/7.4;camera.position.set(x*k,frame.ty+(y+.2)*k,z*k);TARGET.set(0,frame.ty,0);orbit.target.copy(TARGET);orbit.update()}
 const VIEWS={front:[0,-.05,7.4],side:[7.4,-.05,.02],three:[3.4,.8,6.5]};
-function frameBody(){const b=current&&current.body;if(b){const box=clothesObj?new THREE.Box3().setFromObject(clothesObj.group):null,top=Math.max(b.pivot.y+b.hs*(current.fit.top-b.pivot.y)+.1,box&&!box.isEmpty()?box.max.y:-Infinity),bottom=Math.min(b.ySole,box&&!box.isEmpty()?box.min.y:Infinity);frame={ty:(top+bottom)/2,dist:Math.max(9,(top-bottom)*2.05)}}else frame={ty:-.2,dist:7.4}}
+function frameBody(){if(current?.fit?.companion){const box=new THREE.Box3().setFromObject(current.group),size=box.getSize(new THREE.Vector3());frame={ty:box.getCenter(new THREE.Vector3()).y,dist:Math.max(7.4,Math.max(size.y,size.x/camera.aspect,size.z)*2.15)};return}const b=current&&current.body;if(b){const box=clothesObj?new THREE.Box3().setFromObject(clothesObj.group):null,top=Math.max(b.pivot.y+b.hs*(current.fit.top-b.pivot.y)+.1,box&&!box.isEmpty()?box.max.y:-Infinity),bottom=Math.min(b.ySole,box&&!box.isEmpty()?box.min.y:Infinity);frame={ty:(top+bottom)/2,dist:Math.max(9,(top-bottom)*2.05)}}else frame={ty:-.2,dist:7.4}}
 aim(...VIEWS.three);
 
 renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFShadowMap;
@@ -162,17 +162,17 @@ function frameBodyPreview(){
   TARGET.set(0,frame.ty,0);orbit.target.copy(TARGET);camera.position.copy(TARGET).addScaledVector(direction,frame.dist);orbit.update();
 }
 function previewBody(){
-  if(PRESETS[presetId].kind==='robot')return;
+  if(['robot','companion'].includes(PRESETS[presetId].kind))return;
   if(!current.body||!el('showBody').checked)return setBuild(getLook().build,true);
   frameBodyPreview();
 }
 function refreshBuildUI(){
-  const build=normalizeBuild(getLook().build),robot=PRESETS[presetId].kind==='robot';
+  const build=normalizeBuild(getLook().build),robot=['robot','companion'].includes(PRESETS[presetId].kind);
   el('gBody').classList.toggle('off',robot);
   for(const [id,key] of [['bodyWeight','weight'],['bodyMuscle','muscle']]){el(id).value=build[key];el(id).disabled=robot}
   el('bodyWeightValue').textContent=build.weight===0?'Padrão':(build.weight>0?'+':'')+Math.round(build.weight*100)+'%';
   el('bodyMuscleValue').textContent=Math.round(build.muscle*100)+'%';
-  el('bodyHint').textContent=robot?'O robô usa o próprio casco.':'Ajuste peso e músculo ou escolha um tipo físico.';
+  el('bodyHint').textContent=robot?'Este personagem usa uma malha própria, sem ajuste de peso.':'Ajuste peso e músculo ou escolha um tipo físico.';
   // Preserva os cartões durante o toque e o arraste; só o estado de seleção muda.
   const cards=el('bodyBuilds');
   if(!cards.childElementCount)cards.append(...Object.entries(BUILD_PRESETS).map(([label,value])=>{
@@ -215,13 +215,14 @@ const ground=new THREE.Mesh(new THREE.PlaneGeometry(40,40),new THREE.ShadowMater
 // da base do pescoço (escala uniforme no grupo: ossos, blendshapes e animações do rosto continuam iguais).
 function wrap(h){h.root=new THREE.Group();h.root.name='Personagem_'+(h.params.id||presetId);h.root.add(h.group);return h}
 function addBody(h,cell){
+  if(h.fit?.companion){h.fit.bodyGroup.visible=el('showBody').checked;return null}
   if(!el('showBody').checked)return null;
   const id=h.params.id||presetId,s=headScale(id),b=buildBody(h.fit,id,{cell:cell||.032*Math.min(1.3,Math.max(1,BODIES[id]?.W||1)),headScale:s,build:getLook().build,mermaid:!!OUTFITS[defaultLook(id).outfit]?.mermaid});if(!b)return null;
   const pv=b.pivot;h.group.scale.setScalar(s);h.group.position.set(pv.x*(1-s),pv.y*(1-s),pv.z*(1-s));h.group.updateMatrixWorld(true);
   const skin=h.group.getObjectByName('Head_Skin'),m=new THREE.Mesh(b.geo,b.vegSkin?new THREE.MeshPhysicalMaterial({name:'Skin_Body',vertexColors:true,roughness:.5,clearcoat:.25,clearcoatRoughness:.4,sheen:.3,sheenColor:new THREE.Color('#ffffff').multiplyScalar(.3)}):skin.material);m.name='Body';m.userData.build={...b.build};m.castShadow=true;m.receiveShadow=true;
   h.root.add(m);h.body={...b,mesh:m};return h.body;
 }
-function syncBody(){const b=current&&current.body;ground.visible=!!b;if(b){const box=new THREE.Box3().setFromObject(clothesObj.group);ground.position.y=Math.min(b.ySole,box.isEmpty()?b.ySole:box.min.y)-.002}frameBody()}
+function syncBody(){if(current?.fit?.companion){ground.visible=el('showBody').checked;ground.position.y=(PRESETS[presetId].species==='wolf'?-3.27:-2.28);frameBody();return}const b=current&&current.body;ground.visible=!!b;if(b){const box=new THREE.Box3().setFromObject(clothesObj.group);ground.position.y=Math.min(b.ySole,box.isEmpty()?b.ySole:box.min.y)-.002}frameBody()}
 const hasFacialHair=()=>{const P=current&&current.params;return !!(P&&(P.beardVol||P.stache||P.goatee))};
 
 // ---------- expressões (rig) ----------
@@ -267,12 +268,13 @@ function card(label,sub,on,click,spec){const b=document.createElement('button');
 function chip(label,on,click,spec){const b=document.createElement('button');b.className=on?'on':'';b.textContent=label;b.onclick=click;return previewData(b,spec)}
 function refreshUI(){
   refreshBuildUI();
-  const P=PRESETS[presetId],look=getLook(),robot=P.kind==='robot',veg=P.family==='Vegetais';
+  const P=PRESETS[presetId],look=getLook(),robot=P.kind==='robot',veg=P.family==='Vegetais',companion=P.kind==='companion';
   document.querySelectorAll('.preset').forEach(b=>b.classList.toggle('active',b.dataset.preset===presetId));
   for(const g of ['gSkin','gHair','gBeard','gAcc'])el(g).classList.toggle('off',robot);
   el('gBeard').style.display=veg?'none':'';
+  for(const g of ['gHair','gBeard'])el(g).classList.toggle('off',robot||companion);
   el('gClothes').classList.toggle('off',!current.body);
-  el('clothesHint').textContent=robot?'O robô usa o próprio casco.':!current.body?'Ative Mostrar corpo para experimentar as roupas.':'Escolha um conjunto ou combine peças e cores por categoria.';
+  el('clothesHint').textContent=companion?'O equipamento deste companheiro fica em Acessórios → Cabeça.':robot?'O robô usa o próprio casco.':!current.body?'Ative Mostrar corpo para experimentar as roupas.':'Escolha um conjunto ou combine peças e cores por categoria.';
   el('outfits').replaceChildren(...Object.entries(OUTFITS).map(([id,def])=>card(def.label,def.sub,look.outfit===id&&!Object.keys(look.pieces||{}).length,()=>chooseOutfit(id),{kind:'outfit',value:id,label:def.label})));
   el('clothSlots').replaceChildren(...Object.entries(CLOTH_SLOTS).map(([id,label])=>chip(label,activeClothSlot===id,()=>{activeClothSlot=id;refreshUI()})));
   const selected=pieceSelection(look,current.body)[activeClothSlot];
@@ -302,7 +304,7 @@ function refreshUI(){
     if(hasFacialHair()&&look.hair!=='none')busy('Pintando barba…',rebuildHead);else refreshUI()})));
   el('beards').replaceChildren(...Object.entries(BEARD_STYLES).map(([k,l])=>chip(l,look.beard===k,()=>{look.beard=k;busy('Trocando barba…',rebuildHead)},{kind:'beard',value:k,label:l})));
   const accs=el('accs');accs.replaceChildren();
-  for(const slot of ACC_SLOTS){const items=Object.entries(ACCESSORIES).filter(([,a])=>a.slot===slot.id);if(!items.length)continue;
+  for(const slot of ACC_SLOTS){const items=Object.entries(ACCESSORIES).filter(([,a])=>a.slot===slot.id&&(companion?a.companion===P.species:!a.companion));if(!items.length)continue;
     const h=document.createElement('div');h.className='sub';h.textContent=slot.label;h.dataset.accSlot=slot.id;accs.append(h);
     const row=document.createElement('div');row.className='chips';row.dataset.accSlot=slot.id;accs.append(row);
     row.append(chip('Nenhum',!look.acc[slot.id],()=>{delete look.acc[slot.id];busy('Trocando…',()=>{lookObj.rebuildAcc(look);refreshUI()})},{kind:'accessory',slot:slot.id,value:null,label:'Nenhum'}));

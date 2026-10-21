@@ -3,6 +3,8 @@
 // brincos no lóbulo da orelha; enfeite de testa na linha do cabelo; flores e coral sobre o cabelo.
 // Cores por material (metal, pedra principal, pedras menores, chapéu, flores) → trocar cor é instantâneo.
 import * as THREE from 'three';
+import { crescent } from './lunar.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 const { clamp } = THREE.MathUtils;
@@ -19,6 +21,11 @@ export const ACC_COLORS = {
 };
 export const ACC_SLOTS = [{ id: 'head', label: 'Cabeça' }, { id: 'ears', label: 'Orelhas' }, { id: 'forehead', label: 'Testa' }, { id: 'hairpin', label: 'Enfeite de cabelo' }, { id: 'face', label: 'Rosto' }];
 export const ACCESSORIES = {
+  moon_crown: {slot:'head',label:'Coroa lunar',colors:['metal','gem','gem2']},
+  goggles: {slot:'head',label:'Óculos de inventor',colors:['metal','gem2']},
+  visor: {slot:'face',label:'Visor azul',colors:['metal','gem2']},
+  wolf_kit: {slot:'head',label:'Equipamento de Paysandu',colors:['metal','fabric','gem'],companion:'wolf'},
+  raven_kit: {slot:'head',label:'Equipamento do corvo',colors:['metal','fabric','gem'],companion:'raven'},
   tiara: { slot: 'head', label: 'Tiara', colors: ['metal', 'gem', 'gem2'] },
   crown: { slot: 'head', label: 'Coroa', colors: ['metal', 'gem', 'gem2'] },
   cowboy: { slot: 'head', label: 'Chapéu de cowboy', colors: ['fabric', 'metal'] },
@@ -76,12 +83,13 @@ export function buildAccessories(fit, sel = {}, cols = {}, hairMeshes = []) {
     flower: new THREE.MeshPhysicalMaterial({ name: 'Acc_Flower', color: cols.flower || '#f6f1e6', roughness: .55, sheen: .6, sheenColor: new THREE.Color('#ffffff') }),
     pollen: new THREE.MeshPhysicalMaterial({ name: 'Acc_Pollen', color: '#e8b52c', roughness: .7 }),
     glass: new THREE.MeshPhysicalMaterial({ name: 'Acc_Glass', color: '#dfe9f2', roughness: .05, metalness: 0, transparent: true, opacity: .28, specularIntensity: 1, clearcoat: 1, clearcoatRoughness: 0, depthWrite: false, side: THREE.DoubleSide }),
+    visor: new THREE.MeshPhysicalMaterial({name:'Acc_Visor',color:cols.gem2||'#5ab8ef',transparent:true,opacity:.18,roughness:.05,clearcoat:.8,depthWrite:false,side:THREE.DoubleSide}),
     liquid: new THREE.MeshPhysicalMaterial({ name: 'Acc_Liquid', color: cols.gem || '#8e3fd0', emissive: cols.gem || '#8e3fd0', emissiveIntensity: .55, roughness: .3, transparent: true, opacity: .85 })
   };
   const setColors = c => {
     if (c.metal) mats.metal.color.set(c.metal);
     if (c.gem) { mats.gem.color.set(c.gem); mats.liquid.color.set(c.gem); mats.liquid.emissive.set(c.gem) }
-    if (c.gem2) mats.gem2.color.set(c.gem2);
+    if (c.gem2) {mats.gem2.color.set(c.gem2);mats.visor.color.set(c.gem2)}
     if (c.fabric) { mats.fabric.color.set(c.fabric); mats.band.color.set(c.fabric).multiplyScalar(.45) }
     if (c.flower) mats.flower.color.set(c.flower);
   };
@@ -154,7 +162,7 @@ export function buildAccessories(fit, sel = {}, cols = {}, hairMeshes = []) {
     }
     for(let i=0;i<64;i++){const a=i/64*Math.PI*2;for(const dy of [.012,.11])add('metal',sphere(R.at(a).add(V(0,dy,0)).addScaledVector(R.out(a),.015),.008,1,1,1,8,6))}
   }
-  if (head === 'tiara') {
+  if (head === 'tiara' || head === 'moon_crown') {
     const R = ring(top - (hasHair ? .17 : .2), -.15, .006), span = 105 * DEG, pts = [];
     for (let i = 0; i <= 80; i++) pts.push(R.at(-span + 2 * span * i / 80));
     add('metal', tube(pts, .011, 8));
@@ -293,6 +301,22 @@ export function buildAccessories(fit, sel = {}, cols = {}, hairMeshes = []) {
     for (let i = 0; i <= 10; i++) { const t = i / 10; pts.push(V(a.x + (b.x - a.x) * t - Math.sign(a.x - b.x) * 0, 0, 0)) }
     const l = V(Math.sign(a.x) * (Math.abs(a.x) - R), a.y + .02, zF), r2 = V(Math.sign(b.x) * (Math.abs(b.x) - R), b.y + .02, zF);
     add('metal', tube([l, l.clone().lerp(mid, .5).add(V(0, .02, 0)), mid, r2.clone().lerp(mid, .5).add(V(0, .02, 0)), r2], .011, 6));
+  }
+
+  // Elementos lunares reaproveitam a medição externa do cabelo e as órbitas do rosto.
+  if(head==='moon_crown'){
+    const R=ring(top-.3,-.08,.025),p=R.at(0).add(V(0,.17,.015)),g=crescent(.2,.035);g.translate(...p.toArray());add('metal',g);
+    add('gem2',gemGeo(p.clone().add(V(.045,0,.025)),.055,V(0,0,1),1.25));
+  }
+  if(head==='goggles'){
+    const R=ring(top-.3,-.06,.04),band=[];for(let i=0;i<=80;i++)band.push(R.at(i/80*Math.PI*2));add('band',tube(band,.026));
+    for(const side of [-1,1]){const p=R.at(side*.36).add(V(0,.05,.055)),g=new THREE.TorusGeometry(.17,.035,10,40);g.translate(...p.toArray());add('metal',g);const lens=new THREE.CircleGeometry(.145,32);lens.translate(p.x,p.y,p.z+.015);add('glass',lens);add('gem2',sphere(p.clone().add(V(side*.21,0,0)),.035))}
+  }
+  if(sel.face==='visor'&&fit.eyes?.length===2){
+    const y=fit.eyes.reduce((a,e)=>a+e.y,0)/2,z=Math.max(...fit.eyes.map(e=>e.z+e.R))+.09;
+    const lens=new RoundedBoxGeometry(1.24,.4,.025,5,.07);lens.translate(0,y,z);add('visor',lens);
+    add('metal',tube([V(-.64,y+.18,z),V(0,y+.21,z+.01),V(.64,y+.18,z)],.018));
+    for(const side of [-1,1]){add('gem2',sphere(V(side*.65,y,z-.015),.055,1,.85,.5));add('metal',tube([V(side*.64,y,z),V(side*.79,y+.01,.25),V(side*.79,y+.02,-.13)],.015))}
   }
 
   // ---------------- malhas por material ----------------

@@ -19,7 +19,7 @@ function first(root,ray){let best=Infinity,orientation=0;const hit=V(),ab=V(),ac
  function visit(n){if(!ray.intersectBox(n.box,hit))return;if(n.items){for(const t of n.items){if(ray.intersectTriangle(...t.v,false,hit)){const d=hit.distanceTo(ray.origin),o=ab.subVectors(t.v[1],t.v[0]).cross(ac.subVectors(t.v[2],t.v[0])).dot(ray.direction);if(d<best&&o>0&&d>.001){best=d;orientation=o}}}}else{visit(n.left);visit(n.right)}}visit(root);return{distance:best,orientation};}
 const defaultIds=process.env.ATELIE_PERSONAGENS?.split(',')||['cute_round','cactus_cowboy','chili_bandit','masculine_soft','sad_clown','dwarf_bard','alchemist_villain'];
 export function checkCoverage(ids=defaultIds,builds=[{weight:0,muscle:0}]){
-for(const id of ids)for(const build of builds){const h=buildHead(id,{}, {quality:.35}),look=defaultClothes(id),b=buildBody(h.fit,id,{cell:.045,headScale:headScale(id),build,mermaid:!!OUTFITS[look.outfit]?.mermaid}),c=buildClothes(b,look),meshes=[];
+for(const id of ids.filter(id=>BODIES[id]))for(const build of builds){const h=buildHead(id,{}, {quality:.35}),look=defaultClothes(id),b=buildBody(h.fit,id,{cell:.045,headScale:headScale(id),build,mermaid:!!OUTFITS[look.outfit]?.mermaid}),c=buildClothes(b,look),meshes=[];
  c.group.updateMatrixWorld(true);c.group.traverse(m=>{if(m.isMesh&&m.parent.name==='RoupaSlot_lower'&&!m.material.transparent&&!/Detalhes|Dobra|Nadadeira/.test(m.name))meshes.push(tree(m.geometry))});
  assert(meshes.length,`${id}: peça inferior ausente`);
  // A pele pode estar coberta pela calça ou pela peça de cima (túnica, colete, jaleco) que desce sobre o quadril.

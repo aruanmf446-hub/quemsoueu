@@ -10,6 +10,7 @@
 // calculada na malha, brilho por vértice (lábios), sombras projetadas. Sem assets externos.
 import * as THREE from 'three';
 import { resolve } from './presets.js';
+import { buildCompanion } from './companions.js';
 import { buildRobot } from './robot.js';
 import { createRig } from './rig.js';
 
@@ -501,6 +502,7 @@ export function buildHead(presetId, adj, opts = {}) {
   const Q = opts.quality || 1;
   const P = resolve(presetId, adj);
   if (P.kind === 'robot') return buildRobot(P, opts);
+  if (P.kind === 'companion') return buildCompanion(P, opts);
   applyLook(P, opts);
   const disposables = [], root = new THREE.Group();
   root.name = 'Head_V2_' + presetId;

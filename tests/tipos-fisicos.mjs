@@ -8,7 +8,7 @@ export const BUILDS={magro:{weight:-1,muscle:0},padrao:{weight:0,muscle:0},gordo
 assert.deepEqual(normalizeBuild({weight:20,muscle:-2}),{weight:1,muscle:0});
 assert.deepEqual(normalizeBuild({weight:NaN,muscle:Infinity}),BUILDS.padrao);
 function volume(g){const p=g.attributes.position,ix=g.index.array;let sum=0;for(let i=0;i<ix.length;i+=3){const a=ix[i],b=ix[i+1],c=ix[i+2];sum+=p.getX(a)*(p.getY(b)*p.getZ(c)-p.getZ(b)*p.getY(c))+p.getY(a)*(p.getZ(b)*p.getX(c)-p.getX(b)*p.getZ(c))+p.getZ(a)*(p.getX(b)*p.getY(c)-p.getY(b)*p.getX(c))}return Math.abs(sum/6)}
-for(const id of (process.env.ATELIE_PERSONAGENS?.split(',')||Object.keys(BODIES))){
+for(const id of (process.env.ATELIE_PERSONAGENS?.split(',')||Object.keys(BODIES)).filter(id=>BODIES[id])){
  const h=buildHead(id,{}, {quality:.35}),look=defaultClothes(id),opts={cell:.045,headScale:headScale(id),mermaid:!!OUTFITS[look.outfit]?.mermaid},neutral=buildBody(h.fit,id,opts),volumes={};
  for(const [name,build]of Object.entries(BUILDS)){
   const b=buildBody(h.fit,id,{...opts,build});

@@ -37,7 +37,13 @@ const SLOT_STYLES = {
   belt: ['orc', 'adventurer', 'desert', 'mermaid_pearl', 'mermaid_ruby', 'casual', 'dress', 'warrior', 'cowboy', 'royal', 'inventor'],
   extras: ['circus', 'orc', 'adventurer', 'desert', 'mermaid_pearl', 'mermaid_ruby', 'cowboy']
 };
+// Os conjuntos lunares usam os mesmos slots; combinações continuam clica-e-troca.
+for(const slot of Object.keys(SLOT_STYLES))SLOT_STYLES[slot].push(...(slot==='cape'?['lunar_guardian','lunar_ruby']:['lunar_explorer','lunar_guardian','lunar_inventor','lunar_ruby']));
 const PIECE_LABELS = {
+  lunar_explorer:{upper:'Jaqueta lunar',lower:'Calça cargo',feet:'Tênis de exploração',belt:'Cinto lunar',extras:'Mochila lunar'},
+  lunar_guardian:{upper:'Corpete lunar',lower:'Saia da guardiã',feet:'Sapatos lunares',cape:'Manto azul',belt:'Cinto crescente',extras:'Cajado lunar'},
+  lunar_inventor:{upper:'Camisa e jardineira',lower:'Calça da jardineira',feet:'Tênis do inventor',belt:'Cinto de ferramentas',extras:'Mochila e projeto'},
+  lunar_ruby:{upper:'Corpete rubi',lower:'Saia da feiticeira',feet:'Sapatos rubi',cape:'Manto rubi',belt:'Cinto crescente',extras:'Cajado rubi'},
   circus: { upper: 'Casaca de circo', lower: 'Bombacha listrada', feet: 'Sapatões e meias', extras: 'Gola, punhos e luvas' },
   orc: { upper: 'Ombreira de espinhos', lower: 'Saiote de tiras', feet: 'Polainas do guerreiro', belt: 'Cinto de caveira', extras: 'Braçadeiras de metal' },
   adventurer: { upper: 'Camisa e gibão', lower: 'Calça aventureira', feet: 'Botas de viagem', cape: 'Capa aventureira', belt: 'Bússola e bolsas', extras: 'Gola e braçadeiras' },
@@ -53,6 +59,7 @@ const PIECE_LABELS = {
 const STYLE_ALIAS = { clown: 'circus' };
 const styleOf = id => STYLE_ALIAS[id] || id;
 export function pieceOptions(body, slot) {
+  if(!body)return [{id:'none',label:'Nenhum'}];
   const mermaid = !!body?.joints.mermaid;
   return [{ id: 'none', label: 'Nenhum' }, ...(SLOT_STYLES[slot] || []).filter(style => {
     if (slot === 'feet') return !mermaid;

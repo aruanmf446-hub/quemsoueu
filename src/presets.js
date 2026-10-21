@@ -209,8 +209,29 @@ PRESETS.robot_ball = {
   shell: '#ece6da', accent: '#f08a24', glow: '#5fe3ff', blushColor: '#ff8a55', expression: 'happy'
 };
 
+// Reino da Lua: modelos prontos derivados do catálogo, sem esticar o rosto durante a personalização.
+PRESETS.nana_explorer = derive('feminine_bold', {
+  id: 'nana_explorer', label: 'Nana exploradora', family: 'Humanos', sub: 'Exploradora lunar, cachos escuros e visor azul',
+  skin: '#946044', blush: '#ac6251', lip: '#8b4144', brow: '#20121b', iris: ['#b88345', '#69401e', '#261309']
+});
+PRESETS.moon_guardian = derive('feminine_soft', {
+  id: 'moon_guardian', label: 'Guardiã da Lua', family: 'Humanos', sub: 'Vestido azul e preto, manto e coroa lunar',
+  skin: '#dca582', iris: ['#a97843', '#68401e', '#2c170b']
+});
+PRESETS.nico_inventor = derive('cute_round', {
+  id: 'nico_inventor', label: 'Nico inventor', family: 'Humanos', sub: 'Jovem engenheiro, jardineira, óculos e mochila',
+  skin: '#dca582', lip: '#ad665a', blushK: .4, lashN: 0, flick: 0, iris: ['#bf8a45', '#78481f', '#30190b']
+});
+PRESETS.ruby_sorceress = derive('feminine_bold', {
+  id: 'ruby_sorceress', label: 'Feiticeira rubi', family: 'Humanos', sub: 'Vestido escuro, manto rubi e joias lunares',
+  skin: '#cc9373', lip: '#831d35', iris: ['#c17a3b', '#783319', '#30120b']
+});
+PRESETS.paysandu_wolf = {id:'paysandu_wolf',label:'Paysandu',family:'Criaturas',kind:'companion',species:'wolf',skin:'#333b55',sub:'Lobo da Lua, focinho claro, lenço azul e medalhão'};
+PRESETS.ruby_raven = {id:'ruby_raven',label:'Corvo rubi',family:'Criaturas',kind:'companion',species:'raven',skin:'#262333',sub:'Corvo cartoon, máscara clara, lenço rubi e joia lunar'};
+
 export const FAMILY_ORDER = ['Humanos', 'Criaturas', 'Vegetais', 'Robôs'];
 export const PRESET_ORDER = ['feminine_soft', 'masculine_soft', 'old_king', 'cute_round', 'feminine_bold', 'alchemist_villain', 'dwarf_bard', 'sad_clown',
+  'nana_explorer', 'moon_guardian', 'nico_inventor', 'ruby_sorceress', 'paysandu_wolf', 'ruby_raven',
   'orc_warrior', 'cactus_cowboy', 'pepper_king', 'chili_bandit', 'robot_ball'];
 
 export const DEFAULT_ADJ = { headWidth: 1, cheeks: 1, jaw: 1, eyes: 1, eyeGap: 1, nose: 1, mouth: 1 };
@@ -218,7 +239,7 @@ export const DEFAULT_ADJ = { headWidth: 1, cheeks: 1, jaw: 1, eyes: 1, eyeGap: 1
 // Aplica os ajustes finos (sliders) por cima do preset escolhido.
 export function resolve(presetId, adj = DEFAULT_ADJ) {
   const b = PRESETS[presetId], P = { ...b };
-  if (b.kind === 'robot') return P; // robô tem gerador próprio (sem sliders de anatomia)
+  if (b.kind === 'robot' || b.kind === 'companion') return P; // robô tem gerador próprio (sem sliders de anatomia)
   const { headWidth: W, cheeks: C, jaw: J, eyes: E, eyeGap: G, nose: N, mouth: M } = { ...DEFAULT_ADJ, ...adj };
   P.cran = b.cran.slice(); P.cran[2] *= W;
   // casca facial: largura geral (crânio), bochechas (terço médio) e mandíbula (terço inferior) escalam a curva a(y)

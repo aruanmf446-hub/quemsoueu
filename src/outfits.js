@@ -5,6 +5,7 @@
 // Suavização só no tecido, com pregas, avesso e barras próprias.
 // Luvas usam recortes com folga nas normais; o corpo é somente consultado, nunca alterado.
 import * as THREE from 'three';
+import { crescent } from './lunar.js';
 import { sdfMesh, refinedSdfMesh } from './body.js';
 import { smoothCloth, shellCloth } from './fabric.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
@@ -24,6 +25,10 @@ const memoField = fn => { let px=NaN,py,pz,value;return (x,y,z)=>{if(x===px&&y==
 
 // ---------- catálogo ----------
 export const SDF_OUTFITS = {
+  lunar_explorer: { label: 'Exploradora lunar', sub: 'Jaqueta curta, calça cargo, tênis e mochila', channels: ['fabric','secondary','pants','accent','leather','trim'] },
+  lunar_guardian: { label: 'Guardiã da Lua', sub: 'Vestido escuro, manto azul e símbolos lunares', channels: ['fabric','secondary','accent','leather','trim'] },
+  lunar_inventor: { label: 'Jovem inventor', sub: 'Camisa, jardineira azul, tênis e mochila de ferramentas', channels: ['fabric','secondary','pants','accent','leather','trim'] },
+  lunar_ruby: { label: 'Feiticeira rubi', sub: 'Vestido escuro, manto rubi e joias douradas', channels: ['fabric','secondary','accent','leather','trim'] },
   circus: { label: 'Palhaço de circo', sub: 'Macacão listrado, gola franzida, casaca de estrelas, sapatões', channels: ['fabric', 'secondary', 'accent', 'leather', 'trim'] },
   orc: { label: 'Guerreiro orc', sub: 'Ombreira de espinhos, caveira no cinto, tanga e braçadeiras', channels: ['fabric', 'leather', 'trim', 'secondary'] },
   adventurer: { label: 'Aventureiro', sub: 'Camisa, gibão, capa, bolsas, bússola e botas', channels: ['fabric', 'secondary', 'accent', 'pants', 'leather', 'trim'] },
@@ -37,6 +42,10 @@ export const SDF_OUTFITS = {
   cowboy: { label: 'Faroeste', sub: 'Camisa, colete de couro, lenço, cinturão e botas', channels: ['fabric', 'leather', 'secondary', 'pants', 'trim'] }
 };
 export const SDF_DEFAULT_COLORS = {
+  lunar_explorer: {fabric:'#242133',secondary:'#4d3c64',pants:'#282737',accent:'#4ea9e8',leather:'#393346',trim:'#c89d52'},
+  lunar_guardian: {fabric:'#191d30',secondary:'#252e56',accent:'#254982',leather:'#252233',trim:'#d7b15c'},
+  lunar_inventor: {fabric:'#486b9b',secondary:'#e5dac4',pants:'#486b9b',accent:'#64b8e7',leather:'#71513b',trim:'#c5a158'},
+  lunar_ruby: {fabric:'#231827',secondary:'#401d30',accent:'#93283e',leather:'#2b1b27',trim:'#c9a251'},
   circus: { fabric: '#9e2a2b', secondary: '#eadcbf', accent: '#3d4f8a', leather: '#8e2a26', trim: '#d4a640' },
   orc: { fabric: '#a3302a', leather: '#4a3326', trim: '#8c8a86', secondary: '#e8dcc0' },
   adventurer: { fabric: '#34507e', secondary: '#ece4d4', accent: '#8e3326', pants: '#3a3836', leather: '#6b4228', trim: '#c99a3e' },
@@ -49,7 +58,7 @@ export const SDF_DEFAULT_COLORS = {
   inventor: { fabric: '#ece9e2', secondary: '#2f3f63', accent: '#7a2030', leather: '#3a2a22', trim: '#b8913f' },
   cowboy: { fabric: '#c9873e', leather: '#5a3826', secondary: '#a8282a', pants: '#2c3446', trim: '#c9a24a' }
 };
-export const SDF_DEFAULT_OUTFIT = { sad_clown: 'circus', orc_warrior: 'orc', dwarf_bard: 'adventurer', masculine_soft: 'desert', feminine_soft: 'mermaid_pearl', feminine_bold: 'mermaid_ruby' };
+export const SDF_DEFAULT_OUTFIT = { nana_explorer:'lunar_explorer', moon_guardian:'lunar_guardian', nico_inventor:'lunar_inventor', ruby_sorceress:'lunar_ruby', sad_clown: 'circus', orc_warrior: 'orc', dwarf_bard: 'adventurer', masculine_soft: 'desert', feminine_soft: 'mermaid_pearl', feminine_bold: 'mermaid_ruby' };
 
 export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot = null) {
   const J = body.joints, B = body.proportions, W = J.W, Y = J.Y, z0 = J.zCenter, Lb = J.Lb, bf = body.sdf, yN = J.yNeck;
@@ -380,6 +389,64 @@ export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot 
     };
     piece(name, ch, f, { x: Math.max(W*Math.max(B.hip,B.waist)*1.2+.4*W,H.x+rH+(o.puff||0)+.3*W), y0: yBot - .2, y1: yTop + .2, z0: zA - .3, z1: zB + .3 }, o.cell);
     return memoField(f);
+  }
+
+  // Reino da Lua: quatro conjuntos novos, com as mesmas envoltórias e caches do catálogo.
+  if(['lunar_explorer','lunar_guardian','lunar_inventor','lunar_ruby'].includes(style)){
+    const magic=style==='lunar_guardian'||style==='lunar_ruby',nico=style==='lunar_inventor';
+    const g=garment(magic?'Vestido_lunar':nico?'Camisa_inventor':'Jaqueta_lunar',nico?'secondary':'fabric','upper',{
+      top:yN+.08,bottom:Y(magic?.97:nico?.38:.37),split:magic?Y(.345):null,t:.045*W,cell:.035*clamp(W,1,1.3),
+      sleeve:magic?'short':'forearm',short:.8,sleeveEase:.045*W,puff:(magic?.025:.06)*W,vneck:magic?.14:.035,
+      env:{ease:.045*W,hang:.5,cinch:Y(.33),cinchK:.8,flareFrom:Y(.36),flare:magic?.18:.06,folds:(magic?.028:.012)*W,foldN:14}
+    });
+    sleeveCuffs(g,'upper',magic?'trim':'leather',.035*W);
+    rim('upper','trim',g.outer,a=>yN+.075-(magic?.14:.035)*Math.max(0,Math.cos(a))**6,.017*W);
+    const sew=(slot,y,ph=0,r=.15*W,ch='trim',fn=g.solid)=>{
+      const p=surfAt(fn,y,ph,.024*W),geo=crescent(r,.018*W);geo.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(V(0,0,1),V(Math.sin(ph),0,Math.cos(ph))));geo.translate(...p.toArray());addGeoS(slot,ch,geo);
+    };
+    beltOn('Cinto_lunar','leather',g.solid,Y(.34),.09*W,.025*W);
+    sew('belt',Y(.34),0,.12*W);
+    if(magic){
+      rim('lower','trim',g.outer,Y(.97)+.015,.02*W);
+      cape('Capa_lunar','accent',{top:.025,yBottom:Y(.975),span:4.6,flare:.45,pleats:10,over:g.env,trim:'trim'});
+      // Símbolos do manto assentados na superfície de trás, sem texturas e sem shaders exclusivos.
+      for(const [f,r] of [[.13,.13],[.55,.18],[.8,.12]]){
+        const y=Y(f),p=surfAt(g.env,y,PI,.10*W+.45*(f/.975)),geo=crescent(r*W,.018*W);geo.rotateY(PI);geo.translate(...p.toArray());addGeoS('cape','trim',geo);
+      }
+      for(const side of [-1,1])button('upper','trim',g.outer,side*.42*W,Y(.07),.09*W);
+      boots('Sapatos_lunares','leather',{t:.04*W,h:.06,toe:.025});
+      // Um cajado de formas simples mantém a leitura da referência sem efeitos pesados.
+      const x=Wr.x+.24*W,y0=ySole+.08,y1=yN+.25;
+      addGeoS('extras','leather',tubeG([V(x,y0,.18),V(x,(y0+y1)/2,.18),V(x,y1,.18)],.035*W));
+      const moon=crescent(.24*W,.045*W);moon.translate(x,y1+.19,.18);addGeoS('extras','trim',moon);
+      addGeoS('extras','gem',sph(V(x+.055*W,y1+.18,.2),.1*W));
+    }else{
+      trousers(nico?'Calca_jardineira':'Calca_cargo','pants',{top:.35,ease:.055*W,cuff:.07,puff:.045*W,under:{fn:g.solid,y:Y(.38)+.03}});
+      boots('Tenis','leather',{t:.085*W,h:.1,cuffT:.035*W,toe:.07});
+      if(nico){
+        // Peitoral e alças usam a frente medida da camisa, sem painéis flutuantes.
+        if(g.geo){
+          // Recorta a própria malha da camisa: o peitoral acompanha exatamente sua superfície.
+          // Não se malha uma parede SDF muito fina, que gerava furos e degraus no painel azul.
+          const source=g.geo.clone(),p=source.attributes.position,n=source.attributes.normal;
+          for(let i=0;i<p.count;i++)p.setXYZ(i,p.getX(i)+n.getX(i)*.035*W,p.getY(i)+n.getY(i)*.035*W,p.getZ(i)+n.getZ(i)*.035*W);
+          addGeoS('upper','fabric',shellCloth(source,(x,y,z)=>Math.max(y-Y(.13),Y(.35)-y,Math.abs(x)-.38*W,z0+.02-z),.018*W));
+        }
+        for(const side of [-1,1]){const pts=[];for(let i=0;i<=22;i++)pts.push(surfAt(g.solid,Y(.04+i/22*.145),side*.43,.035*W));addGeoS('upper','fabric',tubeG(pts,.045*W));button('upper','trim',g.outer,side*.26*W,Y(.16),.036*W)}
+      }else{
+        sew('upper',Y(.16),0,.15*W);
+        for(const side of [-1,1]){const pts=[];for(let i=0;i<=24;i++)pts.push(surfAt(g.solid,Y(.065+i/24*.26),side*.55,.024*W));addGeoS('upper','trim',tubeG(pts,.009*W))}
+      }
+      // Mochila, bolso e rolo: poucas peças arredondadas, exportáveis e opcionais no slot Extras.
+      const p=V(0,Y(.17),backZ(0,Y(.17))-.22*W),pack=new RoundedBoxGeometry(.72*W,.82*W,.31*W,4,.09*W);pack.translate(...p.toArray());addGeoS('extras','leather',pack);
+      const flap=new RoundedBoxGeometry(.58*W,.34*W,.09*W,3,.04*W);flap.translate(p.x,p.y+.17*W,p.z-.19*W);addGeoS('extras','fabric',flap);
+      const moon=crescent(.13*W,.022*W);moon.rotateY(PI);moon.translate(p.x,p.y+.17*W,p.z-.25*W);addGeoS('extras','trim',moon);
+      for(const side of [-1,1]){const points=[];for(let i=0;i<=22;i++)points.push(surfAt(g.solid,Y(.035+i/22*.25),side*.48,.055*W));addGeoS('extras','leather',tubeG(points,.034*W))}
+      if(nico){const roll=new THREE.CylinderGeometry(.07*W,.07*W,.63*W,24);roll.translate(p.x+.43*W,p.y+.25*W,p.z);addGeoS('extras','secondary',roll)}
+      // Bolsos cargo presos nas laterais da calça.
+      for(const side of [-1,1]){const cp=V(side*(H.x+.16*W),Y(.48),frontZ(side*H.x,Y(.48))+.09*W),pocket=new RoundedBoxGeometry(.24*W,.3*W,.09*W,3,.03*W);pocket.translate(...cp.toArray());addGeoS('lower','leather',pocket)}
+    }
+    return;
   }
 
   // ================= figurinos =================

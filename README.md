@@ -12,7 +12,7 @@ A seção **Corpo** oferece os controles **Peso** e **Músculo** e os atalhos **
 
 O cache do corpo diferencia personagem, densidade, escala da cabeça, cauda, peso e músculo e conserva até 64 geometrias. As roupas consultam esse campo individual: barrigas empurram o tecido, braços mais fortes alargam mangas e a cintura magra afina os cintos. Saiotes também consideram as coxas abaixo da cintura. Peças largas usam uma grade inicial maior, refinamento da superfície e projeção no campo; cintos e tiras finas mantêm a grade direta. Coletes, gibões e jalecos recortam primeiro a face externa e depois criam avesso e bordas fechadas, com normais independentes; isso evita perder paredes finas na malhagem volumétrica. Amostras compartilhadas entre blocos e coeficientes fixos dos membros reduzem o custo sem alterar o campo. No visualizador, a célula do corpo é `.032 × clamp(W,1,1.3)`; a exportação usa `.036`.
 
-O status e `await window.__atelie.setBuild(...)` abrangem corpo **e** roupas; `bodyTiming()` expõe a última medição em milissegundos. As referências faciais continuam intactas durante essa operação. `node tests/tipos-fisicos.mjs` verifica juntas, emenda, cache e volume crescente de magro → padrão → gordo nos 12 personagens orgânicos. O robô conserva seu casco.
+O status e `await window.__atelie.setBuild(...)` abrangem corpo **e** roupas; `bodyTiming()` expõe a última medição em milissegundos. As referências faciais continuam intactas durante essa operação. `node tests/tipos-fisicos.mjs` verifica juntas, emenda, cache e volume crescente de magro → padrão → gordo nos 16 corpos humanoides. O robô conserva seu casco; lobo e corvo usam malhas próprias.
 
 ## Ver no navegador
 https://aruanmf446-hub.github.io/quemsoueu/
@@ -27,9 +27,9 @@ Para rodar localmente, sirva a pasta com qualquer servidor estático (ex.: `pyth
 - **Relevo do rosto** sobre essa base: planos de estrutura (zigomático, cavado abaixo dele, têmporas), órbitas, arcada, prega da pálpebra, nariz com ponte / ponta / asas / narinas, **lábios paramétricos com arco do cupido**, filtro, cantos da boca, sulco do queixo, maçãs e dobra nasolabial.
 - **Olhos**: a pele envolve o globo (pálpebras na própria malha, abertura recortada nela), **íris côncava sob a córnea** (profundidade e brilho), íris procedural com fibras e luz entrando por baixo, carúncula no canto interno, linha d'água, **delineado com asa** e **tufos de cílios** curvados; sobrancelhas espessas e afinadas na cauda.
 - **Pele**: variação orgânica de tom (manchas suaves por ruído, testa mais clara, nariz/maçãs/orelhas mais rosados, olheira sutil, barba sombreada no masculino), blush ajustável por preset nas maçãs e na ponta do nariz, microrrelevo no shader que quebra o brilho como pele real, zona T e lábios mais brilhantes, segunda camada especular suave, "wrap" avermelhado no terminador (falso espalhamento subsuperficial), oclusão por cavidade e sombras suaves projetadas.
-- **13 personagens em 4 famílias** (inclui o Rei), trocados por botões agrupados:
-  - **Humanos**: `feminine_soft`, `masculine_soft`, `cute_round`, `feminine_bold`, `alchemist_villain` (rosto longo, queixo pontudo, nariz adunco, sorriso torto, olheiras), `dwarf_bard` (nariz grande, barba e bigode, orelhas pontudas), `sad_clown` (pintura branca, marcas azuis, nariz bola, boca caída).
-  - **Criaturas**: `orc_warrior` (testa pesada, olhos amarelos, presas, orelhas pontudas, barba, mandíbula larga).
+- **19 personagens em 4 famílias** (inclui o Rei), trocados por botões agrupados:
+  - **Humanos**: `feminine_soft`, `masculine_soft`, `cute_round`, `feminine_bold`, `alchemist_villain` (rosto longo, queixo pontudo, nariz adunco, sorriso torto, olheiras), `dwarf_bard` (nariz grande, barba e bigode, orelhas pontudas), `sad_clown` (pintura branca, marcas azuis, nariz bola, boca caída), `old_king`, `nana_explorer`, `moon_guardian`, `nico_inventor` e `ruby_sorceress`.
+  - **Criaturas**: `orc_warrior` (testa pesada, olhos amarelos, presas, orelhas pontudas, barba, mandíbula larga), `paysandu_wolf` e `ruby_raven` (companheiros com geradores próprios).
   - **Vegetais** (forma própria por perfil girado — `lathe` —, sem o molde de cabeça humana; olhos saltados; cor acompanhando o relevo): `cactus_cowboy` (coluna com cúpula, 8 nervuras e espinhos, olhar sonolento, sorriso de canto), `pepper_king` (pimentão de 4 gomos com covinha e talo no topo, bigode de guidão, cavanhaque), `chili_bandit` (pimenta afinando para baixo, olhos arregalados, sorriso aberto com dentes e língua para fora).
   - **Robôs**: `robot_ball` (casco com faixas e painéis, tela curva com rosto em luz, orelhas com anel brilhante) — gerador próprio em `src/robot.js`.
 - **Peças reutilizáveis** que qualquer personagem novo pode ligar por parâmetro: forma por perfil girado (`lathe`: largura por altura, achatamento, tampa arredondada, covinha), padrão de superfície (`pattern`: nervuras ou gomos), `spines`, `stem` (talo + cálice), orelha pontuda (`earPoint`, `earTipA`, `earFlare`) ou sem orelha (`earType: 'none'`), nariz bola ou sem nariz (`noseType`), barba esculpida (`beardVol`), bigode (`stache`), cavanhaque (`goatee`), presas (`tusks`), pintura facial (`paint`), boca aberta com dentes e língua (`open`, `teeth`, `tongue`), sorriso torto (`smirk`), sorriso invertido (`smile` negativo), olheira colorida (`bag`), pele brilhante/encerada (`skinGloss`, `clearcoat`), cor de espalhamento da pele (`sss`).
@@ -101,7 +101,7 @@ python3 -m http.server 8000
 node tests/visuais.cjs
 ```
 
-O teste geométrico percorre os 14 conjuntos e todas as peças compatíveis nos 12 corpos. Verifica índices, posições, normais completas no avesso, troca de cor, preservação da pele e manutenção dos outros slots; registra o p95 das trocas em cache. O teste de navegador gera renders de frente e 3/4 dos 13 personagens em `renders/`, valida nós, escala da cabeça, skin, blendshapes e clipes do GLB, testa todas as peças e cores, a independência dos slots, a preservação da pele e a opção de ocultar o corpo. Ele intercepta o CDN para usar o Three.js local e reduz apenas no teste a sombra para 1024 px, com renderização sob demanda, para rodar em SwiftShader. A produção mantém sombras de 4096 px e animação contínua.
+O teste geométrico percorre os 18 conjuntos e todas as peças compatíveis nos 16 corpos humanoides, além das malhas dos dois companheiros. Verifica índices, posições, normais completas no avesso, troca de cor, preservação da pele e manutenção dos outros slots; registra o p95 das trocas em cache. O teste de navegador gera renders de frente e 3/4 dos 19 personagens em `renders/`, valida nós, escala da cabeça, skin, blendshapes e clipes do GLB, testa todas as peças e cores, a independência dos slots, a preservação da pele e a opção de ocultar o corpo. Ele intercepta o CDN para usar o Three.js local e reduz apenas no teste a sombra para 1024 px, com renderização sob demanda, para rodar em SwiftShader. A produção mantém sombras de 4096 px e animação contínua.
 
 Para gerar também os closes dos acessórios, rode `ATELIE_CLOSEUPS=1 node tests/visuais.cjs`. O teste percorre todos os modelos e canais de cor disponíveis nos slots de acessórios. O visual continua pendente da avaliação do usuário; a validação automática verifica funcionamento e integridade, não aprovação estética.
 
@@ -216,3 +216,36 @@ ATELIE_REFERENCIA=1 node tests/corpo-visivel.cjs
 `ATELIE_MOBILE=1` executa os controles em largura de celular. `ATELIE_PERSONAGENS` permite limitar a medição por IDs; `ATELIE_RENDERS` escolhe a pasta das capturas e relatórios. Os testes de visibilidade também conferem identidade da cabeça e exportação do build escolhido com os 12 clipes faciais.
 
 Verificação: os 12 personagens orgânicos responderam aos toques em Magro/Padrão/Gordo, com cintura medida na malha e cabeça/rig preservados. Os três casos de visibilidade falharam na referência `60f7e90` e passaram após a correção; arraste e confirmação por `change` também passaram, com exportação GLB de 12 clipes e sem erros de console.
+
+
+## Reino da Lua — seis personagens procedurais
+
+Adaptações simplificadas das referências para o catálogo do Ateliê. Nenhum modelo, textura ou API externa foi utilizado. As novas identidades não substituem os personagens anteriores.
+
+| Personagem | Rosto e corpo | Figurino / equipamento |
+| --- | --- | --- |
+| Paysandu | Lobo quadrúpede, focinho claro, olhos âmbar, orelhas e cauda | Lenço azul, lua dourada, bolsas e braceletes |
+| Nana exploradora | Base feminina adulta, pele morena, cachos presos | Visor, argolas, jaqueta, calça cargo, tênis e mochila |
+| Guardiã da Lua | Base feminina suave, cabelo ondulado | Coroa crescente, vestido escuro, manto azul, cinto e cajado |
+| Nico inventor | Base chibi infantil **sem seios**, cabelo curto cacheado | Óculos redondos, óculos na testa, camisa, jardineira e mochila |
+| Feiticeira rubi | Base feminina intensa, cabelo com tranças | Coroa crescente, vestido escuro, manto rubi e cajado |
+| Corvo rubi | Corpo de ave, bico, asas e máscara com órbitas vazadas | Lenço rubi, crescente, joia e anilhas |
+
+Os quatro humanos reutilizam o rig facial híbrido, os 11 blendshapes e os 12 clipes existentes. Suas roupas usam `garment`, `trousers`, `beltOn` e o cache por corpo/peça; cores e slots continuam independentes. Os dois penteados novos são variações dos estilos existentes, sem modificar os anteriores.
+
+`src/companions.js` separa os grupos `Rosto`, `Body` e `Accessories` do lobo e do corvo. Esses companheiros têm expressões simples por transformações (mandíbula, olhos e sobrancelhas), exportadas em 12 clipes; não possuem os blendshapes humanos. A pelagem muda em **Aparência → Pele** e o equipamento em **Acessórios → Cabeça**. Peso, cabelo/barba humana e roupas humanoides ficam indisponíveis nessas bases. Não há locomoção, transformação demoníaca, partículas ou efeitos de magia nesta primeira versão.
+
+Os símbolos lunares são geometrias com recortes reais, em `src/lunar.js`. Mochilas, lenços, joias e cajados também vão no GLB. A organização em peças permite refinar cada personagem em etapas sem reconstruir o restante do catálogo.
+
+```sh
+# Servir o repositório na porta 8000 antes do teste de navegador.
+node tests/figurinos.mjs
+node tests/reino-lua.cjs
+```
+
+O teste de navegador registra frente, 3/4, costas, rosto e base sem roupa/acessórios dos seis personagens; confere o Worker de prévias, peças em cache, cores, expressões, nós e clipes do GLB. A galeria fica em `renders/reino-lua/index.html` (ou em `ATELIE_RENDERS`). As capturas servem à aprovação visual do usuário.
+
+
+Verificação desta etapa: os seis personagens novos exportaram GLB com 12 clipes cada e geraram miniaturas no Worker, sem erros de console. A suíte geométrica passou nos 18 conjuntos e 16 corpos humanoides; 48 casos de cobertura consultaram 535.572 vértices sem falhas. Nico e os companheiros tiveram nova verificação após os acabamentos finais. A galeria reúne 30 capturas (cinco vistas/estados por personagem).
+
+Para repetir apenas os modelos afetados, `ATELIE_PERSONAGENS=nico_inventor node tests/figurinos.mjs` filtra os testes de geometria, tipo físico e cobertura; companheiros são excluídos apenas das verificações de roupa e tipo físico humano. `ATELIE_SOMENTE_RENDERS=1 node tests/visuais.cjs` mantém renders/GLB dos 19 personagens e a navegação final pelo catálogo, enquanto a matriz completa de peças continua coberta por `figurinos.mjs`. Sem essa variável, `visuais.cjs` também percorre cada peça em cada corpo.

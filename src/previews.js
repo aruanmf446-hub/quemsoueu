@@ -1,6 +1,7 @@
 // Prévias locais: imagens procedurais em segundo plano, sem mudar a cena principal.
 import {previewChoice} from './preview-spec.js';
 const VERSION='menu-v2-encaixe';
+const LUNAR=new Set(['nana_explorer','moon_guardian','nico_inventor','ruby_sorceress','paysandu_wolf','ruby_raven']);
 const stable=value=>JSON.stringify(value,(_,v)=>v&&typeof v==='object'&&!Array.isArray(v)?Object.fromEntries(Object.entries(v).sort(([a],[b])=>a.localeCompare(b))):v);
 
 export class PreviewCatalog {
@@ -27,7 +28,7 @@ export class PreviewCatalog {
       // Os personagens mostram o visual salvo de cada um; as outras opções usam a skin atual.
       const request={...context,spec};if(spec.kind==='character')request.look=window.__atelie.savedLook(spec.value);
       // O enquadramento novo dos brincos invalida somente as quatro miniaturas desse slot.
-      const versao=spec.kind==='accessory'&&spec.slot==='ears'?'menu-v2-orelhas':VERSION;
+      const versao=LUNAR.has(spec.kind==='character'?spec.value:context.id)?'reino-lua-v1':spec.kind==='accessory'&&spec.slot==='ears'?'menu-v2-orelhas':VERSION;
       const key=versao+':'+stable(previewChoice(request));button._preview={key,request};
       if(frame.dataset.key!==key){frame.dataset.key=key;frame.replaceChildren(Object.assign(document.createElement('div'),{className:'preview-wait',textContent:'Gerando prévia…'}));frame.classList.add('loading');delete frame.dataset.ready}
       if(this.cache.has(key))this.display(button,key,this.cache.get(key));else this.observer.observe(button);

@@ -41,6 +41,9 @@ export const HAIR_STYLES = {
   clown: { label: 'Cachinhos de palhaço', sub: 'Topo careca, cachos nas laterais', flow: 'out', tubesOnly: true, noCap: true, n: 170, tubes: true, cap: .03, topVol: 0, spacing: .04, w: .045, th: .045,
     len: [.28, .42], grav: .25, layer: .03, curl: { r: [.03, .045], pitch: .12 }, hairline: .3, band: { top: .28 }, sideburn: -.15 }
 };
+// Variações leves do catálogo para as novas identidades; os estilos existentes permanecem iguais.
+HAIR_STYLES.lunar_curls={...HAIR_STYLES.bun,curlBun:true,label:'Cachos presos',sub:'Coque cacheado alto, com mechas soltas',knot:{y:.16,z:-.16,R:.34},tubes:true,n:64,spacing:.09,w:.047,th:.043,curl:{r:[.035,.065],pitch:.21},wisps:3};
+HAIR_STYLES.short_curls={...HAIR_STYLES.short,label:'Curto cacheado',sub:'Cachos curtos e topete de inventor',tubes:true,n:64,spacing:.1,w:.047,th:.042,curl:{r:[.03,.055],pitch:.2},len:[1.2,1.5],topVol:1.4};
 export const HAIR_COLORS = [
   ['Preto', '#17110f'], ['Castanho escuro', '#3a2417'], ['Castanho', '#6b4027'], ['Ruivo', '#b4441c'], ['Acobreado', '#8e3b1e'],
   ['Loiro', '#d6ad62'], ['Loiro claro', '#eedbb0'], ['Grisalho', '#9c968e'], ['Branco', '#efede8'],
@@ -318,8 +321,18 @@ export function buildHair(fit, id, color = '#2a1a12') {
   if (knot) {
     const R = S.knot.R, ball = new THREE.SphereGeometry(R * .9, 28, 20); ball.translate(knot.x, knot.y, knot.z);
     setGray(ball, .62); extra.push(ball);
+    if(!S.curlBun){
     const pts = [], TURNS = 7; for (let i = 0; i <= 260; i++) { const s = i / 260, th = .25 + s * (Math.PI - .5), ph = s * TURNS * 2 * Math.PI; pts.push(V(Math.sin(th) * Math.cos(ph), Math.cos(th), Math.sin(th) * Math.sin(ph)).multiplyScalar(R * .93).add(knot)) }
     addTube(pts, R * .3, R * .16, { normal: (i, q) => q.clone().sub(knot).normalize(), profile: t => Math.min(1, sstep(0, .03, t) + .25) * (1 - .4 * sstep(.97, 1, t)), seg: 10 });
+    }else{
+      // Cachos curtos cobrem o coque da Nana, sem adicionar outro sistema de cabelo.
+      for(let k=0;k<28;k++){
+        const y=1-2*(k+.5)/28,phi=k*2.399963,n=V(Math.sqrt(1-y*y)*Math.cos(phi),y,Math.sqrt(1-y*y)*Math.sin(phi));
+        const u=V(0,1,0).cross(n).normalize(),v=n.clone().cross(u),center=knot.clone().addScaledVector(n,R*.91),pts=[];
+        for(let i=0;i<=36;i++){const t=i/36,a=t*Math.PI*4;pts.push(center.clone().addScaledVector(u,Math.cos(a)*R*.2).addScaledVector(v,Math.sin(a)*R*.2).addScaledVector(n,(t-.5)*R*.3))}
+        addTube(pts,.035,.032,{round:true,seg:8});
+      }
+    }
     if (S.tail) { // rabo: cai do coque
       for (let k = 0; k < S.tail.n; k++) {
         const a = (k / S.tail.n) * Math.PI * 2, r0 = knot.clone().add(V(Math.cos(a) * R * .5, -R * .3 + Math.sin(a) * R * .3, -R * .55)), d0 = V(Math.cos(a) * .2, -.3, -1).normalize();
