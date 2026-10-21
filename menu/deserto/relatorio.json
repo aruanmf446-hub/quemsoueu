@@ -1,0 +1,54 @@
+{
+  "reports": [
+    {
+      "id": "frontier_cowboy",
+      "label": "Cowboy do deserto",
+      "MB": 33.14,
+      "clips": 12,
+      "companion": false
+    },
+    {
+      "id": "bread_baker",
+      "label": "Padeiro",
+      "MB": 30.6,
+      "clips": 12,
+      "companion": false
+    },
+    {
+      "id": "bread_vigilante",
+      "label": "Vigilante",
+      "MB": 36.02,
+      "clips": 12,
+      "companion": false
+    },
+    {
+      "id": "cactus_soldier",
+      "label": "Soldado cacto",
+      "MB": 32.4,
+      "clips": 12,
+      "companion": false
+    },
+    {
+      "id": "cactus_soldier_large",
+      "label": "Soldado cacto grande",
+      "MB": 40.26,
+      "clips": 12,
+      "companion": false
+    },
+    {
+      "id": "desert_fennec",
+      "label": "Feneco do deserto",
+      "MB": 6.82,
+      "clips": 12,
+      "companion": true
+    },
+    {
+      "id": "cowboy_on_fennec",
+      "label": "Cowboy no feneco",
+      "MB": 16.47,
+      "clips": 12,
+      "companion": true
+    }
+  ],
+  "errors": []
+}

@@ -1,0 +1,16 @@
+{
+  "reference": false,
+  "afterFace": true,
+  "afterHidden": true,
+  "enteringBody": true,
+  "preserved": true,
+  "errors": [],
+  "glb": {
+    "build": {
+      "weight": -1,
+      "muscle": 0
+    },
+    "clips": 12
+  },
+  "changeOnly": true
+}

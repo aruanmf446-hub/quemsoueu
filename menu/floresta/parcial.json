@@ -1,0 +1,54 @@
+{
+  "reports": [
+    {
+      "id": "forest_archer_f",
+      "label": "Arqueira da floresta",
+      "MB": 38.84,
+      "clips": 12,
+      "companion": false
+    },
+    {
+      "id": "forest_archer_m",
+      "label": "Arqueiro da floresta",
+      "MB": 41.83,
+      "clips": 12,
+      "companion": false
+    },
+    {
+      "id": "forest_guard_f",
+      "label": "Guarda feminina",
+      "MB": 36.24,
+      "clips": 12,
+      "companion": false
+    },
+    {
+      "id": "forest_guard_m",
+      "label": "Guarda jovem",
+      "MB": 38.59,
+      "clips": 12,
+      "companion": false
+    },
+    {
+      "id": "forest_guard_veteran",
+      "label": "Guarda veterano",
+      "MB": 32.6,
+      "clips": 12,
+      "companion": false
+    },
+    {
+      "id": "forest_artificer",
+      "label": "Artífice da floresta",
+      "MB": 47.12,
+      "clips": 12,
+      "companion": false
+    },
+    {
+      "id": "forest_princess",
+      "label": "Princesa da floresta",
+      "MB": 41.13,
+      "clips": 12,
+      "companion": false
+    }
+  ],
+  "errors": []
+}

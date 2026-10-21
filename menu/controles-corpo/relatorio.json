@@ -1,0 +1,1069 @@
+{
+  "reports": [
+    {
+      "id": "feminine_soft",
+      "values": [
+        {
+          "label": "Magro",
+          "build": {
+            "weight": -1,
+            "muscle": 0
+          },
+          "width": 0.8578616082668304,
+          "head": "9ce25b6a-6d61-4ea5-841f-4569389503fb",
+          "look": "a255a157-1765-4711-8a00-5f8561ccefde",
+          "rig": "313858ce-32e4-4282-8868-8a99031efaed"
+        },
+        {
+          "label": "Gordo",
+          "build": {
+            "weight": 1,
+            "muscle": 0
+          },
+          "width": 1.6771860718727112,
+          "head": "9ce25b6a-6d61-4ea5-841f-4569389503fb",
+          "look": "a255a157-1765-4711-8a00-5f8561ccefde",
+          "rig": "313858ce-32e4-4282-8868-8a99031efaed"
+        },
+        {
+          "label": "Padrão",
+          "build": {
+            "weight": 0,
+            "muscle": 0
+          },
+          "width": 1.1904708743095398,
+          "head": "9ce25b6a-6d61-4ea5-841f-4569389503fb",
+          "look": "a255a157-1765-4711-8a00-5f8561ccefde",
+          "rig": "313858ce-32e4-4282-8868-8a99031efaed"
+        }
+      ]
+    },
+    {
+      "id": "feminine_bold",
+      "values": [
+        {
+          "label": "Magro",
+          "build": {
+            "weight": -1,
+            "muscle": 0
+          },
+          "width": 0.832184374332428,
+          "head": "0cc51880-66fd-4a84-898d-6d8599b7986d",
+          "look": "f1ca1281-f449-4e81-b2f6-a98b808c70ff",
+          "rig": "45661e56-4107-4b08-b36d-0d8fd80f4be8"
+        },
+        {
+          "label": "Gordo",
+          "build": {
+            "weight": 1,
+            "muscle": 0
+          },
+          "width": 1.6517704129219055,
+          "head": "0cc51880-66fd-4a84-898d-6d8599b7986d",
+          "look": "f1ca1281-f449-4e81-b2f6-a98b808c70ff",
+          "rig": "45661e56-4107-4b08-b36d-0d8fd80f4be8"
+        },
+        {
+          "label": "Padrão",
+          "build": {
+            "weight": 0,
+            "muscle": 0
+          },
+          "width": 1.1651006937026978,
+          "head": "0cc51880-66fd-4a84-898d-6d8599b7986d",
+          "look": "f1ca1281-f449-4e81-b2f6-a98b808c70ff",
+          "rig": "45661e56-4107-4b08-b36d-0d8fd80f4be8"
+        }
+      ]
+    },
+    {
+      "id": "cute_round",
+      "values": [
+        {
+          "label": "Magro",
+          "build": {
+            "weight": -1,
+            "muscle": 0
+          },
+          "width": 0.7804579436779022,
+          "head": "d1c3b31a-794b-4ffa-a37d-8d4a8c21e20d",
+          "look": "81549d1e-f121-46f9-ad71-719e63aef09d",
+          "rig": "33d68cfd-91eb-4ab2-aaad-bb1e64fea3a5"
+        },
+        {
+          "label": "Gordo",
+          "build": {
+            "weight": 1,
+            "muscle": 0
+          },
+          "width": 1.4166236519813538,
+          "head": "d1c3b31a-794b-4ffa-a37d-8d4a8c21e20d",
+          "look": "81549d1e-f121-46f9-ad71-719e63aef09d",
+          "rig": "33d68cfd-91eb-4ab2-aaad-bb1e64fea3a5"
+        },
+        {
+          "label": "Padrão",
+          "build": {
+            "weight": 0,
+            "muscle": 0
+          },
+          "width": 1.0286849737167358,
+          "head": "d1c3b31a-794b-4ffa-a37d-8d4a8c21e20d",
+          "look": "81549d1e-f121-46f9-ad71-719e63aef09d",
+          "rig": "33d68cfd-91eb-4ab2-aaad-bb1e64fea3a5"
+        }
+      ]
+    },
+    {
+      "id": "masculine_soft",
+      "values": [
+        {
+          "label": "Magro",
+          "build": {
+            "weight": -1,
+            "muscle": 0
+          },
+          "width": 1.0302281975746155,
+          "head": "160e05f2-d4e4-4866-b477-8c600232184f",
+          "look": "518fbd0c-fdd0-40e3-9376-bf3d978b49da",
+          "rig": "ebe87926-93dd-4e01-8b54-f868a7774912"
+        },
+        {
+          "label": "Gordo",
+          "build": {
+            "weight": 1,
+            "muscle": 0
+          },
+          "width": 1.949102759361267,
+          "head": "160e05f2-d4e4-4866-b477-8c600232184f",
+          "look": "518fbd0c-fdd0-40e3-9376-bf3d978b49da",
+          "rig": "ebe87926-93dd-4e01-8b54-f868a7774912"
+        },
+        {
+          "label": "Padrão",
+          "build": {
+            "weight": 0,
+            "muscle": 0
+          },
+          "width": 1.402750551700592,
+          "head": "160e05f2-d4e4-4866-b477-8c600232184f",
+          "look": "518fbd0c-fdd0-40e3-9376-bf3d978b49da",
+          "rig": "ebe87926-93dd-4e01-8b54-f868a7774912"
+        }
+      ]
+    },
+    {
+      "id": "old_king",
+      "values": [
+        {
+          "label": "Magro",
+          "build": {
+            "weight": -1,
+            "muscle": 0
+          },
+          "width": 1.253714382648468,
+          "head": "10f65588-6f33-4bcc-b46e-eab26458d227",
+          "look": "b247c9ef-544a-4fb3-8cc5-b36104cdaabf",
+          "rig": "292dbc80-d0b7-48af-a0ea-6eb8fd7851ad"
+        },
+        {
+          "label": "Gordo",
+          "build": {
+            "weight": 1,
+            "muscle": 0
+          },
+          "width": 2.1886143684387207,
+          "head": "10f65588-6f33-4bcc-b46e-eab26458d227",
+          "look": "b247c9ef-544a-4fb3-8cc5-b36104cdaabf",
+          "rig": "292dbc80-d0b7-48af-a0ea-6eb8fd7851ad"
+        },
+        {
+          "label": "Padrão",
+          "build": {
+            "weight": 0,
+            "muscle": 0
+          },
+          "width": 1.6337621212005615,
+          "head": "10f65588-6f33-4bcc-b46e-eab26458d227",
+          "look": "b247c9ef-544a-4fb3-8cc5-b36104cdaabf",
+          "rig": "292dbc80-d0b7-48af-a0ea-6eb8fd7851ad"
+        }
+      ]
+    },
+    {
+      "id": "alchemist_villain",
+      "values": [
+        {
+          "label": "Magro",
+          "build": {
+            "weight": -1,
+            "muscle": 0
+          },
+          "width": 0.5717433989048004,
+          "head": "e7d3346b-beee-4dde-93c5-c77fa9116341",
+          "look": "6673b011-e534-40eb-a254-e78eaa124d4f",
+          "rig": "362b7e49-7b65-41f3-aff8-7355a6ea4722"
+        },
+        {
+          "label": "Gordo",
+          "build": {
+            "weight": 1,
+            "muscle": 0
+          },
+          "width": 1.228209912776947,
+          "head": "e7d3346b-beee-4dde-93c5-c77fa9116341",
+          "look": "6673b011-e534-40eb-a254-e78eaa124d4f",
+          "rig": "362b7e49-7b65-41f3-aff8-7355a6ea4722"
+        },
+        {
+          "label": "Padrão",
+          "build": {
+            "weight": 0,
+            "muscle": 0
+          },
+          "width": 0.8383849263191223,
+          "head": "e7d3346b-beee-4dde-93c5-c77fa9116341",
+          "look": "6673b011-e534-40eb-a254-e78eaa124d4f",
+          "rig": "362b7e49-7b65-41f3-aff8-7355a6ea4722"
+        }
+      ]
+    },
+    {
+      "id": "dwarf_bard",
+      "values": [
+        {
+          "label": "Magro",
+          "build": {
+            "weight": -1,
+            "muscle": 0
+          },
+          "width": 1.4847319722175598,
+          "head": "6d05b597-0438-47e0-a510-79115a9e352b",
+          "look": "5a1bfc2e-efbf-42c2-b16c-6765505e88aa",
+          "rig": "424ffd9f-5526-4546-8735-a588ed36f928"
+        },
+        {
+          "label": "Gordo",
+          "build": {
+            "weight": 1,
+            "muscle": 0
+          },
+          "width": 2.5461779832839966,
+          "head": "6d05b597-0438-47e0-a510-79115a9e352b",
+          "look": "5a1bfc2e-efbf-42c2-b16c-6765505e88aa",
+          "rig": "424ffd9f-5526-4546-8735-a588ed36f928"
+        },
+        {
+          "label": "Padrão",
+          "build": {
+            "weight": 0,
+            "muscle": 0
+          },
+          "width": 1.9180378317832947,
+          "head": "6d05b597-0438-47e0-a510-79115a9e352b",
+          "look": "5a1bfc2e-efbf-42c2-b16c-6765505e88aa",
+          "rig": "424ffd9f-5526-4546-8735-a588ed36f928"
+        }
+      ]
+    },
+    {
+      "id": "sad_clown",
+      "values": [
+        {
+          "label": "Magro",
+          "build": {
+            "weight": -1,
+            "muscle": 0
+          },
+          "width": 1.7513152956962585,
+          "head": "65c1c8d6-3eb3-4787-98c5-322ecd3ada47",
+          "look": "143cdfb5-d589-4980-bc2e-4cd6117c9f36",
+          "rig": "4deee03b-7e92-46cd-808a-b1cb736c513d"
+        },
+        {
+          "label": "Gordo",
+          "build": {
+            "weight": 1,
+            "muscle": 0
+          },
+          "width": 2.289341449737549,
+          "head": "65c1c8d6-3eb3-4787-98c5-322ecd3ada47",
+          "look": "143cdfb5-d589-4980-bc2e-4cd6117c9f36",
+          "rig": "4deee03b-7e92-46cd-808a-b1cb736c513d"
+        },
+        {
+          "label": "Padrão",
+          "build": {
+            "weight": 0,
+            "muscle": 0
+          },
+          "width": 2.150558829307556,
+          "head": "65c1c8d6-3eb3-4787-98c5-322ecd3ada47",
+          "look": "143cdfb5-d589-4980-bc2e-4cd6117c9f36",
+          "rig": "4deee03b-7e92-46cd-808a-b1cb736c513d"
+        }
+      ]
+    },
+    {
+      "id": "orc_warrior",
+      "values": [
+        {
+          "label": "Magro",
+          "build": {
+            "weight": -1,
+            "muscle": 0
+          },
+          "width": 1.6257947087287903,
+          "head": "e95c6a57-bd75-49ec-b2b6-f12256ac5995",
+          "look": "7e0ccbf5-caf1-4529-a62c-aaf3a5a622ae",
+          "rig": "fcee125a-09c1-4c9b-a60e-92c02ca6399f"
+        },
+        {
+          "label": "Gordo",
+          "build": {
+            "weight": 1,
+            "muscle": 0
+          },
+          "width": 2.8957631587982178,
+          "head": "e95c6a57-bd75-49ec-b2b6-f12256ac5995",
+          "look": "7e0ccbf5-caf1-4529-a62c-aaf3a5a622ae",
+          "rig": "fcee125a-09c1-4c9b-a60e-92c02ca6399f"
+        },
+        {
+          "label": "Padrão",
+          "build": {
+            "weight": 0,
+            "muscle": 0
+          },
+          "width": 2.1419697999954224,
+          "head": "e95c6a57-bd75-49ec-b2b6-f12256ac5995",
+          "look": "7e0ccbf5-caf1-4529-a62c-aaf3a5a622ae",
+          "rig": "fcee125a-09c1-4c9b-a60e-92c02ca6399f"
+        }
+      ]
+    },
+    {
+      "id": "cactus_cowboy",
+      "values": [
+        {
+          "label": "Magro",
+          "build": {
+            "weight": -1,
+            "muscle": 0
+          },
+          "width": 1.227791428565979,
+          "head": "de832e61-695a-4b3b-996e-23ea4f70496a",
+          "look": "9c98633e-bb58-410a-9f58-e791e0e03d4d",
+          "rig": "922e5d98-7d14-4899-99a6-e64a151afc85"
+        },
+        {
+          "label": "Gordo",
+          "build": {
+            "weight": 1,
+            "muscle": 0
+          },
+          "width": 2.5001120567321777,
+          "head": "de832e61-695a-4b3b-996e-23ea4f70496a",
+          "look": "9c98633e-bb58-410a-9f58-e791e0e03d4d",
+          "rig": "922e5d98-7d14-4899-99a6-e64a151afc85"
+        },
+        {
+          "label": "Padrão",
+          "build": {
+            "weight": 0,
+            "muscle": 0
+          },
+          "width": 1.7454039454460144,
+          "head": "de832e61-695a-4b3b-996e-23ea4f70496a",
+          "look": "9c98633e-bb58-410a-9f58-e791e0e03d4d",
+          "rig": "922e5d98-7d14-4899-99a6-e64a151afc85"
+        }
+      ]
+    },
+    {
+      "id": "pepper_king",
+      "values": [
+        {
+          "label": "Magro",
+          "build": {
+            "weight": -1,
+            "muscle": 0
+          },
+          "width": 1.1689740419387817,
+          "head": "1a04621c-80c7-45bc-bce8-a08b11cd4f0f",
+          "look": "0c1825c0-0633-442e-88af-9e8c3d78d8db",
+          "rig": "2fb47eb6-e767-4afa-93ac-c55a17870394"
+        },
+        {
+          "label": "Gordo",
+          "build": {
+            "weight": 1,
+            "muscle": 0
+          },
+          "width": 2.0505160093307495,
+          "head": "1a04621c-80c7-45bc-bce8-a08b11cd4f0f",
+          "look": "0c1825c0-0633-442e-88af-9e8c3d78d8db",
+          "rig": "2fb47eb6-e767-4afa-93ac-c55a17870394"
+        },
+        {
+          "label": "Padrão",
+          "build": {
+            "weight": 0,
+            "muscle": 0
+          },
+          "width": 1.526837408542633,
+          "head": "1a04621c-80c7-45bc-bce8-a08b11cd4f0f",
+          "look": "0c1825c0-0633-442e-88af-9e8c3d78d8db",
+          "rig": "2fb47eb6-e767-4afa-93ac-c55a17870394"
+        }
+      ]
+    },
+    {
+      "id": "chili_bandit",
+      "values": [
+        {
+          "label": "Magro",
+          "build": {
+            "weight": -1,
+            "muscle": 0
+          },
+          "width": 0.7756168246269226,
+          "head": "690c858f-2461-42a1-88eb-bf5d00915aee",
+          "look": "1cb19618-af75-4285-8dd0-47fa3e8ea69c",
+          "rig": "c2f71dfc-7194-42ea-9bf8-e8d82f161db4"
+        },
+        {
+          "label": "Gordo",
+          "build": {
+            "weight": 1,
+            "muscle": 0
+          },
+          "width": 1.5296895503997803,
+          "head": "690c858f-2461-42a1-88eb-bf5d00915aee",
+          "look": "1cb19618-af75-4285-8dd0-47fa3e8ea69c",
+          "rig": "c2f71dfc-7194-42ea-9bf8-e8d82f161db4"
+        },
+        {
+          "label": "Padrão",
+          "build": {
+            "weight": 0,
+            "muscle": 0
+          },
+          "width": 1.0817294716835022,
+          "head": "690c858f-2461-42a1-88eb-bf5d00915aee",
+          "look": "1cb19618-af75-4285-8dd0-47fa3e8ea69c",
+          "rig": "c2f71dfc-7194-42ea-9bf8-e8d82f161db4"
+        }
+      ]
+    },
+    {
+      "id": "nana_explorer",
+      "values": [
+        {
+          "label": "Magro",
+          "build": {
+            "weight": -1,
+            "muscle": 0
+          },
+          "width": 0.832184374332428,
+          "head": "164d11f5-eff9-4c9e-8c08-f61c6e2b7374",
+          "look": "96700d2a-4d30-4a53-bdb3-ede54ad4102b",
+          "rig": "0a25a6d0-0217-49a5-a0e7-183b773c2e0c"
+        },
+        {
+          "label": "Gordo",
+          "build": {
+            "weight": 1,
+            "muscle": 0
+          },
+          "width": 1.6517704129219055,
+          "head": "164d11f5-eff9-4c9e-8c08-f61c6e2b7374",
+          "look": "96700d2a-4d30-4a53-bdb3-ede54ad4102b",
+          "rig": "0a25a6d0-0217-49a5-a0e7-183b773c2e0c"
+        },
+        {
+          "label": "Padrão",
+          "build": {
+            "weight": 0,
+            "muscle": 0
+          },
+          "width": 1.1651006937026978,
+          "head": "164d11f5-eff9-4c9e-8c08-f61c6e2b7374",
+          "look": "96700d2a-4d30-4a53-bdb3-ede54ad4102b",
+          "rig": "0a25a6d0-0217-49a5-a0e7-183b773c2e0c"
+        }
+      ]
+    },
+    {
+      "id": "moon_guardian",
+      "values": [
+        {
+          "label": "Magro",
+          "build": {
+            "weight": -1,
+            "muscle": 0
+          },
+          "width": 0.8578616082668304,
+          "head": "ebf897f1-b8eb-4f99-9a22-61150f5faed7",
+          "look": "9b9de6f1-6a8f-4e5e-b653-d81a772da7f0",
+          "rig": "4f9c5bd6-d7bd-4de5-af79-b52690ae3f96"
+        },
+        {
+          "label": "Gordo",
+          "build": {
+            "weight": 1,
+            "muscle": 0
+          },
+          "width": 1.6771860718727112,
+          "head": "ebf897f1-b8eb-4f99-9a22-61150f5faed7",
+          "look": "9b9de6f1-6a8f-4e5e-b653-d81a772da7f0",
+          "rig": "4f9c5bd6-d7bd-4de5-af79-b52690ae3f96"
+        },
+        {
+          "label": "Padrão",
+          "build": {
+            "weight": 0,
+            "muscle": 0
+          },
+          "width": 1.1904708743095398,
+          "head": "ebf897f1-b8eb-4f99-9a22-61150f5faed7",
+          "look": "9b9de6f1-6a8f-4e5e-b653-d81a772da7f0",
+          "rig": "4f9c5bd6-d7bd-4de5-af79-b52690ae3f96"
+        }
+      ]
+    },
+    {
+      "id": "nico_inventor",
+      "values": [
+        {
+          "label": "Magro",
+          "build": {
+            "weight": -1,
+            "muscle": 0
+          },
+          "width": 0.7804579436779022,
+          "head": "6189f3f1-ed88-4ed7-9ac7-b734fa2fced3",
+          "look": "70f15fa9-f162-4971-b648-8912c25b9729",
+          "rig": "1c8b8f7d-6757-42bb-a807-8d306b74a7a0"
+        },
+        {
+          "label": "Gordo",
+          "build": {
+            "weight": 1,
+            "muscle": 0
+          },
+          "width": 1.4166236519813538,
+          "head": "6189f3f1-ed88-4ed7-9ac7-b734fa2fced3",
+          "look": "70f15fa9-f162-4971-b648-8912c25b9729",
+          "rig": "1c8b8f7d-6757-42bb-a807-8d306b74a7a0"
+        },
+        {
+          "label": "Padrão",
+          "build": {
+            "weight": 0,
+            "muscle": 0
+          },
+          "width": 1.0286849737167358,
+          "head": "6189f3f1-ed88-4ed7-9ac7-b734fa2fced3",
+          "look": "70f15fa9-f162-4971-b648-8912c25b9729",
+          "rig": "1c8b8f7d-6757-42bb-a807-8d306b74a7a0"
+        }
+      ]
+    },
+    {
+      "id": "ruby_sorceress",
+      "values": [
+        {
+          "label": "Magro",
+          "build": {
+            "weight": -1,
+            "muscle": 0
+          },
+          "width": 0.832184374332428,
+          "head": "a1a910e9-371d-4bbe-9a38-d886ea29002c",
+          "look": "51a15ce1-459a-4a6a-84e0-94e611b4f756",
+          "rig": "24c5edfb-7532-41ac-8d07-b0635ff50b84"
+        },
+        {
+          "label": "Gordo",
+          "build": {
+            "weight": 1,
+            "muscle": 0
+          },
+          "width": 1.6517704129219055,
+          "head": "a1a910e9-371d-4bbe-9a38-d886ea29002c",
+          "look": "51a15ce1-459a-4a6a-84e0-94e611b4f756",
+          "rig": "24c5edfb-7532-41ac-8d07-b0635ff50b84"
+        },
+        {
+          "label": "Padrão",
+          "build": {
+            "weight": 0,
+            "muscle": 0
+          },
+          "width": 1.1651006937026978,
+          "head": "a1a910e9-371d-4bbe-9a38-d886ea29002c",
+          "look": "51a15ce1-459a-4a6a-84e0-94e611b4f756",
+          "rig": "24c5edfb-7532-41ac-8d07-b0635ff50b84"
+        }
+      ]
+    },
+    {
+      "id": "forest_archer_f",
+      "values": [
+        {
+          "label": "Magro",
+          "build": {
+            "weight": -1,
+            "muscle": 0
+          },
+          "width": 0.832184374332428,
+          "head": "67a7624f-55be-42ec-b62e-3ed195384f99",
+          "look": "9c9f1a33-7f2a-4600-b881-78ffc5f86abf",
+          "rig": "edf478d4-5f51-428a-8f1a-7c2e279150d4"
+        },
+        {
+          "label": "Gordo",
+          "build": {
+            "weight": 1,
+            "muscle": 0
+          },
+          "width": 1.6517704129219055,
+          "head": "67a7624f-55be-42ec-b62e-3ed195384f99",
+          "look": "9c9f1a33-7f2a-4600-b881-78ffc5f86abf",
+          "rig": "edf478d4-5f51-428a-8f1a-7c2e279150d4"
+        },
+        {
+          "label": "Padrão",
+          "build": {
+            "weight": 0,
+            "muscle": 0
+          },
+          "width": 1.1651006937026978,
+          "head": "67a7624f-55be-42ec-b62e-3ed195384f99",
+          "look": "9c9f1a33-7f2a-4600-b881-78ffc5f86abf",
+          "rig": "edf478d4-5f51-428a-8f1a-7c2e279150d4"
+        }
+      ]
+    },
+    {
+      "id": "forest_archer_m",
+      "values": [
+        {
+          "label": "Magro",
+          "build": {
+            "weight": -1,
+            "muscle": 0
+          },
+          "width": 1.0302281975746155,
+          "head": "5d8d80e1-f817-4acc-b698-cdbbd26840eb",
+          "look": "79c2766c-474c-4921-a96e-06c45c0b2487",
+          "rig": "5ffd0f0c-ad14-493e-959d-ec02cb94826b"
+        },
+        {
+          "label": "Gordo",
+          "build": {
+            "weight": 1,
+            "muscle": 0
+          },
+          "width": 1.949102759361267,
+          "head": "5d8d80e1-f817-4acc-b698-cdbbd26840eb",
+          "look": "79c2766c-474c-4921-a96e-06c45c0b2487",
+          "rig": "5ffd0f0c-ad14-493e-959d-ec02cb94826b"
+        },
+        {
+          "label": "Padrão",
+          "build": {
+            "weight": 0,
+            "muscle": 0
+          },
+          "width": 1.402750551700592,
+          "head": "5d8d80e1-f817-4acc-b698-cdbbd26840eb",
+          "look": "79c2766c-474c-4921-a96e-06c45c0b2487",
+          "rig": "5ffd0f0c-ad14-493e-959d-ec02cb94826b"
+        }
+      ]
+    },
+    {
+      "id": "forest_guard_f",
+      "values": [
+        {
+          "label": "Magro",
+          "build": {
+            "weight": -1,
+            "muscle": 0
+          },
+          "width": 0.832184374332428,
+          "head": "1daf3cad-bcfe-450d-b5e0-727107f4d004",
+          "look": "08107621-466b-44ed-8410-c1c8ed7dc37e",
+          "rig": "48bea529-c33f-4082-ae3f-5c3ce8b56cdb"
+        },
+        {
+          "label": "Gordo",
+          "build": {
+            "weight": 1,
+            "muscle": 0
+          },
+          "width": 1.6517704129219055,
+          "head": "1daf3cad-bcfe-450d-b5e0-727107f4d004",
+          "look": "08107621-466b-44ed-8410-c1c8ed7dc37e",
+          "rig": "48bea529-c33f-4082-ae3f-5c3ce8b56cdb"
+        },
+        {
+          "label": "Padrão",
+          "build": {
+            "weight": 0,
+            "muscle": 0
+          },
+          "width": 1.1651006937026978,
+          "head": "1daf3cad-bcfe-450d-b5e0-727107f4d004",
+          "look": "08107621-466b-44ed-8410-c1c8ed7dc37e",
+          "rig": "48bea529-c33f-4082-ae3f-5c3ce8b56cdb"
+        }
+      ]
+    },
+    {
+      "id": "forest_guard_m",
+      "values": [
+        {
+          "label": "Magro",
+          "build": {
+            "weight": -1,
+            "muscle": 0
+          },
+          "width": 1.0302281975746155,
+          "head": "3363b255-7e7d-4963-8a3c-15ac2e2fbe07",
+          "look": "5602c43c-6fb1-4b98-8686-7b01b6cf73b1",
+          "rig": "e9b0be36-36a0-47f0-bca9-f4633a49ca8f"
+        },
+        {
+          "label": "Gordo",
+          "build": {
+            "weight": 1,
+            "muscle": 0
+          },
+          "width": 1.949102759361267,
+          "head": "3363b255-7e7d-4963-8a3c-15ac2e2fbe07",
+          "look": "5602c43c-6fb1-4b98-8686-7b01b6cf73b1",
+          "rig": "e9b0be36-36a0-47f0-bca9-f4633a49ca8f"
+        },
+        {
+          "label": "Padrão",
+          "build": {
+            "weight": 0,
+            "muscle": 0
+          },
+          "width": 1.402750551700592,
+          "head": "3363b255-7e7d-4963-8a3c-15ac2e2fbe07",
+          "look": "5602c43c-6fb1-4b98-8686-7b01b6cf73b1",
+          "rig": "e9b0be36-36a0-47f0-bca9-f4633a49ca8f"
+        }
+      ]
+    },
+    {
+      "id": "forest_guard_veteran",
+      "values": [
+        {
+          "label": "Magro",
+          "build": {
+            "weight": -1,
+            "muscle": 0
+          },
+          "width": 1.253714382648468,
+          "head": "fb93a364-d4c5-43d7-a9b1-5c75776ad9a7",
+          "look": "36401277-6d71-4ac0-a228-7d2e996d7522",
+          "rig": "8d2f2363-7e80-46a3-83d1-69f9caa98615"
+        },
+        {
+          "label": "Gordo",
+          "build": {
+            "weight": 1,
+            "muscle": 0
+          },
+          "width": 2.1886143684387207,
+          "head": "fb93a364-d4c5-43d7-a9b1-5c75776ad9a7",
+          "look": "36401277-6d71-4ac0-a228-7d2e996d7522",
+          "rig": "8d2f2363-7e80-46a3-83d1-69f9caa98615"
+        },
+        {
+          "label": "Padrão",
+          "build": {
+            "weight": 0,
+            "muscle": 0
+          },
+          "width": 1.6337621212005615,
+          "head": "fb93a364-d4c5-43d7-a9b1-5c75776ad9a7",
+          "look": "36401277-6d71-4ac0-a228-7d2e996d7522",
+          "rig": "8d2f2363-7e80-46a3-83d1-69f9caa98615"
+        }
+      ]
+    },
+    {
+      "id": "forest_artificer",
+      "values": [
+        {
+          "label": "Magro",
+          "build": {
+            "weight": -1,
+            "muscle": 0
+          },
+          "width": 1.0302281975746155,
+          "head": "1835fb3b-2d79-4b2b-980c-047c1a4791e1",
+          "look": "e99fba6e-fed5-4463-a61a-6408776703a4",
+          "rig": "93ba20fa-8467-4fe9-96d3-fcb9ad41728d"
+        },
+        {
+          "label": "Gordo",
+          "build": {
+            "weight": 1,
+            "muscle": 0
+          },
+          "width": 1.949102759361267,
+          "head": "1835fb3b-2d79-4b2b-980c-047c1a4791e1",
+          "look": "e99fba6e-fed5-4463-a61a-6408776703a4",
+          "rig": "93ba20fa-8467-4fe9-96d3-fcb9ad41728d"
+        },
+        {
+          "label": "Padrão",
+          "build": {
+            "weight": 0,
+            "muscle": 0
+          },
+          "width": 1.402750551700592,
+          "head": "1835fb3b-2d79-4b2b-980c-047c1a4791e1",
+          "look": "e99fba6e-fed5-4463-a61a-6408776703a4",
+          "rig": "93ba20fa-8467-4fe9-96d3-fcb9ad41728d"
+        }
+      ]
+    },
+    {
+      "id": "forest_princess",
+      "values": [
+        {
+          "label": "Magro",
+          "build": {
+            "weight": -1,
+            "muscle": 0
+          },
+          "width": 0.8578616082668304,
+          "head": "9d3d9813-8a49-4c19-bf55-aad66bd1d202",
+          "look": "9fda40c3-53a7-4fd3-b862-060078f52882",
+          "rig": "66985dfd-5081-4686-bdfd-3455ac5c3736"
+        },
+        {
+          "label": "Gordo",
+          "build": {
+            "weight": 1,
+            "muscle": 0
+          },
+          "width": 1.6771860718727112,
+          "head": "9d3d9813-8a49-4c19-bf55-aad66bd1d202",
+          "look": "9fda40c3-53a7-4fd3-b862-060078f52882",
+          "rig": "66985dfd-5081-4686-bdfd-3455ac5c3736"
+        },
+        {
+          "label": "Padrão",
+          "build": {
+            "weight": 0,
+            "muscle": 0
+          },
+          "width": 1.1904708743095398,
+          "head": "9d3d9813-8a49-4c19-bf55-aad66bd1d202",
+          "look": "9fda40c3-53a7-4fd3-b862-060078f52882",
+          "rig": "66985dfd-5081-4686-bdfd-3455ac5c3736"
+        }
+      ]
+    },
+    {
+      "id": "frontier_cowboy",
+      "values": [
+        {
+          "label": "Magro",
+          "build": {
+            "weight": -1,
+            "muscle": 0
+          },
+          "width": 1.227791428565979,
+          "head": "a0387551-0895-4eab-a4b7-d38a7290af62",
+          "look": "30fcb8e5-76e4-4f37-9eeb-506af79e42f4",
+          "rig": "c99950ee-08c9-4b0c-91c2-1308cfdb8387"
+        },
+        {
+          "label": "Gordo",
+          "build": {
+            "weight": 1,
+            "muscle": 0
+          },
+          "width": 2.5001120567321777,
+          "head": "a0387551-0895-4eab-a4b7-d38a7290af62",
+          "look": "30fcb8e5-76e4-4f37-9eeb-506af79e42f4",
+          "rig": "c99950ee-08c9-4b0c-91c2-1308cfdb8387"
+        },
+        {
+          "label": "Padrão",
+          "build": {
+            "weight": 0,
+            "muscle": 0
+          },
+          "width": 1.7454039454460144,
+          "head": "a0387551-0895-4eab-a4b7-d38a7290af62",
+          "look": "30fcb8e5-76e4-4f37-9eeb-506af79e42f4",
+          "rig": "c99950ee-08c9-4b0c-91c2-1308cfdb8387"
+        }
+      ]
+    },
+    {
+      "id": "bread_baker",
+      "values": [
+        {
+          "label": "Magro",
+          "build": {
+            "weight": -1,
+            "muscle": 0
+          },
+          "width": 1.0302281975746155,
+          "head": "b282554c-159b-4ede-adfa-4f79240d5c16",
+          "look": "f883e00a-7e7f-4080-9d16-04795cc29bb7",
+          "rig": "a552b8fd-aacd-49a2-86ef-1f1136f30599"
+        },
+        {
+          "label": "Gordo",
+          "build": {
+            "weight": 1,
+            "muscle": 0
+          },
+          "width": 1.949102759361267,
+          "head": "b282554c-159b-4ede-adfa-4f79240d5c16",
+          "look": "f883e00a-7e7f-4080-9d16-04795cc29bb7",
+          "rig": "a552b8fd-aacd-49a2-86ef-1f1136f30599"
+        },
+        {
+          "label": "Padrão",
+          "build": {
+            "weight": 0,
+            "muscle": 0
+          },
+          "width": 1.402750551700592,
+          "head": "b282554c-159b-4ede-adfa-4f79240d5c16",
+          "look": "f883e00a-7e7f-4080-9d16-04795cc29bb7",
+          "rig": "a552b8fd-aacd-49a2-86ef-1f1136f30599"
+        }
+      ]
+    },
+    {
+      "id": "bread_vigilante",
+      "values": [
+        {
+          "label": "Magro",
+          "build": {
+            "weight": -1,
+            "muscle": 0
+          },
+          "width": 1.0302281975746155,
+          "head": "3f6361e8-cc48-4434-990a-9bec47fa0640",
+          "look": "8dd977e1-547b-42c0-bb04-be9770e53702",
+          "rig": "8a5385b4-0f77-4d90-9d4a-bd15f3aba30d"
+        },
+        {
+          "label": "Gordo",
+          "build": {
+            "weight": 1,
+            "muscle": 0
+          },
+          "width": 1.949102759361267,
+          "head": "3f6361e8-cc48-4434-990a-9bec47fa0640",
+          "look": "8dd977e1-547b-42c0-bb04-be9770e53702",
+          "rig": "8a5385b4-0f77-4d90-9d4a-bd15f3aba30d"
+        },
+        {
+          "label": "Padrão",
+          "build": {
+            "weight": 0,
+            "muscle": 0
+          },
+          "width": 1.402750551700592,
+          "head": "3f6361e8-cc48-4434-990a-9bec47fa0640",
+          "look": "8dd977e1-547b-42c0-bb04-be9770e53702",
+          "rig": "8a5385b4-0f77-4d90-9d4a-bd15f3aba30d"
+        }
+      ]
+    },
+    {
+      "id": "cactus_soldier",
+      "values": [
+        {
+          "label": "Magro",
+          "build": {
+            "weight": -1,
+            "muscle": 0
+          },
+          "width": 1.227791428565979,
+          "head": "fe2e9895-63ac-4a54-a9e2-9b3e66ff9cbb",
+          "look": "c2a6362f-8b57-4161-9e8b-a98cc2aee1f5",
+          "rig": "d5dd6624-fc73-4019-bf05-d2bd0f0a0da2"
+        },
+        {
+          "label": "Gordo",
+          "build": {
+            "weight": 1,
+            "muscle": 0
+          },
+          "width": 2.5001120567321777,
+          "head": "fe2e9895-63ac-4a54-a9e2-9b3e66ff9cbb",
+          "look": "c2a6362f-8b57-4161-9e8b-a98cc2aee1f5",
+          "rig": "d5dd6624-fc73-4019-bf05-d2bd0f0a0da2"
+        },
+        {
+          "label": "Padrão",
+          "build": {
+            "weight": 0,
+            "muscle": 0
+          },
+          "width": 1.7454039454460144,
+          "head": "fe2e9895-63ac-4a54-a9e2-9b3e66ff9cbb",
+          "look": "c2a6362f-8b57-4161-9e8b-a98cc2aee1f5",
+          "rig": "d5dd6624-fc73-4019-bf05-d2bd0f0a0da2"
+        }
+      ]
+    },
+    {
+      "id": "cactus_soldier_large",
+      "values": [
+        {
+          "label": "Magro",
+          "build": {
+            "weight": -1,
+            "muscle": 0
+          },
+          "width": 1.5472432374954224,
+          "head": "ba1f53f0-c6c6-4b52-a4dc-ceff1f5e1a4a",
+          "look": "e6e7e185-6f7a-44e4-8c4d-09b2fd79d714",
+          "rig": "d82f54d6-f7f5-48d3-8765-56ea800f8913"
+        },
+        {
+          "label": "Gordo",
+          "build": {
+            "weight": 1,
+            "muscle": 0
+          },
+          "width": 3.1463154554367065,
+          "head": "ba1f53f0-c6c6-4b52-a4dc-ceff1f5e1a4a",
+          "look": "e6e7e185-6f7a-44e4-8c4d-09b2fd79d714",
+          "rig": "d82f54d6-f7f5-48d3-8765-56ea800f8913"
+        },
+        {
+          "label": "Padrão",
+          "build": {
+            "weight": 0,
+            "muscle": 0
+          },
+          "width": 2.196467161178589,
+          "head": "ba1f53f0-c6c6-4b52-a4dc-ceff1f5e1a4a",
+          "look": "e6e7e185-6f7a-44e4-8c4d-09b2fd79d714",
+          "rig": "d82f54d6-f7f5-48d3-8765-56ea800f8913"
+        }
+      ]
+    }
+  ],
+  "errors": []
+}

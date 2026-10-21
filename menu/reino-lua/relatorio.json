@@ -1,0 +1,47 @@
+{
+  "reports": [
+    {
+      "id": "paysandu_wolf",
+      "label": "Paysandu",
+      "MB": 6.58,
+      "clips": 12,
+      "companion": true
+    },
+    {
+      "id": "nana_explorer",
+      "label": "Nana exploradora",
+      "MB": 35.59,
+      "clips": 12,
+      "companion": false
+    },
+    {
+      "id": "moon_guardian",
+      "label": "Guardiã da Lua",
+      "MB": 40.08,
+      "clips": 12,
+      "companion": false
+    },
+    {
+      "id": "nico_inventor",
+      "label": "Nico inventor",
+      "MB": 22.34,
+      "clips": 12,
+      "companion": false
+    },
+    {
+      "id": "ruby_sorceress",
+      "label": "Feiticeira rubi",
+      "MB": 39.6,
+      "clips": 12,
+      "companion": false
+    },
+    {
+      "id": "ruby_raven",
+      "label": "Corvo rubi",
+      "MB": 3.01,
+      "clips": 12,
+      "companion": true
+    }
+  ],
+  "errors": []
+}

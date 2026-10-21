@@ -1,0 +1,259 @@
+{
+  "errors": [],
+  "reports": [
+    {
+      "id": "feminine_soft",
+      "MB": 38.22,
+      "animations": 12,
+      "clothes": 33,
+      "slots": 91,
+      "swapP95": 2.3
+    },
+    {
+      "id": "masculine_soft",
+      "MB": 30.86,
+      "animations": 12,
+      "clothes": 27,
+      "slots": 131,
+      "swapP95": 2.1
+    },
+    {
+      "id": "cute_round",
+      "MB": 20.66,
+      "animations": 12,
+      "clothes": 7,
+      "slots": 131,
+      "swapP95": 1.4
+    },
+    {
+      "id": "feminine_bold",
+      "MB": 46.57,
+      "animations": 12,
+      "clothes": 31,
+      "slots": 91,
+      "swapP95": 2.4
+    },
+    {
+      "id": "alchemist_villain",
+      "MB": 37.09,
+      "animations": 12,
+      "clothes": 8,
+      "slots": 131,
+      "swapP95": 1.7
+    },
+    {
+      "id": "dwarf_bard",
+      "MB": 34.62,
+      "animations": 12,
+      "clothes": 16,
+      "slots": 131,
+      "swapP95": 2.2
+    },
+    {
+      "id": "old_king",
+      "MB": 33.72,
+      "animations": 12,
+      "clothes": 16,
+      "slots": 131,
+      "swapP95": 2
+    },
+    {
+      "id": "sad_clown",
+      "MB": 33.83,
+      "animations": 12,
+      "clothes": 25,
+      "slots": 131,
+      "swapP95": 1.8
+    },
+    {
+      "id": "orc_warrior",
+      "MB": 33.91,
+      "animations": 12,
+      "clothes": 53,
+      "slots": 131,
+      "swapP95": 1.8
+    },
+    {
+      "id": "cactus_cowboy",
+      "MB": 32.21,
+      "animations": 12,
+      "clothes": 14,
+      "slots": 131,
+      "swapP95": 2.2
+    },
+    {
+      "id": "pepper_king",
+      "MB": 22.33,
+      "animations": 12,
+      "clothes": 16,
+      "slots": 131,
+      "swapP95": 2.5
+    },
+    {
+      "id": "chili_bandit",
+      "MB": 24.67,
+      "animations": 12,
+      "clothes": 14,
+      "slots": 131,
+      "swapP95": 2
+    },
+    {
+      "id": "robot_ball",
+      "MB": 0.68,
+      "animations": 0,
+      "clothes": 0
+    },
+    {
+      "id": "nana_explorer",
+      "MB": 35.59,
+      "animations": 12,
+      "clothes": 17,
+      "slots": 131,
+      "swapP95": 1.5
+    },
+    {
+      "id": "moon_guardian",
+      "MB": 40.08,
+      "animations": 12,
+      "clothes": 19,
+      "slots": 131,
+      "swapP95": 1.6
+    },
+    {
+      "id": "nico_inventor",
+      "MB": 22.34,
+      "animations": 12,
+      "clothes": 17,
+      "slots": 131,
+      "swapP95": 1.3
+    },
+    {
+      "id": "ruby_sorceress",
+      "MB": 39.6,
+      "animations": 12,
+      "clothes": 19,
+      "slots": 131,
+      "swapP95": 2
+    },
+    {
+      "id": "paysandu_wolf",
+      "MB": 6.58,
+      "animations": 12,
+      "clothes": 0
+    },
+    {
+      "id": "ruby_raven",
+      "MB": 3.01,
+      "animations": 12,
+      "clothes": 0
+    },
+    {
+      "id": "forest_archer_f",
+      "MB": 38.84,
+      "animations": 12,
+      "clothes": 20,
+      "slots": 131,
+      "swapP95": 2
+    },
+    {
+      "id": "forest_archer_m",
+      "MB": 41.83,
+      "animations": 12,
+      "clothes": 20,
+      "slots": 131,
+      "swapP95": 1.7
+    },
+    {
+      "id": "forest_guard_f",
+      "MB": 36.24,
+      "animations": 12,
+      "clothes": 19,
+      "slots": 131,
+      "swapP95": 1.8
+    },
+    {
+      "id": "forest_guard_m",
+      "MB": 38.59,
+      "animations": 12,
+      "clothes": 19,
+      "slots": 131,
+      "swapP95": 1.9
+    },
+    {
+      "id": "forest_guard_veteran",
+      "MB": 32.6,
+      "animations": 12,
+      "clothes": 19,
+      "slots": 131,
+      "swapP95": 1.6
+    },
+    {
+      "id": "forest_artificer",
+      "MB": 47.12,
+      "animations": 12,
+      "clothes": 22,
+      "slots": 131,
+      "swapP95": 2.1
+    },
+    {
+      "id": "forest_princess",
+      "MB": 41.13,
+      "animations": 12,
+      "clothes": 19,
+      "slots": 131,
+      "swapP95": 1.6
+    },
+    {
+      "id": "frontier_cowboy",
+      "MB": 33.14,
+      "animations": 12,
+      "clothes": 20,
+      "slots": 131,
+      "swapP95": 1.4
+    },
+    {
+      "id": "bread_baker",
+      "MB": 30.6,
+      "animations": 12,
+      "clothes": 14,
+      "slots": 131,
+      "swapP95": 1.5
+    },
+    {
+      "id": "bread_vigilante",
+      "MB": 36.02,
+      "animations": 12,
+      "clothes": 19,
+      "slots": 131,
+      "swapP95": 1.9
+    },
+    {
+      "id": "cactus_soldier",
+      "MB": 32.4,
+      "animations": 12,
+      "clothes": 21,
+      "slots": 131,
+      "swapP95": 1.9
+    },
+    {
+      "id": "cactus_soldier_large",
+      "MB": 40.26,
+      "animations": 12,
+      "clothes": 21,
+      "slots": 131,
+      "swapP95": 1.3
+    },
+    {
+      "id": "desert_fennec",
+      "MB": 6.82,
+      "animations": 12,
+      "clothes": 0
+    },
+    {
+      "id": "cowboy_on_fennec",
+      "MB": 16.47,
+      "animations": 12,
+      "clothes": 0
+    }
+  ]
+}

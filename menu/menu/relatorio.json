@@ -1,0 +1,261 @@
+{
+  "reports": [
+    {
+      "category": "character",
+      "sub": "Humanos",
+      "previews": 21,
+      "image": "character-humanos.png"
+    },
+    {
+      "category": "character",
+      "sub": "Criaturas",
+      "previews": 5,
+      "image": "character-criaturas.png"
+    },
+    {
+      "category": "character",
+      "sub": "Vegetais",
+      "previews": 6,
+      "image": "character-vegetais.png"
+    },
+    {
+      "category": "character",
+      "sub": "Robôs",
+      "previews": 1,
+      "image": "character-robos.png"
+    },
+    {
+      "category": "body",
+      "sub": "type",
+      "previews": 4,
+      "image": "body-type.png"
+    },
+    {
+      "category": "body",
+      "sub": "fine",
+      "previews": 0,
+      "image": "body-fine.png"
+    },
+    {
+      "category": "appearance",
+      "sub": "skin",
+      "previews": 0,
+      "image": "appearance-skin.png"
+    },
+    {
+      "category": "appearance",
+      "sub": "hair",
+      "previews": 15,
+      "image": "appearance-hair.png"
+    },
+    {
+      "category": "appearance",
+      "sub": "beard",
+      "previews": 6,
+      "image": "appearance-beard.png"
+    },
+    {
+      "category": "clothes",
+      "sub": "sets",
+      "previews": 26,
+      "image": "clothes-sets.png"
+    },
+    {
+      "category": "clothes",
+      "sub": "upper",
+      "previews": 25,
+      "image": "clothes-upper.png"
+    },
+    {
+      "category": "clothes",
+      "sub": "lower",
+      "previews": 5,
+      "image": "clothes-lower.png"
+    },
+    {
+      "category": "clothes",
+      "sub": "feet",
+      "previews": 1,
+      "image": "clothes-feet.png"
+    },
+    {
+      "category": "clothes",
+      "sub": "cape",
+      "previews": 16,
+      "image": "clothes-cape.png"
+    },
+    {
+      "category": "clothes",
+      "sub": "belt",
+      "previews": 24,
+      "image": "clothes-belt.png"
+    },
+    {
+      "category": "clothes",
+      "sub": "extras",
+      "previews": 20,
+      "image": "clothes-extras.png"
+    },
+    {
+      "category": "accessories",
+      "sub": "head",
+      "previews": 13,
+      "image": "accessories-head.png"
+    },
+    {
+      "category": "accessories",
+      "sub": "ears",
+      "previews": 4,
+      "image": "accessories-ears.png"
+    },
+    {
+      "category": "accessories",
+      "sub": "forehead",
+      "previews": 2,
+      "image": "accessories-forehead.png"
+    },
+    {
+      "category": "accessories",
+      "sub": "hairpin",
+      "previews": 3,
+      "image": "accessories-hairpin.png"
+    },
+    {
+      "category": "accessories",
+      "sub": "face",
+      "previews": 4,
+      "image": "accessories-face.png"
+    },
+    {
+      "category": "expressions",
+      "sub": "ready",
+      "previews": 9,
+      "image": "expressions-ready.png"
+    },
+    {
+      "category": "expressions",
+      "sub": "eyes",
+      "previews": 0,
+      "image": "expressions-eyes.png"
+    },
+    {
+      "category": "expressions",
+      "sub": "mouth",
+      "previews": 0,
+      "image": "expressions-mouth.png"
+    },
+    {
+      "category": "expressions",
+      "sub": "brows",
+      "previews": 0,
+      "image": "expressions-brows.png"
+    },
+    {
+      "category": "expressions",
+      "sub": "auto",
+      "previews": 0,
+      "image": "expressions-auto.png"
+    }
+  ],
+  "errors": [],
+  "warnings": [],
+  "cached": 240,
+  "glb": {
+    "MB": 38.2186279296875,
+    "animations": 12,
+    "nodes": [
+      "Personagem_feminine_soft",
+      "Head_V2_feminine_soft",
+      "Bone_Head",
+      "Bone_Jaw",
+      "Teeth_Lower",
+      "Tongue",
+      "Bone_Eye_L",
+      "Eye_L",
+      "Sclera",
+      "Iris",
+      "Cornea",
+      "Bone_LidUp_L",
+      "Bone_LidLo_L",
+      "Bone_Eye_R",
+      "Eye_R",
+      "Sclera",
+      "Iris",
+      "Cornea",
+      "Bone_LidUp_R",
+      "Bone_LidLo_R",
+      "Ear_L",
+      "Ear_R",
+      "Brow_L",
+      "Brow_R",
+      "Eye_Highlights_L",
+      "Catchlight",
+      "Catchlight",
+      "Caruncle",
+      "Eye_Highlights_R",
+      "Catchlight",
+      "Catchlight",
+      "Caruncle",
+      "Teeth_Upper",
+      "Look",
+      "Hair_long_wavy",
+      "Hair_Cap",
+      "Hair_Locks",
+      "Accessories",
+      "Acc_metal",
+      "Acc_pearl",
+      "Acc_gem2",
+      "Acc_gem",
+      "Acc_flower",
+      "Acc_pollen",
+      "Head_Skin",
+      "Lid_Rim_L",
+      "LowerLash_L",
+      "Lashes_L",
+      "Lid_Rim_R",
+      "LowerLash_R",
+      "Lashes_R",
+      "Mouth_Bag",
+      "Body",
+      "Figurino",
+      "RoupaSlot_upper",
+      "Roupa_Top",
+      "Roupa_Detalhes_upper_secondary",
+      "Roupa_Detalhes_upper_pearl",
+      "Roupa_Detalhes_upper_gem",
+      "Roupa_Detalhes_upper_trim",
+      "RoupaSlot_lower",
+      "Roupa_Cauda",
+      "Roupa_Nadadeira",
+      "Roupa_Nadadeira_Dobra",
+      "Roupa_Nadadeira_Dobra",
+      "Roupa_Nadadeira",
+      "Roupa_Nadadeira_Dobra",
+      "Roupa_Nadadeira_Dobra",
+      "Roupa_Nadadeira_Quadril",
+      "Roupa_Nadadeira_Quadril",
+      "Roupa_Nadadeira_Lateral",
+      "Roupa_Nadadeira_Lateral_Dobra",
+      "Roupa_Nadadeira_Lateral_Dobra",
+      "Roupa_Nadadeira_Lateral",
+      "Roupa_Nadadeira_Lateral_Dobra",
+      "Roupa_Nadadeira_Lateral_Dobra",
+      "Roupa_Detalhes_lower_trim",
+      "RoupaSlot_cape",
+      "Roupa_Veu",
+      "Roupa_Veu_Dobra",
+      "Roupa_Veu_Dobra",
+      "Roupa_Veu",
+      "Roupa_Veu_Dobra",
+      "Roupa_Veu_Dobra",
+      "RoupaSlot_belt",
+      "Roupa_Detalhes_belt_trim",
+      "Roupa_Detalhes_belt_pearl",
+      "Roupa_Detalhes_belt_gem",
+      "RoupaSlot_extras",
+      "Roupa_Detalhes_extras_pearl",
+      "Roupa_Detalhes_extras_gem",
+      "Roupa_Detalhes_extras_trim"
+    ]
+  }
+}
