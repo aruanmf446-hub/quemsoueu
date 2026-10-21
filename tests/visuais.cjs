@@ -8,7 +8,7 @@ fs.mkdirSync(output,{recursive:true});
 (async()=>{
 const browser=await chromium.launch({executablePath:'/usr/bin/chromium',headless:true,args:['--no-sandbox','--use-gl=swiftshader','--enable-unsafe-swiftshader','--ignore-gpu-blocklist']});
 try{
-const page=await browser.newPage({viewport:{width:1000,height:760}}),errors=[],reports=[];
+const page=await browser.newPage({viewport:{width:1000,height:760},reducedMotion:'reduce'}),errors=[],reports=[];
 page.on('pageerror',e=>{errors.push(e.message);console.error(e.message)});page.on('console',m=>{if(m.type()==='error'&&!m.text().includes('favicon'))errors.push(m.text())});
 await page.route('https://cdn.jsdelivr.net/npm/three@0.180.0/**',async route=>route.fulfill({path:threeRoot+'/'+route.request().url().split('three@0.180.0/')[1],contentType:'application/javascript'}));
 await page.route('http://localhost:8000/',route=>{let source=fs.readFileSync(path.join(root,'index.html'),'utf8');source=source.replace('mapSize.set(4096,4096)','mapSize.set(1024,1024)').replace('(function frame(){requestAnimationFrame(frame);','window.__render=function(){').replace('renderer.render(scene,camera)})();','renderer.render(scene,camera)};');route.fulfill({body:source,contentType:'text/html'})});
@@ -40,7 +40,7 @@ for(const id of ids){
   }
   return {id,MB:+(data.byteLength/1048576).toFixed(2),animations:json.animations?.length||0,clothes:nodes.filter(x=>x.name?.startsWith('Roupa_')).length};
  },id);reports.push(report);console.log('GLB',JSON.stringify(report));
- if(!process.env.ATELIE_SOMENTE_RENDERS&&id!=='robot_ball'&&!['paysandu_wolf','ruby_raven'].includes(id)){
+ if(!process.env.ATELIE_SOMENTE_RENDERS&&id!=='robot_ball'&&!['paysandu_wolf','ruby_raven','desert_fennec','cowboy_on_fennec'].includes(id)){
   const metrics=await page.evaluate(()=>{
     const a=window.__atelie,body=a.body(),head=a.group(),skin=body.geo.attributes.position.array.slice(),times=[];
     for(const slot of ['upper','lower','feet','cape','belt','extras'])for(const option of a.pieceOptions(slot)){
@@ -91,6 +91,13 @@ await page.evaluate(async()=>{const buffer=await window.__atelie.exportGLB(),v=n
 await page.locator('#showBody').check();await ready();
 assert((await page.evaluate(()=>window.__atelie.clothes().group.children.length))>0);
 console.log('Catálogo, cores, memória de visual e ocultar corpo: OK');
-assert.deepEqual(errors,[]);fs.writeFileSync(path.join(output,'reports.json'),JSON.stringify({errors,reports},null,2));console.log('OK: personagens, renders, rig, GLB e cores');
+assert.deepEqual(errors,[]);
+// Repetições após um acabamento atualizam só os modelos afetados e preservam as outras capturas.
+const reportPath=path.join(output,'reports.json');
+if(process.env.ATELIE_PERSONAGENS&&fs.existsSync(reportPath)){
+ const previous=JSON.parse(fs.readFileSync(reportPath,'utf8'));assert.deepEqual(previous.errors,[]);
+ for(const old of previous.reports)if(!reports.some(r=>r.id===old.id))reports.push(old);
+}
+fs.writeFileSync(reportPath,JSON.stringify({errors,reports},null,2));console.log('OK: personagens, renders, rig, GLB e cores');
 }finally{await browser.close()}
 })().catch(e=>{console.error(e);process.exit(1)});

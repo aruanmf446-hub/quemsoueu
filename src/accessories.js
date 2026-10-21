@@ -21,6 +21,11 @@ export const ACC_COLORS = {
 };
 export const ACC_SLOTS = [{ id: 'head', label: 'Cabeça' }, { id: 'ears', label: 'Orelhas' }, { id: 'forehead', label: 'Testa' }, { id: 'hairpin', label: 'Enfeite de cabelo' }, { id: 'face', label: 'Rosto' }];
 export const ACCESSORIES = {
+  chef_hat:{slot:'head',label:'Chapéu de padeiro',colors:['fabric']},
+  vigilante_hood:{slot:'head',label:'Capuz e máscara do vigilante',colors:['fabric','metal']},
+  guard_helmet:{slot:'head',label:'Elmo do soldado',colors:['fabric','metal','gem']},
+  fennec_saddle:{slot:'head',label:'Sela e bolsas do feneco',colors:['fabric','metal','gem'],companion:'fennec'},
+  fennec_rider:{slot:'head',label:'Cowboy montado no feneco',colors:['fabric','metal','gem'],companion:'fennec'},
   monocle:{slot:'face',label:'Monóculo esmeralda',colors:['metal','gem2']},
   moon_crown: {slot:'head',label:'Coroa lunar',colors:['metal','gem','gem2']},
   goggles: {slot:'head',label:'Óculos de inventor',colors:['metal','gem2']},
@@ -325,6 +330,27 @@ export function buildAccessories(fit, sel = {}, cols = {}, hairMeshes = []) {
     const glass=new THREE.CircleGeometry(r*.9,40);glass.translate(p.x,p.y,p.z);add('visor',glass);
     const chain=[p.clone().add(V(-r,0,0)),p.clone().add(V(-r-.06,-.2,-.01)),p.clone().add(V(-r-.04,-.36,-.1))];add('metal',tube(chain,.008));
     add('gem2',sphere(p.clone().add(V(-r,0,.02)),.035));
+  }
+
+  // Chapéus do deserto: somente modelos novos, sem alterar os encaixes anteriores.
+  if(sel.head==='chef_hat'){
+    const y=fit.top+.06;
+    add('fabric',sphere(V(0,y+.23,0),.64,1,.58,.8));
+    for(let i=0;i<7;i++){const a=i/7*Math.PI*2;add('fabric',sphere(V(Math.sin(a)*.35,y+.36,Math.cos(a)*.27),.31,1,.85,1))}
+    const band=new THREE.CylinderGeometry(.53,.55,.18,48,1,true);band.scale(1,1,.85);band.translate(0,y,0);add('fabric',band);
+  }
+  if(sel.head==='guard_helmet'){
+    const y=fit.top-.2,helm=new THREE.SphereGeometry(.92,48,24,0,Math.PI*2,0,Math.PI*.48);helm.scale(1,.58,.84);helm.translate(0,y,0);add('fabric',helm);
+    const brim=new THREE.TorusGeometry(.9,.035,10,64);brim.rotateX(Math.PI/2);brim.scale(1,1,.84);brim.translate(0,y,0);add('metal',brim);
+    for(let i=0;i<9;i++)add('gem',sphere(V(0,y+.53+Math.sin(i/8*Math.PI)*.3,-.45+i*.11),.13,.6,1.8,1));
+    const badge=new THREE.OctahedronGeometry(.13);badge.translate(0,y+.28,.7);add('metal',badge);
+  }
+  if(sel.head==='vigilante_hood'){
+    // Capuz aberto na frente: a máscara cobre só a boca, deixando olhos e sobrancelhas livres.
+    const g=new THREE.SphereGeometry(.96,48,32,Math.PI*.85,Math.PI*1.3,0,Math.PI*.76);g.scale(1,1.27,.88);g.translate(0,.19,-.02);add('fabric',g);
+    const mask=new THREE.PlaneGeometry(1.15,.55,32,16),mp=mask.attributes.position;
+    for(let i=0;i<mp.count;i++){const yy=mp.getY(i),x=mp.getX(i)*(.88+.12*(yy/.55+.5)),y=P.mouthY+yy;mp.setXYZ(i,x,y,fit.surfZ(x,y)+.04+.012*Math.cos(x*18))}mask.computeVertexNormals();add('fabric',mask);
+    const edge=[V(-.79,-.5,.4),V(-.78,.4,.56),V(0,fit.top+.17,.5),V(.78,.4,.56),V(.79,-.5,.4)];add('metal',tube(edge,.018));
   }
 
   // ---------------- malhas por material ----------------

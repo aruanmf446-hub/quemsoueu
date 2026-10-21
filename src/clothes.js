@@ -1,5 +1,6 @@
 // Figurinos procedurais no espaço do corpo. Nenhuma alteração na pele ou no rig facial.
 import * as THREE from 'three';
+import {FRONTIER_OUTFITS} from './frontier.js';
 import {FOREST_OUTFITS} from './forest.js';
 import { buildLegacyClothes } from './legacy-clothes.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
@@ -41,7 +42,12 @@ const SLOT_STYLES = {
 // Os conjuntos lunares usam os mesmos slots; combinações continuam clica-e-troca.
 for(const slot of Object.keys(SLOT_STYLES))SLOT_STYLES[slot].push(...(slot==='cape'?['lunar_guardian','lunar_ruby']:['lunar_explorer','lunar_guardian','lunar_inventor','lunar_ruby']));
 for(const slot of Object.keys(SLOT_STYLES))SLOT_STYLES[slot].push(...Object.keys(FOREST_OUTFITS));
+for(const slot of Object.keys(SLOT_STYLES))SLOT_STYLES[slot].push(...Object.keys(FRONTIER_OUTFITS));
 const PIECE_LABELS = {
+  bread_baker:{upper:'Camisa de padeiro',lower:'Calça de padeiro',feet:'Botas do padeiro',cape:'Avental',belt:'Faixa laranja',extras:'Pão e utensílios'},
+  bread_vigilante:{upper:'Túnica do vigilante',lower:'Calça do vigilante',feet:'Botas do vigilante',cape:'Manto escuro',belt:'Cinturão do vigilante',extras:'Cristal de âmbar'},
+  cactus_guard:{upper:'Túnica e armadura',lower:'Calça do soldado',feet:'Botas e grevas',cape:'Capa vermelha',belt:'Cinturão dourado',extras:'Escudo e lança'},
+  frontier_cowboy:{upper:'Camisa e colete',lower:'Calça de viagem',feet:'Botas do deserto',cape:'Poncho',belt:'Cinturão de viagem',extras:'Lenço e bolsas'},
   forest_archer:{upper:'Túnica de arqueiro',lower:'Calça da floresta',feet:'Botas de arqueiro',cape:'Manto da floresta',belt:'Cinto de viagem',extras:'Arco e aljava'},
   forest_guard:{upper:'Túnica e ombreiras',lower:'Calça do guarda',feet:'Botas e grevas',cape:'Capa do guarda',belt:'Cinturão do guarda',extras:'Escudo e lança'},
   forest_artificer:{upper:'Casaca do artífice',lower:'Calça do artífice',feet:'Botas mecânicas',cape:'Manto do artífice',belt:'Cinto de ferramentas',extras:'Mochila e frascos'},

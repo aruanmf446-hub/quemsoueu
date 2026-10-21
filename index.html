@@ -90,7 +90,7 @@ const TARGET=new THREE.Vector3(0,-.2,0);
 let frame={ty:-.2,dist:7.4};
 function aim(x,y,z){const k=frame.dist/7.4;camera.position.set(x*k,frame.ty+(y+.2)*k,z*k);TARGET.set(0,frame.ty,0);orbit.target.copy(TARGET);orbit.update()}
 const VIEWS={front:[0,-.05,7.4],side:[7.4,-.05,.02],three:[3.4,.8,6.5]};
-function frameBody(){if(current?.fit?.companion){const box=new THREE.Box3().setFromObject(current.group),size=box.getSize(new THREE.Vector3());frame={ty:box.getCenter(new THREE.Vector3()).y,dist:Math.max(7.4,Math.max(size.y,size.x/camera.aspect,size.z)*2.15)};return}const b=current&&current.body;if(b){const box=clothesObj?new THREE.Box3().setFromObject(clothesObj.group):null,top=Math.max(b.pivot.y+b.hs*(current.fit.top-b.pivot.y)+.1,box&&!box.isEmpty()?box.max.y:-Infinity),bottom=Math.min(b.ySole,box&&!box.isEmpty()?box.min.y:Infinity);frame={ty:(top+bottom)/2,dist:Math.max(9,(top-bottom)*2.05)}}else frame={ty:-.2,dist:7.4}}
+function frameBody(){if(current?.fit?.companion){const box=new THREE.Box3().setFromObject(current.group),size=box.getSize(new THREE.Vector3());frame={ty:box.getCenter(new THREE.Vector3()).y,dist:Math.max(7.4,Math.max(size.y,size.x/camera.aspect,size.z)*2.15)};return}const b=current&&current.body;if(b){const box=clothesObj?new THREE.Box3().setFromObject(clothesObj.group):null,top=Math.max(new THREE.Box3().setFromObject(current.group).max.y+.15,b.pivot.y+b.hs*(current.fit.top-b.pivot.y)+.1,box&&!box.isEmpty()?box.max.y:-Infinity),bottom=Math.min(b.ySole,box&&!box.isEmpty()?box.min.y:Infinity);frame={ty:(top+bottom)/2,dist:Math.max(9,(top-bottom)*2.05)}}else frame={ty:-.2,dist:7.4}}
 aim(...VIEWS.three);
 
 renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFShadowMap;
@@ -208,6 +208,7 @@ function rebuildLook(){
   if(lookObj){if(lookObj.group.parent)lookObj.group.parent.remove(lookObj.group);lookObj.dispose()}
   lookObj=buildLook(current.fit,getLook(),current.body?current.body.sdfHead:null);attachLook(current,lookObj);
   lookObj.group.traverse(o=>{if(o.isMesh){o.castShadow=!o.material.transparent;o.receiveShadow=true}});
+  frameBody(); // Inclui chapéus altos e o cavaleiro no enquadramento, sem alterar a malha.
 }
 // corpo inteiro (só malha): mesma pele da cabeça; chão discreto que recebe a sombra
 const ground=new THREE.Mesh(new THREE.PlaneGeometry(40,40),new THREE.ShadowMaterial({opacity:.16}));ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;ground.visible=false;scene.add(ground);
@@ -222,7 +223,7 @@ function addBody(h,cell){
   const skin=h.group.getObjectByName('Head_Skin'),m=new THREE.Mesh(b.geo,b.vegSkin?new THREE.MeshPhysicalMaterial({name:'Skin_Body',vertexColors:true,roughness:.5,clearcoat:.25,clearcoatRoughness:.4,sheen:.3,sheenColor:new THREE.Color('#ffffff').multiplyScalar(.3)}):skin.material);m.name='Body';m.userData.build={...b.build};m.castShadow=true;m.receiveShadow=true;
   h.root.add(m);h.body={...b,mesh:m};return h.body;
 }
-function syncBody(){if(current?.fit?.companion){ground.visible=el('showBody').checked;ground.position.y=(PRESETS[presetId].species==='wolf'?-3.27:-2.28);frameBody();return}const b=current&&current.body;ground.visible=!!b;if(b){const box=new THREE.Box3().setFromObject(clothesObj.group);ground.position.y=Math.min(b.ySole,box.isEmpty()?b.ySole:box.min.y)-.002}frameBody()}
+function syncBody(){if(current?.fit?.companion){ground.visible=el('showBody').checked;ground.position.y=(['wolf','fennec'].includes(PRESETS[presetId].species)?-3.27:-2.28);frameBody();return}const b=current&&current.body;ground.visible=!!b;if(b){const box=new THREE.Box3().setFromObject(clothesObj.group);ground.position.y=Math.min(b.ySole,box.isEmpty()?b.ySole:box.min.y)-.002}frameBody()}
 const hasFacialHair=()=>{const P=current&&current.params;return !!(P&&(P.beardVol||P.stache||P.goatee))};
 
 // ---------- expressões (rig) ----------

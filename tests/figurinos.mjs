@@ -37,6 +37,14 @@ for (const id of (process.env.ATELIE_PERSONAGENS?.split(',')||Object.keys(PRESET
     if(head.fit.maskGroup)assert.equal(head.fit.maskGroup.visible,false,'A máscara deve sair junto do equipamento');
     visual.rebuildAcc(look);visual.setColors({metal:'#c9ccd1',fabric:'#246366'});
     visual.acc.group.traverse(m=>{if(m.isMesh&&m.material.name==='Acc_Metal')assert.equal(m.material.color.getHexString(),'c9ccd1');if(m.isMesh&&m.material.name==='Acc_Fabric')assert.equal(m.material.color.getHexString(),'246366')});
+    if(PRESETS[id].species==='fennec'){
+      for(const kit of ['fennec_rider','fennec_saddle',null]){
+        visual.rebuildAcc({...look,acc:{head:kit}});
+        assert.equal(!!visual.acc.group.getObjectByName('Cowboy_Montado'),kit==='fennec_rider','Cavaleiro deve aparecer somente na combinação');
+        head.rig.apply({jaw:.6,smile:.5});const clips=head.rig.makeClips();assert.equal(clips.length,12);
+        assert.equal(clips.some(c=>c.tracks.some(t=>t.name.startsWith('Cavaleiro_Bone_Jaw.'))),kit==='fennec_rider','Trilhas do cavaleiro devem acompanhar seu equipamento');
+      }
+    }
     visual.dispose();
     head.group.traverse(m=>{if(m.isMesh)assert(m.geometry.attributes.position.array.every(Number.isFinite))});
     head.dispose();console.log(id+': malha própria, rosto, corpo e clipes');continue;

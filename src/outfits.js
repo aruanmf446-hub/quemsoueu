@@ -5,6 +5,7 @@
 // Suavização só no tecido, com pregas, avesso e barras próprias.
 // Luvas usam recortes com folga nas normais; o corpo é somente consultado, nunca alterado.
 import * as THREE from 'three';
+import {FRONTIER_CHARACTERS,FRONTIER_OUTFITS,FRONTIER_COLORS} from './frontier.js';
 import {FOREST_CHARACTERS,FOREST_OUTFITS,FOREST_COLORS,treeGeo,leafGeo,shieldGeo} from './forest.js';
 import { crescent } from './lunar.js';
 import { sdfMesh, refinedSdfMesh } from './body.js';
@@ -26,7 +27,7 @@ const memoField = fn => { let px=NaN,py,pz,value;return (x,y,z)=>{if(x===px&&y==
 
 // ---------- catálogo ----------
 export const SDF_OUTFITS = {
-  ...FOREST_OUTFITS,
+  ...FOREST_OUTFITS, ...FRONTIER_OUTFITS,
   lunar_explorer: { label: 'Exploradora lunar', sub: 'Jaqueta curta, calça cargo, tênis e mochila', channels: ['fabric','secondary','pants','accent','leather','trim'] },
   lunar_guardian: { label: 'Guardiã da Lua', sub: 'Vestido escuro, manto azul e símbolos lunares', channels: ['fabric','secondary','accent','leather','trim'] },
   lunar_inventor: { label: 'Jovem inventor', sub: 'Camisa, jardineira azul, tênis e mochila de ferramentas', channels: ['fabric','secondary','pants','accent','leather','trim'] },
@@ -44,7 +45,7 @@ export const SDF_OUTFITS = {
   cowboy: { label: 'Faroeste', sub: 'Camisa, colete de couro, lenço, cinturão e botas', channels: ['fabric', 'leather', 'secondary', 'pants', 'trim'] }
 };
 export const SDF_DEFAULT_COLORS = {
-  ...FOREST_COLORS,
+  ...FOREST_COLORS, ...FRONTIER_COLORS,
   lunar_explorer: {fabric:'#242133',secondary:'#4d3c64',pants:'#282737',accent:'#4ea9e8',leather:'#393346',trim:'#c89d52'},
   lunar_guardian: {fabric:'#191d30',secondary:'#252e56',accent:'#254982',leather:'#252233',trim:'#d7b15c'},
   lunar_inventor: {fabric:'#486b9b',secondary:'#e5dac4',pants:'#486b9b',accent:'#64b8e7',leather:'#71513b',trim:'#c5a158'},
@@ -61,7 +62,7 @@ export const SDF_DEFAULT_COLORS = {
   inventor: { fabric: '#ece9e2', secondary: '#2f3f63', accent: '#7a2030', leather: '#3a2a22', trim: '#b8913f' },
   cowboy: { fabric: '#c9873e', leather: '#5a3826', secondary: '#a8282a', pants: '#2c3446', trim: '#c9a24a' }
 };
-export const SDF_DEFAULT_OUTFIT = { ...Object.fromEntries(FOREST_CHARACTERS.map(c=>[c.id,c.outfit])), nana_explorer:'lunar_explorer', moon_guardian:'lunar_guardian', nico_inventor:'lunar_inventor', ruby_sorceress:'lunar_ruby', sad_clown: 'circus', orc_warrior: 'orc', dwarf_bard: 'adventurer', masculine_soft: 'desert', feminine_soft: 'mermaid_pearl', feminine_bold: 'mermaid_ruby' };
+export const SDF_DEFAULT_OUTFIT = { ...Object.fromEntries(FRONTIER_CHARACTERS.map(c=>[c.id,c.outfit])), ...Object.fromEntries(FOREST_CHARACTERS.map(c=>[c.id,c.outfit])), nana_explorer:'lunar_explorer', moon_guardian:'lunar_guardian', nico_inventor:'lunar_inventor', ruby_sorceress:'lunar_ruby', sad_clown: 'circus', orc_warrior: 'orc', dwarf_bard: 'adventurer', masculine_soft: 'desert', feminine_soft: 'mermaid_pearl', feminine_bold: 'mermaid_ruby' };
 
 export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot = null) {
   const J = body.joints, B = body.proportions, W = J.W, Y = J.Y, z0 = J.zCenter, Lb = J.Lb, bf = body.sdf, yN = J.yNeck;
@@ -392,6 +393,43 @@ export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot 
     };
     piece(name, ch, f, { x: Math.max(W*Math.max(B.hip,B.waist)*1.2+.4*W,H.x+rH+(o.puff||0)+.3*W), y0: yBot - .2, y1: yTop + .2, z0: zA - .3, z1: zB + .3 }, o.cell);
     return memoField(f);
+  }
+
+  // Deserto: peças iniciais compartilhadas entre as identidades e seus dois portes.
+  if(FRONTIER_OUTFITS[style]){
+    const baker=style==='bread_baker',watch=style==='bread_vigilante',guard=style==='cactus_guard',cowboy=style==='frontier_cowboy';
+    const hem=watch?.64:guard?.5:.46;
+    const g=garment('Tunica_deserto','fabric','upper',{top:yN+.06,bottom:Y(hem),t:.05*W,sleeve:'forearm',sleeveEase:.07*W,puff:baker?.07*W:.02*W,vneck:.1,env:{ease:.055*W,hang:.45,cinch:Y(.33),cinchK:.86,flareFrom:Y(.35),flare:.14,folds:.018*W,foldN:12}});
+    sleeveCuffs(g,'upper','leather',.05*W);
+    rim('upper','trim',g.outer,Y(hem)+.015,.018*W);
+    trousers('Calca_deserto','pants',{top:.35,ease:.06*W,cuff:.07,under:{fn:g.solid,y:Y(hem)+.03}});
+    boots('Botas_deserto','leather',{t:.07*W,h:.22,cuffT:.06*W});
+    beltOn('Faixa_deserto',baker?'accent':'leather',g.solid,Y(.34),baker?.21*W:.13*W,.035*W);
+    if(!baker)buckle('belt','trim',g.solid,Y(.34),.22*W,.16*W);
+    if(baker){
+      // Avental independente sobre a camisa, com largura medida no corpo e barra arredondada.
+      const yTop=Y(.19),yBot=Y(.66),pts=(t,u)=>{const y=lerp(yTop,yBot,t),x=(u-.5)*W*(t<.28?.7:1.08),z=Math.max(frontZ(x,y),surfAt(g.outer,y,Math.atan2(x,.5),.025*W).z)+.035*W;return V(x,y,z)};
+      const apron=clothSurface(48,40,pts,{thickness:.025*W});addGeoS('cape','secondary',apron);
+      addGeoS('cape','accent',tubeG(Array.from({length:41},(_,i)=>pts(.98,i/40)),.025*W));
+      for(const side of [-1,1])addGeoS('upper','leather',tubeG([V(side*.34*W,Y(.04),frontZ(side*.34*W,Y(.04))+.08),V(side*.3*W,Y(.18),frontZ(side*.3*W,Y(.18))+.1),V(side*.42*W,Y(.34),frontZ(side*.42*W,Y(.34))+.09)],.035*W));
+      const p=V(-Wr.x,Wr.y+.05,Wr.z+.27*W);addGeoS('extras','accent',sph(p,.29*W,1.25,.85,1));
+      for(let i=-1;i<=1;i++)addGeoS('extras','secondary',tubeG([p.clone().add(V(i*.11*W,-.1*W,.24*W)),p.clone().add(V(i*.11*W,.08*W,.28*W)),p.clone().add(V(i*.11*W,.2*W,.2*W))],.018*W));
+      for(const side of [-1,1])for(let i=0;i<3;i++)button('upper','trim',g.solid,side*.13*W,Y(.1+i*.07),.028*W);
+    }else{
+      cape('Manto_deserto','accent',{top:.02,yBottom:Y(watch?.86:guard?.8:.7),span:3.8,flare:.3,pleats:8,ragged:watch?.04*W:0,over:g.env,trim:'trim'});
+      rim('extras','accent',g.outer,yN-.035,.06*W);
+      if(watch){const p=surfAt(g.solid,Y(.16),0,.06*W),gem=new THREE.OctahedronGeometry(.13*W);gem.scale(.65,1.4,.4);gem.translate(...p.toArray());addGeoS('extras','trim',gem)}
+      if(cowboy)for(const side of [-1,1]){const p=surfAt(g.solid,Y(.39),side*.9,.04);addGeoS('extras','leather',sph(p,.16*W,1,1.25,.5));button('extras','trim',g.solid,side*.39*W,Y(.37),.04*W)}
+    }
+    if(guard){
+      mirror(side=>{const r=g.sl.rS,p=V(side*S.x,S.y+r*.8,S.z);addGeoS('upper','fabric',sph(p,r,1.3,.5,1.25));addGeoS('upper','trim',tubeG([p.clone().add(V(-r,.04,r*.6)),p.clone().add(V(0,r*.3,r)),p.clone().add(V(r,.04,r*.6))],.035*W));});
+      limbWrap('Bracadeira_deserto','trim',E,Wr,.3,.8,.06*W);
+      const r=.21*Lb,p=V(-Wr.x-.04*W,Wr.y+.3*W,Wr.z+.6*W),border=shieldGeo(r);border.translate(...p.toArray());addGeoS('extras','trim',border);
+      const panel=shieldGeo(r*.88);panel.translate(p.x,p.y,p.z+.08*W);addGeoS('extras','fabric',panel);
+      const emblem=leafGeo(.28*r,.05*W);emblem.translate(p.x,p.y,p.z+.15*r+.1*W);addGeoS('extras','trim',emblem);
+      const x=Wr.x+.1*W,yt=yN+2.1*W;addGeoS('extras','leather',tubeG([V(x,ySole,.1),V(x,yt,.1)],.035*W));const point=new THREE.ConeGeometry(.13*W,.6*W,6);point.translate(x,yt+.25*W,.1);addGeoS('extras','trim',point);
+    }
+    return;
   }
 
   // Floresta: versões iniciais por peças, com o mesmo encaixe e cache dos figurinos existentes.

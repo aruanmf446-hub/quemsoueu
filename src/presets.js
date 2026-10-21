@@ -7,6 +7,7 @@
 //          zb (fundo: ramo e linha de baixo da mandíbula); n = quadratura da frente, cb = arredondamento do queixo
 //   neck = pescoço [raio, topoY, topoZ, baseY, baseZ, blend]; scm = músculo do pescoço (esternocleidomastoideo)
 // Relevo fino (olhos, nariz, boca, prega da pálpebra, zigomático…) e pele: src/head.js.
+import {FRONTIER_CHARACTERS,FRONTIER_COMPANIONS} from './frontier.js';
 import {FOREST_CHARACTERS} from './forest.js';
 const deg = d => d * Math.PI / 180;
 
@@ -233,10 +234,14 @@ PRESETS.ruby_raven = {id:'ruby_raven',label:'Corvo rubi',family:'Criaturas',kind
 // Sete identidades iniciais para refinamento posterior, derivadas de modelos existentes.
 for(const c of FOREST_CHARACTERS)PRESETS[c.id]=derive(c.base,{id:c.id,label:c.label,family:'Humanos',sub:c.label+' · primeira versão',skin:c.skin,iris:['#a5ac5d','#617139','#29341b']});
 
+// Padeiro e vigilante compartilham exatamente o mesmo rosto; muda apenas o visual.
+for(const c of FRONTIER_CHARACTERS)PRESETS[c.id]=derive(c.base,{id:c.id,label:c.label,family:c.base==='cactus_cowboy'?'Vegetais':'Humanos',sub:c.label+' · primeira versão'});
+for(const id of FRONTIER_COMPANIONS)PRESETS[id]={id,label:id==='desert_fennec'?'Feneco do deserto':'Cowboy no feneco',family:'Criaturas',kind:'companion',species:'fennec',mounted:id==='cowboy_on_fennec',skin:'#c98a49',sub:id==='desert_fennec'?'Feneco independente com sela removível':'Feneco e cowboy combinados; também disponíveis separados'};
+
 export const FAMILY_ORDER = ['Humanos', 'Criaturas', 'Vegetais', 'Robôs'];
 export const PRESET_ORDER = ['feminine_soft', 'masculine_soft', 'old_king', 'cute_round', 'feminine_bold', 'alchemist_villain', 'dwarf_bard', 'sad_clown',
   'nana_explorer', 'moon_guardian', 'nico_inventor', 'ruby_sorceress', 'paysandu_wolf', 'ruby_raven',
-  'orc_warrior', 'cactus_cowboy', 'pepper_king', 'chili_bandit', 'robot_ball', ...FOREST_CHARACTERS.map(c=>c.id)];
+  'orc_warrior', 'cactus_cowboy', 'pepper_king', 'chili_bandit', 'robot_ball', ...FOREST_CHARACTERS.map(c=>c.id),...FRONTIER_CHARACTERS.map(c=>c.id),...FRONTIER_COMPANIONS];
 
 export const DEFAULT_ADJ = { headWidth: 1, cheeks: 1, jaw: 1, eyes: 1, eyeGap: 1, nose: 1, mouth: 1 };
 

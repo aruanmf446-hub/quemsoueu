@@ -1,4 +1,5 @@
 // Navegação do ateliê: uma categoria e uma decisão por vez.
+import {PRESETS} from './presets.js';
 import {PreviewCatalog} from './previews.js';
 
 export function mountEditor(api) {
@@ -75,8 +76,8 @@ export function mountEditor(api) {
     el('exprs').hidden=sub!=='ready';
     gExpression.querySelector('.toggles').hidden=sub!=='auto';
     for(const n of el('poseCtrls').children){const id=n.querySelector('input').id.slice(2),section=id.startsWith('brow')?'brows':['lookX','lookY','blinkL','blinkR','wide','squint'].includes(id)?'eyes':'mouth';n.hidden=section!==sub}
-    const context=api.getContext(),robot=context.id==='robot_ball',vegetal=['cactus_cowboy','pepper_king','chili_bandit'].includes(context.id);
-    const companion=['paysandu_wolf','ruby_raven'].includes(context.id);
+    const context=api.getContext(),robot=context.id==='robot_ball',vegetal=PRESETS[context.id].family==='Vegetais';
+    const companion=PRESETS[context.id].kind==='companion';
     const unsupported=companion&&(['body','clothes'].includes(category)||category==='appearance'&&['hair','beard'].includes(sub))||robot&&!['character','expressions'].includes(category)||vegetal&&category==='appearance'&&sub==='beard';
     unavailable.hidden=!unsupported;unavailable.textContent=companion?'Este companheiro tem uma malha própria. Troque a pelagem em Aparência → Pele, o equipamento em Acessórios → Cabeça e as expressões em Expressões.':robot?'O robô usa o próprio casco. Personalize suas expressões ou escolha outro personagem.':'Este personagem mantém o bigode e os detalhes do seu modelo original.';
     if(unsupported)el(visible).hidden=true;

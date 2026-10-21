@@ -1,6 +1,7 @@
 // Visual do personagem: pele, cabelo, barba e acessórios escolhidos por catálogo (clica e troca).
 // O rosto (olhos, nariz, boca) nunca é esticado — só trocamos modelos prontos e cores.
 import * as THREE from 'three';
+import {FRONTIER_CHARACTERS,FRONTIER_COMPANIONS} from './frontier.js';
 import {FOREST_CHARACTERS} from './forest.js';
 import { buildHair, HAIR_STYLES, HAIR_COLORS } from './hair.js';
 import { buildAccessories, ACCESSORIES, ACC_SLOTS, ACC_COLORS } from './accessories.js';
@@ -45,6 +46,8 @@ export const DEFAULT_LOOKS = {
   robot_ball: { hair: 'none', hairColor: '#333', acc: {} }
 };
 for(const c of FOREST_CHARACTERS)DEFAULT_LOOKS[c.id]={hair:c.hair,hairColor:'#c8a26a',beard:c.beard,acc:{...c.acc},colors:{metal:'#bc9655',gem:'#568b39',gem2:'#709b42',flower:'#f4ebd4'}};
+for(const c of FRONTIER_CHARACTERS)DEFAULT_LOOKS[c.id]={hair:c.hair,hairColor:'#38251d',beard:'none',acc:{...c.acc},colors:{fabric:c.id==='bread_baker'?'#efe5d2':c.id==='bread_vigilante'?'#242129':c.id.startsWith('cactus_soldier')?'#a82c2b':'#6b4228',metal:'#c29b50',gem:c.id.startsWith('cactus_soldier')?'#b82628':'#e58b28'}};
+for(const id of FRONTIER_COMPANIONS)DEFAULT_LOOKS[id]={hair:'none',acc:{head:id==='cowboy_on_fennec'?'fennec_rider':'fennec_saddle'},colors:{fabric:'#a83e2d',metal:'#c29b50',gem:'#d49432'}};
 export function defaultLook(presetId) {
   const P = PRESETS[presetId], d = DEFAULT_LOOKS[presetId] || { hair: 'none', acc: {} };
   return { ...defaultClothes(presetId), build: { weight: 0, muscle: 0 }, skin: P.skin || null, hair: d.hair, hairColor: d.hairColor || '#2a1a12', beard: d.beard || 'default', acc: { ...d.acc }, colors: { ...C, ...(d.colors || {}) } };

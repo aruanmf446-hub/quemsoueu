@@ -4,7 +4,7 @@ const root=path.resolve(__dirname,'..'),out=process.env.ATELIE_RENDERS||path.joi
 const labels={paysandu_wolf:'Paysandu',nana_explorer:'Nana exploradora',moon_guardian:'Guardiã da Lua',nico_inventor:'Nico inventor',ruby_sorceress:'Feiticeira rubi',ruby_raven:'Corvo rubi'};
 const ids=['paysandu_wolf','nana_explorer','moon_guardian','nico_inventor','ruby_sorceress','ruby_raven'];
 (async()=>{const browser=await chromium.launch({executablePath:'/usr/bin/chromium',headless:true,args:['--no-sandbox','--use-gl=swiftshader','--enable-unsafe-swiftshader','--ignore-gpu-blocklist']});try{
-const context=await browser.newContext({viewport:{width:1280,height:1000}}),page=await context.newPage(),errors=[],reports=[];page.setDefaultTimeout(120000);
+const context=await browser.newContext({viewport:{width:1280,height:1000},reducedMotion:'reduce'}),page=await context.newPage(),errors=[],reports=[];page.setDefaultTimeout(120000);
 page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error'&&!m.text().includes('favicon'))errors.push(m.text())});
 await context.route('https://cdn.jsdelivr.net/npm/three@0.180.0/**',r=>r.fulfill({path:three+'/'+r.request().url().split('three@0.180.0/')[1],contentType:'application/javascript'}));
 await page.route('http://localhost:8000/',r=>r.fulfill({contentType:'text/html',body:fs.readFileSync(path.join(root,'index.html'),'utf8').replace('mapSize.set(4096,4096)','mapSize.set(1024,1024)').replace('(function frame(){requestAnimationFrame(frame);','window.__render=function(){').replace('renderer.render(scene,camera)})();','renderer.render(scene,camera)};')}));
@@ -23,7 +23,7 @@ for(const id of (process.env.ATELIE_PERSONAGENS?.split(',')||ids)){
   await page.locator('#stage canvas').screenshot({path:path.join(out,id+'-malha.png')});
   await page.evaluate(look=>window.__atelie.setLook(look),look);await ready();
   const report=await page.evaluate(async id=>{
-    const a=window.__atelie,companion=['paysandu_wolf','ruby_raven'].includes(id),g=a.group();
+    const a=window.__atelie,companion=!a.body(),g=a.group();
     for(const name of ['feliz','triste','bravo','surpreso','piscadela'])a.setExpression(name);
     g.traverse(m=>{if(m.isMesh){if(!m.geometry.attributes.position.array.every(Number.isFinite))throw Error('Vértice inválido');if(!m.geometry.attributes.normal.array.every(Number.isFinite))throw Error('Normal inválida')}});
     if(id.startsWith('forest_guard_')){
@@ -41,6 +41,7 @@ for(const id of (process.env.ATELIE_PERSONAGENS?.split(',')||ids)){
     if(!companion){const head=g,body=a.body(),times=[];for(const slot of ['upper','lower','feet','cape','belt','extras']){const initial=a.clothes().selection[slot];a.setPiece(slot,'none');const t=performance.now();a.setPiece(slot,initial);times.push(performance.now()-t);a.setPieceColors(slot,{trim:'#d4a640'});}if(a.group()!==head||a.body()!==body)throw Error('Troca de peça alterou a base');if(Math.max(...times)>500)throw Error('Cache acima de 500 ms');}
     const buffer=await a.exportGLB(),v=new DataView(buffer);if(v.getUint32(0,true)!==0x46546c67)throw Error('GLB inválido');const json=JSON.parse(new TextDecoder().decode(new Uint8Array(buffer,20,v.getUint32(12,true))));
     if(!json.nodes.some(n=>n.name==='Personagem_'+id)||!json.nodes.some(n=>n.name==='Body')||!json.nodes.some(n=>n.name==='Bone_Head'))throw Error('Estrutura incompleta');
+    if(id==='cowboy_on_fennec'&&(!json.nodes.some(n=>n.name==='Cowboy_Montado')||!json.animations.some(c=>c.channels.some(ch=>json.nodes[ch.target.node]?.name==='Cavaleiro_Bone_Jaw'))))throw Error('Montaria sem cavaleiro ou animação facial');
     if(json.animations.length!==12)throw Error('Clipes incompletos');if(!companion&&!json.meshes.some(m=>m.primitives.some(p=>p.targets?.length===11)))throw Error('Blendshapes não preservados');
     return{id,label:document.querySelector('.brand h1').textContent,MB:+(buffer.byteLength/1048576).toFixed(2),clips:json.animations.length,companion};
   },id);reports.push(report);console.log(report);

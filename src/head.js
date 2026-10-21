@@ -502,7 +502,8 @@ export function buildHead(presetId, adj, opts = {}) {
   const Q = opts.quality || 1;
   const P = resolve(presetId, adj);
   if (P.kind === 'robot') return buildRobot(P, opts);
-  if (P.kind === 'companion') return buildCompanion(P, opts);
+  // A fábrica mantém o grafo de módulos sem ciclos, necessário para o Worker de prévias.
+  if (P.kind === 'companion') return buildCompanion(P, {...opts,buildRider:()=>buildHead('frontier_cowboy',{}, {quality:.45})});
   applyLook(P, opts);
   const disposables = [], root = new THREE.Group();
   root.name = 'Head_V2_' + presetId;
