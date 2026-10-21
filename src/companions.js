@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import {buildAccessories} from './accessories.js';
 import {PRESETS} from './presets.js';
 import {sdfMesh} from './body.js';
-import {clothSurface} from './fabric.js';
+import {clothSurface,smoothCloth} from './fabric.js';
 import {EXPRESSIONS,talkPose} from './rig.js';
 import {V,orb,tube,crescent,disposeGroup} from './lunar.js';
 import {tuft,ribbon,badge,panel,buckleGeo,finishMaterial} from './detail.js';
@@ -42,11 +42,15 @@ export function buildCompanion(P,opts={}){
   for(let i=-2;i<=2;i++)mesh(face,'Topete',tuft(V(i*.13,.63,.02),V(i*.17,.94+(.04*(2-Math.abs(i))),-.09),.11,.055,.09),fur);
  }else{
   mesh(face,'Cranio',orb(V(0,.14,-.02),.76,V(1,1.04,.85)),fur);
-  for(const side of [-1,1]){const ring=new THREE.TorusGeometry(.275,.045,12,64);ring.scale(1,1.12,.65);ring.translate(side*.32,.23,.61);mesh(mask,'Mascara_orbita',ring,light);for(let i=0;i<4;i++)mesh(face,'Mecha_face',tuft(V(side*.54,-.05-i*.09,.19),V(side*.79,-.20-i*.13,.13),.13,.035,.04),fur)}
+  // Placa de osso contínua com vãos reais para os olhos e para a raiz do bico.
+  const bone=ellipse(V(0,.31,.52),V(.67,.58,.19)),cuts=[...[-1,1].map(s=>ellipse(V(s*.32,.23,.64),V(.245,.26,.30))),ellipse(V(0,-.07,.65),V(.20,.28,.30))];
+  const plate=(x,y,z)=>cuts.reduce((d,f)=>Math.max(d,-f(x,y,z)),bone(x,y,z));
+  mesh(mask,'Mascara_osso',smoothCloth(sdfMesh(plate,{x:.76,y0:-.35,y1:.96,z0:.27,z1:.82},.018),3),light);
+  for(const side of [-1,1]){const ring=new THREE.TorusGeometry(.275,.045,12,64);ring.scale(1,1.12,.65);ring.translate(side*.32,.23,.67);mesh(mask,'Mascara_orbita',ring,light);for(let i=0;i<4;i++)mesh(face,'Mecha_face',tuft(V(side*.54,-.05-i*.09,.19),V(side*.79,-.20-i*.13,.13),.13,.035,.04),fur)}
   const beak=clothSurface(40,40,(t,u)=>{const a=u*2*PI,r=Math.max(.005,.23*Math.sin(PI*(.18+.82*t))*(1-.65*t));return V(Math.cos(a)*r,-.02-.36*t*t+Math.sin(a)*r*.55,.6+.69*t)},{closed:true,thickness:.022});mesh(face,'Bico_superior',beak,black);
   for(const side of [-1,1])mesh(face,'Narina',orb(V(side*.105,-.02,.88),.028,V(1,.5,.35)),pupil);
   for(let i=-2;i<=2;i++)mesh(face,'Crista',tuft(V(i*.12,.65,-.10),V(i*.15,.97+.04*(2-Math.abs(i)),-.29),.1,.035,.07),fur);
-  const moon=crescent(.11,.018);moon.translate(0,.54,.63);mesh(mask,'Lua_mascara',moon,material('Tinta_rubi','#9c263b'));
+  const moon=crescent(.11,.018);moon.translate(0,.58,.73);mesh(mask,'Lua_mascara',moon,material('Tinta_rubi','#9c263b'));
  }
  const jaw=new THREE.Bone();jaw.name='Bone_Jaw';jaw.position.set(0,-.38,.25);head.add(jaw);mesh(jaw,'Mandibula',orb(V(0,-.005,wolf?.47:.56),wolf?.3:.19,V(1.15,.3,wolf?1:.65)),wolf?light:black);
  mesh(jaw,'Lingua',orb(V(0,.048,wolf?.53:.56),.14,V(.7,.12,1)),material('Lingua','#ba6d76'));
@@ -119,12 +123,13 @@ export function buildCompanionLook(fit,look){
     const roll=new THREE.CylinderGeometry(.16,.16,1,40);roll.rotateZ(PI/2);roll.translate(0,-.54,-1.64);add('Manta_enrolada',roll,fabric);
     for(const side of [-1,1]){const loop=[V(side*.41,-.38,-1.64),V(side*.41,-.53,-1.82),V(side*.41,-.71,-1.64),V(side*.41,-.53,-1.47),V(side*.41,-.38,-1.64)];add('Correia_manta',ribbon(loop,.045,.018),leather);add('Estribo',tube([V(side*.63,-.67,-.81),V(side*.77,-1.30,-.65),V(side*.55,-1.30,-.65),V(side*.63,-.67,-.81)],.022),metal)}
     if(lk.acc.head==='fennec_rider'){
-     const rider=fit.buildRider(),r=new THREE.Group();r.name='Cowboy_Montado';r.scale.setScalar(.48);r.position.set(0,.43,-1.05);acc.add(r);r.add(rider.group);rider.group.position.y=.6;
+     const rider=fit.buildRider(),r=new THREE.Group();r.name='Cowboy_Montado';r.scale.setScalar(.48);r.position.set(0,.43,-1.05);acc.add(r);r.add(rider.group);rider.group.position.y=1.6;
      const kit=buildAccessories(rider.fit,{head:'frontier_hat'},{metal:lk.colors.metal||'#c29b50',fabric:'#69432b'});rider.group.add(kit.group);
      const green=material('Pele_cowboy',PRESETS.frontier_cowboy.skin),pants=finishMaterial(material('Calca_cowboy','#302b29'),'fabric');
-     mesh(r,'Colete_sentado',orb(V(0,-.9,0),.55,V(1,1.9,.75)),leather);
-     for(const side of [-1,1]){mesh(r,'Braco_sentado',tube([V(side*.48,-.2,0),V(side*.91,-.8,.25),V(side*.65,-1.4,.65)],.16),green);mesh(r,'Calca_sentada',tube([V(side*.3,-2.1,0),V(side*1.55,-2.42,.18),V(side*1.55,-3.40,.25)],.23),pants);mesh(r,'Bota_sentada',orb(V(side*1.55,-3.43,.36),.25,V(1,.85,1.45)),leather);const seam=buckleGeo(.12,.11,.018);seam.translate(side*.52,-1.8,.35);mesh(r,'Fivela_colete',seam,metal)}
-     mesh(r,'Lenco_cowboy',clothSurface(30,40,(t,u)=>{const a=(u-.5)*2.5;return V(Math.sin(a)*(.64-.38*t),.30-.50*t,Math.cos(a)*(.64-.38*t)+.08)},{thickness:.035}),fabric);
+     mesh(r,'Colete_sentado',orb(V(0,-.725,0),.55,V(1.3,2.5,1.1)),leather);
+     for(const side of [-1,1]){mesh(r,'Braco_sentado',tube([V(side*.48,.38,0),V(side*.91,-.8,.25),V(side*.65,-1.4,.65)],.16),green);mesh(r,'Calca_sentada',tube([V(side*.3,-2.1,0),V(side*1.55,-2.42,.18),V(side*1.55,-3.40,.25)],.23),pants);mesh(r,'Bota_sentada',orb(V(side*1.55,-3.43,.36),.25,V(1,.85,1.45)),leather);const seam=buckleGeo(.12,.11,.018);seam.translate(side*.52,-1.8,.35);mesh(r,'Fivela_colete',seam,metal)}
+     mesh(r,'Poncho_cavaleiro',clothSurface(40,64,(t,u)=>{const a=u*PI*2,rr=.66+.16*t+.025*Math.sin(a*8)*t;return V(Math.sin(a)*rr,.98-t*(1.45+.12*Math.cos(a)),Math.cos(a)*rr)},{closed:true,thickness:.035}),leather);
+     mesh(r,'Lenco_cowboy',clothSurface(30,40,(t,u)=>{const a=(u-.5)*2.5;return V(Math.sin(a)*(.64-.38*t),.95-.60*t,Math.cos(a)*(.64-.38*t)+.08)},{thickness:.035}),fabric);
      for(const side of [-1,1])add('Redea',ribbon([V(side*.4,-.12,.65),V(side*.5,-.33,.20),V(side*.31,-.20,-.66)],.025,.012),dark);
      rider.group.traverse(o=>{if(o.name)o.name='Cavaleiro_'+o.name});acc.userData.riderRig=rider.rig;
     }
