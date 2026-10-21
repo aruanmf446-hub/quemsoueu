@@ -9,6 +9,7 @@
 // O rosto não é alterado: olhos, nariz e boca continuam exatamente iguais.
 // A cor do cabelo é a cor do material (as cores por vértice guardam só luz e sombra) → trocar a cor é instantâneo.
 import * as THREE from 'three';
+import {buildHeroHair} from './hero-hair.js';
 
 const { clamp } = THREE.MathUtils;
 const sstep = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t) };
@@ -48,6 +49,15 @@ HAIR_STYLES.short_curls={...HAIR_STYLES.short,label:'Curto cacheado',sub:'Cachos
 HAIR_STYLES.forest_pixie={...HAIR_STYLES.royal,label:'Curto em camadas',sub:'Risca lateral e mechas soltas',flow:'part',partX:.18,len:[1.9,2.2],endY:'nape+',topVol:1,layer:.055,wave:{a:.04,f:1.2},flare:.08,maxStrip:.18,hairline:.46,tubes:true,n:100,spacing:.065,w:.065,th:.045,curl:{r:[.012,.024],pitch:.3}};
 HAIR_STYLES.forest_locks={...HAIR_STYLES.long_braids,label:'Mechas torcidas',sub:'Mechas longas em cordões, presas para trás',braids:null,tubes:true,n:54,spacing:.12,w:.065,th:.059,curl:{r:[.008,.018],pitch:.35},len:[3.3,3.7],endY:'shoulder',topVol:.85,layer:.065};
 HAIR_STYLES.court_waves={...HAIR_STYLES.long_wavy,label:'Ondas de corte',sub:'Cabelo longo em camadas onduladas',len:[5.0,5.6],endY:-2.7,wave:{a:.085,f:.85},layer:.075,faceFrame:3,w:.075,th:.032,maxStrip:.24};
+// Esculturas exclusivas das identidades novas; nenhum estilo anterior é substituído.
+HAIR_STYLES.forest_pixie.hero='pixie';
+HAIR_STYLES.forest_locks.hero='locks';
+HAIR_STYLES.court_waves.hero='waves';
+HAIR_STYLES.lunar_curls.hero='curlup';
+HAIR_STYLES.short_curls.hero='tousled';
+HAIR_STYLES.hero_halfup={label:'Ondas com coque',sub:'Cabelo longo em camadas e coque entrelaçado',hero:'halfup'};
+HAIR_STYLES.hero_tousled={label:'Topete de herói',sub:'Mechas largas, onduladas e despenteadas',hero:'tousled'};
+HAIR_STYLES.hero_veteran={label:'Corte de veterano',sub:'Camadas espessas e pontas viradas',hero:'veteran'};
 export const HAIR_COLORS = [
   ['Preto', '#17110f'], ['Castanho escuro', '#3a2417'], ['Castanho', '#6b4027'], ['Ruivo', '#b4441c'], ['Acobreado', '#8e3b1e'],
   ['Loiro', '#d6ad62'], ['Loiro claro', '#eedbb0'], ['Grisalho', '#9c968e'], ['Branco', '#efede8'],
@@ -58,6 +68,7 @@ export const HAIR_COLORS = [
 export function buildHair(fit, id, color = '#2a1a12') {
   const S = HAIR_STYLES[id];
   if (!fit || !S || id === 'none') return null;
+  if(S.hero)return buildHeroHair(fit,{...S,id},color);
   const T0 = performance.now();
   const P = fit.P, sdf = fit.sdf, zc = fit.cz, top = fit.top, brow = fit.browY, rand = rng(1234 + id.length * 97);
   const ears = fit.ears || [];

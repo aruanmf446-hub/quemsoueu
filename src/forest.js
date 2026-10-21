@@ -4,11 +4,11 @@ import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 import {tube,V} from './lunar.js';
 export const FOREST_CHARACTERS=[
   {id:'forest_archer_f',label:'Arqueira da floresta',base:'feminine_bold',body:'feminine_bold',outfit:'forest_archer',hair:'forest_pixie',skin:'#dca582',beard:'none',acc:{ears:'studs'}},
-  {id:'forest_archer_m',label:'Arqueiro da floresta',base:'masculine_soft',body:'masculine_soft',outfit:'forest_archer',hair:'forest_locks',skin:'#946044',beard:'goatee',acc:{}},
+  {id:'forest_archer_m',label:'Arqueiro da floresta',base:'masculine_soft',body:'masculine_soft',outfit:'forest_archer',hair:'forest_locks',skin:'#946044',beard:'default',acc:{}},
   {id:'forest_guard_f',label:'Guarda feminina',base:'feminine_bold',body:'feminine_bold',outfit:'forest_guard',hair:'forest_pixie',skin:'#dca582',beard:'none',acc:{}},
-  {id:'forest_guard_m',label:'Guarda jovem',base:'masculine_soft',body:'masculine_soft',outfit:'forest_guard',hair:'forest_pixie',skin:'#cc9373',beard:'none',acc:{}},
-  {id:'forest_guard_veteran',label:'Guarda veterano',base:'old_king',body:'old_king',outfit:'forest_guard',hair:'royal',skin:'#b47a58',beard:'full',acc:{}},
-  {id:'forest_artificer',label:'Artífice da floresta',base:'masculine_soft',body:'masculine_soft',outfit:'forest_artificer',hair:'forest_locks',skin:'#946044',beard:'goatee',acc:{face:'monocle'}},
+  {id:'forest_guard_m',label:'Guarda jovem',base:'masculine_soft',body:'masculine_soft',outfit:'forest_guard',hair:'hero_tousled',skin:'#cc9373',beard:'none',acc:{}},
+  {id:'forest_guard_veteran',label:'Guarda veterano',base:'old_king',body:'old_king',outfit:'forest_guard',hair:'hero_veteran',skin:'#b47a58',beard:'default',acc:{}},
+  {id:'forest_artificer',label:'Artífice da floresta',base:'masculine_soft',body:'masculine_soft',outfit:'forest_artificer',hair:'forest_locks',skin:'#946044',beard:'default',acc:{face:'monocle'}},
   {id:'forest_princess',label:'Princesa da floresta',base:'feminine_soft',body:'feminine_soft',outfit:'forest_princess',hair:'court_waves',skin:'#e9bc9c',beard:'none',acc:{head:'leaf_crown',ears:'drop',hairpin:'flowers'}}
 ];
 export const FOREST_OUTFITS={

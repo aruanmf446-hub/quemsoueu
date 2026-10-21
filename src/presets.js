@@ -238,9 +238,52 @@ for(const c of FOREST_CHARACTERS)PRESETS[c.id]=derive(c.base,{id:c.id,label:c.la
 for(const c of FRONTIER_CHARACTERS)PRESETS[c.id]=derive(c.base,{id:c.id,label:c.label,family:c.base==='cactus_cowboy'?'Vegetais':'Humanos',sub:c.label+' · primeira versão'});
 for(const id of FRONTIER_COMPANIONS)PRESETS[id]={id,label:id==='desert_fennec'?'Feneco do deserto':'Cowboy no feneco',family:'Criaturas',kind:'companion',species:'fennec',mounted:id==='cowboy_on_fennec',skin:'#c98a49',sub:id==='desert_fennec'?'Feneco independente com sela removível':'Feneco e cowboy combinados; também disponíveis separados'};
 
+// Direção de arte dos novos heróis: formas próprias, sem mudar as treze bases anteriores.
+// O rig lê os mesmos parâmetros e mantém seus canais, pesos e expressões.
+const heroFemale={Re:.276,eyeX:.35,eyeY:.015,openU:deg(29),openL:deg(-27),openW:deg(63),irisAng:deg(35),sink:.205,
+  cheekH:.053,chinH:.016,noseH:.069,noseW:.78,tipH:.057,tipR:.052,alaeH:.018,alaeX:.052,
+  browTh:.043,browGap:.19,browArch:.048,crease:.012,eyeShadow:.3,lowerRoll:.004,fold:.23,skinGloss:.1,bagK:.12};
+const heroMale={Re:.239,eyeX:.356,openU:deg(18),openL:deg(-20),openW:deg(63),irisAng:deg(31),sink:.19,
+  browTh:.057,browGap:.165,browArch:.026,browRidge:.045,noseH:.093,noseW:.94,tipH:.058,tipR:.057,
+  cheekH:.018,chinH:.041,mouthW:.238,lipU:.028,lipL:.043,lipH:.034,fold:.4,bagK:.16,skinGloss:.09};
+const sculpt=(id,o)=>{const b=PRESETS[id];PRESETS[id]={...b,...o,cran:(o.cran||b.cran).slice(),loft:{...b.loft,...o.loft,y:(o.loft?.y||b.loft.y).slice(),a:(o.loft?.a||b.loft.a).slice(),zf:(o.loft?.zf||b.loft.zf).slice(),zb:(o.loft?.zb||b.loft.zb).slice()}}};
+sculpt('forest_archer_f',{...heroFemale,heroFreckles:true,tilt:deg(6),smile:.9,smirk:.35,blushK:.83,lip:'#ac5b4d',brow:'#6a4627',
+  cran:[.20,-.08,.82,.80,.86,.84,2.3],loft:{a:[.10,.19,.34,.49,.62,.73,.78,.79,.76,.63,.44],n:2.15,cb:.13,k:.17}});
+sculpt('forest_guard_f',{...heroFemale,Re:.253,openU:deg(23),openL:deg(-23),tilt:deg(7),smile:.28,smirk:.16,browSlope:-.01,browArch:.025,brow:'#76512c',
+  loft:{a:[.13,.25,.40,.56,.66,.735,.77,.775,.74,.6,.42],n:2.35,cb:.095}});
+sculpt('forest_archer_m',{...heroMale,Re:.246,tilt:deg(3),smile:.42,smirk:.25,brow:'#291c14',fixedBeardColor:true,
+  beardVol:{thick:.06,len:.25,color:'#2b2018',stache:true},beard:.18,
+  loft:{a:[.29,.41,.55,.66,.70,.73,.77,.78,.65,.45],n:2.8,cb:.08},iris:['#b7a34b','#6c602a','#2d2812']});
+sculpt('forest_artificer',{...heroMale,tilt:deg(6),openU:deg(15),smirk:.75,smile:.16,browSlope:-.026,browArch:.043,brow:'#271b14',fixedBeardColor:true,
+  stache:{w:.25,th:.025,curl:.05,droop:0,color:'#251d17'},goatee:{w:.085,len:.19,color:'#251d17'},
+  loft:{a:[.27,.40,.53,.65,.69,.71,.75,.77,.63,.44],n:2.75},iris:['#a6ac4f','#57612c','#1c260f']});
+sculpt('forest_guard_m',{...heroMale,Re:.248,openU:deg(21),browSlope:-.009,smile:.2,beard:0,brow:'#6a4626',
+  loft:{a:[.24,.36,.49,.60,.67,.72,.76,.77,.63,.44],n:2.55,cb:.08}});
+sculpt('forest_guard_veteran',{...heroMale,Re:.224,openU:deg(15),tilt:deg(2),browTh:.063,browRidge:.075,browArch:.014,eyeShadow:.5,smile:.1,
+  brow:'#c7a268',beardVol:{thick:.075,len:.40,color:'#c7a268',stache:true},beard:.14,
+  loft:{a:[.31,.43,.57,.68,.72,.75,.77,.78,.64,.44],n:2.8},iris:['#9eaa69','#5e6740','#28301b']});
+sculpt('forest_princess',{...heroFemale,Re:.29,openU:deg(30),openL:deg(-30),irisAng:deg(36),tilt:deg(3),smile:1.05,mouthW:.212,mouthY:-.69,
+  heroFreckles:true,blushK:.82,lip:'#b56b65',brow:'#8a6338',lashN:17,lashLen:.082,
+  cran:[.20,-.08,.83,.80,.87,.84,2.2],loft:{a:[.11,.20,.36,.51,.65,.75,.79,.79,.75,.62,.44],n:2.1,k:.19}});
+sculpt('nana_explorer',{...heroFemale,Re:.278,tilt:deg(5),smile:.8,smirk:.38,heroFreckles:true,noseW:.9,tipR:.061,
+  brow:'#21141c',lip:'#994d51',cheekH:.05,cran:[.20,-.08,.82,.80,.86,.84,2.3],iris:['#bc8c59','#714a2b','#291a10']});
+sculpt('moon_guardian',{...heroFemale,Re:.286,tilt:deg(4),smile:.93,mouthW:.215,lip:'#b76668',blushK:.8,
+  cran:[.20,-.08,.82,.80,.86,.84,2.3],loft:{a:[.10,.19,.34,.49,.63,.73,.78,.79,.76,.63,.44],n:2.15,k:.18}});
+sculpt('ruby_sorceress',{...heroFemale,Re:.269,openU:deg(23),openL:deg(-24),tilt:deg(9),browArch:.068,browSlope:.018,
+  smile:.52,smirk:.72,lip:'#8c263d',lashLen:.085,heroFreckles:false,cran:[.20,-.08,.81,.80,.85,.84,2.4]});
+sculpt('nico_inventor',{Re:.302,eyeX:.38,openU:deg(32),openL:deg(-31),irisAng:deg(37),noseH:.035,tipH:.055,tipR:.053,
+  browTh:.035,browArch:.036,browGap:.25,smile:.85,mouthW:.19,cheekH:.06,heroFreckles:true,
+  cran:[.17,-.08,.87,.84,.89,.87,2.25],iris:['#c79a5d','#76522d','#2f1f12']});
+for(const id of ['bread_baker','bread_vigilante'])sculpt(id,{...heroMale,Re:.259,openU:deg(23),openL:deg(-24),tilt:deg(1),smile:.48,smirk:.14,
+  skin:'#cf9b78',lip:'#a16b5a',brow:'#35241a',noseW:.87,cheekH:.028,heroFreckles:true,
+  loft:{a:[.22,.33,.46,.58,.66,.71,.75,.77,.63,.44],n:2.4,cb:.09},iris:['#af8155','#684224','#29180d']});
+PRESETS.flame_guardian=derive('masculine_soft',{...heroMale,id:'flame_guardian',label:'Guardião da chama',family:'Humanos',sub:'Herói da chama, casaca preta, manto rubi e armadura dourada',
+  skin:'#bb8866',lip:'#91574b',brow:'#302017',iris:['#be9354','#70502b','#2b1c0f'],tilt:deg(4),smile:.10,smirk:.34,browSlope:-.017,browTh:.059,
+  loft:{...PRESETS.masculine_soft.loft,a:[.28,.40,.54,.65,.70,.73,.77,.78,.64,.45],n:2.7,cb:.08}});
+
 export const FAMILY_ORDER = ['Humanos', 'Criaturas', 'Vegetais', 'Robôs'];
 export const PRESET_ORDER = ['feminine_soft', 'masculine_soft', 'old_king', 'cute_round', 'feminine_bold', 'alchemist_villain', 'dwarf_bard', 'sad_clown',
-  'nana_explorer', 'moon_guardian', 'nico_inventor', 'ruby_sorceress', 'paysandu_wolf', 'ruby_raven',
+  'nana_explorer', 'moon_guardian', 'nico_inventor', 'ruby_sorceress', 'flame_guardian', 'paysandu_wolf', 'ruby_raven',
   'orc_warrior', 'cactus_cowboy', 'pepper_king', 'chili_bandit', 'robot_ball', ...FOREST_CHARACTERS.map(c=>c.id),...FRONTIER_CHARACTERS.map(c=>c.id),...FRONTIER_COMPANIONS];
 
 export const DEFAULT_ADJ = { headWidth: 1, cheeks: 1, jaw: 1, eyes: 1, eyeGap: 1, nose: 1, mouth: 1 };
