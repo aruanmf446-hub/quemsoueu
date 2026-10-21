@@ -3,6 +3,20 @@
 Repositório: `aruanmf446-hub/quemsoueu`, branch `main`.
 Site: https://aruanmf446-hub.github.io/quemsoueu/
 
+## Etapa atual — refinamento dos 20 personagens
+
+O usuário autorizou refinar todos os personagens das listas do README e determinou: **só retirar ou marcar um item depois de sua concordância explícita**. Manter as 20 caixas desmarcadas. Aprovação de testes não equivale a aprovação visual.
+
+Rodada atual: companheiros com focinhos/pelagem/penas e equipamento próprios; montaria com sela, alforjes e cavaleiro; novas camadas de camisas/coletes, corpetes e saias, ombreiras sobrepostas, acabamento de botas e mochilas; chapéus, capuz, máscara e coroa de folhas. `src/detail.js` reúne as geometrias de mechas, fitas, emblemas, fivelas e engrenagens. Os geradores antigos de corpo, cabeça e rig humano não foram modificados. Correções finais: cavas realmente sem mangas nos coletes, capa considerando a camada externa e lenços com altura medida pela escala da cabeça. `tests/reino-lua.cjs` verifica que a roupa não encobre os olhos dos cactos nos dois portes.
+
+`tests/refino-renders.cjs` captura frente/3/4/costas de todos os 20 e salva a câmera. `ATELIE_CAMERAS` reutiliza as câmeras da referência; `tests/galeria-refinamento.py` monta a comparação e as pranchas individuais. Referência desta rodada: **f4f1d7b**. Materiais e detalhes continuam exportáveis e recoloríveis por slot; cache de miniaturas versionado.
+
+Uma execução de navegador em paralelo atingiu o limite de memória do ambiente; usar `tests/refino-lotes.cjs` para limitar cada navegador a quatro personagens e não abrir várias baterias de exportação ao mesmo tempo. O modo `ATELIE_SEM_CAPTURAS=1` separa a validação das capturas comparativas.
+
+Validação final em 21/10/2026: suíte completa de figurinos (26 conjuntos × 28 corpos; 84 casos de cobertura, 1.280.495 vértices, zero falhas), seguida de repetição dos quatro conjuntos dos últimos ajustes em seis corpos (18 casos, 420.346 vértices, zero falhas). Os 20 novos passaram no navegador, com Worker, cores, cache abaixo de 500 ms e GLB/12 clipes; sem erros de console. Os 13 anteriores passaram na regressão do navegador e na comparação por hash com a referência. Capturas comparativas: 60 pares com câmera idêntica, 20 pranchas e três resumos. Artefatos locais em `/workspace/outputs/refinamento`; o ZIP de entrega inclui apenas a galeria final e relatórios, sem capturas intermediárias. **Todos os 20 permanecem pendentes de aprovação visual.**
+
+Avaliando estes renders, continuar os ajustes indicados pelo usuário. Não declarar que as referências de qualidade cinematográfica foram alcançadas; locomoção, cavalgada e efeitos mágicos continuam fora desta rodada.
+
 ## Etapa concluída — menu FIFA/PES
 
 O ateliê tem interface azul-marinho/turquesa com categoria → subcategoria → opções por cartões com **prévias 3D reais da aparência atual antes de clicar ou passar o mouse**:

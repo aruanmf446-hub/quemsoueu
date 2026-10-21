@@ -12,6 +12,7 @@ await page.goto('http://localhost:8000/');await page.waitForFunction(()=>window.
 const ready=()=>page.waitForFunction(()=>!document.getElementById('status').textContent.includes('…'));
 for(const id of (process.env.ATELIE_PERSONAGENS?.split(',')||ids)){
   await page.evaluate(id=>window.__atelie.setPreset(id),id);await ready();
+  if(!process.env.ATELIE_SEM_CAPTURAS){
   const look=await page.evaluate(()=>structuredClone(window.__atelie.getLook()));
   for(const view of ['front','three','back','face']){
     await page.locator(view==='face'?'#faceView':'#bodyView').click();await ready();
@@ -22,6 +23,7 @@ for(const id of (process.env.ATELIE_PERSONAGENS?.split(',')||ids)){
   await page.locator('#bodyView').click();await page.evaluate(()=>{window.__atelie.aim(...window.__atelie.VIEWS.three);window.__render()});
   await page.locator('#stage canvas').screenshot({path:path.join(out,id+'-malha.png')});
   await page.evaluate(look=>window.__atelie.setLook(look),look);await ready();
+  }
   const report=await page.evaluate(async id=>{
     const a=window.__atelie,companion=!a.body(),g=a.group();
     for(const name of ['feliz','triste','bravo','surpreso','piscadela'])a.setExpression(name);
@@ -62,5 +64,5 @@ assert.deepEqual(errors,[]);
 // Uma repetição filtrada atualiza só os personagens afetados, preservando as outras capturas verificadas.
 if(process.env.ATELIE_PERSONAGENS&&fs.existsSync(path.join(out,'relatorio.json'))){const previous=JSON.parse(fs.readFileSync(path.join(out,'relatorio.json'),'utf8'));for(const old of previous.reports)if(!reports.some(r=>r.id===old.id))reports.push(old);reports.sort((a,b)=>ids.indexOf(a.id)-ids.indexOf(b.id))}
 fs.writeFileSync(path.join(out,'relatorio.json'),JSON.stringify({reports,errors},null,2));
-fs.writeFileSync(path.join(out,'index.html'),'<!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ateliê — personagens procedurais</title><style>body{background:#101e2c;color:#eaf2f8;font:16px system-ui;margin:24px}section{margin:40px 0}.views{display:flex;flex-wrap:wrap;gap:12px}figure{margin:0;width:260px}img{width:100%;border-radius:12px}a{color:#35d6d4}</style><h1>'+(process.env.ATELIE_TITULO||'Reino da Lua')+' — versões procedurais</h1><p>Malha, rosto, corpo e acessórios separados. Capturas do próprio Ateliê.</p>'+reports.map(r=>'<section><h2>'+(labels[r.id]||r.label||r.id)+'</h2><div class="views">'+[['front','Frente'],['three','3/4'],['back','Costas'],['face','Rosto'],['malha','Base sem roupa e acessórios']].map(([key,label])=>'<figure><a href="'+r.id+'-'+key+'.png"><img loading="lazy" src="'+r.id+'-'+key+'.png"></a><figcaption>'+label+'</figcaption></figure>').join('')+'</div></section>').join(''));
+if(!process.env.ATELIE_SEM_CAPTURAS)fs.writeFileSync(path.join(out,'index.html'),'<!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ateliê — personagens procedurais</title><style>body{background:#101e2c;color:#eaf2f8;font:16px system-ui;margin:24px}section{margin:40px 0}.views{display:flex;flex-wrap:wrap;gap:12px}figure{margin:0;width:260px}img{width:100%;border-radius:12px}a{color:#35d6d4}</style><h1>'+(process.env.ATELIE_TITULO||'Reino da Lua')+' — versões procedurais</h1><p>Malha, rosto, corpo e acessórios separados. Capturas do próprio Ateliê.</p>'+reports.map(r=>'<section><h2>'+(labels[r.id]||r.label||r.id)+'</h2><div class="views">'+[['front','Frente'],['three','3/4'],['back','Costas'],['face','Rosto'],['malha','Base sem roupa e acessórios']].map(([key,label])=>'<figure><a href="'+r.id+'-'+key+'.png"><img loading="lazy" src="'+r.id+'-'+key+'.png"></a><figcaption>'+label+'</figcaption></figure>').join('')+'</div></section>').join(''));
 }finally{await browser.close()}})().catch(e=>{console.error(e);process.exitCode=1});

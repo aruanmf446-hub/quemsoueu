@@ -218,13 +218,49 @@ ATELIE_REFERENCIA=1 node tests/corpo-visivel.cjs
 Verificação: os 12 personagens orgânicos responderam aos toques em Magro/Padrão/Gordo, com cintura medida na malha e cabeça/rig preservados. Os três casos de visibilidade falharam na referência `60f7e90` e passaram após a correção; arraste e confirmação por `change` também passaram, com exportação GLB de 12 clipes e sem erros de console.
 
 
+## Controle de aprovação dos refinamentos
+
+A fila de refinamento reúne **20 personagens** (Reino da Lua, Floresta e Deserto). **Somente a concordância explícita do usuário permite retirar um personagem desta fila ou marcar seu refinamento como aprovado.** Testes, publicação na main e revisão do assistente não substituem essa aprovação. Enquanto não houver concordância, manter o item original desmarcado e registrar apenas o trabalho realizado e os renders disponíveis.
+
+### Rodada de refinamento em avaliação
+
+A rodada aplica mudanças aos 20 personagens, sem marcar nenhum como aprovado:
+
+- **Reino da Lua:** focinhos e olhos com camadas próprias no Paysandu, penas afiladas e bico curvo no Corvo; jaqueta aberta sobre camisa na Nana; alças planas e bolsos na jardineira do Nico; painéis, costuras e barras nos vestidos da Guardiã e da Feiticeira. Mochilas maiores, fechos vazados, solas e ornamentos assentados nas capas.
+- **Floresta:** gibões sobre as camisas dos dois arqueiros; placas sobrepostas nas ombreiras dos três guardas e do artífice; tabardos e brasões projetados sobre o tecido; mochila com engrenagens e frascos. A princesa recebe painéis de saia, mangas em sino e coroa de folhas. Novos modelos de cabelo ficam disponíveis sem substituir os estilos anteriores.
+- **Deserto:** feneco com focinho contínuo, pernas mais curtas, patas, cauda afilada e orelhas com interior; sela, alforjes com abas, correias, fivelas e polainas na altura dos tornozelos. Cowboy separado com camisa e colete abertos; cavaleiro mantém rosto e clipes, com base sentada. Padeiro com chapéu franzido e avental caindo sobre a calça; vigilante com capuz, máscara e costuras; dois soldados com placas de ombreira, penacho e brasão de chama.
+
+Os acabamentos são geometrias reais exportáveis. Tecidos, couro, esmalte e metal têm materiais próprios; cores continuam vinculadas aos canais de cada slot. O cache de miniaturas foi versionado para não reapresentar os renders antigos. Lenços dos cactos usam a escala da cabeça, com teste de oclusão dos olhos nos dois portes; capas dos arqueiros e do artífice consideram o gibão externo.
+
+**Limites desta rodada:** não acrescenta animações de locomoção/cavalgada, simulação de tecido, efeitos mágicos ou o detalhamento cinematográfico das referências. A aprovação estética continua pendente para cada personagem. Rosto, corpo, cabelo e rig dos 13 personagens anteriores foram preservados.
+
+Comparação reproduzível, com câmera idêntica por personagem e vista:
+
+```sh
+# Capturar a versão de referência antes de modificar o código.
+ATELIE_RENDERS=renders/refinamento/antes node tests/refino-renders.cjs
+# Após os ajustes, reutilizar as câmeras salvas.
+ATELIE_CAMERAS=renders/refinamento/antes/cameras.json ATELIE_RENDERS=renders/refinamento/depois node tests/refino-renders.cjs
+python3 tests/galeria-refinamento.py renders/refinamento
+```
+
+A galeria contém frente, 3/4 e costas dos 20 personagens, com antes/depois lado a lado e pranchas individuais. O script usa os PNGs reais sem retocar as capturas.
+
+Em máquinas com pouca memória, `ATELIE_PERSONAGENS=... node tests/refino-lotes.cjs reino-lua.cjs` executa até quatro personagens por navegador. `ATELIE_SEM_CAPTURAS=1` mantém as verificações de geometria, olhos descobertos, peças, cores, Worker e GLB, enquanto as imagens são feitas separadamente por `refino-renders.cjs`. Cada personagem validado gera um checkpoint em `parcial.json`; o relatório final acumula os lotes concluídos.
+
+`tests/preservacao-refinamento.mjs CAMINHO_DA_REFERENCIA` também compara, por hash, geometrias, transformações, rig e materiais dos 13 personagens anteriores com uma cópia de `src` do commit de referência. Esse teste detectou e evitou uma mudança involuntária no chapéu antigo; o modelo novo ficou separado como `frontier_hat`. `ATELIE_FIGURINOS` permite repetir somente os conjuntos alterados em `tests/figurinos.mjs`; sem esse filtro, a suíte continua percorrendo todo o catálogo.
+
+**Validação desta rodada (21/10/2026):** `node tests/figurinos.mjs` passou nos 26 conjuntos e 28 corpos humanoides, incluindo 84 casos de cobertura e 1.280.495 vértices consultados sem falhas. Após os ajustes finais de capas e lenços, os quatro conjuntos afetados foram repetidos em seis corpos: 18 casos e 420.346 vértices, sem falhas. Os 20 personagens passaram no navegador em lotes de quatro: geometria finita, cores, peças em cache abaixo de 500 ms, prévias no Worker e GLB com 12 clipes, sem erros de console. Os humanoides mantiveram os 11 blendshapes. A regressão visual e de GLB dos 13 personagens anteriores e sua comparação por hash com `f4f1d7b` também passaram.
+
+Foram geradas **60 comparações antes/depois** (20 personagens × frente, 3/4 e costas), com as mesmas câmeras, além de 20 pranchas individuais e três resumos por grupo. Estes são resultados técnicos e material para avaliação; **os 20 itens abaixo continuam desmarcados, aguardando a concordância do usuário**.
+
 ## Reino da Lua — seis personagens procedurais
 
 Adaptações simplificadas das referências para o catálogo do Ateliê. Nenhum modelo, textura ou API externa foi utilizado. As novas identidades não substituem os personagens anteriores.
 
 ### Lista para refinamento posterior
 
-Os seis personagens estão na primeira versão e ficam pendentes de refinamento visual, conforme solicitado pelo usuário. Os testes de funcionamento não representam aprovação estética. Retomar os ajustes quando o usuário solicitar, usando as referências enviadas e trabalhando por partes: **malha → rosto → corpo → roupas e acessórios**.
+Os seis personagens receberam uma rodada de refinamento e continuam pendentes de aprovação visual. Os testes de funcionamento não representam aprovação estética. Continuar os ajustes a partir da avaliação do usuário, usando as referências enviadas e trabalhando por partes: **malha → rosto → corpo → roupas e acessórios**.
 
 - [ ] Paysandu (`paysandu_wolf`).
 - [ ] Nana exploradora (`nana_explorer`).
