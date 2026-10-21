@@ -5,6 +5,7 @@
 // Suavização só no tecido, com pregas, avesso e barras próprias.
 // Luvas usam recortes com folga nas normais; o corpo é somente consultado, nunca alterado.
 import * as THREE from 'three';
+import {FOREST_CHARACTERS,FOREST_OUTFITS,FOREST_COLORS,treeGeo,leafGeo,shieldGeo} from './forest.js';
 import { crescent } from './lunar.js';
 import { sdfMesh, refinedSdfMesh } from './body.js';
 import { smoothCloth, shellCloth } from './fabric.js';
@@ -25,6 +26,7 @@ const memoField = fn => { let px=NaN,py,pz,value;return (x,y,z)=>{if(x===px&&y==
 
 // ---------- catálogo ----------
 export const SDF_OUTFITS = {
+  ...FOREST_OUTFITS,
   lunar_explorer: { label: 'Exploradora lunar', sub: 'Jaqueta curta, calça cargo, tênis e mochila', channels: ['fabric','secondary','pants','accent','leather','trim'] },
   lunar_guardian: { label: 'Guardiã da Lua', sub: 'Vestido escuro, manto azul e símbolos lunares', channels: ['fabric','secondary','accent','leather','trim'] },
   lunar_inventor: { label: 'Jovem inventor', sub: 'Camisa, jardineira azul, tênis e mochila de ferramentas', channels: ['fabric','secondary','pants','accent','leather','trim'] },
@@ -42,6 +44,7 @@ export const SDF_OUTFITS = {
   cowboy: { label: 'Faroeste', sub: 'Camisa, colete de couro, lenço, cinturão e botas', channels: ['fabric', 'leather', 'secondary', 'pants', 'trim'] }
 };
 export const SDF_DEFAULT_COLORS = {
+  ...FOREST_COLORS,
   lunar_explorer: {fabric:'#242133',secondary:'#4d3c64',pants:'#282737',accent:'#4ea9e8',leather:'#393346',trim:'#c89d52'},
   lunar_guardian: {fabric:'#191d30',secondary:'#252e56',accent:'#254982',leather:'#252233',trim:'#d7b15c'},
   lunar_inventor: {fabric:'#486b9b',secondary:'#e5dac4',pants:'#486b9b',accent:'#64b8e7',leather:'#71513b',trim:'#c5a158'},
@@ -58,7 +61,7 @@ export const SDF_DEFAULT_COLORS = {
   inventor: { fabric: '#ece9e2', secondary: '#2f3f63', accent: '#7a2030', leather: '#3a2a22', trim: '#b8913f' },
   cowboy: { fabric: '#c9873e', leather: '#5a3826', secondary: '#a8282a', pants: '#2c3446', trim: '#c9a24a' }
 };
-export const SDF_DEFAULT_OUTFIT = { nana_explorer:'lunar_explorer', moon_guardian:'lunar_guardian', nico_inventor:'lunar_inventor', ruby_sorceress:'lunar_ruby', sad_clown: 'circus', orc_warrior: 'orc', dwarf_bard: 'adventurer', masculine_soft: 'desert', feminine_soft: 'mermaid_pearl', feminine_bold: 'mermaid_ruby' };
+export const SDF_DEFAULT_OUTFIT = { ...Object.fromEntries(FOREST_CHARACTERS.map(c=>[c.id,c.outfit])), nana_explorer:'lunar_explorer', moon_guardian:'lunar_guardian', nico_inventor:'lunar_inventor', ruby_sorceress:'lunar_ruby', sad_clown: 'circus', orc_warrior: 'orc', dwarf_bard: 'adventurer', masculine_soft: 'desert', feminine_soft: 'mermaid_pearl', feminine_bold: 'mermaid_ruby' };
 
 export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot = null) {
   const J = body.joints, B = body.proportions, W = J.W, Y = J.Y, z0 = J.zCenter, Lb = J.Lb, bf = body.sdf, yN = J.yNeck;
@@ -389,6 +392,72 @@ export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot 
     };
     piece(name, ch, f, { x: Math.max(W*Math.max(B.hip,B.waist)*1.2+.4*W,H.x+rH+(o.puff||0)+.3*W), y0: yBot - .2, y1: yTop + .2, z0: zA - .3, z1: zB + .3 }, o.cell);
     return memoField(f);
+  }
+
+  // Floresta: versões iniciais por peças, com o mesmo encaixe e cache dos figurinos existentes.
+  if(FOREST_OUTFITS[style]){
+    const princess=style==='forest_princess',guard=style==='forest_guard',artificer=style==='forest_artificer',archer=style==='forest_archer';
+    const hem=princess?.97:artificer?.7:guard?.51:.5;
+    const g=garment(princess?'Vestido_floresta':artificer?'Casaca_floresta':'Tunica_floresta',archer?'secondary':'fabric','upper',{
+      top:yN+.08,bottom:Y(hem),split:princess?Y(.34):null,t:.05*W,cell:.035*clamp(W,1,1.3),sleeve:guard?'short':'forearm',short:.7,sleeveEase:.06*W,puff:.035*W,vneck:.08,
+      env:{ease:.055*W,hang:.45,cinch:Y(.33),cinchK:.85,flareFrom:Y(.36),flare:princess?.24:.16,folds:(princess?.035:.015)*W,foldN:14}
+    });
+    sleeveCuffs(g,'upper','leather',.045*W);
+    rim('upper','trim',g.outer,a=>yN+.075-.08*Math.max(0,Math.cos(a))**6,.017*W);
+    rim(princess?'lower':'upper','trim',g.outer,Y(hem)+.012,.018*W);
+    beltOn('Cinto_floresta','leather',g.solid,Y(.34),.11*W,.03*W);
+    buckle('belt','trim',g.solid,Y(.34),.2*W,.14*W);
+    // Brasão em geometria real, com tronco, ramos e folhas; sem textura externa.
+    const crest=treeGeo(.2*W),cp=surfAt(g.solid,Y(.17),0,.035*W);crest.translate(...cp.toArray());addGeoS('upper','trim',crest);
+    cape('Capa_floresta','accent',{top:.025,yBottom:Y(princess?.975:.84),span:princess?4.6:3.7,flare:princess?.45:.3,pleats:8,ragged:princess?0:.05*W,over:g.env,trim:'trim'});
+    const cy=Y(.31),back=surfAt(g.env,cy,PI,.1*W+(princess?.45:.3)*.35),cg=treeGeo(.2*W);cg.rotateY(PI);cg.translate(...back.toArray());addGeoS('cape','trim',cg);
+    if(!princess)trousers('Calca_floresta','pants',{top:.35,ease:.055*W,cuff:.07,under:{fn:g.solid,y:Y(hem)+.03}});
+    boots('Botas_floresta','leather',{t:.07*W,h:princess?.06:.23,cuffT:.055*W,toe:.035});
+    if(guard||artificer){
+      mirror(side=>{
+        const r=g.sl?.rS||.33*W,p=V(side*S.x,S.y+r*.73,S.z);
+        addGeoS('upper','trim',sph(p,r,1.2,.43,1.22));
+        const leaf=leafGeo(.13*W,.025*W);leaf.rotateZ(-side*.5);leaf.translate(p.x,p.y+.04*W,p.z+r*.88);addGeoS('upper','leather',leaf);
+        const sh=K.clone().lerp(A,.6);sh.x*=side;sh.z=frontZ(sh.x,sh.y)+.12*W;
+        addGeoS('feet','trim',sph(sh,.22*W,1,3.6,.4));
+      });
+      limbWrap('Bracadeira_floresta','leather',E,Wr,.28,.8,.055*W);
+    }
+    if(guard){
+      const p=V(-Wr.x-.04*W,Wr.y+.3*W,Wr.z+.55*W),r=.2*Lb;
+      const rimG=shieldGeo(r);rimG.translate(...p.toArray());addGeoS('extras','trim',rimG);
+      const panel=shieldGeo(r*.89);panel.translate(p.x,p.y,p.z+.08*W);addGeoS('extras','leather',panel);
+      const tree=treeGeo(.3*r);tree.translate(p.x,p.y,p.z+.085*r+.125*W);addGeoS('extras','trim',tree);
+      const x=Wr.x+.13*W,top=yN+2.1*W;
+      addGeoS('extras','leather',tubeG([V(x,ySole+.03,.1),V(x,(ySole+top)/2,.1),V(x,top,.1)],.035*W));
+      const point=new THREE.ConeGeometry(.12*W,.55*W,6);point.translate(x,top+.25*W,.1);addGeoS('extras','trim',point);
+    }else if(archer){
+      const x=Wr.x-.55*W,y=Wr.y+.12*W,z=Wr.z+.16*W,h=.2*Lb;
+      const points=[V(x,y-h,z),V(x+.4*W,y-h*.5,z),V(x+.55*W,y,z),V(x+.4*W,y+h*.5,z),V(x,y+h,z)];
+      addGeoS('extras','leather',tubeG(points,.045*W));
+      addGeoS('extras','trim',tubeG([points[0],V(x,y,z+.03),points[4]],.008*W));
+      const p=V(.55*W,Y(.16),backZ(.55*W,Y(.16))-.4*W),quiver=new THREE.CylinderGeometry(.18*W,.14*W,.2*Lb,24);quiver.translate(...p.toArray());addGeoS('extras','leather',quiver);
+      for(let i=0;i<5;i++){
+        const a=i*PI*2/5,q=p.clone().add(V(Math.sin(a)*.1*W,-.07*Lb,Math.cos(a)*.1*W)),tip=V(q.x+.05*W,yN+1.8*W-i*.07*W,q.z);
+        addGeoS('extras','leather',tubeG([q,tip],.013*W));
+        const f=leafGeo(.1*W,.01*W);f.translate(tip.x,tip.y-.08*W,tip.z);addGeoS('extras','fabric',f);
+      }
+    }else if(artificer){
+      const p=V(0,Y(.19),backZ(0,Y(.19))-.23*W),pack=new RoundedBoxGeometry(.7*W,.85*W,.35*W,4,.08*W);pack.translate(...p.toArray());addGeoS('extras','leather',pack);
+      for(const side of [-1,1]){
+        const q=p.clone().add(V(side*.43*W,0,-.03*W)),tank=new THREE.CylinderGeometry(.13*W,.13*W,.63*W,24);tank.translate(...q.toArray());addGeoS('extras','trim',tank);
+        addGeoS('extras','gem',sph(q.clone().add(V(0,.33*W,0)),.11*W));
+        addGeoS('extras','leather',tubeG([q.clone().add(V(0,-.25*W,0)),p.clone().add(V(side*.22*W,-.5*W,0)),p.clone().add(V(side*.24*W,-.15*W,-.23*W))],.025*W));
+      }
+      const vial=surfAt(g.solid,Y(.4),.65,.1*W),vg=new THREE.CylinderGeometry(.07*W,.07*W,.28*W,20);vg.translate(...vial.toArray());addGeoS('extras','gem',vg);
+    }else{
+      // Colar de folhas e joia: uma alternativa leve aos ornamentos da referência.
+      for(let i=-2;i<=2;i++){
+        const p=surfAt(g.solid,Y(.065+Math.abs(i)*.004),i*.16,.025*W),leaf=leafGeo(.07*W,.02*W);leaf.rotateZ(i*.24);leaf.translate(...p.toArray());addGeoS('extras','trim',leaf);
+      }
+      addGeoS('extras','gem',sph(surfAt(g.solid,Y(.105),0,.05*W),.07*W,1,1.25,.6));
+    }
+    return;
   }
 
   // Reino da Lua: quatro conjuntos novos, com as mesmas envoltórias e caches do catálogo.

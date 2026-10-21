@@ -1,5 +1,6 @@
 // Figurinos procedurais no espaço do corpo. Nenhuma alteração na pele ou no rig facial.
 import * as THREE from 'three';
+import {FOREST_OUTFITS} from './forest.js';
 import { buildLegacyClothes } from './legacy-clothes.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { buildSdfOutfit, SDF_OUTFITS, SDF_DEFAULT_COLORS, SDF_DEFAULT_OUTFIT } from './outfits.js';
@@ -39,7 +40,12 @@ const SLOT_STYLES = {
 };
 // Os conjuntos lunares usam os mesmos slots; combinações continuam clica-e-troca.
 for(const slot of Object.keys(SLOT_STYLES))SLOT_STYLES[slot].push(...(slot==='cape'?['lunar_guardian','lunar_ruby']:['lunar_explorer','lunar_guardian','lunar_inventor','lunar_ruby']));
+for(const slot of Object.keys(SLOT_STYLES))SLOT_STYLES[slot].push(...Object.keys(FOREST_OUTFITS));
 const PIECE_LABELS = {
+  forest_archer:{upper:'Túnica de arqueiro',lower:'Calça da floresta',feet:'Botas de arqueiro',cape:'Manto da floresta',belt:'Cinto de viagem',extras:'Arco e aljava'},
+  forest_guard:{upper:'Túnica e ombreiras',lower:'Calça do guarda',feet:'Botas e grevas',cape:'Capa do guarda',belt:'Cinturão do guarda',extras:'Escudo e lança'},
+  forest_artificer:{upper:'Casaca do artífice',lower:'Calça do artífice',feet:'Botas mecânicas',cape:'Manto do artífice',belt:'Cinto de ferramentas',extras:'Mochila e frascos'},
+  forest_princess:{upper:'Corpete da floresta',lower:'Saia da princesa',feet:'Sapatos da princesa',cape:'Manto da princesa',belt:'Cinto de folhas',extras:'Joias da floresta'},
   lunar_explorer:{upper:'Jaqueta lunar',lower:'Calça cargo',feet:'Tênis de exploração',belt:'Cinto lunar',extras:'Mochila lunar'},
   lunar_guardian:{upper:'Corpete lunar',lower:'Saia da guardiã',feet:'Sapatos lunares',cape:'Manto azul',belt:'Cinto crescente',extras:'Cajado lunar'},
   lunar_inventor:{upper:'Camisa e jardineira',lower:'Calça da jardineira',feet:'Tênis do inventor',belt:'Cinto de ferramentas',extras:'Mochila e projeto'},

@@ -21,6 +21,7 @@ export const ACC_COLORS = {
 };
 export const ACC_SLOTS = [{ id: 'head', label: 'Cabeça' }, { id: 'ears', label: 'Orelhas' }, { id: 'forehead', label: 'Testa' }, { id: 'hairpin', label: 'Enfeite de cabelo' }, { id: 'face', label: 'Rosto' }];
 export const ACCESSORIES = {
+  monocle:{slot:'face',label:'Monóculo esmeralda',colors:['metal','gem2']},
   moon_crown: {slot:'head',label:'Coroa lunar',colors:['metal','gem','gem2']},
   goggles: {slot:'head',label:'Óculos de inventor',colors:['metal','gem2']},
   visor: {slot:'face',label:'Visor azul',colors:['metal','gem2']},
@@ -317,6 +318,13 @@ export function buildAccessories(fit, sel = {}, cols = {}, hairMeshes = []) {
     const lens=new RoundedBoxGeometry(1.24,.4,.025,5,.07);lens.translate(0,y,z);add('visor',lens);
     add('metal',tube([V(-.64,y+.18,z),V(0,y+.21,z+.01),V(.64,y+.18,z)],.018));
     for(const side of [-1,1]){add('gem2',sphere(V(side*.65,y,z-.015),.055,1,.85,.5));add('metal',tube([V(side*.64,y,z),V(side*.79,y+.01,.25),V(side*.79,y+.02,-.13)],.015))}
+  }
+
+  if(sel.face==='monocle'&&fit.eyes?.length){
+    const e=fit.eyes.find(e=>e.x<0)||fit.eyes[0],r=e.R*1.25,p=V(e.x,e.y,e.z+e.R+.08),g=new THREE.TorusGeometry(r,.022,10,48);g.translate(...p.toArray());add('metal',g);
+    const glass=new THREE.CircleGeometry(r*.9,40);glass.translate(p.x,p.y,p.z);add('visor',glass);
+    const chain=[p.clone().add(V(-r,0,0)),p.clone().add(V(-r-.06,-.2,-.01)),p.clone().add(V(-r-.04,-.36,-.1))];add('metal',tube(chain,.008));
+    add('gem2',sphere(p.clone().add(V(-r,0,.02)),.035));
   }
 
   // ---------------- malhas por material ----------------

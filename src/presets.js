@@ -7,6 +7,7 @@
 //          zb (fundo: ramo e linha de baixo da mandíbula); n = quadratura da frente, cb = arredondamento do queixo
 //   neck = pescoço [raio, topoY, topoZ, baseY, baseZ, blend]; scm = músculo do pescoço (esternocleidomastoideo)
 // Relevo fino (olhos, nariz, boca, prega da pálpebra, zigomático…) e pele: src/head.js.
+import {FOREST_CHARACTERS} from './forest.js';
 const deg = d => d * Math.PI / 180;
 
 export const PRESETS = {
@@ -229,10 +230,13 @@ PRESETS.ruby_sorceress = derive('feminine_bold', {
 PRESETS.paysandu_wolf = {id:'paysandu_wolf',label:'Paysandu',family:'Criaturas',kind:'companion',species:'wolf',skin:'#333b55',sub:'Lobo da Lua, focinho claro, lenço azul e medalhão'};
 PRESETS.ruby_raven = {id:'ruby_raven',label:'Corvo rubi',family:'Criaturas',kind:'companion',species:'raven',skin:'#262333',sub:'Corvo cartoon, máscara clara, lenço rubi e joia lunar'};
 
+// Sete identidades iniciais para refinamento posterior, derivadas de modelos existentes.
+for(const c of FOREST_CHARACTERS)PRESETS[c.id]=derive(c.base,{id:c.id,label:c.label,family:'Humanos',sub:c.label+' · primeira versão',skin:c.skin,iris:['#a5ac5d','#617139','#29341b']});
+
 export const FAMILY_ORDER = ['Humanos', 'Criaturas', 'Vegetais', 'Robôs'];
 export const PRESET_ORDER = ['feminine_soft', 'masculine_soft', 'old_king', 'cute_round', 'feminine_bold', 'alchemist_villain', 'dwarf_bard', 'sad_clown',
   'nana_explorer', 'moon_guardian', 'nico_inventor', 'ruby_sorceress', 'paysandu_wolf', 'ruby_raven',
-  'orc_warrior', 'cactus_cowboy', 'pepper_king', 'chili_bandit', 'robot_ball'];
+  'orc_warrior', 'cactus_cowboy', 'pepper_king', 'chili_bandit', 'robot_ball', ...FOREST_CHARACTERS.map(c=>c.id)];
 
 export const DEFAULT_ADJ = { headWidth: 1, cheeks: 1, jaw: 1, eyes: 1, eyeGap: 1, nose: 1, mouth: 1 };
 

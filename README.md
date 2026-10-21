@@ -12,7 +12,7 @@ A seção **Corpo** oferece os controles **Peso** e **Músculo** e os atalhos **
 
 O cache do corpo diferencia personagem, densidade, escala da cabeça, cauda, peso e músculo e conserva até 64 geometrias. As roupas consultam esse campo individual: barrigas empurram o tecido, braços mais fortes alargam mangas e a cintura magra afina os cintos. Saiotes também consideram as coxas abaixo da cintura. Peças largas usam uma grade inicial maior, refinamento da superfície e projeção no campo; cintos e tiras finas mantêm a grade direta. Coletes, gibões e jalecos recortam primeiro a face externa e depois criam avesso e bordas fechadas, com normais independentes; isso evita perder paredes finas na malhagem volumétrica. Amostras compartilhadas entre blocos e coeficientes fixos dos membros reduzem o custo sem alterar o campo. No visualizador, a célula do corpo é `.032 × clamp(W,1,1.3)`; a exportação usa `.036`.
 
-O status e `await window.__atelie.setBuild(...)` abrangem corpo **e** roupas; `bodyTiming()` expõe a última medição em milissegundos. As referências faciais continuam intactas durante essa operação. `node tests/tipos-fisicos.mjs` verifica juntas, emenda, cache e volume crescente de magro → padrão → gordo nos 16 corpos humanoides. O robô conserva seu casco; lobo e corvo usam malhas próprias.
+O status e `await window.__atelie.setBuild(...)` abrangem corpo **e** roupas; `bodyTiming()` expõe a última medição em milissegundos. As referências faciais continuam intactas durante essa operação. `node tests/tipos-fisicos.mjs` verifica juntas, emenda, cache e volume crescente de magro → padrão → gordo nos 23 corpos humanoides. O robô conserva seu casco; lobo e corvo usam malhas próprias.
 
 ## Ver no navegador
 https://aruanmf446-hub.github.io/quemsoueu/
@@ -27,8 +27,8 @@ Para rodar localmente, sirva a pasta com qualquer servidor estático (ex.: `pyth
 - **Relevo do rosto** sobre essa base: planos de estrutura (zigomático, cavado abaixo dele, têmporas), órbitas, arcada, prega da pálpebra, nariz com ponte / ponta / asas / narinas, **lábios paramétricos com arco do cupido**, filtro, cantos da boca, sulco do queixo, maçãs e dobra nasolabial.
 - **Olhos**: a pele envolve o globo (pálpebras na própria malha, abertura recortada nela), **íris côncava sob a córnea** (profundidade e brilho), íris procedural com fibras e luz entrando por baixo, carúncula no canto interno, linha d'água, **delineado com asa** e **tufos de cílios** curvados; sobrancelhas espessas e afinadas na cauda.
 - **Pele**: variação orgânica de tom (manchas suaves por ruído, testa mais clara, nariz/maçãs/orelhas mais rosados, olheira sutil, barba sombreada no masculino), blush ajustável por preset nas maçãs e na ponta do nariz, microrrelevo no shader que quebra o brilho como pele real, zona T e lábios mais brilhantes, segunda camada especular suave, "wrap" avermelhado no terminador (falso espalhamento subsuperficial), oclusão por cavidade e sombras suaves projetadas.
-- **19 personagens em 4 famílias** (inclui o Rei), trocados por botões agrupados:
-  - **Humanos**: `feminine_soft`, `masculine_soft`, `cute_round`, `feminine_bold`, `alchemist_villain` (rosto longo, queixo pontudo, nariz adunco, sorriso torto, olheiras), `dwarf_bard` (nariz grande, barba e bigode, orelhas pontudas), `sad_clown` (pintura branca, marcas azuis, nariz bola, boca caída), `old_king`, `nana_explorer`, `moon_guardian`, `nico_inventor` e `ruby_sorceress`.
+- **26 personagens em 4 famílias** (inclui o Rei), trocados por botões agrupados:
+  - **Humanos**: `feminine_soft`, `masculine_soft`, `cute_round`, `feminine_bold`, `alchemist_villain` (rosto longo, queixo pontudo, nariz adunco, sorriso torto, olheiras), `dwarf_bard` (nariz grande, barba e bigode, orelhas pontudas), `sad_clown` (pintura branca, marcas azuis, nariz bola, boca caída), `old_king`, `nana_explorer`, `moon_guardian`, `nico_inventor`, `ruby_sorceress` e as sete identidades da floresta descritas abaixo.
   - **Criaturas**: `orc_warrior` (testa pesada, olhos amarelos, presas, orelhas pontudas, barba, mandíbula larga), `paysandu_wolf` e `ruby_raven` (companheiros com geradores próprios).
   - **Vegetais** (forma própria por perfil girado — `lathe` —, sem o molde de cabeça humana; olhos saltados; cor acompanhando o relevo): `cactus_cowboy` (coluna com cúpula, 8 nervuras e espinhos, olhar sonolento, sorriso de canto), `pepper_king` (pimentão de 4 gomos com covinha e talo no topo, bigode de guidão, cavanhaque), `chili_bandit` (pimenta afinando para baixo, olhos arregalados, sorriso aberto com dentes e língua para fora).
   - **Robôs**: `robot_ball` (casco com faixas e painéis, tela curva com rosto em luz, orelhas com anel brilhante) — gerador próprio em `src/robot.js`.
@@ -101,7 +101,7 @@ python3 -m http.server 8000
 node tests/visuais.cjs
 ```
 
-O teste geométrico percorre os 18 conjuntos e todas as peças compatíveis nos 16 corpos humanoides, além das malhas dos dois companheiros. Verifica índices, posições, normais completas no avesso, troca de cor, preservação da pele e manutenção dos outros slots; registra o p95 das trocas em cache. O teste de navegador gera renders de frente e 3/4 dos 19 personagens em `renders/`, valida nós, escala da cabeça, skin, blendshapes e clipes do GLB, testa todas as peças e cores, a independência dos slots, a preservação da pele e a opção de ocultar o corpo. Ele intercepta o CDN para usar o Three.js local e reduz apenas no teste a sombra para 1024 px, com renderização sob demanda, para rodar em SwiftShader. A produção mantém sombras de 4096 px e animação contínua.
+O teste geométrico percorre os 22 conjuntos e todas as peças compatíveis nos 23 corpos humanoides, além das malhas dos dois companheiros. Verifica índices, posições, normais completas no avesso, troca de cor, preservação da pele e manutenção dos outros slots; registra o p95 das trocas em cache. O teste de navegador gera renders de frente e 3/4 dos 26 personagens em `renders/`, valida nós, escala da cabeça, skin, blendshapes e clipes do GLB, testa todas as peças e cores, a independência dos slots, a preservação da pele e a opção de ocultar o corpo. Ele intercepta o CDN para usar o Three.js local e reduz apenas no teste a sombra para 1024 px, com renderização sob demanda, para rodar em SwiftShader. A produção mantém sombras de 4096 px e animação contínua.
 
 Para gerar também os closes dos acessórios, rode `ATELIE_CLOSEUPS=1 node tests/visuais.cjs`. O teste percorre todos os modelos e canais de cor disponíveis nos slots de acessórios. O visual continua pendente da avaliação do usuário; a validação automática verifica funcionamento e integridade, não aprovação estética.
 
@@ -262,3 +262,30 @@ O teste de navegador registra frente, 3/4, costas, rosto e base sem roupa/acess�
 Verificação desta etapa: os seis personagens novos exportaram GLB com 12 clipes cada e geraram miniaturas no Worker, sem erros de console. A suíte geométrica passou nos 18 conjuntos e 16 corpos humanoides; 48 casos de cobertura consultaram 535.572 vértices sem falhas. Nico e os companheiros tiveram nova verificação após os acabamentos finais. A galeria reúne 30 capturas (cinco vistas/estados por personagem).
 
 Para repetir apenas os modelos afetados, `ATELIE_PERSONAGENS=nico_inventor node tests/figurinos.mjs` filtra os testes de geometria, tipo físico e cobertura; companheiros são excluídos apenas das verificações de roupa e tipo físico humano. `ATELIE_SOMENTE_RENDERS=1 node tests/visuais.cjs` mantém renders/GLB dos 19 personagens e a navegação final pelo catálogo, enquanto a matriz completa de peças continua coberta por `figurinos.mjs`. Sem essa variável, `visuais.cjs` também percorre cada peça em cada corpo.
+
+
+## Floresta — primeiras versões e lista de refinamento
+
+Sete novas identidades baseadas nas referências enviadas, com nomes de função provisórios. Reaproveitam os modelos de rosto, proporções de corpo, penteados e rig do Ateliê. Os personagens anteriores permanecem no catálogo.
+
+**Todos ficam pendentes de refinamento visual posterior**, mesmo quando os testes de funcionamento passam. Retomar por solicitação do usuário, por partes: **malha → rosto → corpo → roupas e acessórios**. Apresentar renders para avaliação antes de marcar cada item como concluído.
+
+- [ ] **Arqueira da floresta** (`forest_archer_f`): cabelo loiro curto, roupa creme e verde, manto, arco e aljava. Refinar depois tranças, assimetria, tiras e acabamento dos tecidos.
+- [ ] **Arqueiro da floresta** (`forest_archer_m`): pele morena, cabelo loiro com tranças, barba, arco e aljava. Refinar depois os dreads da referência e detalhes de couro.
+- [ ] **Guarda da floresta · feminina** (`forest_guard_f`): cabelo loiro para trás, túnica verde, ombreiras, escudo e lança. Refinar depois o corte assimétrico do cabelo e as placas de armadura.
+- [ ] **Guarda da floresta · jovem** (`forest_guard_m`): rosto jovem, cabelo loiro curto, uniforme com brasão de árvore, escudo e lança. Refinar depois expressão, cintos e armadura.
+- [ ] **Guarda da floresta · veterano** (`forest_guard_veteran`): base madura, barba loira e uniforme do guarda. Refinar depois cabelo, barba e os detalhes da versão veterana.
+- [ ] **Artífice da floresta** (`forest_artificer`): monóculo verde, tranças loiras, casaca, mochila mecânica e frascos. Refinar depois dreads, luvas, mecanismos e ornamentos da referência.
+- [ ] **Princesa da floresta** (`forest_princess`): cabelo loiro ondulado, tiara, flores, vestido verde e manto. Refinar depois camadas de tecido, véus e joias em forma de folhas.
+
+Os quatro conjuntos `forest_archer`, `forest_guard`, `forest_artificer` e `forest_princess` usam `garment`, `trousers` e `beltOn`, com os mesmos slots, cores ao vivo e cache por corpo. `src/forest.js` reúne as identidades, paleta e geometrias de folha, árvore e escudo. Armas e mochilas são peças estáticas do slot **Extras**, exportadas no GLB; poses de combate e efeitos mágicos ficam para refinamento posterior.
+
+```sh
+node tests/figurinos.mjs
+# Servidor na porta 8000:
+node tests/floresta.cjs
+```
+
+O teste da floresta reutiliza a regressão do catálogo: frente, 3/4, costas, rosto e base sem roupa/acessórios; cores e peças em cache; expressões, miniaturas no Worker e GLB com 12 clipes e 11 blendshapes. A galeria fica em `renders/floresta/index.html`, ou na pasta definida em `ATELIE_RENDERS`.
+
+Verificação das primeiras versões da floresta: 22 conjuntos nos 23 corpos humanoides; 69 casos de cobertura, 904.506 vértices consultados e zero falhas. A regressão dos 26 personagens passou com renders de frente e 3/4 e exportação GLB, sem erros de console. Os sete novos personagens também têm capturas de costas, rosto e base sem equipamento; peças em cache abaixo de 500 ms e prévias no Worker. Estes resultados validam o funcionamento; os sete itens continuam pendentes de refinamento e aprovação visual.

@@ -1,6 +1,7 @@
 // Visual do personagem: pele, cabelo, barba e acessórios escolhidos por catálogo (clica e troca).
 // O rosto (olhos, nariz, boca) nunca é esticado — só trocamos modelos prontos e cores.
 import * as THREE from 'three';
+import {FOREST_CHARACTERS} from './forest.js';
 import { buildHair, HAIR_STYLES, HAIR_COLORS } from './hair.js';
 import { buildAccessories, ACCESSORIES, ACC_SLOTS, ACC_COLORS } from './accessories.js';
 import { buildCompanionLook } from './companions.js';
@@ -43,6 +44,7 @@ export const DEFAULT_LOOKS = {
   ruby_raven: { hair: 'none', acc: { head: 'raven_kit' }, colors: { fabric: '#932d3d', gem: '#c0182a' } },
   robot_ball: { hair: 'none', hairColor: '#333', acc: {} }
 };
+for(const c of FOREST_CHARACTERS)DEFAULT_LOOKS[c.id]={hair:c.hair,hairColor:'#c8a26a',beard:c.beard,acc:{...c.acc},colors:{metal:'#bc9655',gem:'#568b39',gem2:'#709b42',flower:'#f4ebd4'}};
 export function defaultLook(presetId) {
   const P = PRESETS[presetId], d = DEFAULT_LOOKS[presetId] || { hair: 'none', acc: {} };
   return { ...defaultClothes(presetId), build: { weight: 0, muscle: 0 }, skin: P.skin || null, hair: d.hair, hairColor: d.hairColor || '#2a1a12', beard: d.beard || 'default', acc: { ...d.acc }, colors: { ...C, ...(d.colors || {}) } };

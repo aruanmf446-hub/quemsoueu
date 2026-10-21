@@ -9,6 +9,7 @@
 // Malha: "surface nets" esparso — só os blocos perto da superfície são avaliados (rápido e leve), vértices
 // projetados na superfície, normais suaves. Cor por vértice a partir da pele do personagem.
 import * as THREE from 'three';
+import {FOREST_CHARACTERS} from './forest.js';
 
 const { clamp } = THREE.MathUtils;
 const sqrt = Math.sqrt;
@@ -87,6 +88,8 @@ BODIES.nana_explorer = {...BODIES.feminine_bold};
 BODIES.moon_guardian = {...BODIES.feminine_soft};
 BODIES.nico_inventor = {...BODIES.cute_round};
 BODIES.ruby_sorceress = {...BODIES.feminine_bold};
+
+for(const c of FOREST_CHARACTERS)BODIES[c.id]={...BODIES[c.body]};
 
 // escala da cabeça com corpo (a cabeça é desenhada grande para o close do rosto; no corpo inteiro ela diminui)
 export const headScale = id => (BODIES[id] && BODIES[id].head) || 1;
