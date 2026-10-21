@@ -115,3 +115,10 @@ Os companheiros têm gerador próprio em `src/companions.js`, com grupos separad
 
 
 Validação: seis novos modelos com GLB de 12 clipes e Worker real, sem erros de console; 18 conjuntos e 16 corpos na suíte geométrica, 48 casos de cobertura / 535.572 vértices / zero falhas. A jardineira do Nico usa um recorte deslocado da malha da própria camisa, não uma parede SDF fina. A máscara do corvo sai com o equipamento. Renders locais: `/workspace/outputs/reino-lua/` (frente, 3/4, costas, rosto e base sem equipamento). Avaliação estética continua com o usuário.
+
+
+## Floresta — novas referências para refinar depois
+
+Criadas sete primeiras versões reaproveitando o Ateliê e manter todas na lista de refinamento do README: arqueira, arqueiro, guarda feminina, guarda jovem, guarda veterano, artífice e princesa. IDs `forest_archer_f`, `forest_archer_m`, `forest_guard_f`, `forest_guard_m`, `forest_guard_veteran`, `forest_artificer`, `forest_princess`. Dados e símbolos em `src/forest.js`; quatro figurinos com o encaixe existente, equipamento no slot Extras e monóculo no catálogo de acessórios. Manter os personagens anteriores e o rig intactos. Os detalhes finos das referências ficam para depois; aprovação visual depende do usuário.
+
+Validação local: `tests/figurinos.mjs` passou em 22 conjuntos × 23 corpos; cobertura de 69 casos / 904.506 vértices / zero falhas. `ATELIE_SOMENTE_RENDERS=1 node tests/visuais.cjs` passou nos 26 personagens. `tests/floresta.cjs` verifica os sete novos personagens com cinco capturas por modelo, GLB, expressões, Worker, cores e cache. Renders locais: `/workspace/outputs/floresta/`; todos os novos modelos continuam sem aprovação estética.
