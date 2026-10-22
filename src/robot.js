@@ -55,7 +55,7 @@ export function buildRobot(P, opts = {}) {
       const p=geo.attributes.position;
       for(let i=0;i<p.count;i++){
         const x=p.getX(i),y=p.getY(i),z=p.getZ(i),front=sstep(.15,.85,z),cheek=Math.exp(-(((y+.30)/.40)**2));
-        p.setXYZ(i,x*(1+.15*front*cheek),y+.105*front*Math.exp(-(((y+.73)/.27)**2)),z+.045*front*cheek);
+        p.setXYZ(i,x*(1+.11*front*cheek-.045*front*Math.exp(-(((y-.50)/.30)**2))),y+.145*front*Math.exp(-(((y+.73)/.27)**2))-.035*front*Math.exp(-(((y-.60)/.25)**2)),z+.060*front*cheek);
       }
       geo.computeVertexNormals();
     }

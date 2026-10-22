@@ -4,6 +4,7 @@ Uso: python3 tests/galeria-identidades.py renders/identidades [id ...]
 """
 import json
 import math
+import os
 import struct
 import sys
 from html import escape
@@ -26,6 +27,9 @@ for phase in ['antes', 'depois']:
     assert not report['errors'], f'Erros de renderização em {phase}'
     assert set(after) <= set(report['ids']), f'Relatório incompleto em {phase}'
 views = [('front', 'Frente'), ('three', 'Três quartos'), ('side', 'Perfil'), ('malha', 'Malha sem cores')]
+poses = [pose for pose in os.environ.get('ATELIE_POSES', '').split(',') if pose]
+assert all(pose in ['feliz', 'risada', 'triste', 'bravo', 'surpreso', 'piscadela', 'desconfiado', 'beijo'] for pose in poses), 'Expressão desconhecida'
+tabs = views + ([('expressoes', 'Expressões')] if poses else [])
 sections = []
 for identity in after:
     for view in ['front', 'three', 'side']:
@@ -47,14 +51,24 @@ for identity in after:
             images.append(f'<figure><figcaption>{label}</figcaption><a href="{src}"><img loading="lazy" src="{src}" alt="{escape(identity)} — {label}"></a></figure>')
         assert sizes[0] == sizes[1], f'Tamanho divergente: {identity}/{view}'
         content.append(f'<div class="pair" data-view="{view}" {"hidden" if view != "three" else ""}><h3>{title}</h3><div class="images">{"".join(images)}</div></div>')
+    if poses:
+        expressions = []
+        for pose in poses:
+            path = root / 'depois' / f'{identity}-pose-{pose}.png'
+            data = path.read_bytes()
+            assert data[:8] == b'\x89PNG\r\n\x1a\n', f'PNG inválido: {path}'
+            assert struct.unpack('>II', data[16:24]) == sizes[1], f'Tamanho divergente: {identity}/{pose}'
+            src = escape(f'depois/{identity}-pose-{pose}.png')
+            expressions.append(f'<figure><figcaption>{escape(pose.capitalize())}</figcaption><a href="{src}"><img loading="lazy" src="{src}" alt="{escape(identity)} — {escape(pose)}"></a></figure>')
+        content.append('<div class="pair" data-view="expressoes" hidden><h3>Expressões na malha sem cores</h3><div class="images">' + ''.join(expressions) + '</div></div>')
     sections.append(f'<section id="{escape(identity)}"><h2>{escape(identity.replace("_", " "))}</h2>{"".join(content)}</section>')
 document = '''<!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Escultura facial — 34 identidades</title><style>
 body{font:16px system-ui;background:#16202a;color:#eef2f5;margin:24px auto;max-width:1300px;padding:0 16px}p{max-width:850px;color:#bbc8d1;line-height:1.6}nav{position:sticky;top:0;background:#16202a;padding:12px 0;display:flex;gap:8px;flex-wrap:wrap}button{font:inherit;background:#26394a;color:white;border:1px solid #6e899a;border-radius:6px;padding:10px;cursor:pointer}button[aria-pressed=true]{background:#196b70}section{margin:40px 0}h2{text-transform:capitalize}h3{font-size:16px;color:#bbc8d1}.images{display:grid;grid-template-columns:1fr 1fr;gap:12px}figure{margin:0}figcaption{margin-bottom:8px}img{width:100%;height:auto;border-radius:8px}a{color:#8fe7e0}@media(max-width:650px){.images{grid-template-columns:1fr}}
 </style><h1>Escultura facial — 34 identidades</h1><p>Comparação dos rostos com a mesma câmera. Cabelo, acessórios e figurino ficam ocultos para expor a forma do rosto. A vista de malha remove as cores da superfície. São capturas reais do Ateliê; esta comparação não representa aprovação estética.</p><nav>'''
-document += ''.join(f'<button data-select="{view}" aria-pressed="{"true" if view == "three" else "false"}">{title}</button>' for view, title in views)
+document += ''.join(f'<button data-select="{view}" aria-pressed="{"true" if view == "three" else "false"}">{title}</button>' for view, title in tabs)
 document += '</nav>' + ''.join(sections)
 document += '''<script>document.querySelectorAll('[data-select]').forEach(button=>button.onclick=()=>{document.querySelectorAll('[data-select]').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));document.querySelectorAll('[data-view]').forEach(p=>p.hidden=p.dataset.view!==button.dataset.select)});</script></html>'''
 document = document.replace('34 identidades', f'{len(after)} identidades')
 (root / 'index.html').write_text(document, encoding='utf-8')
-print(f'Galeria validada: {len(after)} identidades, {len(after)*len(views)} pares e câmeras idênticas.')
+print(f'Galeria validada: {len(after)} identidades, {len(after)*len(views)} pares e câmeras idênticas.' + (f' {len(after)*len(poses)} capturas de expressões.' if poses else ''))

@@ -1172,8 +1172,12 @@ export function buildHead(presetId, adj, opts = {}) {
       const x = p.getX(i), y = p.getY(i), z = p.getZ(i); if (z < -.2 || Math.abs(x) > xLim) continue;
       if (d.mouth && (y > P.eyeY - .02 || y < (P.loft?.y?.[0] ?? -1.2) - .36)) continue;
       // região da boca some suavemente (sem degrau): até a pálpebra de baixo em cima, abaixo do queixo embaixo
-      const fz0 = FZ(x, y); if (Math.abs(fz0 - z) > .14) continue; // só a frente do rosto (a silhueta fica parada)
-      const fade = (d.mouth ? sstep(P.eyeY - .03, P.eyeY - .16, y) * sstep((P.loft?.y?.[0] ?? -1.2) - .35, (P.loft?.y?.[0] ?? -1.2) - .1, y) : 1) * sstep(.12, .3, nr.getZ(i));
+      const fz0 = FZ(x, y),surfaceDistance=Math.abs(fz0-z);
+      if(surfaceDistance>.24)continue;
+      // Transição contínua entre a frente móvel e nariz/barba/silhueta.
+      // Um corte binário em .14 deixava fileiras vizinhas imóveis no sorriso.
+      const surfaceFade=1-sstep(.08,.24,surfaceDistance);
+      const fade = surfaceFade * (d.mouth ? sstep(P.eyeY - .03, P.eyeY - .16, y) * sstep((P.loft?.y?.[0] ?? -1.2) - .35, (P.loft?.y?.[0] ?? -1.2) - .1, y) : 1) * sstep(.12, .3, nr.getZ(i));
       if (fade < .001) continue;
       let [x2, y2] = warpXY(d, x, y); x2 = x + (x2 - x) * fade; y2 = y + (y2 - y) * fade;
       const dx = x2 - x, dy = y2 - y;

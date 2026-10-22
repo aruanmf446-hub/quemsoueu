@@ -19,8 +19,10 @@ fs.mkdirSync(out,{recursive:true});
   for(const id of ids){
    await page.evaluate(id=>window.__atelie.setPreset(id),id);await page.waitForFunction(()=>!document.getElementById('status').textContent.includes('…'));
    await page.evaluate(()=>{const a=window.__atelie;a.setPose({});a.clothes().group.visible=false;if(a.body()?.mesh)a.body().mesh.visible=false;if(a.lookObj()?.group)a.lookObj().group.visible=false});
-   cameras[id]={};
-   for(const view of ['front','three','side']){
+   const onlyPoses=process.env.ATELIE_SOMENTE_POSES==='1';
+   if(onlyPoses)assert(fixed[id]?.three,'Captura de expressões requer câmera de referência');
+   cameras[id]=onlyPoses?fixed[id]:{};
+   for(const view of onlyPoses?[]:['front','three','side']){
     cameras[id][view]=await page.evaluate(async({id,view,saved})=>{
      const a=window.__atelie,THREE=await import('three'),{PRESETS}=await import('/src/presets.js'),p=PRESETS[id],head=a.group();head.updateWorldMatrix(true,true);
      let center,height;
@@ -37,7 +39,7 @@ fs.mkdirSync(out,{recursive:true});
     const a=window.__atelie;a.group().traverse(m=>{if(!m.isMesh)return;const materials=[m.material].flat().map(mat=>{if(/iris|cornea|sclera|olho|screen/i.test(mat.name))return mat;const copy=mat.clone();copy.color?.set('#b8b4af');copy.emissive?.set(0);copy.vertexColors=false;copy.map=null;copy.normalMap=null;copy.roughnessMap=null;copy.roughness=.7;copy.metalness=0;copy.clearcoat=0;copy.sheen=0;return copy});m.material=Array.isArray(m.material)?materials:materials[0]});
     a.camera.position.fromArray(camera.position);a.orbit.target.fromArray(camera.target);a.orbit.update();window.__render();
    },cameras[id].three);
-   await page.locator('#stage canvas').screenshot({path:path.join(out,id+'-malha.png')});console.log('Retratos',id);
+   if(!onlyPoses)await page.locator('#stage canvas').screenshot({path:path.join(out,id+'-malha.png')});console.log(onlyPoses?'Expressões':'Retratos',id);
    for(const pose of process.env.ATELIE_POSES?.split(',').filter(Boolean)||[]){
     await page.evaluate(name=>{window.__atelie.setExpression(name);window.__render()},pose);
     await page.locator('#stage canvas').screenshot({path:path.join(out,id+'-pose-'+pose+'.png')});
