@@ -8,6 +8,8 @@ Uso:
 
 São obrigatórios os três ângulos dos 20 personagens em antes/ e depois/.
 O Guardião da chama e os closes de rosto entram apenas se suas capturas existirem.
+enquadramento-atual/ pode acrescentar três vistas atuais com câmera independente;
+essas imagens nunca entram na certificação dos 60 pares de comparação.
 """
 
 from __future__ import annotations
@@ -113,7 +115,7 @@ def main() -> None:
         groups['nova-referencia'] = [id for id in labels if id in EXTRAS]
 
     # Valida tudo antes de gerar a primeira prancha, evitando uma entrega parcialmente renovada.
-    sources = {}
+    sources, independent = {}, {}
     for id in labels:
         folders = ('antes', 'depois') if id in LABELS else ('depois',)
         for view in VIEWS:
@@ -130,6 +132,14 @@ def main() -> None:
         for folder in folders:
             path = root / folder / f'{id}-face.png'
             if path.is_file():
+                sources[str(path.relative_to(root))] = sha256(path)
+        fit_paths = [root / 'enquadramento-atual' / f'{id}-{view}.png' for view in VIEWS]
+        if any(path.is_file() for path in fit_paths):
+            if not all(path.is_file() for path in fit_paths):
+                raise FileNotFoundError(f'Enquadramento atual independente incompleto: {id}')
+            independent[id] = fit_paths
+            for path in fit_paths:
+                read_image(path)
                 sources[str(path.relative_to(root))] = sha256(path)
     cameras = validate_cameras(root, list(LABELS))
     font, small = [ImageFont.truetype(FONT_FILE, size) for size in (18, 14)]
@@ -171,6 +181,27 @@ def main() -> None:
         cards = [comparison(id, view, title)[1] for view, title in VIEWS.items()]
         if (root / 'depois' / f'{id}-face.png').is_file():
             cards.append(comparison(id, 'face', 'Rosto')[1])
+        if id in independent:
+            for view, title in VIEWS.items():
+                path = root / 'enquadramento-atual' / f'{id}-{view}.png'
+                image = read_image(path)
+                sheet = Image.new('RGB', (image.width, image.height + 98), BACKGROUND)
+                draw = ImageDraw.Draw(sheet)
+                draw.text((16, 10), f'{label} · {title}', fill='white', font=font)
+                draw.text((16, 43), 'ENQUADRAMENTO PRÓPRIO ATUAL', fill=TURQUOISE, font=small)
+                draw.text((16, 67), 'Câmera independente · sem comparação com versão anterior', fill='#b9cbd8', font=small)
+                sheet.paste(image, (0, 98))
+                name = save_image(sheet, f'enquadramento-{id}-{view}.jpg')
+                # Conserva também o PNG verdadeiro deste enquadramento adicional no pacote.
+                generated.append(str(path.relative_to(root)))
+                rows.append({'personagem': id, 'nome': label, 'vista': view, 'tipo': 'enquadramento-independente',
+                             'referencia': '', 'versao': args.versao, 'arquivo': name,
+                             'sha256': sha256(root / name), 'aprovacao': 'pendente'})
+                cards.append(f'<figure data-view="{view}"><a href="{name}"><img loading="lazy" '
+                             f'src="{name}" alt="{escape(label)}: {title}, enquadramento atual independente"></a>'
+                             f'<figcaption>{title} · enquadramento próprio atual, com câmera independente; '
+                             'não é um par antes/depois. '
+                             f'<a href="{escape(str(path.relative_to(root)))}">Abrir PNG original</a></figcaption></figure>')
         articles.append(f'<article data-label="{escape(label.lower())}"><h2>{escape(label)}</h2>{"".join(cards)}</article>')
 
         # Três ângulos na mesma imagem. Novas referências têm só as três imagens atuais.
@@ -221,7 +252,7 @@ a{color:#35d6d4}button,input{font:inherit;background:#1b3145;border:1px solid #4
 button[aria-pressed=true]{background:#207a7a}h1{font-size:28px}h2{font-size:21px}p{max-width:1050px;line-height:1.5}figcaption{color:#afc3d5}
 figure[hidden],article[hidden]{display:none}.links{font-size:14px}.note{color:#b9cbd8}@media(max-width:600px){body{margin:12px}h1{font-size:23px}header{position:static}}
 </style><header><h1>__TITLE__</h1><p>__COUNT__ personagens. A versão anterior (__BASE__) fica à esquerda; a versão em refinamento fica à direita. Novas referências sem versão anterior são identificadas separadamente.</p>
-<p class="note">__CAMERAS__ Todos os personagens continuam pendentes de aprovação explícita do usuário. Os testes técnicos não representam aprovação estética.</p>
+<p class="note">__CAMERAS__ As imagens identificadas como enquadramento próprio atual têm câmera independente e não integram essa comparação. Todos os personagens continuam pendentes de aprovação explícita do usuário. Os testes técnicos não representam aprovação estética.</p>
 <p class="links"><a href="inventario.csv">Inventário CSV</a> · <a href="manifesto.json">Manifesto e hashes SHA-256</a></p>
 <div><input id="search" placeholder="Buscar personagem" aria-label="Buscar personagem"><button data-view="front" aria-pressed="true">Frente</button><button data-view="three" aria-pressed="false">3/4</button><button data-view="back" aria-pressed="false">Costas</button><button data-view="face" aria-pressed="false">Rosto</button><button data-view="all" aria-pressed="false">Todas</button></div></header>
 __ARTICLES__<script>
@@ -245,6 +276,7 @@ document.querySelectorAll('button').forEach(b=>b.onclick=()=>{view=b.dataset.vie
         'Os 20 personagens originais têm frente, 3/4 e costas em pares.\n'
         'Closes de rosto e a nova referência entram somente quando há capturas reais.\n'
         'Uma imagem sem captura anterior é identificada; não foi inventada uma versão anterior.\n'
+        'Enquadramentos próprios atuais, quando presentes, usam câmeras independentes e não são pares antes/depois.\n'
         'Todos os personagens permanecem pendentes de aprovação explícita.\n'
         f'{camera_note}\n'
         'O gerador apenas compõe e redimensiona os PNGs do navegador, sem retocar os personagens.\n', encoding='utf-8')
@@ -266,6 +298,7 @@ document.querySelectorAll('button').forEach(b=>b.onclick=()=>{view=b.dataset.vie
     summary = {'personagens': len(labels), 'paresObrigatorios': 60,
                'paresDeRosto': sum(row['vista'] == 'face' and row['tipo'] == 'comparacao' for row in rows),
                'capturasSemAnterior': sum(row['tipo'] == 'captura-atual' for row in rows),
+               'enquadramentosIndependentes': sum(row['tipo'] == 'enquadramento-independente' for row in rows),
                'pranchas': len(labels), 'resumos': len(groups)}
     manifest = {'referencia': args.referencia, 'versao': args.versao, 'titulo': args.titulo,
                 'aprovacao': 'Todos os personagens aguardam concordância explícita do usuário.',
