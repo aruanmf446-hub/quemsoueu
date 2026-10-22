@@ -7,12 +7,17 @@ import {clothSurface,smoothCloth} from './fabric.js';
 import {EXPRESSIONS,talkPose} from './rig.js';
 import {V,orb,tube,crescent,disposeGroup} from './lunar.js';
 import {tuft,ribbon,badge,panel,buckleGeo,finishMaterial} from './detail.js';
-import {quill,mergeVolumes,grain,petalPlate,eyeDisc} from './companion-detail.js';
+import {quill,mergeVolumes,grain,petalPlate,eyeDisc,smoothRingSeams} from './companion-detail.js';
+import {heroSurface} from './hero-material.js';
 const clamp=THREE.MathUtils.clamp,step=THREE.MathUtils.smoothstep,PI=Math.PI;
 const union=(a,b,k=.18)=>{const h=Math.max(k-Math.abs(a-b),0)/k;return Math.min(a,b)-h*h*k*.25};
 const ellipse=(p,r)=>(x,y,z)=>(Math.hypot((x-p.x)/r.x,(y-p.y)/r.y,(z-p.z)/r.z)-1)*Math.min(r.x,r.y,r.z);
-function material(name,color,metal=0){const m=new THREE.MeshPhysicalMaterial({name,color});return finishMaterial(m,metal?'metal':'fabric')}
-function mesh(parent,name,geo,mat){const m=new THREE.Mesh(geo,mat);m.name=name;m.castShadow=true;m.receiveShadow=true;parent.add(m);return m}
+function material(name,color,metal=0){const m=new THREE.MeshPhysicalMaterial({name,color});m.userData.surfaceKind=metal?'metal':/gem/i.test(name)?'gem':/couro|leather/i.test(name)?'leather':/fur|pelagem|plum|feather|pena/i.test(name)?'fur':/fabric|cloth|tecido|calca/i.test(name)?'fabric':'polymer';return finishMaterial(m,metal?'metal':'fabric')}
+function mesh(parent,name,geo,mat){
+ if(/eye|iris|pupil|cornea|olho/i.test(name+' '+mat.name)){mat=mat.clone();mat.normalMap=null;mat.roughnessMap=null}
+ else heroSurface(geo,mat,mat.userData.surfaceKind||'fur');
+ const m=new THREE.Mesh(geo,mat);m.name=name;m.castShadow=true;m.receiveShadow=true;parent.add(m);return m;
+}
 function ear(parent,side,mat,inner,fennec,pale){
  const h=fennec?1.30:.91,outer=(t,u)=>{const x=1-2*u,w=Math.max(.004,((fennec?.32:.25)+.13*Math.sin(PI*t))*(1-t)**.68);return V(side*(.48+(fennec?.46:.24)*t)+x*w,.52+h*t+.045*(1-x*x)*(1-t),.015-.08*Math.sin(PI*t)+.075*x*x+.04*Math.sin(PI*t)*x*x-.07*t)};
  mesh(parent,'Orelha_'+side,clothSurface(56,44,outer,{thickness:.055}),mat);
@@ -56,7 +61,7 @@ export function buildCompanion(P,opts={}){
   const bone=ellipse(V(0,.36,.505),V(.75,.60,.225)),sculpt=[ellipse(V(0,.22,.655),V(.135,.40,.175)),...[-1,1].flatMap(side=>[ellipse(V(side*.23,.55,.615),V(.24,.12,.15)),ellipse(V(side*.47,.545,.565),V(.22,.12,.13)),ellipse(V(side*.60,.13,.50),V(.155,.305,.17))])],cuts=[...[-1,1].map(s=>ellipse(V(s*.32,.23,.67),V(.255,.275,.39))),ellipse(V(0,-.14,.67),V(.24,.31,.40))];
   const relief=(x,y,z)=>sculpt.reduce((d,f)=>union(d,f(x,y,z),.055),bone(x,y,z));const plate=(x,y,z)=>cuts.reduce((d,f)=>Math.max(d,-f(x,y,z)),relief(x,y,z));
   const boneFront=(x,y)=>{let z=1.15;for(let i=0;i<70;i++){const d=relief(x,y,z);if(d<.0002)break;z-=Math.max(.002,d*.8);if(z<.2)return .45}return z};
-  const boneMat=light.clone();boneMat.name='Osso_mascara';boneMat.vertexColors=true;boneMat.roughness=.49;boneMat.clearcoat=.06;
+  const boneMat=light.clone();boneMat.name='Osso_mascara';boneMat.userData.surfaceKind='polymer';boneMat.vertexColors=true;boneMat.roughness=.49;boneMat.clearcoat=.06;
   const boneGeo=grain(smoothCloth(sdfMesh(plate,{x:.86,y0:-.43,y1:1.04,z0:.23,z1:.96},.011),4),.055),bp=boneGeo.attributes.position,bn=boneGeo.attributes.normal,bc=boneGeo.attributes.color;
   for(let i=0;i<bp.count;i++){const x=bp.getX(i),y=bp.getY(i),z=bp.getZ(i),orbit=Math.hypot((Math.abs(x)-.32)/.255,(y-.23)/.275),cavity=Math.exp(-(((orbit-1.03)/.12)**2))*.085,underBrow=Math.exp(-(((Math.abs(x)-.31)/.31)**2)-((y-.43)/.10)**2)*.055,edge=.94+.06*Math.max(0,bn.getZ(i)),hi=.025*Math.exp(-((x/.12)**2)-((y-.38)/.38)**2),factor=edge-cavity-underBrow+hi;for(let k=0;k<3;k++)bc.array[i*3+k]*=factor}
   mesh(mask,'Mascara_osso',boneGeo,boneMat);
@@ -108,7 +113,7 @@ export function buildCompanion(P,opts={}){
    for(let j=0;j<=nc;j++){const a=j/nc*PI*2,q=c.clone().addScaledVector(frames.normals[i],Math.cos(a)*r).addScaledVector(frames.binormals[i],Math.sin(a)*r*.94);tp.push(...q.toArray());color.clone().multiplyScalar(.96+.035*Math.sin(a*17+t*71)).toArray(tc,tc.length);if(i<nr&&j<nc){const k=i*(nc+1)+j;ti.push(k,k+1,k+nc+1,k+1,k+nc+2,k+nc+1)}}
   }
   const root=tp.length/3;tp.push(...tail[0].toArray(),...tail[3].toArray());fur.color.toArray(tc,tc.length);(fennec?black.color:light.color).toArray(tc,tc.length);for(let j=0;j<nc;j++)ti.push(root,j+1,j,root+1,nr*(nc+1)+j,nr*(nc+1)+j+1);
-  const tg=new THREE.BufferGeometry();tg.setAttribute('position',new THREE.Float32BufferAttribute(tp,3));tg.setAttribute('color',new THREE.Float32BufferAttribute(tc,3));tg.setIndex(ti);tg.computeVertexNormals();const tm=fur.clone();tm.color.set('#ffffff');tm.vertexColors=true;mesh(body,'Cauda',tg,tm);
+  const tg=new THREE.BufferGeometry();tg.setAttribute('position',new THREE.Float32BufferAttribute(tp,3));tg.setAttribute('color',new THREE.Float32BufferAttribute(tc,3));tg.setIndex(ti);tg.computeVertexNormals();smoothRingSeams(tg,nr+1,nc);const tm=fur.clone();tm.color.set('#ffffff');tm.vertexColors=true;mesh(body,'Cauda',tg,tm);
   const mane=[],paleMane=[],flanks=[],tailFur=[],tailTip=[];
   for(let row=0;row<6;row++)for(let i=0;i<29;i++){const a=(i+.27*Math.sin(row*3+i))/29*2*PI,r=.46+row*.024,c=V(Math.sin(a)*r,-.39-row*.13+.018*Math.sin(i*3.1),Math.cos(a)*r-.08),end=c.clone().add(V(Math.sin(a)*(.16+.02*row),-.29-.035*Math.sin(i*1.3),Math.cos(a)*.13));(Math.cos(a)>.1?paleMane:mane).push(quill(c,end,.056,.027,.043))}
   for(const side of [-1,1])for(let row=0;row<4;row++)for(let i=0;i<18;i++){const t=i/17,zz=-.30-t*1.65,c=V(side*(.48+.07*Math.sin(t*PI)),-.98-row*.15,zz);flanks.push(quill(c,c.clone().add(V(side*.06,-.20,-.13)),.052,.022,.025))}

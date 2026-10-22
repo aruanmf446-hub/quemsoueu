@@ -139,5 +139,10 @@ export function shellCloth(source, clip, thickness, passes = 0) {
     for(const v of vertices){positions.push(...positions.slice(v*3,v*3+3));normals.push(0,0,0)}
     indices.push(offset,offset+1,offset+2,offset,offset+2,offset+3);
   }
-  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));g.setIndex(indices);g.computeVertexNormals();return g;
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));g.setIndex(indices);g.computeVertexNormals();
+  // A média das faces recortadas perde a continuidade da superfície original junto à abertura.
+  // Conserva as normais interpoladas (ou suavizadas) da frente e seu oposto no avesso;
+  // somente as paredes, que têm vértices próprios, usam as normais recém-calculadas.
+  for(let i=0;i<n*2;i++)g.attributes.normal.setXYZ(i,normals[i*3],normals[i*3+1],normals[i*3+2]);
+  return g;
 }

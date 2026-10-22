@@ -2,7 +2,7 @@
 import {FRONTIER_CHARACTERS,FRONTIER_COMPANIONS} from './frontier.js';
 import {FOREST_CHARACTERS} from './forest.js';
 import {previewChoice} from './preview-spec.js';
-const VERSION='menu-v5-herois';
+const VERSION='menu-v6-superficies';
 const FRONTIER=new Set([...FRONTIER_CHARACTERS.map(c=>c.id),...FRONTIER_COMPANIONS]);
 const FOREST=new Set(FOREST_CHARACTERS.map(c=>c.id));
 const LUNAR=new Set(['nana_explorer','moon_guardian','nico_inventor','ruby_sorceress','paysandu_wolf','ruby_raven']);
@@ -34,7 +34,7 @@ export class PreviewCatalog {
       // O enquadramento novo dos brincos invalida somente as quatro miniaturas desse slot.
       const alvo=spec.kind==='character'?spec.value:context.id;
       const versao=FRONTIER.has(alvo)?'deserto-heroi-4':FOREST.has(spec.kind==='character'?spec.value:context.id)?'floresta-heroi-4':LUNAR.has(spec.kind==='character'?spec.value:context.id)?'reino-lua-heroi-3':spec.kind==='accessory'&&spec.slot==='ears'?'menu-v2-orelhas':VERSION;
-      const key=versao+':'+stable(previewChoice(request));button._preview={key,request};
+      const key=VERSION+':'+versao+':'+stable(previewChoice(request));button._preview={key,request};
       if(frame.dataset.key!==key){frame.dataset.key=key;frame.replaceChildren(Object.assign(document.createElement('div'),{className:'preview-wait',textContent:'Gerando prévia…'}));frame.classList.add('loading');delete frame.dataset.ready}
       if(this.cache.has(key))this.display(button,key,this.cache.get(key));else this.observer.observe(button);
     }

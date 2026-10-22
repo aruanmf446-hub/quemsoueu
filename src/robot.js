@@ -2,6 +2,7 @@
 // em luz emissiva (desenhado em canvas), "orelhas" com anel de luz, aletas no topo e luz de coração.
 // Mesmo contrato de buildHead: { group, dispose, params }.
 import * as THREE from 'three';
+import {heroSurface} from './hero-material.js';
 
 const { clamp } = THREE.MathUtils;
 const sstep = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t) };
@@ -43,7 +44,7 @@ export function buildRobot(P, opts = {}) {
   root.name = 'Head_V2_' + P.id;
   let screenTex = null;
   const R = 1, shellC = col(P.shell || '#ece6da'), accent = col(P.accent || '#f08a24'), dark = col('#2b2a2a');
-  const add = (geo, m, name, parent = root) => { if (geo.attributes.normal) unitNormals(geo); const o = new THREE.Mesh(track(geo), m); o.name = name; parent.add(o); return o };
+  const add = (geo, m, name, parent = root) => { if (geo.attributes.normal) unitNormals(geo);if(!m.emissiveMap)heroSurface(geo,m,m.metalness>.5?'metal':'polymer');const o = new THREE.Mesh(track(geo), m); o.name = name; parent.add(o); return o };
   // tela: janela em coordenadas angulares (longitude u, latitude v), super-elipse
   const SW = P.screenW || .78, SH = P.screenH || .5, SY = P.screenY || .12, inScreen = (u, v, pad = 0) => Math.pow(Math.abs(u) / (SW + pad), 4) + Math.pow(Math.abs(v - SY) / (SH + pad), 4) < 1;
 

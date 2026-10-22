@@ -19,6 +19,22 @@ https://aruanmf446-hub.github.io/quemsoueu/
 
 Para rodar localmente, sirva a pasta com qualquer servidor estático (ex.: `python3 -m http.server`) e abra `index.html`. Os módulos ES não funcionam abrindo o arquivo direto (`file://`). Usa Three.js via CDN, sem build, Vercel, API de geração, Supabase ou serviços pagos.
 
+## Qualidade técnica das superfícies
+
+Os geradores compartilhados dos 34 personagens corrigem normais nas costuras de cabelo, penas e pelagem e preservam as normais do tecido depois dos recortes. O desenho, as proporções e o rig são mantidos. A pele filtra o microrrelevo de acordo com o tamanho do pixel, reduzindo cintilação à distância.
+
+Roupas, companheiros e casco do robô usam microtexturas PBR procedurais de 512 px, com mapas de normal e rugosidade, mipmaps e filtragem anisotrópica. O microdetalhe usa UV1 e deixa as cores e estampas em seu próprio UV; os mapas são incorporados ao GLB. A projeção por face evita triângulos de textura colapsados, mas ainda tem transições de orientação entre eixos. Os poros e o espalhamento de luz customizados da pele permanecem no shader do visualizador.
+
+```sh
+node tests/qualidade-superficies.mjs
+node tests/qualidade-cabelo.mjs
+node tests/qualidade-corpo.mjs
+node tests/qualidade-tecido.mjs
+node tests/qualidade-pele.mjs
+```
+
+Com o servidor na porta 8000, `tests/visuais.cjs` verifica também os mapas e UVs exportados de cada personagem. Os testes técnicos não substituem a avaliação estética do usuário.
+
 ## O que a V2 faz
 - **Formato da cara por curvas**: o rosto é uma casca única definida por três curvas suaves por altura — contorno de frente (maçãs → mandíbula → queixo), perfil (testa → maçã → boca → queixo) e linha de trás (ramo e base da mandíbula) — fundida ao crânio, à nuca, a um pescoço de seção oval (garganta saindo de baixo do queixo, nuca contínua) e aos músculos do pescoço num campo de distância (SDF). As curvas têm curvatura contínua (sem "faixas" na luz) e pele + pescoço formam **uma única malha**, sem emendas nem volumes "montados".
 - **Proporções calibradas pelas referências** (medidas pela distância entre as pupilas): olhos mais próximos, terço inferior mais longo (nariz, boca e queixo mais baixos), nariz projetando à frente da boca e queixo levemente recuado no perfil.

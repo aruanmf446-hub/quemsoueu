@@ -10,6 +10,7 @@
 // A cor do cabelo é a cor do material (as cores por vértice guardam só luz e sombra) → trocar a cor é instantâneo.
 import * as THREE from 'three';
 import {buildHeroHair} from './hero-hair.js';
+import {smoothHairNormals} from './hair-normals.js';
 
 const { clamp } = THREE.MathUtils;
 const sstep = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t) };
@@ -129,10 +130,10 @@ export function buildHair(fit, id, color = '#2a1a12') {
   }
   const capGeo = new THREE.BufferGeometry();
   capGeo.setAttribute('position', new THREE.Float32BufferAttribute(cPos, 3)); capGeo.setAttribute('color', new THREE.Float32BufferAttribute(cCol, 3));
-  capGeo.setIndex(cIdx); capGeo.computeVertexNormals();
+  capGeo.setIndex(cIdx); capGeo.computeVertexNormals(); smoothHairNormals(capGeo);
 
   // ---------------- 2. mechas ----------------
-  const L = { pos: [], nor: null, col: [], uv: [], idx: [] };
+  const L = { pos: [], nor: null, col: [], uv: [], idx: [], normalRanges: [] };
   const hull = (q, o) => body(q.x, q.y, q.z) - o;
   const knot = S.knot && V(0, top + S.knot.y, zc + S.knot.z);
   const endYOf = () => {
@@ -279,6 +280,8 @@ export function buildHair(fit, id, color = '#2a1a12') {
   function strip(A, B, dark, sid) {
     for (let m = 0; m < A.length; m++) if (A[m].distanceTo(B[m]) > (S.maxStrip || .32)) return;
     const M = A.length, K = 6, base = L.pos.length / 3, nrm = V(), mid = V(), q = V(), tone = (.9 + .2 * rand()) * dark, tipS = S.tip ?? .8;
+    // Cada mecha conserva sua própria borda; unificamos apenas a ponta colapsada dela.
+    L.normalRanges.push({start:base,count:M*(K+1)});
     for (let m = 0; m < M; m++) {
       const u = m / (M - 1); mid.copy(A[m]).add(B[m]).multiplyScalar(.5); grad(mid, nrm);
       const wdt = A[m].distanceTo(B[m]), w = Math.pow(1 - sstep(tipS, 1, u), .65), bul = Math.min(S.bulge ?? .03, wdt * .32) * sstep(0, .12, u) * (.4 + .6 * w);
@@ -397,7 +400,7 @@ export function buildHair(fit, id, color = '#2a1a12') {
   const capMesh = new THREE.Mesh(capGeo, capMat); capMesh.name = 'Hair_Cap'; group.add(capMesh);
   const lg = new THREE.BufferGeometry();
   lg.setAttribute('position', new THREE.Float32BufferAttribute(L.pos, 3)); lg.setAttribute('color', new THREE.Float32BufferAttribute(L.col, 3)); lg.setAttribute('uv', new THREE.Float32BufferAttribute(L.uv, 2));
-  lg.setIndex(L.idx); lg.computeVertexNormals(); unit(lg); lg.computeTangents();
+  lg.setIndex(L.idx); lg.computeVertexNormals(); smoothHairNormals(lg,L.normalRanges); unit(lg); lg.computeTangents();
   const locks = new THREE.Mesh(lg, mat); locks.name = 'Hair_Locks'; group.add(locks);
   for (const g of extra) { g.deleteAttribute('uv'); const m = new THREE.Mesh(g, capMat); m.name = 'Hair_Bun'; group.add(m) }
   let ringMat = null;

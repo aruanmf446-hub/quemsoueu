@@ -38,7 +38,14 @@ for(const id of ids){
    if(id==='sad_clown'&&!json.images?.some(i=>i.bufferView!==undefined))throw Error('Listras não foram incorporadas no GLB');
    if(!a.group().getObjectByName('Rosto')&&(!json.skins?.length||!json.meshes.some(m=>m.primitives.some(p=>p.targets?.length===11))))throw Error('Rig ou blendshapes ausentes');
   }
-  return {id,MB:+(data.byteLength/1048576).toFixed(2),animations:json.animations?.length||0,clothes:nodes.filter(x=>x.name?.startsWith('Roupa_')).length};
+  const surfaces=(json.materials||[]).filter(m=>m.normalTexture?.texCoord===1);
+  if(!surfaces.length)throw Error('Microtexturas ausentes no GLB');
+  for(const mesh of json.meshes)for(const p of mesh.primitives){
+   const m=json.materials[p.material];if(m?.normalTexture?.texCoord!==1)continue;
+   if(p.attributes.TEXCOORD_1===undefined)throw Error('UV de microtextura ausente: '+mesh.name+' / '+m.name);
+   if(m.pbrMetallicRoughness?.metallicRoughnessTexture?.texCoord!==1)throw Error('Rugosidade não incorporada ao GLB');
+  }
+  return {id,MB:+(data.byteLength/1048576).toFixed(2),animations:json.animations?.length||0,clothes:nodes.filter(x=>x.name?.startsWith('Roupa_')).length,surfaces:surfaces.length};
  },id);reports.push(report);console.log('GLB',JSON.stringify(report));
  if(!process.env.ATELIE_SOMENTE_RENDERS&&id!=='robot_ball'&&!['paysandu_wolf','ruby_raven','desert_fennec','cowboy_on_fennec'].includes(id)){
   const metrics=await page.evaluate(()=>{
@@ -61,6 +68,8 @@ for(const id of ids){
  }
 }
 // Exercita o catálogo real, incluindo as reconstruções de cabelo, pele e barba.
+// A rodada de renders/GLB pode ser executada em lotes sem repetir toda a navegação do catálogo.
+if(!process.env.ATELIE_SOMENTE_RENDERS){
 await page.evaluate(()=>window.__atelie.setPreset('masculine_soft'));
 await page.waitForFunction(()=>window.__atelie.group().name==='Head_V2_masculine_soft'&&!document.getElementById('status').textContent.includes('…'));
 const ready=()=>page.waitForFunction(()=>!document.getElementById('status').textContent.includes('…'));
@@ -91,6 +100,7 @@ await page.evaluate(async()=>{const buffer=await window.__atelie.exportGLB(),v=n
 await page.locator('#showBody').check();await ready();
 assert((await page.evaluate(()=>window.__atelie.clothes().group.children.length))>0);
 console.log('Catálogo, cores, memória de visual e ocultar corpo: OK');
+}else console.log('Catálogo completo não executado no modo ATELIE_SOMENTE_RENDERS; renders, GLB e recoloração por personagem verificados.');
 assert.deepEqual(errors,[]);
 // Repetições após um acabamento atualizam só os modelos afetados e preservam as outras capturas.
 const reportPath=path.join(output,'reports.json');

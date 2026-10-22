@@ -2,6 +2,7 @@
 // Os estilos antigos continuam no gerador original. Tudo é geometria, inclusive tranças e anilhas.
 import * as THREE from 'three';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
+import {smoothHairNormals} from './hair-normals.js';
 const PI=Math.PI,V=(x=0,y=0,z=0)=>new THREE.Vector3(x,y,z),clamp=THREE.MathUtils.clamp;
 const smooth=(a,b,x)=>{const t=clamp((x-a)/(b-a),0,1);return t*t*(3-2*t)};
 function random(seed){let n=seed;return()=>{n=Math.imul(n^n>>>15,1|n)+0x6D2B79F5|0;return((n^n>>>14)>>>0)/4294967296}}
@@ -34,7 +35,7 @@ export function buildHeroHair(fit,style,color){
     const k0=p.length/3;p.push(...curve.getPoint(0).toArray(),...curve.getPoint(1).toArray());colors.push(.5,.5,.5,.9,.9,.9);uv.push(.5,0,.5,1);
     for(let j=0;j<cols;j++){ix.push(k0,j+1,j,k0+1,rows*(cols+1)+j,rows*(cols+1)+j+1)}
     const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(p,3));g.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(ix);g.computeVertexNormals();
-    const normals=g.attributes.normal;for(let i=0;i<=rows;i++){const a=i*(cols+1),b=a+cols,v=V().fromBufferAttribute(normals,a).add(V().fromBufferAttribute(normals,b)).normalize();normals.setXYZ(a,...v.toArray());normals.setXYZ(b,...v.toArray())}parts.push(g);
+    smoothHairNormals(g);parts.push(g);
     return curve;
   }
   // Touca contínua medida na própria pele, escondida sob as raízes das mechas.
@@ -43,7 +44,7 @@ export function buildHeroHair(fit,style,color){
   for(let i=0;i<src.index.count;i+=3){const ids=[src.index.getX(i),src.index.getX(i+1),src.index.getX(i+2)];if(ids.some(k=>k>=N)||!ids.every(k=>{const q=V().fromBufferAttribute(sp,k);return q.y>line(q)-.025}))continue;
     for(const k of ids){if(!remap.has(k)){const q=V().fromBufferAttribute(sp,k),no=V().fromBufferAttribute(sn,k);q.addScaledVector(no,.035);remap.set(k,cp.length/3);cp.push(...q.toArray());cc.push(.63,.63,.63)}ci.push(remap.get(k))}
   }
-  const cap=new THREE.BufferGeometry();cap.setAttribute('position',new THREE.Float32BufferAttribute(cp,3));cap.setAttribute('color',new THREE.Float32BufferAttribute(cc,3));cap.setIndex(ci);cap.computeVertexNormals();
+  const cap=new THREE.BufferGeometry();cap.setAttribute('position',new THREE.Float32BufferAttribute(cp,3));cap.setAttribute('color',new THREE.Float32BufferAttribute(cc,3));cap.setIndex(ci);cap.computeVertexNormals();smoothHairNormals(cap);
   const short=kind==='pixie'||kind==='tousled'||kind==='veteran',long=kind==='waves'||kind==='halfup';
   if(kind==='tousled'){
     // Mechas onduladas com raízes baixas e pontas livres: o topete muda a silhueta da cabeça.

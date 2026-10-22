@@ -196,7 +196,7 @@ export function buildClothes(body, look) {
     for (const d of source.descriptors.filter(d => d.slot === slot)) {
       const own = patterned.has(d.channel), geo = own ? d.geo.clone() : d.geo, mat = pieceMaterial(d.channel, cc), mesh = new THREE.Mesh(geo, mat);
       if((FOREST_OUTFITS[style]||FRONTIER_OUTFITS[style]||style.startsWith('lunar_'))&&['fabric','secondary','pants','accent','leather','trim','sole','lining'].includes(d.channel))finishMaterial(mat,['trim'].includes(d.channel)?'metal':['leather','sole'].includes(d.channel)?'leather':'fabric');
-      if(FOREST_OUTFITS[style]||FRONTIER_OUTFITS[style]||style.startsWith('lunar_')||style==='flame_guardian')heroSurface(geo,mat,d.channel,body.proportions.W);
+      heroSurface(geo,mat,d.channel,body.proportions.W);
       if(!SDF_OUTFITS[style]){mat.roughness=d.channel==='trim'?.38:d.channel==='leather'?.78:.88;mat.sheen=.15;mat.clearcoat=0}
       mesh.name = 'Roupa_' + d.name; mesh.castShadow = !mat.transparent; mesh.receiveShadow = true; mesh.userData = { ownGeometry: own, channel: d.channel, slot, style }; paint(mesh, d.channel, cc, body.proportions.W); part.add(mesh);
     }

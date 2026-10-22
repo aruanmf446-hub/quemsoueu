@@ -428,23 +428,39 @@ function irisTexture(cols, pupil) {
 function skinMaterial(P = {}) {
   const m = new THREE.MeshPhysicalMaterial({ vertexColors: true, roughness: P.rough ?? .58, metalness: 0, specularIntensity: .5, sheen: P.sheen ?? .32, sheenRoughness: .5, sheenColor: col(P.sheenColor || '#ffcdb8'), clearcoat: P.clearcoat ?? .22, clearcoatRoughness: P.clearcoatRough ?? .38, name: 'Skin' });
   const sss = P.sss || [.5, .22, .14];
+  // Cada material conserva seu uniforme ao recompilar; o programa pode ser compartilhado sem misturar peles.
+  const sssUniform = { value: new THREE.Vector3(...sss) };
   m.onBeforeCompile = sh => {
-    sh.uniforms.uSSS = { value: new THREE.Vector3(...sss) };
+    sh.uniforms.uSSS = sssUniform;
     sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute float gloss;\nvarying float vGloss;\nvarying vec3 vObjPos;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvGloss = gloss; vObjPos = position;');
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', '#include <common>\nvarying float vGloss;\nvarying vec3 vObjPos;\nuniform vec3 uSSS;\n' +
         'float h31(vec3 p){ p = fract(p * .3183099 + .1); p *= 17.0; return fract(p.x * p.y * p.z * (p.x + p.y + p.z)); }\n' +
         'float vn3(vec3 x){ vec3 i = floor(x), f = fract(x); f = f * f * (3. - 2. * f);\n' +
         '  return mix(mix(mix(h31(i), h31(i + vec3(1,0,0)), f.x), mix(h31(i + vec3(0,1,0)), h31(i + vec3(1,1,0)), f.x), f.y),\n' +
-        '             mix(mix(h31(i + vec3(0,0,1)), h31(i + vec3(1,0,1)), f.x), mix(h31(i + vec3(0,1,1)), h31(i + vec3(1,1,1)), f.x), f.y), f.z); }')
+        '             mix(mix(h31(i + vec3(0,0,1)), h31(i + vec3(1,0,1)), f.x), mix(h31(i + vec3(0,1,1)), h31(i + vec3(1,1,1)), f.x), f.y), f.z); }\n' +
+        // O detalhe menor que um pixel converge para a média, sem cintilação ao afastar a câmera.
+        'float skinDetailWeight(vec3 p){ float footprint = max(length(dFdx(p)), length(dFdy(p))); return 1. - smoothstep(.5, 1.5, footprint); }\n' +
+        // Gradiente de superfície no espaço da vista: acompanha escala, rotação, ossos e blendshapes.
+        // Evita tratar o ruído no espaço do objeto como se já estivesse no espaço do mundo.
+        'vec3 skinBumpNormal(vec3 surfPos, vec3 surfNormal, float height, float faceDir){\n' +
+        '  vec3 dx = dFdx(surfPos), dy = dFdy(surfPos);\n' +
+        '  vec3 r1 = cross(dy, surfNormal), r2 = cross(surfNormal, dx);\n' +
+        '  float det = dot(dx, r1) * faceDir;\n' +
+        '  vec2 heightGradient = vec2(dFdx(height), dFdy(height));\n' +
+        '  if(abs(det) < 1e-12) return surfNormal;\n' +
+        '  vec3 gradient = sign(det) * (heightGradient.x * r1 + heightGradient.y * r2);\n' +
+        '  return normalize(abs(det) * surfNormal - gradient);\n' +
+        '}')
       .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\n' +
-        'float gl = clamp(vGloss, 0., 1.); float pn = vn3(vObjPos * 140.);\n' +
+        'float gl = clamp(vGloss, 0., 1.); vec3 porePos = vObjPos * 140.;\n' +
+        'float pn = mix(.5, vn3(porePos), skinDetailWeight(porePos));\n' +
         'roughnessFactor = mix(roughnessFactor, .26, gl) * (.92 + .16 * pn);')
       .replace('#include <normal_fragment_maps>', '#include <normal_fragment_maps>\n' +
-        '{ // microrrelevo da pele (poros bem sutis): quebra o brilho como em pele real\n' +
-        '  vec3 p = vObjPos * 140.; float e = .35, n0 = vn3(p); vec3 g = vec3(vn3(p + vec3(e,0,0)), vn3(p + vec3(0,e,0)), vn3(p + vec3(0,0,e))) - n0;\n' +
-        '  vec3 p2 = vObjPos * 330.; float m0 = vn3(p2); g += .6 * (vec3(vn3(p2 + vec3(e,0,0)), vn3(p2 + vec3(0,e,0)), vn3(p2 + vec3(0,0,e))) - m0);\n' +
-        '  normal = normalize(normal - .09 * (1. - .7 * gl) * (viewMatrix * vec4(g, 0.)).xyz); }')
+        '{ // Altura microscópica filtrada nas duas frequências; não desloca nenhum vértice.\n' +
+        '  vec3 p2 = vObjPos * 330.;\n' +
+        '  float height = (.000225 * (pn - .5) + .000057 * (vn3(p2) - .5) * skinDetailWeight(p2)) * (1. - .7 * gl);\n' +
+        '  normal = skinBumpNormal(-vViewPosition, normal, height, faceDirection); }')
       .replace('#include <lights_physical_fragment>', '#include <lights_physical_fragment>\n#ifdef USE_CLEARCOAT\n material.clearcoat *= mix(.45, 1.0, gl);\n#endif')
       .replace('#include <lights_fragment_begin>', THREE.ShaderChunk.lights_fragment_begin.replace(
         'directLight.color *= ( directLight.visible && receiveShadow ) ? getShadow( directionalShadowMap[ i ], directionalLightShadow.shadowMapSize, directionalLightShadow.shadowIntensity, directionalLightShadow.shadowBias, directionalLightShadow.shadowRadius, vDirectionalShadowCoord[ i ] ) : 1.0;',
@@ -456,7 +472,7 @@ function skinMaterial(P = {}) {
         'vec3 wrapD = pow( clamp( ( vec3( nlW ) + wW ) / ( 1.0 + wW ), 0.0, 1.0 ), vec3( 1.5 ) );\n' +
         'reflectedLight.directDiffuse += wrapD * directLight.color * BRDF_Lambert( material.diffuseColor );'));
   };
-  m.customProgramCacheKey = () => 'skin-wrap-v5';
+  m.customProgramCacheKey = () => 'skin-wrap-v6-filtered';
   return m;
 }
 

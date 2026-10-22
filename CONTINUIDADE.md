@@ -1,5 +1,21 @@
 # Continuidade — Ateliê Quem Sou Eu
 
+## Orientação de entrega
+
+O usuário determinou: **sempre subir o trabalho para a `main`**. Ao concluir uma rodada, validar, registrar as alterações e enviar à `main`, preservando alterações remotas e sem force push. Distinguir o envio do código da conclusão do deploy do site.
+
+## Escopo atual — qualidade técnica de todos os 34 personagens (22/10/2026)
+
+O usuário esclareceu que quer **qualidade de textura e malha em todos**, sem concentrar o trabalho no desenho de um personagem. A referência `.github/workflows/image.jpg` foi sincronizada da `main`; as tentativas locais de redesenhar rosto, cabelo, figurino e iluminação foram retiradas. Esta rodada atua nos geradores compartilhados, preservando proporções, silhuetas, cores e rig. As exigências históricas de preservar os 13 modelos anteriores continuam valendo para o desenho; suas normais e superfícies também recebem as correções técnicas solicitadas agora.
+
+Mudanças: normais contínuas nas toucas/mechas e nas costuras de penas/pelagem/cauda; normais da face externa e avesso do tecido preservadas após recorte; poros da pele filtrados pelo tamanho de pixel e relevo calculado no espaço da superfície; mapas PBR procedurais de 512 px com mipmaps/anisotropia para tecido, couro, metal, polímero e pelagem. UV1 de microdetalhe independente do UV de cor/estampa. Projeção por face preserva triângulos e normais; as transições entre eixos ainda não equivalem a um unwrap artístico manual. Cache de miniaturas versionado globalmente.
+
+Verificações específicas: `tests/qualidade-cabelo.mjs`, `qualidade-tecido.mjs`, `qualidade-corpo.mjs`, `qualidade-pele.mjs` e `qualidade-superficies.mjs`. Os testes de cabelo/pele aceitam uma cópia do `src` anterior como argumento para confirmar a preservação dos atributos de geometria. `tests/visuais.cjs` agora também verifica UV1, normal maps e rugosidade nos GLBs. O shader procedural de poros/SSS continua próprio do visualizador; o GLB leva os materiais PBR suportados, sem prometer equivalência completa do shader.
+
+Capturas e relatórios desta rodada ficam em `renders/qualidade-superficies/`. Aprovação estética, publicação na main/site e qualidade cinematográfica final continuam separadas da validação técnica.
+
+Validação local concluída: 34 GLBs com normal/rugosidade e UV1, 68 capturas, zero erros de navegador; clipes faciais preservados (12 nos personagens animados, robô sem clipes). Worker real, cores, slots/cache e GLB passaram para `forest_archer_f` e `desert_fennec` em `renders/qualidade-worker/relatorio.json`. Os cinco testes técnicos passaram; cabelo verificou 17 estilos/38 malhas e 1.436 grupos de costura, mantendo todos os atributos exceto normais/tangentes idênticos à referência. Cobertura padrão: sete alvos, 86.388 vértices e zero falhas; cobertura adicional da arqueira: 15.701 vértices e zero falhas. `git diff --check` passou. Sem publicação remota nesta rodada.
+
 ## Retomada após interrupção — 22/10/2026
 
 - Na revisão dos jobs, a execução `39775739335` encontrou dois vértices da gola do `bread_vigilante` magro descobertos; o ajuste em `src/hero-bread.js` foi salvo na `main` (commit `ddfd956`). A execução `39778404376` confirmou **zero falhas** para o vigilante magro, gordo e musculoso, mas apontou 11 vértices sem cobertura no `cactus_soldier` magro, nos ombros/parte alta do tórax.
