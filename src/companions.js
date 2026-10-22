@@ -33,14 +33,17 @@ function paint(g,base,light,kind){
 }
 export function buildCompanion(P,opts={}){
  const fennec=P.species==='fennec',wolf=P.species==='wolf'||fennec,group=new THREE.Group();group.name='Head_V2_'+P.id;
+ const eyeX=fennec?.315:wolf?.350:.320,eyeY=fennec?.285:wolf?.215:.245,eyeR=fennec?.258:wolf?.218:.250;
  const body=new THREE.Group();body.name='Body';group.add(body);const head=new THREE.Bone();head.name='Bone_Head';group.add(head);const face=new THREE.Group();face.name='Rosto';head.add(face);const mask=new THREE.Group();mask.name='Acessorio_Mascara';if(!wolf)face.add(mask);
  const fur=material('Pelagem',opts.skin||P.skin),light=material('Pelagem_clara',fennec?'#f3dfbb':wolf?'#ded7cc':'#eee1c8'),black=material('Nariz_bico','#181723'),pink=material('Interior_orelha',fennec?'#ce957b':'#9d787b'),white=material('Olho_branco','#faf2de'),iris=material('Iris',wolf?'#bb6c26':'#a53b35'),pupil=material('Pupila','#100e17');black.roughness=.28;black.clearcoat=.52;iris.roughness=.19;iris.clearcoat=.75;fur.roughness=.64;fur.sheen=.65;fur.sheenRoughness=.46;light.roughness=.72;light.sheen=.5;
  const coated=fur.clone();coated.name='Pelagem_esculpida';coated.color.set('#ffffff');coated.vertexColors=true;const strands=fur.clone();strands.name='Pelagem_mechas';strands.vertexColors=true;const paleStrands=light.clone();paleStrands.name='Pelagem_clara_mechas';paleStrands.vertexColors=true;
  if(wolf){
   // Feneco: testa cheia e focinho compacto. Lobo: arcadas e maçãs largas, focinho firme.
-  const skull=ellipse(V(0,fennec?.27:.25,-.06),V(fennec?.68:.76,fennec?.68:.67,fennec?.62:.65)),muzzle=ellipse(V(0,fennec?-.135:-.145,fennec?.51:.50),V(fennec?.35:.46,fennec?.25:.29,fennec?.44:.51)),cheeks=[-1,1].map(s=>ellipse(V(s*(fennec?.405:.455),fennec?-.10:-.13,.25),V(fennec?.30:.335,fennec?.32:.34,.36)));
-  const sockets=[-1,1].map(s=>ellipse(V(s*.32,.25,.57),V(.245,.225,.235)));
+  const skull=ellipse(V(0,fennec?.30:.23,-.06),V(fennec?.655:.775,fennec?.72:.64,fennec?.64:.66)),muzzle=ellipse(V(0,fennec?-.115:-.165,fennec?.49:.56),V(fennec?.335:.475,fennec?.245:.30,fennec?.425:.55)),cheeks=[-1,1].map(s=>ellipse(V(s*(fennec?.395:.475),fennec?-.07:-.15,.27),V(fennec?.315:.35,fennec?.33:.31,.37)));
+  const sockets=[-1,1].map(s=>ellipse(V(s*eyeX,eyeY,.57),V(eyeR*1.06,eyeR*.98,.24)));
   const sdf=(x,y,z)=>{let d=union(skull(x,y,z),muzzle(x,y,z),.19);for(const f of cheeks)d=union(d,f(x,y,z),.18);for(const f of sockets)d=Math.max(d,-f(x,y,z));return d};
+  const frontAt=(x,y)=>{let z=1.6;for(let i=0;i<90;i++){const d=sdf(x,y,z);if(d<.0001)break;z-=Math.max(.0001,d*.85)}return z};
+  const onFace=(points,pad=.005)=>points.map(p=>V(p.x,p.y,frontAt(p.x,p.y)+pad));
   mesh(face,'Malha_rosto',paint(smoothCloth(sdfMesh(sdf,{x:1.1,y0:-.65,y1:1.03,z0:-.77,z1:1.12},.021),2),fur.color,light.color,'face'),coated);
   for(const side of [-1,1]){
    ear(face,side,fur,pink,fennec,light);const cheekFur=[],browFur=[];
@@ -50,13 +53,13 @@ export function buildCompanion(P,opts={}){
    mesh(face,'Pelagem_sobrancelha',mergeVolumes(browFur),strands);
    mesh(face,'Mascara_olho_clara',tube([V(side*.12,.35,.60),V(side*.23,.48,.57),V(side*.43,.47,.52),V(side*.54,.36,.48)],.034),light);
   }
-  const nose=new THREE.Shape();nose.moveTo(-.15,.045);nose.quadraticCurveTo(0,.105,.15,.045);nose.quadraticCurveTo(.15,-.025,.03,-.12);nose.quadraticCurveTo(0,-.15,-.03,-.12);nose.quadraticCurveTo(-.15,-.025,-.15,.045);const ng=new THREE.ExtrudeGeometry(nose,{depth:.085,bevelEnabled:true,bevelSize:.029,bevelThickness:.024,bevelSegments:5,curveSegments:32});ng.translate(0,-.095,.91);mesh(face,'Nariz',ng,black);
-  for(const side of [-1,1])mesh(face,'Narina_focinho',orb(V(side*.095,-.08,1.025),.027,V(1,.55,.35)),pupil);
-  mesh(face,'Sulco_focinho',tube([V(0,-.22,1.0),V(0,-.30,.96),V(0,-.34,.87)],.009),black);
-  for(const side of [-1,1]){mesh(face,'Sorriso',tube([V(0,-.34,.89),V(side*.16,-.365,.89),V(side*.34,-.29,.76)],.010),black);for(let i=0;i<6;i++)mesh(face,'Ponto_bigode',orb(V(side*(.13+.045*(i%3)),-.21-.052*Math.floor(i/3),.949-.018*(i%3)),.008),black);for(let i=0;i<3;i++)mesh(face,'Bigode_fino',tube([V(side*.28,-.22-i*.045,.88),V(side*.50,-.20-i*.067,.92),V(side*.69,-.24-i*.072,.88)],.0025),light)}
+  const nose=new THREE.Shape();nose.moveTo(-.15,.045);nose.quadraticCurveTo(0,.105,.15,.045);nose.quadraticCurveTo(.15,-.025,.03,-.12);nose.quadraticCurveTo(0,-.15,-.03,-.12);nose.quadraticCurveTo(-.15,-.025,-.15,.045);const ng=new THREE.ExtrudeGeometry(nose,{depth:.065,bevelEnabled:true,bevelSize:.025,bevelThickness:.020,bevelSegments:5,curveSegments:32});ng.scale(fennec?.78:1.12,fennec?.82:1,1);ng.translate(0,-.095,0);const np=ng.attributes.position;for(let i=0;i<np.count;i++)np.setZ(i,np.getZ(i)+frontAt(np.getX(i),np.getY(i))+.006);ng.computeVertexNormals();mesh(face,'Nariz',ng,black);
+  for(const side of [-1,1]){const x=side*(fennec?.073:.106);mesh(face,'Narina_focinho',orb(V(x,-.08,frontAt(x,-.08)+.075),.023,V(1,.55,.35)),pupil)}
+  mesh(face,'Sulco_focinho',tube(onFace([V(0,-.22),V(0,-.27),V(0,-.31)]),.008),black);
+  for(const side of [-1,1]){const smile=[];for(let i=0;i<=32;i++){const t=i/32;smile.push(V(side*.34*t,-.31-.035*Math.sin(PI*t)+(fennec?.055:.015)*t))}mesh(face,'Sorriso',tube(onFace(smile),.008),black);for(let i=0;i<6;i++){const x=side*(.13+.045*(i%3)),y=-.21-.042*Math.floor(i/3);mesh(face,'Ponto_bigode',orb(V(x,y,frontAt(x,y)+.004),.006),black)}for(let i=0;i<3;i++){const x=side*.28,y=-.22-i*.035,z=frontAt(x,y);mesh(face,'Bigode_fino',tube([V(x,y,z),V(side*.50,y+.02,z+.04),V(side*.69,y-.02,z+.01)],.002),light)}}
   const locks=[];for(let layer=0;layer<2;layer++)for(let i=-4;i<=4;i++)locks.push(quill(V(i*.09,.63+layer*.035,.0-layer*.16),V(i*.11+.06,.97+.10*(1-Math.abs(i)/5),-.13-layer*.18),.075,.036,.085));mesh(face,'Topete_pelagem',mergeVolumes(locks),strands);
  }else{
-  const skull=ellipse(V(0,.19,-.03),V(.79,.84,.68)),cheek=ellipse(V(0,-.29,.25),V(.63,.42,.49));
+  const skull=ellipse(V(0,.23,-.03),V(.73,.85,.69)),cheek=ellipse(V(0,-.26,.25),V(.60,.39,.47));
   mesh(face,'Cranio',smoothCloth(sdfMesh((x,y,z)=>union(skull(x,y,z),cheek(x,y,z),.20),{x:1.05,y0:-.79,y1:1.04,z0:-.8,z1:.87},.024),2),fur);
   // Máscara de osso esculpida, com órbitas vazadas e bordas arredondadas verdadeiras.
   const bone=ellipse(V(0,.36,.505),V(.75,.60,.225)),sculpt=[ellipse(V(0,.22,.655),V(.135,.40,.175)),...[-1,1].flatMap(side=>[ellipse(V(side*.23,.55,.615),V(.24,.12,.15)),ellipse(V(side*.47,.545,.565),V(.22,.12,.13)),ellipse(V(side*.60,.13,.50),V(.155,.305,.17))])],cuts=[...[-1,1].map(s=>ellipse(V(s*.32,.23,.67),V(.255,.275,.39))),ellipse(V(0,-.14,.67),V(.24,.31,.40))];
@@ -72,7 +75,7 @@ export function buildCompanion(P,opts={}){
    const cracks=[[V(side*.64,.62,.59),V(side*.58,.69,.61),V(side*.62,.77,.57)],[V(side*.53,-.04,.69),V(side*.59,-.11,.64),V(side*.58,-.20,.59)],[V(side*.14,.79,.62),V(side*.20,.73,.66),V(side*.18,.67,.69)]];
    const ink=material('Fissuras_osso','#8b705d');for(const line of cracks){const projected=line.map(p=>V(p.x,p.y,boneFront(p.x,p.y)+.004)).filter(p=>relief(p.x,p.y,p.z)<.018);if(projected.length>1)mesh(mask,'Fissura_mascara',tube(projected,.0032),ink);}
   }
-  const beak=clothSurface(64,56,(t,u)=>{const a=u*2*PI,r=Math.max(.002,.245*Math.sin(PI*(.13+.87*t))*(1-.75*t));return V(Math.cos(a)*r,-.055-.36*t*t+Math.sin(a)*r*.67,.62+.60*t)},{closed:true,thickness:.025});mesh(face,'Bico_superior',grain(beak,.045),black);
+  const beak=clothSurface(64,56,(t,u)=>{const a=u*2*PI,r=Math.max(.002,.227*Math.sin(PI*(.13+.87*t))*(1-.78*t));return V(Math.cos(a)*r,-.045-.42*t*t+Math.sin(a)*r*.72,.62+.67*t)},{closed:true,thickness:.025});mesh(face,'Bico_superior',grain(beak,.045),black);
   for(const side of [-1,1]){mesh(face,'Narina',orb(V(side*.122,-.035,.88),.029,V(1,.44,.3)),pupil);mesh(face,'Borda_bico',tube([V(side*.21,-.13,.68),V(side*.15,-.18,.91),V(side*.045,-.32,1.12)],.009),black)}
   const cheekFeathers=[],crest=[],scalp=[];
   for(const side of [-1,1])for(let row=0;row<4;row++)for(let i=0;i<6;i++){const p=V(side*(.47+row*.036),.08-i*.078,.17-row*.085);cheekFeathers.push(quill(p,p.clone().add(V(side*.21,-.21-.055*row,-.07)),.10,.025,.04,true))}
@@ -83,21 +86,21 @@ export function buildCompanion(P,opts={}){
   const moon=crescent(.15,.018);moon.rotateZ(-.24);moon.translate(0,.70,0);const mp=moon.attributes.position;for(let i=0;i<mp.count;i++){const x=mp.getX(i),y=mp.getY(i);mp.setZ(i,boneFront(x,y)+.005+mp.getZ(i)*.55)}moon.computeVertexNormals();mesh(mask,'Lua_mascara',moon,material('Tinta_rubi','#9c263b'));
  }
 
- const jaw=new THREE.Bone();jaw.name='Bone_Jaw';jaw.position.set(0,-.38,.25);head.add(jaw);mesh(jaw,'Mandibula',orb(V(0,-.005,wolf?.47:.56),wolf?.3:.19,V(1.15,.3,wolf?1:.65)),wolf?light:black);
- mesh(jaw,'Lingua',orb(V(0,.048,wolf?.53:.56),.14,V(.7,.12,1)),material('Lingua','#ba6d76'));
+ const jaw=new THREE.Bone();jaw.name='Bone_Jaw';jaw.position.set(0,-.38,.25);head.add(jaw);mesh(jaw,'Mandibula',orb(V(0,-.005,fennec?.20:wolf?.36:.56),fennec?.25:wolf?.32:.19,V(1.15,.3,fennec?.8:wolf?1:.65)),wolf?light:black);
+ mesh(jaw,'Lingua',orb(V(0,.030,fennec?.18:wolf?.35:.44),.14,V(.7,.12,1)),material('Lingua','#ba6d76'));
  const eyes=[],brows=[];
  for(const side of [-1,1]){
-  const eye=new THREE.Group();eye.name='Olho_'+(side<0?'L':'R');eye.position.set(side*.32,.23,.57);face.add(eye);eyes.push(eye);
-  mesh(eye,'Esclera',orb(V(),wolf?.23:.25,V(1,.91,.66)),white);
-  for(const upper of [-1,1]){const pts=[];for(let j=0;j<=24;j++){const a=j/24*PI;pts.push(V(Math.cos(a)*.229,upper*Math.sin(a)*.190,.04+.075*Math.sin(a)))}mesh(eye,'Palpebra',tube(pts,upper>0?.023:.014),fur)}
+  const eye=new THREE.Group();eye.name='Olho_'+(side<0?'L':'R');eye.position.set(side*eyeX,eyeY,.57);face.add(eye);eyes.push(eye);
+  mesh(eye,'Esclera',orb(V(),eyeR,V(1,.91,.66)),white);
+  for(const upper of [-1,1]){const pts=[];for(let j=0;j<=40;j++){const a=j/40*PI;pts.push(V(Math.cos(a)*eyeR,upper*Math.sin(a)*eyeR*.84,.04+.075*Math.sin(a)))}mesh(eye,'Palpebra',tube(pts,upper>0?.023:.014),fur)}
   const gaze=new THREE.Group();gaze.name='Olhar_'+side;eye.add(gaze);eye.userData.gaze=gaze;
-  const rx=wolf?.23:.25,ry=rx*.91,dep=rx*.66+.002;
-  mesh(gaze,'Anel_iris',eyeDisc(wolf?.168:.183,rx,ry,dep,.003).translate(side*.008,-.006,0),black);
-  const ig=eyeDisc(wolf?.157:.172,rx,ry,dep,.005),ic=new Float32Array(ig.attributes.position.count*3);for(let k=0;k<ig.attributes.position.count;k++){const x=ig.attributes.position.getX(k),y=ig.attributes.position.getY(k),a=Math.atan2(y,x),r=Math.hypot(x,y),q=.72+.25*Math.sin(a*71+Math.sin(a*17)*3)**2+.08*Math.sin(r*149);const c=iris.color.clone().multiplyScalar(q);c.toArray(ic,k*3)}ig.setAttribute('color',new THREE.BufferAttribute(ic,3));const im=iris.clone();im.color.set('#ffffff');im.vertexColors=true;mesh(gaze,'Iris',ig.translate(side*.008,-.006,0),im);
-  mesh(gaze,'Pupila',eyeDisc(wolf?.090:.105,rx,ry,dep,.008).translate(side*.008,-.006,0),pupil);
+  const rx=eyeR,ry=rx*.91,dep=rx*.66+.002,irisR=rx*(fennec?.71:wolf?.65:.69);
+  mesh(gaze,'Anel_iris',eyeDisc(irisR+.010,rx,ry,dep,.003).translate(side*.008,-.006,0),black);
+  const ig=eyeDisc(irisR,rx,ry,dep,.005),ic=new Float32Array(ig.attributes.position.count*3);for(let k=0;k<ig.attributes.position.count;k++){const x=ig.attributes.position.getX(k),y=ig.attributes.position.getY(k),a=Math.atan2(y,x),r=Math.hypot(x,y),q=.72+.25*Math.sin(a*71+Math.sin(a*17)*3)**2+.08*Math.sin(r*149);const c=iris.color.clone().multiplyScalar(q);c.toArray(ic,k*3)}ig.setAttribute('color',new THREE.BufferAttribute(ic,3));const im=iris.clone();im.color.set('#ffffff');im.vertexColors=true;mesh(gaze,'Iris',ig.translate(side*.008,-.006,0),im);
+  mesh(gaze,'Pupila',eyeDisc(irisR*(fennec?.58:.55),rx,ry,dep,.008).translate(side*.008,-.006,0),pupil);
   mesh(gaze,'Brilho_olho',orb(V(-.039,.052,dep+.006),.024,V(1,1,.3)),white);mesh(gaze,'Brilho_menor',orb(V(.045,-.046,dep+.003),.008,V(1,1,.3)),white);
-  if(wolf){const lid=(t,u)=>{const x=(u-.5)*.458,arc=Math.sqrt(Math.max(.02,1-(x/.235)**2)),lo=((fennec?.055:.105)+side*x*(fennec?.20:.10))*arc,hi=.207*arc+.032,y=lo+(hi-lo)*t,z=.153*Math.sqrt(Math.max(.02,1-(x/.235)**2-(Math.min(y,.20)/.214)**2))+.013;return V(x,y,z)};mesh(eye,'Palpebra_superior_escultida',clothSurface(20,56,lid,{thickness:.016}),fur)}
-  const brow=new THREE.Group();brow.name='Sobrancelha_'+side;brow.position.set(side*.32,.48,.58);face.add(brow);brows.push(brow);mesh(brow,'Sobrancelha',tuft(V(-side*.21,.03,0),V(side*.22,-.02,-.03),.058,.03,.025),fur);
+  if(wolf){const lid=(t,u)=>{const x=(u-.5)*2*eyeR,arc=Math.sqrt(Math.max(0,1-(x/eyeR)**2)),lo=((fennec?.155:.095)+side*x*(fennec?.08:.25))*arc,hi=eyeR*.91*arc+.028,y=lo+(hi-lo)*t,z=eyeR*.66*Math.sqrt(Math.max(.02,1-(x/eyeR)**2-(Math.min(y,eyeR*.87)/(eyeR*.91))**2))+.013;return V(x,y,z)};mesh(eye,'Palpebra_superior_escultida',clothSurface(24,64,lid,{thickness:.016}),fur)}
+  const brow=new THREE.Group();brow.name='Sobrancelha_'+side;brow.position.set(side*eyeX,eyeY+.25,.58);face.add(brow);brows.push(brow);mesh(brow,'Sobrancelha',tuft(V(-side*.21,.03,0),V(side*.22,-.02,-.03),fennec?.047:.068,.03,.025),fur);
  }
  const sole=fennec?-2.67:wolf?-3.27:-2.28,paws=[];
  if(wolf){
@@ -139,7 +142,7 @@ export function buildCompanion(P,opts={}){
  }
 
   const animated=[jaw,...eyes,...eyes.map(e=>e.userData.gaze),...brows];
-  const apply=(pose={})=>{const p={jaw:0,lookX:0,lookY:0,blinkL:0,blinkR:0,wide:0,smile:0,browRaise:0,browAngry:0,...pose};jaw.rotation.x=clamp(p.jaw,0,1)*.65;eyes.forEach((eye,i)=>{eye.scale.y=Math.max(.045,1-clamp(i?p.blinkR:p.blinkL,0,1)+p.wide*.16);eye.userData.gaze.position.set(p.lookX*.05,p.lookY*.05,0)});brows.forEach((b,i)=>{b.rotation.z=(i?1:-1)*(p.browAngry*.32-p.smile*.1);b.position.y=.48+p.browRaise*.08})};
+  const apply=(pose={})=>{const p={jaw:0,lookX:0,lookY:0,blinkL:0,blinkR:0,wide:0,smile:0,browRaise:0,browAngry:0,...pose};jaw.rotation.x=clamp(p.jaw,0,1)*.65;eyes.forEach((eye,i)=>{eye.scale.y=Math.max(.045,1-clamp(i?p.blinkR:p.blinkL,0,1)+p.wide*.16);eye.userData.gaze.position.set(p.lookX*.05,p.lookY*.05,0)});brows.forEach((b,i)=>{b.rotation.z=(i?1:-1)*(p.browAngry*.32-p.smile*.1);b.position.y=eyeY+.25+p.browRaise*.08})};
   const mk=(name,fn,dur)=>{const times=[],values=animated.map(()=>({q:[],p:[],s:[]}));for(let i=0;i<=24;i++){const t=i/24*dur;times.push(t);apply(fn(t));animated.forEach((o,k)=>{values[k].q.push(...o.quaternion.toArray());values[k].p.push(...o.position.toArray());values[k].s.push(...o.scale.toArray())})}apply();return new THREE.AnimationClip(name,dur,animated.flatMap((o,k)=>[new THREE.QuaternionKeyframeTrack(o.name+'.quaternion',times,values[k].q),new THREE.VectorKeyframeTrack(o.name+'.position',times,values[k].p),new THREE.VectorKeyframeTrack(o.name+'.scale',times,values[k].s)]))};
   const rig={kind:'companion',apply,makeClips:()=>[mk('Blink',t=>({blinkL:Math.sin(t/.3*Math.PI),blinkR:Math.sin(t/.3*Math.PI)}),.3),mk('Wink_R',t=>({blinkR:Math.sin(t/.6*Math.PI)}),.6),mk('Talk',talkPose,2.4),mk('LookAround',t=>({lookX:Math.sin(t*2),lookY:Math.sin(t)}),3),...Object.entries(EXPRESSIONS).filter(([k])=>k!=='neutro').map(([name,pose])=>mk('Expr_'+name,t=>Object.fromEntries(Object.entries(pose).map(([k,v])=>[k,v*Math.sin(t/1.2*Math.PI)])),1.2))]};
   const fit={companion:true,maskGroup:wolf?null:mask,P,rig,buildRider:opts.buildRider,headBone:head,bodyGroup:body,top:fennec?2.1:wolf?1.65:1.2,ySole:sole,paws};

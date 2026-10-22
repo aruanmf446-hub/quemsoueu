@@ -261,13 +261,25 @@ function makeFaceField(P, eyes) {
       dz -= -sX * .01 * gau(ax - (mw + .02), .04) * gau(y - (ymC - .03), .05);
     }
     // planos de estrutura: zigomático (crista que sobe para a orelha), cavado abaixo dele, têmporas
-    if (P.zyg) { const zy = gau(ax - .52, .15) * gau(y - (eyeY - .17) - .25 * (ax - .52), .065); dz += P.zyg * zy; hi += 1.2 * zy * P.zyg / .02 }
+    if (P.zyg) { const zy = gau(ax - .52, P.sculptedFace?.24:.15) * gau(y - (eyeY - .17) - .25 * (ax - .52), P.sculptedFace?.14:.065); dz += P.zyg * zy; hi += .6 * zy * P.zyg / .02 }
     if (P.hollow) { const ho = gau(ax - .5, .13) * gau(y - (mY + .1), .11); dz -= P.hollow * ho; ao += .45 * ho * P.hollow / .015 }
     if (P.temple) { const te = gau(ax - .66, .12) * gau(y - (eyeY + .2), .13); dz -= P.temple * te; ao += .25 * te * P.temple / .015 }
     // ---- nariz: forma contínua — ponte → ponta alongada (sem "bolinha") → base; asas baixas e recuadas; narinas por baixo ----
     if (!noNose && ax < .42 && y < rootY + .25 && y > tipY - .3) {
       const span = rootY - tipY, q = (rootY - y) / span, qc = clamp(q, 0, 1), below = Math.max(0, (q - 1) * span);
       const bw = (.036 + .034 * qc * qc) * nW, xb = x / bw;
+      if(P.sculptedNose){
+        // Ponte larga se funde com ponta e asas elípticas. Derivadas contínuas evitam
+        // o antigo bico estreito, com degraus na base e na ponta do nariz.
+        const bridge=P.noseH*Math.pow(qc,1.25)*gau(below,P.tipR*.95)*gau(x,(.052+.030*qc)*nW);
+        const tip=(P.tipH+P.noseH*.34)*Math.exp(-((x/(P.tipR*nW))**2)-((y-tipY-.018)/(P.tipR*1.12))**2);
+        const wings=P.alaeH*gau(ax-P.alaeX*nW,.055*nW)*gau(y-tipY+.018,.051);
+        dz+=smaxS(bridge,tip,.035)-.035*.25+wings+(P.bridgeBump||0)*gau(q-.53,.25)*gau(x,bw*1.3);
+        const n2=((ax-.052*nW)/(.024*nW))**2+((y-tipY+.051)/.016)**2;
+        nostril=Math.exp(-n2*1.4)*.65;dz-=.012*nostril;
+        ao+=.12*gau(ax-.104*nW,.027)*gau(y-tipY+.022,.045);
+        hi+=.20*gau(x,P.tipR*.7)*gau(y-tipY-.028,.055);
+      }else{
       const prof = P.noseH * Math.pow(qc, P.scoop) * exp(-((below / (P.tipR * .8)) ** 2));
       dz += prof * exp(-xb * xb);
       dz += (P.bridgeBump||0)*gau(q-.55,.24)*gau(x,bw*1.1);
@@ -284,6 +296,7 @@ function makeFaceField(P, eyes) {
       nostril = exp(-n2 * 1.6) * .75; dz -= .009 * nostril;
       const under = gau(x, .07) * gau(y - (tipY - .078), .022);
       dz -= .008 * under; ao += .2 * under;
+      }
     }
     // ---- boca ----
     const t = ax / mw;
@@ -296,7 +309,8 @@ function makeFaceField(P, eyes) {
       if (y >= ym) {
         // lábio de cima: plano inclinado para a frente, mais saliente perto da borda; "rolinho" claro na borda (vermilion)
         const v = (y - ym) / Math.max(thU, .003), sh = v < .6 ? .55 + .45 * Math.sin(Math.PI * .5 * v / .6) : exp(-(((v - .6) / .6) ** 2));
-        dz += P.lipH * .85 * (thU / P.lipU) * sh * sstep(-.05, .25, v) * xf + P.lipH * .06 * gau(v - 1.0, .12) * xf;
+        const upper=P.sculptedFace?gau(v-.45,.72)*sstep(-.05,.18,v):sh*sstep(-.05,.25,v);
+        dz += P.lipH * .85 * (thU / P.lipU) * upper * xf + P.lipH * .06 * gau(v - 1.0, .12) * xf;
         lipU = (1 - sstep(.88, 1.2, v)) * sstep(.0015, .006, thU);
         hi += .18 * gau(v - 1.04, .1) * xf * sstep(.002, .01, thU);
       } else if (y > ymL) { // boca aberta: cavidade entre os lábios
@@ -304,7 +318,8 @@ function makeFaceField(P, eyes) {
       } else {
         // lábio de baixo: volume redondo (seção quase circular), mais cheio no centro
         const w = (ymL - y) / Math.max(thL, .003), r = clamp(1 - ((w - .45) / .75) ** 2, 0, 1);
-        dz += P.lipH * 1.2 * (thL / P.lipL) * r * (2 - r) * sstep(-.05, .2, w) * xf;
+        const lower=P.sculptedFace?gau(w-.43,.72):r*(2-r);
+        dz += P.lipH * 1.2 * (thL / P.lipL) * lower * sstep(-.05, .2, w) * xf;
         lipL = (1 - sstep(.78, 1.22, w)) * sstep(.0015, .006, thL);
         lipHi = gau(w - .4, .2) * gau(x, mw * .4);
       }
@@ -867,6 +882,20 @@ export function buildHead(presetId, adj, opts = {}) {
 
     const edgePt = (uN, up, dv = 0) => { const [x, y] = e.toHead(uN * e.halfW, (up ? 1 : -1) * (e.H(uN, up) + dv)); return new THREE.Vector3(x, y, surfZ(x, y) + .002) };
     const radial = (i, p) => normalAt(p.x, p.y);
+    if(P.sculptedFace)for(const up of [true,false]){
+      // Anéis anatômicos seguem a abertura exata do olho. A grade polar da cabeça
+      // permanece por baixo, sem expor os degraus de amostragem junto ao globo.
+      const NU=96,NT=8,ps=[],cs=[],ix=[],c=new THREE.Color();
+      for(let j=0;j<=NT;j++)for(let i=0;i<=NU;i++){
+        const t=j/NT,u=-1+2*i/NU,fade=cornerFn(u,up?P.peakU:P.peakL,.6);
+        const U=u*(e.halfW+.028*t),V=(up?1:-1)*(e.H(u,up)+.035*t*(.25+.75*fade)),[x,y]=e.toHead(U,V);
+        const z=surfZ(x,y)+.0015+.004*Math.sin(Math.PI*t)*fade,f=field(x,y);
+        ps.push(x,y,z);c.copy(skin).lerp(blush,clamp(f.blush*(P.blushK??.5),0,.7)).lerp(lidC,clamp(f.lid*P.lidShade*.55,0,.5)).lerp(shade,clamp(f.ao*.5,0,.6));if(PA)paint(c,x,y,z,1,f);c.toArray(cs,cs.length);
+        if(j<NT&&i<NU){const q=j*(NU+1)+i;if(up)ix.push(q,q+1,q+NU+1,q+1,q+NU+2,q+NU+1);else ix.push(q,q+NU+1,q+1,q+1,q+NU+1,q+NU+2)}
+      }
+      const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(ps,3));g.setAttribute('color',new THREE.Float32BufferAttribute(cs,3));g.setIndex(ix);g.computeVertexNormals();fixNormals(g);
+      const m=new THREE.Mesh(track(g),skinMat);m.name='Lid_Sculpt_'+(up?'U_':'L_')+(s<0?'L':'R');root.add(m);
+    }
     { // borda inferior (linha d'água) em tom de pele
       const n = 44, pts = [], rw = [];
       for (let i = 0; i <= n; i++) { const u = -1 + 2 * i / n; pts.push(edgePt(u, false)); rw.push(.0055 * Math.pow(Math.sin(Math.PI * i / n), .5) + .001) }
@@ -1021,7 +1050,15 @@ export function buildHead(presetId, adj, opts = {}) {
   // ---- interior da boca do rig (boca fechada no repouso): fundo, dentes e língua atrás dos lábios ----
   if (SLIT) {
     const zg = surfZ(0, MCv.ym(0)), cy = MCv.ym(0) - .02, depth = Math.min(.17, zg - P.cran[1] - .05);
-    { const g = new THREE.SphereGeometry(1, 40, 24); g.scale(MCv.mw * 1.4, .13, depth); g.translate(0, cy - .03, zg - depth - .015);
+    { const g = new THREE.SphereGeometry(1, 40, 24),pos=g.attributes.position,L=P.lathe?null:makeLoft(P.loft),slice={};
+      // A cavidade acompanha a largura e a curvatura deste rosto. Uma esfera
+      // larga e plana atravessava as bochechas de mandíbulas estreitas.
+      for(let i=0;i<pos.count;i++){
+        const ux=pos.getX(i),uy=pos.getY(i),uz=pos.getZ(i),y=cy-.03+uy*.105;
+        const width=L?Math.min(MCv.mw*1.12,L.at(y,slice).a*.72):MCv.mw*1.12,x=ux*width;
+        pos.setXYZ(i,x,y,surfZ(x,y)-.027-depth*(1-uz));
+      }
+      g.computeVertexNormals();
       setColors(g, (c, x, y, z) => c.set('#3c0c10').multiplyScalar(.55 + .45 * sstep(zg - depth * 2, zg, z)));
       addMesh(g, mat('#ffffff', { vertexColors: true, roughness: .6, side: THREE.BackSide }), 'Mouth_Bag') }
     const tm = mat('#f4efe6', { vertexColors: true, color: 0xffffff, roughness: .3, clearcoat: .5, side: THREE.DoubleSide });
@@ -1209,6 +1246,7 @@ export function buildHead(presetId, adj, opts = {}) {
     if (name.startsWith('Brow_')) return 'head';
     if (name.startsWith('Lashes_')) return 'lidU';
     if (name.startsWith('Lid_Rim_') || name.startsWith('LowerLash_')) return 'lidL';
+    if (name.startsWith('Lid_Sculpt_')) return 'generic';
     if (name === 'Mouth_Line') return 'line';
     if (name.startsWith('Mustache_')) return 'head';
     if (name === 'Mouth_Bag') return 'bag';

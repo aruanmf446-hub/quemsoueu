@@ -4,7 +4,25 @@
 
 O usuário determinou: **sempre subir o trabalho para a `main`**. Ao concluir uma rodada, validar, registrar as alterações e enviar à `main`, preservando alterações remotas e sem force push. Distinguir o envio do código da conclusão do deploy do site.
 
-## Rodada atual — escultura e identidade dos rostos (22/10/2026)
+## Rodada atual — reconstrução dos volumes faciais após reprovação (22/10/2026)
+
+O usuário **reprovou `499cf81`**: ainda via rostos genéricos e distantes da referência. Não apresentar a rodada anterior como solução aceita. A autorização continua sendo mudar a anatomia dos **34 personagens**, com foco na malha do rosto.
+
+Esta rodada substitui os multiplicadores do molde herdado por contornos absolutos de queixo, mandíbula, maçãs e têmpora, com proporções de crânio independentes. Olhos têm aberturas mais arredondadas, pálpebras com anéis anatômicos próprios e volumes orbitais mais largos. Narizes fundem ponte, ponta e asas por campos suaves; lábios têm transições contínuas e bocas com larguras/sorrisos próprios. Não houve mudança de iluminação nem figurino.
+
+Correções observadas nos retratos: retirar o deslocamento residual da união suave que desenhava linhas retas no campo nasal; adaptar a cavidade oral à superfície e à largura de cada mandíbula, evitando que apareça pelas bochechas. Companheiros ganharam proporções distintas de olhos/focinho e boca projetada na superfície real. Robô ganhou borda curva da tela com topologia própria. Skins da mesma pessoa continuam compartilhando a anatomia.
+
+Referência de comparação: `499cf81`, cópia imutável em `/workspace/outputs/rostos-reprovados`. Capturas em `renders/escultura-v2/antes` e `depois`; a galeria segue o mesmo contrato de 34 personagens, quatro vistas e câmeras iguais. Testes geométricos agora verificam também cavidade oral dentro da superfície e continuidade do volume nasal. A validação e a revisão final das capturas estão em andamento; **nenhum personagem tem aprovação estética**.
+
+### Passagem para outro chat, solicitada pelo usuário
+
+Checkpoint de implementação, sem aprovação estética. Passaram: `identidades-faciais.mjs /workspace/outputs/rostos-reprovados` (34 malhas alteradas, skins compartilhadas, morphs/clipes, cavidade oral e continuidade nasal), `deserto-identidades.mjs`, `cactos-hero.mjs`, `cobertura.mjs`, `tipos-fisicos.mjs`, qualidade de pele/superfícies/corpo/cabelo/tecido e `git diff --check`. A revisão piloto de arqueira, feminino intenso, feneco e robô está em `renders/escultura-v2/revisao`.
+
+No momento da passagem, o processo iniciado no terminal ainda captura a versão final dos 34 em lotes. Depois executa, em sequência, a montagem da galeria, 34 GLBs com `visuais.cjs` e Worker/expressões/cache para arqueira, veterano e feneco. **Não declarar essas etapas concluídas sem consultar os resultados.** Logs: `/tmp/escultura-retratos-finais.log`, `/tmp/escultura-glb.log` e `/tmp/escultura-worker.log`; relatórios esperados: `renders/escultura-v2/depois/relatorio.json`, `validacao/reports.json` e `worker/relatorio.json`. Terminal original: sessão `41492`; servidor local na porta 8000. Se o ambiente for outro, os renders/logs ignorados pelo Git não estarão presentes: regenerar a referência `499cf81` e as comparações usando os scripts versionados.
+
+O acesso a GitHub Pages e à API de Actions foi bloqueado pela rede deste ambiente com 403. Isso não demonstra falha do site. Código enviado à main, execução de Actions e site atualizado são estados distintos; verificar o deploy quando houver acesso.
+
+## Rodada anterior — escultura e identidade dos rostos (22/10/2026)
 
 O usuário autorizou **refinar a malha e diferenciar os rostos de todos os 34 personagens**, incluindo as bases antigas. O pedido é aproximar a anatomia e a escultura facial da linguagem da referência, sem substituir isso por iluminação, textura ou organização de roupa. A referência disponível é `.github/workflows/image.jpg`; as demais não estão disponíveis neste checkout. Não declarar fidelidade a imagens não consultadas nem aprovação estética.
 

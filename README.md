@@ -23,9 +23,9 @@ Para rodar localmente, sirva a pasta com qualquer servidor estático (ex.: `pyth
 
 ### Escultura facial e identidade
 
-Os 34 personagens têm refinamentos próprios de anatomia facial: mandíbula, queixo, maçãs, pálpebras, nariz e lábios. A malha concentra amostras nos olhos e na boca; os perfis ficam em `src/face-identities.js`. Padeiro/vigilante e feneco/montaria mantêm a identidade compartilhada de suas skins. A referência visual disponível é `.github/workflows/image.jpg`; aprovação estética continua a depender do usuário.
+Os 34 personagens têm refinamentos próprios de anatomia facial. Após a reprovação de `499cf81`, os perfis de `src/face-identities.js` passaram a definir contornos absolutos de mandíbula/queixo e proporções de crânio, com massas faciais mais distintas. Pálpebras têm anéis anatômicos próprios; ponte, ponta e asas do nariz se fundem em volumes suaves. A cavidade oral acompanha a superfície de cada rosto. Padeiro/vigilante e feneco/montaria mantêm a identidade compartilhada de suas skins. A referência visual disponível é `.github/workflows/image.jpg`; aprovação estética continua a depender do usuário.
 
-`node tests/identidades-faciais.mjs` verifica malhas, diferenças anatômicas, morphs e clipes. Para comparar duas versões, `tests/identidades-visuais.cjs` captura retratos sem cabelo/acessórios e `python3 tests/galeria-identidades.py renders/identidades` valida e monta os pares de frente, três quartos, perfil e malha sem cores, com as mesmas câmeras.
+`node tests/identidades-faciais.mjs` verifica malhas, diferenças anatômicas, continuidade nasal, encaixe da cavidade oral, morphs e clipes. Para comparar duas versões, `tests/identidades-visuais.cjs` captura retratos sem cabelo/acessórios e `python3 tests/galeria-identidades.py renders/escultura-v2` valida e monta os pares de frente, três quartos, perfil e malha sem cores, com as mesmas câmeras.
 
 Os geradores compartilhados dos 34 personagens corrigem normais nas costuras de cabelo, penas e pelagem e preservam as normais do tecido depois dos recortes. Essa camada de correções mantém as formas esculpidas e o rig. A pele filtra o microrrelevo de acordo com o tamanho do pixel, reduzindo cintilação à distância.
 

@@ -1,60 +1,62 @@
-// Escultura facial por identidade. Atua na forma, não na iluminação, roupa ou cor.
-// Skins da mesma pessoa recebem o mesmo perfil anatômico.
+// Escultura de volumes, em unidades da cabeça. Cada linha define uma anatomia completa.
+// contorno: base do queixo, meia-largura do queixo, mandíbula, maçã, têmpora, perfil frontal.
+// olhos: altura, raio, distância ao centro, abertura superior/inferior, inclinação.
+// nariz: altura da ponta, largura, ponte, projeção da ponta, raio da ponta.
+// boca: altura, meia-largura, sorriso, assimetria, espessura superior/inferior, projeção.
 const deg=x=>x*Math.PI/180;
 const profiles={
- feminine_soft:{shape:[.88,1.02,.98,.065],eyes:[.239,.349,25,-23,5],nose:[.86,.070,.058,-.37],mouth:[.224,-.68],cheek:[.061,.43,-.24,.20],chin:[.019,.17],brow:[.034,.047],lid:1.02},
- masculine_soft:{shape:[1.13,.97,1.03,.025],eyes:[.219,.366,17,-18,-1],nose:[1.14,.105,.068,-.43],mouth:[.259,-.76],cheek:[.022,.46,-.29,.19],chin:[.048,.27],brow:[.052,.020],bridge:.012},
- cute_round:{shape:[1.06,1.08,1.02,.075],eyes:[.279,.378,33,-30,-2],nose:[.90,.034,.064,-.29],mouth:[.178,-.53],cheek:[.083,.45,-.29,.24],chin:[.012,.22],brow:[.025,.040],lid:.72},
- feminine_bold:{shape:[.89,1.065,.99,.030],eyes:[.240,.354,20,-20,11],nose:[.82,.089,.050,-.385],mouth:[.254,-.68],cheek:[.042,.48,-.23,.16],chin:[.029,.16],brow:[.031,.078],zyg:.040,lid:1.18},
- old_king:{shape:[1.19,1.015,1.04,-.035],eyes:[.207,.365,12,-16,2],nose:[1.08,.132,.074,-.47],mouth:[.241,-.80],cheek:[.013,.48,-.28,.18],chin:[.064,.29],brow:[.060,.018],bridge:.025,zyg:.041},
- alchemist_villain:{shape:[.79,.97,.98,-.030],eyes:[.207,.325,12,-15,7],nose:[.90,.164,.052,-.57],mouth:[.264,-.94],cheek:[.008,.49,-.25,.15],chin:[.065,.12],brow:[.027,.078],bridge:.038,zyg:.055,lid:1.25},
- dwarf_bard:{shape:[1.15,1.06,1.02,.040],eyes:[.215,.348,22,-19,-3],nose:[1.28,.082,.112,-.35],mouth:[.223,-.59],cheek:[.093,.44,-.31,.23],chin:[.042,.28],brow:[.065,.032],lid:.86},
- sad_clown:{shape:[1.08,1.09,1,.025],eyes:[.237,.340,25,-22,-10],mouth:[.224,-.66],cheek:[.088,.44,-.33,.23],chin:[.026,.23],brow:[.028,.022],lid:.85},
- orc_warrior:{shape:[1.16,1.04,1.03,-.020],eyes:[.185,.349,14,-15,10],nose:[1.60,.068,.100,-.42],mouth:[.333,-.78],cheek:[.028,.49,-.23,.20],chin:[.080,.31],brow:[.075,.012],zyg:.050,lid:1.12},
- nana_explorer:{shape:[1.10,1.02,1.02,.085],eyes:[.260,.360,26,-24,4],nose:[1.04,.066,.071,-.35],mouth:[.258,-.65],cheek:[.069,.46,-.25,.21],chin:[.032,.24],brow:[.042,.037],lid:.98},
- moon_guardian:{shape:[.87,1.025,.99,.075],eyes:[.270,.350,27,-25,4],nose:[.77,.065,.052,-.36],mouth:[.218,-.655],cheek:[.068,.43,-.23,.19],chin:[.020,.16],brow:[.032,.055],lid:1.02},
- nico_inventor:{shape:[.91,1.10,1.025,.090],eyes:[.307,.382,33,-30,2],nose:[.85,.032,.061,-.29],mouth:[.197,-.55],cheek:[.085,.45,-.27,.22],chin:[.012,.19],brow:[.035,.039],lid:.75},
- ruby_sorceress:{shape:[.84,1.055,.98,-.020],eyes:[.254,.345,20,-22,10],nose:[.80,.089,.047,-.42],mouth:[.242,-.72],cheek:[.035,.48,-.20,.16],chin:[.040,.14],brow:[.031,.079],bridge:.009,zyg:.045,lid:1.25},
- flame_guardian:{shape:[1.17,1.035,1.05,.015],eyes:[.231,.367,17,-19,3],nose:[1.04,.111,.064,-.43],mouth:[.266,-.755],cheek:[.027,.49,-.23,.18],chin:[.069,.28],brow:[.061,.022],bridge:.017,zyg:.044,lid:1.1},
- forest_archer_f:{shape:[.90,1.045,1,.125],eyes:[.251,.345,24,-21,7],nose:[.86,.062,.055,-.34],mouth:[.244,-.625],cheek:[.060,.455,-.24,.24],chin:[.024,.17],brow:[.032,.050],zyg:.022,lid:1.16,smirk:.55},
- forest_archer_m:{shape:[.98,1.075,1.02,-.015],eyes:[.238,.375,18,-19,3],nose:[1.16,.100,.071,-.445],mouth:[.264,-.775],cheek:[.028,.48,-.20,.18],chin:[.047,.22],brow:[.055,.026],zyg:.046,lid:1.1},
- forest_guard_f:{shape:[1.14,1.01,1.025,.050],eyes:[.245,.359,22,-21,5],nose:[.96,.081,.060,-.385],mouth:[.245,-.68],cheek:[.045,.46,-.255,.19],chin:[.043,.235],brow:[.043,.027],lid:1.10},
- forest_guard_m:{shape:[1.12,.99,1.02,.075],eyes:[.243,.371,22,-20,1],nose:[1.01,.087,.068,-.39],mouth:[.253,-.715],cheek:[.043,.455,-.26,.21],chin:[.048,.25],brow:[.050,.027],lid:.94},
- forest_guard_veteran:{shape:[1.22,1.025,1.055,-.030],eyes:[.214,.365,13,-17,1],nose:[1.13,.131,.075,-.47],mouth:[.248,-.805],cheek:[.014,.485,-.25,.18],chin:[.075,.30],brow:[.069,.015],bridge:.029,zyg:.045,lid:1.18},
- forest_artificer:{shape:[.88,1.025,.99,-.020],eyes:[.229,.351,15,-18,7],nose:[.92,.120,.054,-.45],mouth:[.257,-.77],cheek:[.020,.475,-.24,.17],chin:[.057,.16],brow:[.051,.049],bridge:.022,zyg:.042,lid:1.2,smirk:.82},
- forest_princess:{shape:[.94,1.095,1.005,.135],eyes:[.276,.355,28,-27,3],nose:[.76,.047,.052,-.32],mouth:[.214,-.60],cheek:[.083,.445,-.25,.21],chin:[.018,.18],brow:[.030,.050],lid:.91},
- bread_baker:{shape:[1.18,1.06,1.025,.055],eyes:[.249,.366,24,-23,0],nose:[1.12,.079,.084,-.39],mouth:[.271,-.72],cheek:[.065,.455,-.30,.225],chin:[.040,.27],brow:[.054,.033],lid:.90}
+ feminine_soft:{contour:[-1.00,.18,.49,.76,.73,.75],eyes:[.02,.292,.354,32,-27,5],nose:[-.32,.95,.060,.102,.080],mouth:[-.64,.258,.48,.12,.039,.060,.032],cheek:[.075,.43,-.27,.27,.25],chin:[.025,.20],brow:[.034,.053,.17],round:.62},
+ masculine_soft:{contour:[-1.19,.37,.71,.77,.77,.79],eyes:[.045,.248,.365,24,-22,-2],nose:[-.40,1.35,.123,.112,.095],mouth:[-.77,.305,.08,.08,.024,.043,.029],cheek:[.026,.48,-.26,.27,.25],chin:[.070,.31],brow:[.060,.022,.17],round:.73,square:2.8},
+ cute_round:{contour:[-.80,.31,.61,.83,.78,.76],eyes:[-.025,.331,.373,39,-34,-3],nose:[-.255,1.02,.036,.085,.088],mouth:[-.51,.206,.85,.0,.030,.049,.028],cheek:[.112,.46,-.27,.32,.28],chin:[.010,.27],brow:[.027,.041,.22],round:.50},
+ feminine_bold:{contour:[-1.13,.13,.43,.80,.73,.73],eyes:[.045,.294,.356,27,-23,10],nose:[-.36,.88,.077,.100,.071],mouth:[-.73,.291,.12,.42,.045,.070,.035],cheek:[.043,.50,-.19,.28,.25],chin:[.040,.16],brow:[.032,.085,.19],round:.84},
+ old_king:{contour:[-1.25,.40,.75,.88,.78,.82],eyes:[.055,.240,.375,19,-22,1],nose:[-.47,1.46,.151,.137,.112],mouth:[-.84,.281,-.12,.08,.019,.038,.024],cheek:[.055,.51,-.37,.29,.29],chin:[.085,.34],brow:[.078,.030,.16],round:.85,square:2.9,mature:true},
+ alchemist_villain:{contour:[-1.48,.078,.31,.64,.68,.70],eyes:[.09,.240,.312,17,-22,9],nose:[-.52,1.01,.194,.106,.072],mouth:[-.99,.316,.32,.94,.016,.025,.020],cheek:[.009,.48,-.20,.24,.22],chin:[.095,.12],brow:[.031,.087,.21],round:1.10,hook:.035,mature:true},
+ dwarf_bard:{contour:[-.99,.43,.79,.90,.79,.80],eyes:[.025,.259,.354,29,-25,-5],nose:[-.31,1.45,.071,.173,.128],mouth:[-.62,.274,.92,.10,.024,.043,.027],cheek:[.115,.47,-.29,.33,.27],chin:[.050,.34],brow:[.074,.034,.18],round:.58,square:2.6},
+ sad_clown:{contour:[-1.03,.32,.64,.86,.76,.77],eyes:[.01,.291,.346,34,-30,-11],nose:[-.34,1.08,.045,.100,.085],mouth:[-.69,.240,-.70,.0,.023,.036,.024],cheek:[.104,.47,-.34,.32,.30],chin:[.035,.28],brow:[.030,.025,.22],round:.60},
+ orc_warrior:{contour:[-1.27,.48,.85,.88,.81,.89],eyes:[.06,.242,.376,22,-22,12],nose:[-.35,1.84,.060,.125,.122],mouth:[-.81,.381,-.25,.18,.025,.088,.059],cheek:[.045,.52,-.24,.29,.26],chin:[.115,.38],brow:[.092,.015,.16],round:.92,square:3.0},
+ nana_explorer:{contour:[-.98,.33,.69,.84,.77,.78],eyes:[.035,.296,.374,33,-29,1],nose:[-.30,1.18,.057,.122,.101],mouth:[-.65,.310,.60,.20,.036,.059,.032],cheek:[.106,.47,-.27,.31,.28],chin:[.038,.28],brow:[.046,.036,.18],round:.56,square:2.6},
+ moon_guardian:{contour:[-1.08,.14,.43,.73,.72,.74],eyes:[.04,.308,.343,34,-28,3],nose:[-.33,.84,.055,.092,.073],mouth:[-.70,.235,.14,.05,.036,.057,.028],cheek:[.066,.44,-.24,.28,.25],chin:[.022,.16],brow:[.030,.061,.21],round:.61},
+ nico_inventor:{contour:[-.85,.22,.48,.78,.78,.75],eyes:[-.005,.338,.383,38,-34,1],nose:[-.26,.98,.033,.088,.084],mouth:[-.54,.236,.52,.48,.025,.039,.025],cheek:[.101,.46,-.26,.30,.27],chin:[.013,.21],brow:[.037,.040,.22],round:.52},
+ ruby_sorceress:{contour:[-1.20,.12,.40,.77,.72,.72],eyes:[.07,.286,.344,26,-24,12],nose:[-.39,.87,.100,.094,.067],mouth:[-.80,.277,.05,.60,.040,.063,.032],cheek:[.030,.50,-.20,.27,.25],chin:[.057,.15],brow:[.032,.089,.21],round:.91,hook:.012},
+ flame_guardian:{contour:[-1.19,.41,.79,.82,.79,.83],eyes:[.055,.263,.375,23,-24,3],nose:[-.40,1.22,.128,.130,.098],mouth:[-.78,.326,.0,.24,.024,.044,.030],cheek:[.032,.51,-.22,.28,.25],chin:[.093,.34],brow:[.073,.026,.16],round:.78,square:3.0},
+ forest_archer_f:{contour:[-.97,.19,.49,.79,.73,.77],eyes:[.025,.302,.360,28,-24,8],nose:[-.285,.94,.049,.105,.080],mouth:[-.605,.279,.70,.48,.034,.052,.029],cheek:[.090,.47,-.24,.30,.27],chin:[.025,.20],brow:[.037,.057,.18],round:.63},
+ forest_archer_m:{contour:[-1.18,.26,.58,.80,.76,.78],eyes:[.045,.278,.374,25,-24,4],nose:[-.39,1.26,.109,.125,.094],mouth:[-.79,.309,.24,.56,.025,.045,.029],cheek:[.035,.49,-.21,.28,.25],chin:[.068,.24],brow:[.061,.032,.17],round:.78,square:2.5},
+ forest_guard_f:{contour:[-1.09,.35,.70,.77,.75,.76],eyes:[.035,.274,.363,29,-25,3],nose:[-.35,1.10,.079,.112,.089],mouth:[-.71,.279,.10,.09,.029,.047,.029],cheek:[.052,.46,-.27,.29,.26],chin:[.054,.29],brow:[.047,.030,.17],round:.67,square:2.7},
+ forest_guard_m:{contour:[-1.05,.35,.68,.78,.76,.77],eyes:[.03,.283,.379,30,-27,-1],nose:[-.33,1.18,.074,.117,.096],mouth:[-.69,.304,.70,.10,.026,.047,.029],cheek:[.065,.47,-.28,.30,.27],chin:[.058,.29],brow:[.055,.028,.18],round:.59,square:2.7},
+ forest_guard_veteran:{contour:[-1.26,.42,.79,.80,.80,.83],eyes:[.065,.244,.373,19,-23,0],nose:[-.46,1.34,.152,.134,.105],mouth:[-.84,.292,-.18,.14,.020,.036,.025],cheek:[.018,.51,-.30,.27,.27],chin:[.105,.35],brow:[.082,.019,.16],round:.88,square:3.0,hook:.018,mature:true},
+ forest_artificer:{contour:[-1.22,.17,.45,.72,.72,.73],eyes:[.075,.259,.344,22,-25,7],nose:[-.42,1.02,.140,.110,.080],mouth:[-.82,.301,.16,.83,.022,.036,.025],cheek:[.025,.48,-.21,.27,.24],chin:[.079,.17],brow:[.058,.057,.19],round:.87,hook:.027},
+ forest_princess:{contour:[-.92,.20,.53,.83,.76,.76],eyes:[.005,.320,.365,37,-32,2],nose:[-.275,.86,.037,.090,.079],mouth:[-.57,.229,.52,.08,.033,.052,.028],cheek:[.107,.46,-.24,.31,.28],chin:[.017,.20],brow:[.031,.055,.21],round:.53},
+ bread_baker:{contour:[-1.07,.38,.74,.89,.79,.80],eyes:[.025,.284,.377,31,-28,-2],nose:[-.34,1.35,.071,.145,.115],mouth:[-.72,.342,.72,.16,.030,.051,.030],cheek:[.105,.49,-.32,.33,.30],chin:[.051,.32],brow:[.064,.035,.18],round:.56,square:2.6}
 };
 profiles.bread_vigilante=profiles.bread_baker;
-const lips={feminine_soft:[.041,.058,.037],masculine_soft:[.028,.048,.030],cute_round:[.035,.050,.033],feminine_bold:[.052,.067,.044],old_king:[.021,.039,.026],alchemist_villain:[.016,.027,.021],dwarf_bard:[.022,.042,.027],sad_clown:[.026,.036,.027],orc_warrior:[.023,.075,.055],nana_explorer:[.041,.062,.039],moon_guardian:[.040,.058,.036],nico_inventor:[.027,.040,.027],ruby_sorceress:[.044,.062,.041],flame_guardian:[.026,.047,.032],forest_archer_f:[.035,.050,.032],forest_archer_m:[.027,.046,.031],forest_guard_f:[.036,.051,.034],forest_guard_m:[.027,.048,.032],forest_guard_veteran:[.023,.041,.030],forest_artificer:[.024,.040,.028],forest_princess:[.035,.051,.032],bread_baker:[.032,.053,.035]};
-lips.bread_vigilante=lips.bread_baker;
+const skulls={feminine_soft:[.79,.77,.83],masculine_soft:[.84,.79,.86],cute_round:[.87,.80,.87],feminine_bold:[.78,.83,.82],old_king:[.86,.83,.87],alchemist_villain:[.73,.91,.80],dwarf_bard:[.88,.74,.87],sad_clown:[.85,.79,.85],orc_warrior:[.91,.76,.93],nana_explorer:[.86,.74,.87],moon_guardian:[.77,.85,.83],nico_inventor:[.84,.83,.85],ruby_sorceress:[.76,.86,.82],flame_guardian:[.87,.77,.89],forest_archer_f:[.81,.76,.85],forest_archer_m:[.82,.81,.86],forest_guard_f:[.82,.76,.84],forest_guard_m:[.84,.77,.85],forest_guard_veteran:[.86,.79,.89],forest_artificer:[.76,.84,.82],forest_princess:[.84,.82,.86],bread_baker:[.88,.76,.88]};
+skulls.bread_vigilante=skulls.bread_baker;
 export const FACE_IDENTITIES=profiles;
 
 export function refineFaceIdentities(presets){
  for(const [id,f]of Object.entries(profiles)){
-  const p=presets[id],L=p.loft,[jaw,cheek,skull,lift]=f.shape,gauss=(x,w)=>Math.exp(-((x/w)**2));
-  p.cran=p.cran.slice();p.cran[2]*=skull;
-  p.loft={...L,y:L.y.map(y=>y<-.15?y+lift*(-.15-y)/(-.15-L.y[0]):y),a:L.a.map((a,i)=>a*(1+(jaw-1)*gauss(L.y[i]+.77,.25)+(cheek-1)*gauss(L.y[i]+.28,.23))),zf:L.zf.slice(),zb:L.zb.slice()};
-  const [re,ex,up,low,tilt]=f.eyes;Object.assign(p,{Re:re,eyeX:ex,openU:deg(up),openL:deg(low),tilt:deg(tilt)});
-  if(f.nose){const [w,h,r,y]=f.nose;Object.assign(p,{noseW:w,noseH:h,tipR:r,noseTipY:y})}
-  [p.mouthW,p.mouthY]=f.mouth;[p.cheekH,p.cheekX,p.cheekY,p.cheekW]=f.cheek;[p.chinH,p.chinW]=f.chin;[p.browTh,p.browArch]=f.brow;
-  p.cheekTall=.19;[p.lipU,p.lipL,p.lipH]=lips[id];
-  p.bridgeBump=f.bridge||0;p.upperLidPower=f.lid||1;p.lowerLidPower=(f.lid||1)*.92;if(f.zyg!==undefined)p.zyg=f.zyg;if(f.smirk!==undefined)p.smirk=f.smirk;
-  p.irisAng=deg(id==='cute_round'||id==='nico_inventor'?36:id==='old_king'||id==='forest_guard_veteran'?27:id==='ruby_sorceress'||id==='feminine_bold'?30:id==='forest_princess'||id==='moon_guardian'?34:31);
+  const p=presets[id],[bottom,chin,jaw,cheek,temple,front]=f.contour;
+  const [rx,ry,rz]=skulls[id],top=p.cran[0]+p.cran[3];p.cran=p.cran.slice();p.cran[0]=top-ry;p.cran[2]=rx;p.cran[3]=ry;p.cran[4]=rz;
+  // Silhueta desenhada diretamente: não são multiplicadores do mesmo rosto herdado.
+  p.loft={y:[bottom,bottom+.075,bottom+.20,bottom*.64,-.34,-.12,.08,.32],a:[chin*.58,chin,chin*.55+jaw*.45,jaw,cheek,temple,temple*.94,.43],zf:[front-.12,front-.065,front-.035,front-.01,front+.01,front-.015,.68,.43],zb:[.34,.24,.08,-.13,-.26,-.29,-.30,-.30],n:f.square||2.2,cb:.10,ct:.17,k:.20,blur:.075};
+  const [eyeY,Re,eyeX,up,low,tilt]=f.eyes;Object.assign(p,{eyeY,Re,eyeX,openU:deg(up),openL:deg(low),tilt:deg(tilt),openW:deg(62),peakU:-.12,peakL:.10,upperLidPower:f.round,lowerLidPower:f.round*.88,sink:Re*.77,domeK:.10});
+  [p.noseTipY,p.noseW,p.noseH,p.tipH,p.tipR]=f.nose;p.sculptedNose=true;p.bridgeBump=f.hook||0;p.alaeX=.070;p.alaeH=p.tipH*.30;
+  [p.mouthY,p.mouthW,p.smile,p.smirk,p.lipU,p.lipL,p.lipH]=f.mouth;
+  [p.cheekH,p.cheekX,p.cheekY,p.cheekW,p.cheekTall]=f.cheek;[p.chinH,p.chinW]=f.chin;[p.browTh,p.browArch,p.browGap]=f.brow;
+  // Pálpebra, órbita e maçã formam volumes largos e contínuos. Evita a crista diagonal sob o olho.
+  Object.assign(p,{sculptedFace:true,socket:f.mature?.024:.012,crease:f.mature?.010:.005,creaseGap:.046,orbit:f.mature?.019:.009,lidFold:.006,lowerRoll:.003,zyg:f.mature?.015:.005,hollow:f.mature?.017:.003,temple:.005,browRidge:f.mature?.040:.016,fold:f.mature?.65:.18,muzzle:.022,irisAng:deg(f.mature?29:33),lash:Math.min(p.lash,.015),flick:Math.min(p.flick,.025),lashLen:Math.min(p.lashLen,.060)});
   p.faceIdentity=id==='bread_vigilante'?'bread_baker':id;
  }
- // O molde anatômico do cacto agora vive no preset, deixando cada rosto realmente independente.
- for(const [id,face]of Object.entries({
-  frontier_cowboy:{eyeX:.326,Re:.273,openU:deg(12),openL:deg(-28),tilt:deg(-7),browTh:.075,browSlope:.044,mouthY:-.43,mouthW:.355,smile:.13,smirk:.80,cheekH:.022},
-  cactus_soldier:{eyeX:.338,Re:.260,openU:deg(18),openL:deg(-24),tilt:deg(3),browTh:.090,browSlope:-.018,mouthY:-.45,mouthW:.290,smile:-.20,smirk:0,cheekH:.042},
-  cactus_soldier_large:{eyeX:.358,Re:.251,openU:deg(13),openL:deg(-21),tilt:deg(7),browTh:.105,browSlope:.040,mouthY:-.48,mouthW:.325,smile:-.32,smirk:0,cheekH:.061}
+ // Vegetais: massas e relações faciais também próprias, preservando as espécies.
+ for(const [id,f]of Object.entries({
+  frontier_cowboy:{r:[.66,.76,.80,.75,.63],eyeX:.327,Re:.300,openU:deg(23),openL:deg(-31),tilt:deg(-8),browTh:.076,browSlope:.044,mouthY:-.43,mouthW:.372,smile:.24,smirk:.86,cheekH:.055},
+  cactus_soldier:{r:[.74,.82,.82,.77,.67],eyeX:.338,Re:.288,openU:deg(26),openL:deg(-28),tilt:deg(5),browTh:.095,browSlope:-.018,mouthY:-.48,mouthW:.285,smile:-.35,smirk:0,cheekH:.072},
+  cactus_soldier_large:{r:[.82,.91,.91,.83,.70],eyeX:.373,Re:.275,openU:deg(20),openL:deg(-25),tilt:deg(9),browTh:.118,browSlope:.040,mouthY:-.53,mouthW:.352,smile:-.48,smirk:0,cheekH:.095}
  })){
-  const p=presets[id];Object.assign(p,{lathe:{cz:-.04,zs:.88,y:[-1.45,-.85,-.2,.5,1.02],r:[.76,.80,.82,.81,.72],top:1.02,rc:.48},neck:[.78,-.65,-.04,-.85,-.04,.24],cran:[.3,-.04,.82,1.05,.72,.72,2],pattern:{...p.pattern,n:10,depth:.047,top:1.3,bot:-1.1,faceFade:.6},spines:{...p.spines,len:.105,r:.013,y0:-.72,y1:1.03,dy:.26},eyeY:.20,peakU:.08,browGap:.14,browLen:1.12,skin:'#668f2b',patternColor:['#365b16','#a5bf51'],lidShadow:'#47651f',...face,faceIdentity:id});
-  if(id==='frontier_cowboy')p.lathe.r=[.76,.79,.80,.79,.69];
-  if(id==='cactus_soldier_large')p.lathe.r=[.76,.83,.88,.86,.75];
+  const {r,...face}=f,p=presets[id];Object.assign(p,{lathe:{cz:-.04,zs:.88,y:[-1.45,-.85,-.2,.5,1.02],r,top:1.02,rc:.48},neck:[.78,-.65,-.04,-.85,-.04,.24],cran:[.3,-.04,.82,1.05,.72,.72,2],pattern:{...p.pattern,n:10,depth:.047,top:1.3,bot:-1.1,faceFade:.6},spines:{...p.spines,len:.105,r:.013,y0:-.72,y1:1.03,dy:.26},eyeY:.20,peakU:-.12,peakL:.1,upperLidPower:.6,lowerLidPower:.55,browGap:.14,browLen:1.12,skin:'#668f2b',patternColor:['#365b16','#a5bf51'],lidShadow:'#47651f',cheekW:.29,cheekTall:.27,...face,faceIdentity:id});
  }
- Object.assign(presets.cactus_cowboy,{Re:.228,openU:deg(16),openL:deg(-25),browTh:.064,mouthW:.285,smirk:.62,faceIdentity:'cactus_cowboy'});
- Object.assign(presets.pepper_king,{Re:.244,eyeX:.31,openU:deg(21),openL:deg(-20),browTh:.068,browArch:.043,mouthW:.285,cheekH:.055,faceIdentity:'pepper_king'});
- Object.assign(presets.chili_bandit,{Re:.229,eyeX:.255,openU:deg(37),openL:deg(-33),browArch:.076,mouthW:.405,faceIdentity:'chili_bandit'});
+ Object.assign(presets.cactus_cowboy,{Re:.270,openU:deg(27),openL:deg(-30),upperLidPower:.6,lowerLidPower:.55,browTh:.068,mouthW:.323,smirk:.78,cheekH:.055,cheekW:.29,cheekTall:.25,faceIdentity:'cactus_cowboy'});
+ Object.assign(presets.pepper_king,{Re:.281,eyeX:.315,openU:deg(32),openL:deg(-29),upperLidPower:.55,lowerLidPower:.5,browTh:.074,browArch:.044,mouthW:.319,cheekH:.085,cheekW:.30,cheekTall:.28,faceIdentity:'pepper_king'});
+ Object.assign(presets.chili_bandit,{Re:.265,eyeX:.271,openU:deg(39),openL:deg(-35),upperLidPower:.6,lowerLidPower:.55,browArch:.080,mouthW:.432,smirk:.7,faceIdentity:'chili_bandit'});
  for(const id of ['paysandu_wolf','ruby_raven','desert_fennec','cowboy_on_fennec','robot_ball'])presets[id].faceIdentity=id==='cowboy_on_fennec'?'desert_fennec':id;
 }

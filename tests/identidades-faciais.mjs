@@ -20,6 +20,13 @@ for(const id of PRESET_ORDER){
    assert.equal(root.geometry.morphAttributes.position.length,11,id+': blendshapes perdidos');const p=root.geometry.attributes.position;
    const width=y=>{let w=0;for(let i=0;i<head.fit.skinN;i++)if(Math.abs(p.getY(i)-y)<.035&&p.getZ(i)>.05)w=Math.max(w,Math.abs(p.getX(i)));return w};
    metrics.set(id,{jaw:width(-.72),cheek:width(-.24),nose:head.fit.surfZ(0,head.params.noseTipY)});
+   const bag=head.group.getObjectByName('Mouth_Bag');
+   if(bag){const a=bag.geometry.attributes.position;for(let i=0;i<a.count;i++)assert(a.getZ(i)<head.fit.surfZ(a.getX(i),a.getY(i))-.015,id+': cavidade oral atravessou a superfície facial')}
+   if(head.params.sculptedNose){
+    const z=head.fit.surfZ,tip=head.params.noseTipY,root=head.params.eyeY-.02;
+    // Regressão das linhas retas que a união suave gerava ao entrar/sair do campo nasal.
+    for(const [x,y,dx,dy]of [[.42,tip,.0001,0],[0,root+.25,0,.0001],[.25,tip-.3,0,.0001]])assert(Math.abs(z(x+dx,y+dy)-z(x-dx,y-dy))<.002,id+': descontinuidade no volume nasal');
+   }
   }
   if(id!=='robot_ball')assert.equal(head.rig.makeClips().length,12,id+': clipes faciais perdidos');
   if(baseline){const old=baseline.buildHead(id,{}, {quality:.35,export:true});try{assert.notEqual(hash,hashGeometry(face(old)),id+': rosto não foi refinado');changes.push(id)}finally{old.dispose()}}

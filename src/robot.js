@@ -17,12 +17,16 @@ function drawFace(cv, P, pose = {}) {
   const stroke = (fn, w, color, blur) => { c.save(); c.strokeStyle = color; c.lineWidth = w; c.lineCap = 'round'; c.shadowColor = color; c.shadowBlur = blur; c.beginPath(); fn(); c.stroke(); c.restore() };
   const fill = (fn, color, blur) => { c.save(); c.fillStyle = color; c.shadowColor = color; c.shadowBlur = blur; c.beginPath(); fn(); c.fill(); c.restore() };
   const happy = P.expression === 'happy' && p.smile >= 0 && !p.wide && !p.browAngry;
-  const ox = p.lookX * W * .05, oy = -p.lookY * H * .06, ex = W * .27, ey = H * .47 + oy, r = H * .17 * (1 + p.wide * .15);
+  const ox = p.lookX * W * .05, oy = -p.lookY * H * .06, ex = W * .245, ey = H * .43 + oy, r = H * .19 * (1 + p.wide * .15);
   for (const sx of [-1, 1]) {
     const x = W / 2 + sx * ex + ox, blink = Math.min(1, (sx < 0 ? p.blinkL : p.blinkR) + p.squint * .45);
     if (blink > .85) stroke(() => { c.moveTo(x - r * .8, ey + r * .1); c.quadraticCurveTo(x, ey + r * .35, x + r * .8, ey + r * .1) }, H * .06, glow, 30);
     else if (happy) stroke(() => c.arc(x, ey + r * .45, r, Math.PI * 1.12, Math.PI * 1.88), H * .07, glow, 30);
-    else fill(() => c.ellipse(x, ey, r * .55, r * .8 * (1 - blink), 0, 0, Math.PI * 2), glow, 30);
+    else {
+      fill(() => c.ellipse(x, ey, r * .63, r * .88 * (1 - blink), sx * -.12, 0, Math.PI * 2), glow, 24);
+      fill(() => c.ellipse(x + sx*r*.13, ey+r*.07, r*.24, r*.38*(1-blink), 0, 0, Math.PI*2), '#122731', 0);
+      fill(() => c.ellipse(x-r*.19, ey-r*.30, r*.13, r*.12, 0, 0, Math.PI*2), '#ffffff', 6);
+    }
     if (p.browAngry || p.browRaise) { // "sobrancelha" de luz
       const by = ey - r * (1.25 + p.browRaise * .35), tilt = sx * p.browAngry * r * .45;
       stroke(() => { c.moveTo(x - r * .7, by - tilt); c.lineTo(x + r * .7, by + tilt) }, H * .035, glow, 20);
@@ -57,7 +61,7 @@ export function buildRobot(P, opts = {}) {
       r -= .035 * sstep(1.15, .95, sd); // recesso da tela
       // Maçãs e queixo do casco enquadram o rosto, em vez de uma esfera uniforme.
       const front=sstep(.1,.7,z)*sstep(.85,1.25,sd);
-      r+=front*(.035*Math.exp(-(((y+.32)/.30)**2)-((Math.abs(x)-.58)/.20)**2)-.04*Math.exp(-(((y+.76)/.20)**2)));
+      r+=front*(.095*Math.exp(-(((y+.34)/.32)**2)-((Math.abs(x)-.60)/.24)**2)-.105*Math.exp(-(((y+.78)/.23)**2)));
       const seamA = Math.abs(v - (SY - SH - .13)), seamB = Math.abs(Math.abs(u) - 1.55);
       r -= .012 * sstep(.02, .005, seamA) + .01 * sstep(.02, .005, seamB) * sstep(.9, .5, Math.abs(v));
       p.setXYZ(i, x * r, y * r, z * r);
@@ -85,6 +89,17 @@ export function buildRobot(P, opts = {}) {
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals(); unitNormals(g);
     const tex = track(faceTexture(P)); screenTex = tex;
     add(g, track(new THREE.MeshPhysicalMaterial({ color: 0x050608, roughness: .12, clearcoat: 1, clearcoatRoughness: .05, emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 1.5, name: 'Screen' })), 'Screen');
+  }
+  { // Borda da tela com topologia própria: acompanha a janela curva sem degraus da grade esférica.
+    const p=[],idx=[],NA=160,NR=10;
+    for(let i=0;i<=NR;i++)for(let j=0;j<=NA;j++){
+      const t=i/NR,a=j/NA*Math.PI*2,ca=Math.cos(a),sa=Math.sin(a),k=(Math.abs(ca)**4+Math.abs(sa)**4)**-.25;
+      const u=ca*k*(SW-.006+t*.082),v=SY+sa*k*(SH-.005+t*.063),r=1.002+.025*Math.sin(Math.PI*t);
+      p.push(Math.sin(u)*Math.cos(v)*r,Math.sin(v)*r,Math.cos(u)*Math.cos(v)*r);
+      if(i<NR&&j<NA){const q=i*(NA+1)+j;idx.push(q,q+NA+1,q+1,q+1,q+NA+1,q+NA+2)}
+    }
+    const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(p,3));g.setIndex(idx);g.computeVertexNormals();
+    add(g,track(new THREE.MeshPhysicalMaterial({color:shellC,roughness:.42,clearcoat:.35,name:'ScreenBezel'})),'Borda_tela');
   }
   // "orelhas": discos laterais com anel de luz
   const glowMat = track(new THREE.MeshBasicMaterial({ color: col(P.glow || '#5fe3ff'), name: 'Glow' }));
