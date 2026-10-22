@@ -145,24 +145,20 @@ export function buildHeroForest(c){
       emit('cape','veil',clothSurface(34,80,drape,{closed:true,thickness:.012*W}));
       for(const t of [0,1])line('cape','trim',Array.from({length:81},(_,i)=>drape(t,i/80)),t===0?.023*W:.012*W);
       const p=drape(.02,.25);ball('cape','gem',p,.055*W,.8,1.1,.6);
+      for(let petal=0;petal<6;petal++){const a=petal*PI/3,leaf=leafGeo(.060*W,.008*W);leaf.rotateZ(a);leaf.translate(p.x+Math.sin(a)*.040*W,p.y+Math.cos(a)*.040*W,p.z+.025*W);emit('cape','secondary',leaf);}ball('cape','trim',p.clone().add(V(0,0,.045*W)),.021*W);
     }
     const skirt=garment('Saia_inferior_princesa','secondary','lower',{top:Y(.33),bottom:ySole+.075*W,t:.06*W,sleeve:null,env:{ease:.075*W,hang:.25,flareFrom:Y(.36),flare:.40,folds:.065*W,foldN:17,foldTwist:.35,smooth:14}});
     const surface=skirt.env;
     for(const s of [-1,1]){
-      const cp=hanging('upper','accent',g.env,.115,.342,s*.60,.47,{tip:0,flare:0,rag:0,fold:0,taper:.78});
+      const cp=(t,u)=>{const a=s*(.34+u*.48)*lerp(1,.78,t),q=surfAt(g.solid,bodiceTop,a),top=bodiceTop+heart(Math.abs(q.x),q.z)-.025*W;return surfAt(g.env,lerp(top,Y(.342),t),a,.045*W);};
+      emit('upper','accent',clothSurface(42,24,cp,{thickness:.018*W}));
       for(const e of [0,1])line('upper','trim',Array.from({length:41},(_,i)=>cp(i/40,e)),.012*W);
       for(let i=0;i<3;i++)glyph('upper',g.env,.18+i*.05,s*(.55+.03*i),.06*W);
     }
     // Pétalas de tecido com três comprimentos criam a saia em cascata.
     for(let layer=0;layer<3;layer++)for(let i=0;i<9;i++){
-      const a=-PI+2*PI*(i+.5*(layer%2))/9,width=.74,pt=hanging('lower',layer%2?'secondary':'accent',surface,.335+layer*.025,.96-layer*.15,a,width,{tip:.15,rag:.004,flare:.04+.035*layer,taper:.77,fold:.022,hem:true,lift:.10+.10*layer});
+      const a=-PI+2*PI*(i+.5*(layer%2))/9,width=.64,length=.94-layer*.12+.050*Math.sin(a*1.7+layer*.9)+.028*Math.cos(a*3),pt=hanging('lower',layer%2?'secondary':'accent',surface,.335+layer*.012,length,a,width,{tip:.14+.035*Math.sin(i*2),rag:.004,flare:.04+.035*layer,taper:.73,fold:.028,hem:true,lift:.10+.10*layer});
       if(layer===0&&i%2===0)embroidery('lower',pt,.105*W,.68,.5,'leaf');
-    }
-    for(const side of [-1,1]){
-      for(let i=0;i<3;i++){
-        const pt=hanging('cape',i%2?'veil':'secondary',surface,.14+i*.10,.88-i*.07,side*(1.35+.18*i),.68,{tip:.22,flare:.12+.06*i,taper:.5,fold:.045,lift:.40+.065*i});
-        embroidery('cape',pt,.11*W,.65,.5,'leaf');
-      }
     }
     leafBelt(g.solid,true);mantle((x,y,z)=>Math.min(g.env(x,y,z),surface(x,y,z)-.09*W),false);
     for(const side of [-1,1]){
