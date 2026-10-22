@@ -78,6 +78,7 @@ import {PRESETS,PRESET_ORDER,FAMILY_ORDER} from './src/presets.js';
 import {EXPRESSIONS,NEUTRAL,talkPose} from './src/rig.js';
 import {buildBody,headScale,normalizeBuild,BODIES} from './src/body.js';
 import {buildClothes,OUTFITS,CLOTH_COLORS,CLOTH_CHANNELS,outfitColors,CLOTH_SLOTS,pieceOptions,pieceSelection} from './src/clothes.js';
+import {heroStudio} from './src/hero-studio.js';
 import {defaultLook,buildLook,attachLook,headOpts,skinPalette,HAIR_STYLES,HAIR_COLORS,ACCESSORIES,ACC_SLOTS,ACC_COLORS} from './src/look.js';
 const host=document.getElementById('stage'),scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(30,1,.05,100);
 const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});
@@ -112,6 +113,7 @@ let activeClothSlot='upper',editor=null;
 const statusEl=document.getElementById('status');
 function busy(msg,fn){statusEl.textContent=msg;requestAnimationFrame(()=>setTimeout(()=>{fn();statusEl.textContent=PRESETS[presetId].label},0))}
 function rebuildHead(){
+  heroStudio(scene,renderer,presetId);
   el('bodyFeedback').textContent='';
   if(clothesObj){clothesObj.dispose();clothesObj=null}
   if(current){scene.remove(current.root);if(current.body)current.body.geo.dispose();current.dispose()}if(lookObj){lookObj.dispose();lookObj=null}
