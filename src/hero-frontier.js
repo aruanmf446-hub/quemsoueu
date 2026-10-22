@@ -15,7 +15,9 @@ export function buildHeroFrontier(C){
     g=garment('Corselete_aberto_do_deserto','leather','upper',{top:yN+.015,bottom:hem,t:.05*W,open:.72,openTaper:.75,hollow:true,shoulderPad:.12,env:{ease:.035*W,hang:.45,cinch:waist,cinchK:.82,flareFrom:waist,flare:.12}});
     edgeTube(g,'open','trim','upper',.018*W);edgeTube(g,'arm','trim','upper',.018*W);
   }else{
-    shirt=garment(human?'Camisa_negra_da_chama':'Camisa_de_linho','secondary','upper',{top:yN+(human?.045:-.045)*W,bottom:hem,t:.045*W,sleeve:human?'forearm':'short',short:.72,puff:.045*W,sleeveEase:.035*W,vneck:human?.03:.12,env:{ease:.033*W,hang:.55,cinch:waist,cinchK:.86,flareFrom:waist,flare:.10,folds:.018*W}});
+    // A camisa passa por cima das tampas dos ombros, por dentro do lenço. A barra da gola
+    // não pode terminar abaixo delas e deixar pele no vão entre a camisa e o colete aberto.
+    shirt=garment(human?'Camisa_negra_da_chama':'Camisa_de_linho','secondary','upper',{top:yN+(human?.045:.11)*W,bottom:hem,t:.045*W,sleeve:human?'forearm':'short',short:.72,puff:.045*W,sleeveEase:.035*W,vneck:human?.03:.12,env:{ease:.033*W,hang:.55,cinch:waist,cinchK:.86,flareFrom:waist,flare:.10,folds:.018*W}});
     sleeveCuffs(shirt,'upper',human?'accent':'secondary',.11*W);
     g=garment(human?'Casaca_negra_com_abas_rubi':'Colete_de_couro_recortado',human?'secondary':'fabric','upper',{top:yN+.04,bottom:Y(human?.415:.43),t:.065*W,sleeve:null,open:human?.33:.26,openTaper:human?.62:.72,hollow:true,over:shirt.solid,overGap:.035*W,shoulderPad:.08,env:{ease:.065*W,hang:.5,cinch:waist,cinchK:human?.68:.93,flareFrom:waist,flare:.12},hemCurve:human?.12*W:.045*W});
     edgeTube(g,'open','trim','upper',.012*W);edgeTube(g,'arm','leather','upper',.02*W);
