@@ -6,32 +6,16 @@ on:
     paths:
       - .github/workflows/validar-menu.yml
       - index.html
-      - src/editor.js
-      - src/editor.css
-      - src/previews.js
-      - src/preview-spec.js
-      - src/preview-worker.js
-      - src/fabric.js
-      - src/outfits.js
-      - tests/figurinos.mjs
-      - tests/ajuste-roupas.mjs
-      - tests/controles-corpo.cjs
-      - tests/corpo-visivel.cjs
-      - src/companions.js
-      - src/lunar.js
-      - src/frontier.js
-      - tests/deserto.cjs
-      - tests/deserto-identidades.mjs
-      - src/forest.js
-      - tests/floresta.cjs
-      - tests/reino-lua.cjs
-      - tests/menu-previas.cjs
-      - tests/visuais.cjs
-      - tests/visuais-tipos.cjs
+      - 'src/**'
+      - 'tests/**'
   workflow_dispatch:
 
 permissions:
   contents: read
+
+concurrency:
+  group: validar-atelie-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   menu:
@@ -74,13 +58,13 @@ jobs:
           node tests/controles-corpo.cjs
           node tests/corpo-visivel.cjs
       - name: Conferir os personagens do Reino da Lua
-        run: node tests/reino-lua.cjs
+        run: ATELIE_PERSONAGENS=paysandu_wolf,nana_explorer,moon_guardian,nico_inventor,ruby_sorceress,ruby_raven,flame_guardian node tests/refino-lotes.cjs reino-lua.cjs
       - name: Conferir os personagens da floresta
-        run: node tests/floresta.cjs
+        run: ATELIE_PERSONAGENS=forest_archer_f,forest_archer_m,forest_guard_f,forest_guard_m,forest_guard_veteran,forest_artificer,forest_princess ATELIE_RENDERS=renders/floresta node tests/refino-lotes.cjs reino-lua.cjs
       - name: Conferir skins do deserto e montaria
         run: |
           node tests/deserto-identidades.mjs
-          node tests/deserto.cjs
+          ATELIE_PERSONAGENS=frontier_cowboy,bread_baker,bread_vigilante,cactus_soldier,cactus_soldier_large,desert_fennec,cowboy_on_fennec ATELIE_RENDERS=renders/deserto node tests/refino-lotes.cjs reino-lua.cjs
       - name: Registrar resultado no GitHub Actions
         if: always()
         run: |
@@ -132,8 +116,10 @@ jobs:
             sleep 1
           done
           exit 1
-      - name: Conferir os 33 personagens, roupas, rig e GLB
-        run: timeout 48m node tests/visuais.cjs
+      - name: Conferir os 34 personagens, roupas, rig e GLB
+        run: |
+          atelie_ids=$(node --input-type=module -e "import {PRESET_ORDER} from './src/presets.js'; process.stdout.write(PRESET_ORDER.join(','))")
+          ATELIE_PERSONAGENS="$atelie_ids" timeout 48m node tests/refino-lotes.cjs visuais.cjs
       - name: Disponibilizar capturas de frente e 3/4
         if: always()
         uses: actions/upload-artifact@v4
@@ -146,9 +132,28 @@ jobs:
           retention-days: 30
 
   malhas:
-    name: Geometria preservada e 84 verificações de tipos físicos
+    name: Geometria, cores, cache e cobertura — ${{ matrix.grupo }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - grupo: originais-a
+            ids: feminine_soft,masculine_soft,old_king,cute_round,feminine_bold,alchemist_villain,dwarf_bard
+          - grupo: originais-b
+            ids: sad_clown,orc_warrior,cactus_cowboy,pepper_king,chili_bandit,robot_ball
+          - grupo: lua
+            ids: nana_explorer,moon_guardian,nico_inventor,ruby_sorceress
+          - grupo: floresta
+            ids: forest_archer_f,forest_archer_m,forest_guard_f,forest_guard_m,forest_guard_veteran,forest_artificer,forest_princess
+          - grupo: deserto
+            ids: frontier_cowboy,bread_baker,bread_vigilante,cactus_soldier,cactus_soldier_large
+          - grupo: companheiros-e-chama
+            ids: paysandu_wolf,ruby_raven,desert_fennec,cowboy_on_fennec,flame_guardian
+    env:
+      ATELIE_PERSONAGENS: ${{ matrix.ids }}
+      NODE_OPTIONS: --max-old-space-size=6144
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -157,4 +162,13 @@ jobs:
       - name: Instalar Three.js
         run: npm install --no-save --package-lock=false --no-audit --no-fund three@0.180.0
       - name: Conferir faces, normais, materiais, tipos e cache
-        run: node tests/figurinos.mjs
+        run: |
+          set -o pipefail
+          node tests/figurinos.mjs | tee figurinos-${{ matrix.grupo }}.log
+      - name: Preservar relatório de geometria
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: geometria-${{ matrix.grupo }}
+          path: figurinos-${{ matrix.grupo }}.log
+          retention-days: 30
