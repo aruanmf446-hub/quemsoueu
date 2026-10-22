@@ -64,7 +64,7 @@ export function buildCompanion(P,opts={}){
    const rim=[];for(let i=0;i<=72;i++){const a=i/72*2*PI;rim.push(V(side*.32+Math.cos(a)*.258,.23+Math.sin(a)*.272,.67-.025*Math.cos(a)*side+.018*Math.sin(a)))}mesh(mask,'Orbita_entalhada',tube(rim,.022),light);
    const ledge=[];for(let i=0;i<=30;i++){const t=i/30;ledge.push(V(side*(.07+.55*t),.54+.065*Math.sin(PI*t)-.055*t,.66+.028*Math.sin(PI*t)))}mesh(mask,'Crista_fina_sobrolho',tube(ledge.map(p=>V(p.x,p.y,boneFront(p.x,p.y)+.006)),.013),light);
    const cracks=[[V(side*.64,.62,.59),V(side*.58,.69,.61),V(side*.62,.77,.57)],[V(side*.53,-.04,.69),V(side*.59,-.11,.64),V(side*.58,-.20,.59)],[V(side*.14,.79,.62),V(side*.20,.73,.66),V(side*.18,.67,.69)]];
-   const ink=material('Fissuras_osso','#8b705d');for(const line of cracks){const projected=line.map(p=>V(p.x,p.y,boneFront(p.x,p.y)+.004));mesh(mask,'Fissura_mascara',tube(projected,.0032),ink);}
+   const ink=material('Fissuras_osso','#8b705d');for(const line of cracks){const projected=line.map(p=>V(p.x,p.y,boneFront(p.x,p.y)+.004)).filter(p=>relief(p.x,p.y,p.z)<.018);if(projected.length>1)mesh(mask,'Fissura_mascara',tube(projected,.0032),ink);}
   }
   const beak=clothSurface(64,56,(t,u)=>{const a=u*2*PI,r=Math.max(.002,.255*Math.sin(PI*(.13+.87*t))*(1-.75*t));return V(Math.cos(a)*r,-.055-.35*t*t+Math.sin(a)*r*.63,.62+.57*t)},{closed:true,thickness:.025});mesh(face,'Bico_superior',grain(beak,.045),black);
   for(const side of [-1,1]){mesh(face,'Narina',orb(V(side*.122,-.035,.88),.029,V(1,.44,.3)),pupil);mesh(face,'Borda_bico',tube([V(side*.21,-.13,.68),V(side*.15,-.18,.91),V(side*.045,-.32,1.12)],.009),black)}
