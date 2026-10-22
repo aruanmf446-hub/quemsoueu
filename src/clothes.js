@@ -110,7 +110,14 @@ function template(body, style, slot) {
     if (!details.has(key)) details.set(key, []); details.get(key).push(geo);
   }, null, coverage);
   for (const [key, geos] of details) {
-    const [slot, channel] = key.split(':'), normalized = geos.map(g => { const c = g.clone(); for (const k of Object.keys(c.attributes)) if (!['position', 'normal'].includes(k)) c.deleteAttribute(k); return c.index ? c.toNonIndexed() : c });
+    const hero=!!FOREST_OUTFITS[style]||!!FRONTIER_OUTFITS[style]||style.startsWith('lunar_')||style==='flame_guardian';
+    const [slot, channel] = key.split(':'), normalized = geos.map(g => {
+      const c=g.clone();for(const k of Object.keys(c.attributes))if(!['position','normal'].includes(k))c.deleteAttribute(k);
+      if(!hero)return c.index?c.toNonIndexed():c;
+      // Mantém os mesmos triângulos e normais sem triplicar os vértices de cada acabamento.
+      if(!c.index){const n=c.attributes.position.count,ix=n>65535?new Uint32Array(n):new Uint16Array(n);for(let i=0;i<n;i++)ix[i]=i;c.setIndex(new THREE.BufferAttribute(ix,1))}
+      return c;
+    });
     const merged = mergeGeometries(normalized, false); normalized.forEach(g => g.dispose()); geos.forEach(g => g.dispose());
     if (merged) descriptors.push({ name: 'Detalhes_' + slot + '_' + channel, geo: merged, channel, slot });
   }

@@ -15,7 +15,7 @@ export function buildHeroFrontier(C){
     g=garment('Corselete_aberto_do_deserto','leather','upper',{top:yN+.015,bottom:hem,t:.05*W,open:.72,openTaper:.75,hollow:true,shoulderPad:.12,env:{ease:.035*W,hang:.45,cinch:waist,cinchK:.82,flareFrom:waist,flare:.12}});
     edgeTube(g,'open','trim','upper',.018*W);edgeTube(g,'arm','trim','upper',.018*W);
   }else{
-    shirt=garment(human?'Camisa_negra_da_chama':'Camisa_de_linho','secondary','upper',{top:yN+.045,bottom:hem,t:.045*W,sleeve:human?'forearm':'short',short:.72,puff:.055*W,sleeveEase:.045*W,vneck:human?.03:.12,env:{ease:.033*W,hang:.55,cinch:waist,cinchK:.86,flareFrom:waist,flare:.10,folds:.018*W}});
+    shirt=garment(human?'Camisa_negra_da_chama':'Camisa_de_linho','secondary','upper',{top:yN+(human?.045:-.045)*W,bottom:hem,t:.045*W,sleeve:human?'forearm':'short',short:.72,puff:.045*W,sleeveEase:.035*W,vneck:human?.03:.12,env:{ease:.033*W,hang:.55,cinch:waist,cinchK:.86,flareFrom:waist,flare:.10,folds:.018*W}});
     sleeveCuffs(shirt,'upper',human?'accent':'secondary',.11*W);
     g=garment(human?'Casaca_vermelha_recortada':'Colete_de_couro_recortado','fabric','upper',{top:yN+.04,bottom:Y(human?.49:.43),t:.065*W,sleeve:null,open:human?.33:.26,openTaper:human?.62:.72,hollow:true,over:shirt.solid,overGap:.035*W,shoulderPad:.08,env:{ease:.065*W,hang:.5,cinch:waist,cinchK:.93,flareFrom:waist,flare:.12},hemCurve:human?.12*W:.045*W});
     edgeTube(g,'open','trim','upper',.012*W);edgeTube(g,'arm','leather','upper',.02*W);
@@ -87,9 +87,16 @@ export function buildHeroFrontier(C){
   {
     const top=B.cactus?body.pivot.y+body.hs*(-.59-body.pivot.y):yN+.04*W;
     const bottom=B.cactus?Y(.12):Y(.13),headRadius=(B.cactus?.77*body.hs:0);
-    for(let j=0;j<3;j++){
+    for(let j=0;j<(B.cactus?1:3);j++){
       const pt=(t,u)=>{const a=-PI+2*PI*u,yy=lerp(top-j*.075*W,bottom-j*.025*W,t)-.055*W*Math.cos(a),p=surfAt(base,yy,a,.075*W);if(B.cactus){const r=Math.max(Math.hypot(p.x,p.z-z0),headRadius*(1-t)+.02*W);p.set(Math.sin(a)*r,yy,z0+Math.cos(a)*r)}p.addScaledVector(V(Math.sin(a),0,Math.cos(a)),Math.sin(PI*t)*.065*W);return p};
-      addGeoS('extras','accent',clothSurface(24,120,pt,{closed:true,thickness:.025*W}));
+      if(!B.cactus)addGeoS('extras','accent',clothSurface(24,120,pt,{closed:true,thickness:.025*W}));
+      else{
+        const collar=(t,u)=>{const a=-PI+2*PI*u,yy=top-.03*W-t*.15*W-.022*W*Math.cos(a),p=surfAt(base,yy,a,.055*W),r=Math.max(Math.hypot(p.x,p.z-z0),headRadius+.02*W)+.018*W*Math.sin(PI*t);return V(Math.sin(a)*r,yy,z0+Math.cos(a)*r)};
+        addGeoS('extras','accent',clothSurface(20,112,collar,{closed:true,thickness:.022*W}));
+        const bandana=(t,u)=>{const a=(u-.5)*2.35*(1-.88*t),yy=lerp(top-.12*W,Y(.235),t)+.025*W*Math.sin(u*PI*6)*Math.sin(t*PI);return surfAt(base,yy,a,.065*W+.025*W*Math.sin(PI*t))};
+        addGeoS('extras','accent',clothSurface(44,64,bandana,{thickness:.024*W}));
+        for(const u of [0,1])addGeoS('extras','trim',tubeG(Array.from({length:41},(_,i)=>bandana(i/40,u)),.006*W,6));
+      }
     }
     if(human){const p=surfAt(base,Y(.08),-.9,.18*W);addGeoS('extras','trim',sph(p,.125*W,1,1,.35,32,20));tassel(C,'extras',p.clone().add(V(0,-.13*W,0)),.24)}
   }
@@ -128,7 +135,14 @@ export function buildHeroFrontier(C){
   }
   // Botas com sola, salto, biqueira e cano estruturado, presas às pernas.
   const bootHeight=soldier?.18:human?.23:.24;
-  boots('Botas_de_couro_hero','leather',{h:bootHeight,t:.06*W,cuffT:.035*W,toe:.07});C.bootFinish(bootHeight);
+  boots('Botas_de_couro_hero','leather',{h:bootHeight,t:.06*W,cuffT:.035*W,toe:.07});
+  if(!B.cactus)C.bootFinish(bootHeight);
+  else for(const side of [-1,1]){
+    // A sola acompanha o comprimento real do pé compacto, em vez de multiplicar a largura do corpo.
+    const L=.105*Lb*(B.foot||1)*(.9+.1*W),w=.19*L+.075*W,heel=A.z-.27*L-.065*W,toe=A.z+.95*L+.09*W,shape=new THREE.Shape();
+    shape.moveTo(-w*.72,heel);shape.bezierCurveTo(-w,heel,-w*1.02,toe-.20*L,-w*.82,toe-.025*W);shape.quadraticCurveTo(0,toe+.025*W,w*.82,toe-.025*W);shape.bezierCurveTo(w*1.02,toe-.20*L,w,heel,w*.72,heel);shape.quadraticCurveTo(0,heel-.02*W,-w*.72,heel);
+    const sole=new THREE.ExtrudeGeometry(shape,{depth:.085*W,bevelEnabled:true,bevelSize:.014*W,bevelThickness:.012*W,bevelSegments:3,curveSegments:24});sole.rotateX(PI/2);sole.translate(side*A.x,ySole+.018*W,0);addGeoS('feet','sole',sole);
+  }
   for(const side of [-1,1]){
     const x=side*A.x,yTop=A.y+bootHeight*Lb,rz=frontZ(x,(A.y+yTop)/2)+.11*W;
     const sh=shieldOutline(.30*W,(yTop-A.y)*.93),pg=new THREE.ExtrudeGeometry(sh,{depth:.035*W,bevelEnabled:true,bevelSize:.012*W,bevelThickness:.01*W,bevelSegments:3});pg.translate(x,(A.y+yTop)/2,rz);addGeoS('feet','trim',pg);

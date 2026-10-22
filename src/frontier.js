@@ -13,7 +13,7 @@ export const FRONTIER_OUTFITS={
   cactus_guard:{label:'Guarda do deserto',sub:'Armadura vermelha e dourada, capa, escudo e lança'}
 };
 export const FRONTIER_COLORS={
-  frontier_cowboy:{fabric:'#6e4930',secondary:'#e4d6b5',accent:'#963b2c',pants:'#342f2b',leather:'#573a26',trim:'#c29b50'},
+  frontier_cowboy:{fabric:'#624027',secondary:'#e4d6b5',accent:'#781923',pants:'#342f2b',leather:'#573a26',trim:'#c29b50'},
   bread_baker:{fabric:'#eee5d3',secondary:'#f3ecde',accent:'#c7662f',pants:'#e1d6bf',leather:'#49342b',trim:'#b78e47'},
   bread_vigilante:{fabric:'#25232a',secondary:'#353038',accent:'#ad4c24',pants:'#25252b',leather:'#3d302b',trim:'#b68b43'},
   cactus_guard:{fabric:'#a32c2a',secondary:'#b43a30',accent:'#8d2427',pants:'#4d3027',leather:'#65452c',trim:'#d2a341'}
