@@ -190,7 +190,7 @@ function cornerFn(u, peak, power=.8) { // 0 nos cantos, 1 no ponto mais aberto
 }
 function eyeFrame(P, s) {
   const th = s * P.tilt, c = Math.cos(th), sn = Math.sin(th), Re = P.Re;
-  const e = { s, ex: s * P.eyeX, ey: P.eyeY, halfW: Re * Math.sin(P.openW) * 1.02, hu: Re * Math.sin(P.openU) * 1.1, hl: Re * Math.sin(-P.openL) * 1.1, Rl: Re * 1.1, zc: 0 };
+  const e = { s, ex: s * P.eyeX, ey: P.eyeY, halfW: Re * Math.sin(P.openW) * 1.02, hu: Re * Math.sin(P.openU) * 1.1, hl: Re * Math.sin(-P.openL) * 1.1, Rl: Re * 1.035, zc: 0 };
   e.Rl2 = e.Rl * e.Rl;
   e.local = (x, y) => { const dx = x - e.ex, dy = y - e.ey; return [s * (dx * c + dy * sn), -dx * sn + dy * c] };
   e.toHead = (U, V) => { const lx = s * U; return [e.ex + lx * c - V * sn, e.ey + lx * sn + V * c] };
@@ -633,10 +633,9 @@ export function buildHead(presetId, adj, opts = {}) {
           const [U, V] = e.local(x, y), uN = U / e.halfW;
           if (Math.abs(uN) >= 1 || Math.abs(V) > .24) continue;
           const Hh = e.H(uN, V >= 0), vN = Hh > 1e-4 ? Math.abs(V) / Hh : 9;
-          if (vN >= 1 && vN < 1.32 && Math.abs(uN) < .985 && Hh > .002) { // vértice vai exatamente para a borda da pálpebra
-            const [x2, y2] = e.toHead(U, Math.sign(V || 1) * Hh); x = x2; y = y2;
-            f = field(x, y); z = frontZ(x, y) + f.dz; eyeState = 2;
-          }
+          // A superfície externa mantém sua distribuição. Colapsar várias fileiras
+          // na mesma curva criava triângulos muito estreitos e marcas na têmpora.
+          // A malha anatômica abaixo desenha a borda exata da abertura.
           z = domeLift(x, y, z, lwF); lifted = true;
           if (vN < 1 && Math.abs(uN) < .985 && Hh > .002) { // interior: escondido atrás do globo e da íris
             if (Hh - Math.abs(V) < .013) { const [x2, y2] = e.toHead(U, Math.sign(V || 1) * Hh); x = x2; y = y2 } // fileira junto à borda vira "parede" sob a pálpebra (sem degraus)
@@ -882,7 +881,7 @@ export function buildHead(presetId, adj, opts = {}) {
 
     const edgePt = (uN, up, dv = 0) => { const [x, y] = e.toHead(uN * e.halfW, (up ? 1 : -1) * (e.H(uN, up) + dv)); return new THREE.Vector3(x, y, surfZ(x, y) + .002) };
     const radial = (i, p) => normalAt(p.x, p.y);
-    if(P.sculptedFace)for(const up of [true,false]){
+    for(const up of [true,false]){
       // Anéis anatômicos seguem a abertura exata do olho. A grade polar da cabeça
       // permanece por baixo, sem expor os degraus de amostragem junto ao globo.
       const NU=96,NT=8,ps=[],cs=[],ix=[],c=new THREE.Color();

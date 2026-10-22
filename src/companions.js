@@ -92,14 +92,14 @@ export function buildCompanion(P,opts={}){
  for(const side of [-1,1]){
   const eye=new THREE.Group();eye.name='Olho_'+(side<0?'L':'R');eye.position.set(side*eyeX,eyeY,.57);face.add(eye);eyes.push(eye);
   mesh(eye,'Esclera',orb(V(),eyeR,V(1,.91,.66)),white);
-  for(const upper of [-1,1]){const pts=[];for(let j=0;j<=40;j++){const a=j/40*PI;pts.push(V(Math.cos(a)*eyeR,upper*Math.sin(a)*eyeR*.84,.04+.075*Math.sin(a)))}mesh(eye,'Palpebra',tube(pts,upper>0?.023:.014),fur)}
+  for(const upper of [-1,1]){const pts=[];for(let j=0;j<=64;j++){const a=j/64*PI,x=Math.cos(a)*eyeR,y=upper*Math.sin(a)*eyeR*.84,z=eyeR*.66*Math.sqrt(Math.max(0,1-(x/eyeR)**2-(y/(eyeR*.91))**2))+.006;pts.push(V(x,y,z))}mesh(eye,'Palpebra',tube(pts,upper>0?.013:.009),fur)}
   const gaze=new THREE.Group();gaze.name='Olhar_'+side;eye.add(gaze);eye.userData.gaze=gaze;
   const rx=eyeR,ry=rx*.91,dep=rx*.66+.002,irisR=rx*(fennec?.71:wolf?.65:.69);
   mesh(gaze,'Anel_iris',eyeDisc(irisR+.010,rx,ry,dep,.003).translate(side*.008,-.006,0),black);
   const ig=eyeDisc(irisR,rx,ry,dep,.005),ic=new Float32Array(ig.attributes.position.count*3);for(let k=0;k<ig.attributes.position.count;k++){const x=ig.attributes.position.getX(k),y=ig.attributes.position.getY(k),a=Math.atan2(y,x),r=Math.hypot(x,y),q=.72+.25*Math.sin(a*71+Math.sin(a*17)*3)**2+.08*Math.sin(r*149);const c=iris.color.clone().multiplyScalar(q);c.toArray(ic,k*3)}ig.setAttribute('color',new THREE.BufferAttribute(ic,3));const im=iris.clone();im.color.set('#ffffff');im.vertexColors=true;mesh(gaze,'Iris',ig.translate(side*.008,-.006,0),im);
   mesh(gaze,'Pupila',eyeDisc(irisR*(fennec?.58:.55),rx,ry,dep,.008).translate(side*.008,-.006,0),pupil);
   mesh(gaze,'Brilho_olho',orb(V(-.039,.052,dep+.006),.024,V(1,1,.3)),white);mesh(gaze,'Brilho_menor',orb(V(.045,-.046,dep+.003),.008,V(1,1,.3)),white);
-  if(wolf){const lid=(t,u)=>{const x=(u-.5)*2*eyeR,arc=Math.sqrt(Math.max(0,1-(x/eyeR)**2)),lo=((fennec?.155:.095)+side*x*(fennec?.08:.25))*arc,hi=eyeR*.91*arc+.028,y=lo+(hi-lo)*t,z=eyeR*.66*Math.sqrt(Math.max(.02,1-(x/eyeR)**2-(Math.min(y,eyeR*.87)/(eyeR*.91))**2))+.013;return V(x,y,z)};mesh(eye,'Palpebra_superior_escultida',clothSurface(24,64,lid,{thickness:.016}),fur)}
+  if(wolf){const lid=(t,u)=>{const x=(u-.5)*2*eyeR,arc=Math.sqrt(Math.max(0,1-(x/eyeR)**2)),lo=((fennec?.155:.095)+side*x*(fennec?.08:.25))*arc,hi=eyeR*.91*arc+.028,y=lo+(hi-lo)*t,z=eyeR*.66*Math.sqrt(Math.max(0,1-(x/eyeR)**2-(Math.min(y,eyeR*.87)/(eyeR*.91))**2))+.006;return V(x,y,z)};mesh(eye,'Palpebra_superior_escultida',clothSurface(24,64,lid,{thickness:.012}),fur)}
   const brow=new THREE.Group();brow.name='Sobrancelha_'+side;brow.position.set(side*eyeX,eyeY+.25,.58);face.add(brow);brows.push(brow);mesh(brow,'Sobrancelha',tuft(V(-side*.21,.03,0),V(side*.22,-.02,-.03),fennec?.047:.068,.03,.025),fur);
  }
  const sole=fennec?-2.67:wolf?-3.27:-2.28,paws=[];

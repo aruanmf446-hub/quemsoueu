@@ -4,7 +4,19 @@
 
 O usuário determinou: **sempre subir o trabalho para a `main`**. Ao concluir uma rodada, validar, registrar as alterações e enviar à `main`, preservando alterações remotas e sem force push. Distinguir o envio do código da conclusão do deploy do site.
 
-## Rodada atual — reconstrução dos volumes faciais após reprovação (22/10/2026)
+## Rodada atual — qualidade orbital e fechamento das pálpebras (22/10/2026)
+
+O usuário pediu para continuar após o checkpoint `858e2fb`. A revisão visual inicial incluiu os 34 rostos em pranchas de malha sem cores. A correção atual trata a integração entre olho e pele: a grade externa deixa de comprimir várias fileiras sobre a abertura; a malha anatômica própria desenha a borda nos 29 rostos humanos/vegetais. A esfera de apoio da pele acompanha mais de perto o raio do globo ocular. Nos companheiros, as bordas das pálpebras seguem a elipsoide real, com espessura menor.
+
+Os retratos de expressões revelaram que a piscada completa ainda deixava frestas nos olhos grandes. `src/rig.js` agora calcula os ângulos pela posição real das bordas superior/inferior em cada identidade. `tests/qualidade-orbitas.mjs` verifica a qualidade dos triângulos e mede a posição deformada das duas bordas após blink=1. Em qualidade .6, os triângulos muito estreitos da região orbital caíram de 14.337 para 1.387 nos 29 alvos, comparando com `858e2fb`. Isso mede topologia, não aprovação estética nem equivalência cinematográfica.
+
+Referência imutável: `/workspace/outputs/escultura-v2-base` (`858e2fb`). Comparação em `renders/orbitas/antes` e `depois`; expressões em `renders/orbitas/expressoes`. `ATELIE_POSES=feliz,bravo,surpreso,piscadela,beijo` permite capturá-las com `tests/identidades-visuais.cjs`. Preservar a orientação de publicar na main e manter todos os personagens pendentes de aprovação visual.
+
+Validação concluída: qualidade orbital e fechamento central das pálpebras nos 29 alvos; identidades, morphs e clipes dos 34; cactos com boca/olhos livres da chapelaria; 34 GLBs com mapas e 12 clipes nos animados (zero no robô), sem erros de navegador; Worker/expressões/cache para arqueira, veterano e feneco. Galeria com 136 pares e câmeras idênticas em `renders/orbitas/index.html`. Capturas adicionais de cinco expressões para arqueira, veterano, feneco, soldado cacto e robô. Revisão visual incluiu pranchas de todos os rostos e enquadramentos com cabelo/acessórios. Aprovação técnica não significa aprovação estética.
+
+As validações pendentes da passagem anterior terminaram: 34 retratos, 34 GLBs e Worker/expressões/cache para arqueira, veterano e feneco, sem erros registrados. Seus relatórios estão em `renders/escultura-v2/`.
+
+## Rodada anterior — reconstrução dos volumes faciais após reprovação (22/10/2026)
 
 O usuário **reprovou `499cf81`**: ainda via rostos genéricos e distantes da referência. Não apresentar a rodada anterior como solução aceita. A autorização continua sendo mudar a anatomia dos **34 personagens**, com foco na malha do rosto.
 

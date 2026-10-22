@@ -64,7 +64,11 @@ export function createRig(P, ctx) {
     place(B['LidUp_' + side], e.ex, e.ey, e.zc, q);
     place(B['LidLo_' + side], e.ex, e.ey, e.zc, q);
     // ângulos de fechamento: a borda superior desce até encontrar a inferior (que sobe um pouco)
-    eyeInfo[side] = { e, closeU: Math.atan2(e.hu + e.hl * .35, e.Rl), closeL: Math.atan2(e.hl * .55, e.Rl), hu: e.hu, hl: e.hl };
+    const hu=e.H(0,true),hl=e.H(0,false),[ux,uy]=e.toHead(0,hu),[lx,ly]=e.toHead(0,-hl);
+    const meet=Math.atan2(-hl*.22,P.Re),zu=Math.max(.04,surfZ(ux,uy)-e.zc),zl=Math.max(.04,surfZ(lx,ly)-e.zc);
+    // Usa a borda esculpida real. A aproximação pela altura dividida pelo raio
+    // deixava uma fresta nos olhos grandes mesmo com blink=1.
+    eyeInfo[side] = { e, closeU: Math.atan2(hu,zu)-meet+.035, closeL: meet+Math.atan2(hl,zl)+.025, hu: e.hu, hl: e.hl };
   }
 
   // ---------- pesos ----------

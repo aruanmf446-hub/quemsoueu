@@ -38,6 +38,10 @@ fs.mkdirSync(out,{recursive:true});
     a.camera.position.fromArray(camera.position);a.orbit.target.fromArray(camera.target);a.orbit.update();window.__render();
    },cameras[id].three);
    await page.locator('#stage canvas').screenshot({path:path.join(out,id+'-malha.png')});console.log('Retratos',id);
+   for(const pose of process.env.ATELIE_POSES?.split(',').filter(Boolean)||[]){
+    await page.evaluate(name=>{window.__atelie.setExpression(name);window.__render()},pose);
+    await page.locator('#stage canvas').screenshot({path:path.join(out,id+'-pose-'+pose+'.png')});
+   }
   }
   assert.deepEqual(errors,[]);const file=path.join(out,'cameras.json'),previous=fs.existsSync(file)?JSON.parse(fs.readFileSync(file,'utf8')):{};fs.writeFileSync(file,JSON.stringify({...previous,...cameras},null,2));
   fs.writeFileSync(path.join(out,'relatorio.json'),JSON.stringify({ids:Object.keys({...previous,...cameras}),errors},null,2));

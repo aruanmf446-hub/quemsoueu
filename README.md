@@ -27,6 +27,8 @@ Os 34 personagens têm refinamentos próprios de anatomia facial. Após a reprov
 
 `node tests/identidades-faciais.mjs` verifica malhas, diferenças anatômicas, continuidade nasal, encaixe da cavidade oral, morphs e clipes. Para comparar duas versões, `tests/identidades-visuais.cjs` captura retratos sem cabelo/acessórios e `python3 tests/galeria-identidades.py renders/escultura-v2` valida e monta os pares de frente, três quartos, perfil e malha sem cores, com as mesmas câmeras.
 
+`node tests/qualidade-orbitas.mjs` mede os triângulos da região dos olhos nos 29 rostos humanos/vegetais e verifica o fechamento das pálpebras deformadas pela piscada. Aceita uma cópia da versão anterior como argumento para comparação. As bordas dos olhos usam malhas próprias, mantendo a distribuição da grade externa; o rig calcula os ângulos de fechamento pela anatomia real. Para capturar expressões na comparação, use `ATELIE_POSES=feliz,bravo,surpreso,piscadela,beijo` com `identidades-visuais.cjs`.
+
 Os geradores compartilhados dos 34 personagens corrigem normais nas costuras de cabelo, penas e pelagem e preservam as normais do tecido depois dos recortes. Essa camada de correções mantém as formas esculpidas e o rig. A pele filtra o microrrelevo de acordo com o tamanho do pixel, reduzindo cintilação à distância.
 
 Roupas, companheiros e casco do robô usam microtexturas PBR procedurais de 512 px, com mapas de normal e rugosidade, mipmaps e filtragem anisotrópica. O microdetalhe usa UV1 e deixa as cores e estampas em seu próprio UV; os mapas são incorporados ao GLB. A projeção por face evita triângulos de textura colapsados, mas ainda tem transições de orientação entre eixos. Os poros e o espalhamento de luz customizados da pele permanecem no shader do visualizador.
