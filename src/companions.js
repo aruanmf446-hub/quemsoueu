@@ -174,13 +174,13 @@ export function buildCompanionLook(fit,look){
     const roll=new THREE.CylinderGeometry(.16,.16,1,40);roll.rotateZ(PI/2);roll.translate(0,-.54,-1.64);add('Manta_enrolada',roll,fabric);
     for(const side of [-1,1]){const loop=[V(side*.41,-.38,-1.64),V(side*.41,-.53,-1.82),V(side*.41,-.71,-1.64),V(side*.41,-.53,-1.47),V(side*.41,-.38,-1.64)];add('Correia_manta',ribbon(loop,.045,.018),leather);add('Estribo',tube([V(side*.63,-.67,-.81),V(side*.77,-1.30,-.65),V(side*.55,-1.30,-.65),V(side*.63,-.67,-.81)],.022),metal)}
     if(lk.acc.head==='fennec_rider'){
-     const rider=fit.buildRider(),r=new THREE.Group();r.name='Cowboy_Montado';r.scale.setScalar(.48);r.position.set(0,.43,-1.05);acc.add(r);r.add(rider.group);rider.group.position.y=1.6;
+     const rider=fit.buildRider(),r=new THREE.Group();r.name='Cowboy_Montado';r.scale.setScalar(.48);r.position.set(0,.43,-1.05);acc.add(r);r.add(rider.group);rider.group.position.y=2.6;
      const kit=buildAccessories(rider.fit,{head:'frontier_hat'},{metal:lk.colors.metal||'#c29b50',fabric:'#69432b'});rider.group.add(kit.group);
      const green=material('Pele_cowboy',PRESETS.frontier_cowboy.skin),pants=finishMaterial(material('Calca_cowboy','#302b29'),'fabric');
-     mesh(r,'Colete_sentado',orb(V(0,-.725,0),.55,V(1.3,2.5,1.1)),leather);
-     for(const side of [-1,1]){mesh(r,'Braco_sentado',tube([V(side*.48,.38,0),V(side*.91,-.8,.25),V(side*.65,-1.4,.65)],.16),green);mesh(r,'Calca_sentada',tube([V(side*.3,-2.1,0),V(side*1.55,-2.42,.18),V(side*1.55,-3.40,.25)],.23),pants);mesh(r,'Bota_sentada',orb(V(side*1.55,-3.43,.36),.25,V(1,.85,1.45)),leather);const seam=buckleGeo(.12,.11,.018);seam.translate(side*.52,-1.8,.35);mesh(r,'Fivela_colete',seam,metal)}
-     mesh(r,'Poncho_cavaleiro',clothSurface(40,64,(t,u)=>{const a=u*PI*2,rr=.66+.16*t+.025*Math.sin(a*8)*t;return V(Math.sin(a)*rr,.98-t*(1.45+.12*Math.cos(a)),Math.cos(a)*rr)},{closed:true,thickness:.035}),leather);
-     mesh(r,'Lenco_cowboy',clothSurface(30,40,(t,u)=>{const a=(u-.5)*2.5;return V(Math.sin(a)*(.64-.38*t),.95-.60*t,Math.cos(a)*(.64-.38*t)+.08)},{thickness:.035}),fabric);
+     mesh(r,'Colete_sentado',orb(V(0,-.225,0),.55,V(1.3,3.41,1.1)),leather);
+     for(const side of [-1,1]){mesh(r,'Braco_sentado',tube([V(side*.60,1.38,0),V(side*1.05,-.30,.25),V(side*.65,-1.4,.65)],.16),green);mesh(r,'Calca_sentada',tube([V(side*.3,-2.1,0),V(side*1.55,-2.42,.18),V(side*1.55,-3.40,.25)],.23),pants);mesh(r,'Bota_sentada',orb(V(side*1.55,-3.43,.36),.25,V(1,.85,1.45)),leather);const seam=buckleGeo(.12,.11,.018);seam.translate(side*.52,-1.8,.35);mesh(r,'Fivela_colete',seam,metal)}
+     mesh(r,'Poncho_cavaleiro',clothSurface(40,64,(t,u)=>{const a=u*PI*2,rr=.86-.04*t+.018*Math.sin(a*8)*t;return V(Math.sin(a)*rr,1.98-t*(2.45+.12*Math.cos(a)),Math.cos(a)*rr)},{closed:true,thickness:.035}),leather);
+     mesh(r,'Lenco_cowboy',clothSurface(30,40,(t,u)=>{const a=(u-.5)*2.5;return V(Math.sin(a)*(.84-.45*t),1.95-.70*t,Math.cos(a)*(.84-.45*t)+.08)},{thickness:.035}),fabric);
      for(const side of [-1,1])add('Redea',ribbon([V(side*.4,-.12,.65),V(side*.5,-.33,.20),V(side*.31,-.20,-.66)],.025,.012),dark);
      rider.group.traverse(o=>{if(o.name)o.name='Cavaleiro_'+o.name});acc.userData.riderRig=rider.rig;
     }
