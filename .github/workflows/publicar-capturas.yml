@@ -35,6 +35,14 @@ jobs:
           mkdir -p /tmp/capturas-atelie/menu /tmp/capturas-atelie/personagens
           cp -R transferir/menu/. /tmp/capturas-atelie/menu/
           cp -R transferir/personagens/. /tmp/capturas-atelie/personagens/
+          # A comparação dos heróis é uma entrega própria e deve sobreviver
+          # às atualizações automáticas das capturas do menu e do catálogo.
+          if git ls-remote --exit-code --heads origin refs/heads/capturas-atelie > /dev/null; then
+            git fetch --depth=1 origin refs/heads/capturas-atelie
+            if git cat-file -e FETCH_HEAD:herois 2>/dev/null; then
+              git archive FETCH_HEAD herois | tar -x -C /tmp/capturas-atelie
+            fi
+          fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout --orphan capturas-atelie
@@ -48,7 +56,8 @@ jobs:
           itens = ''.join('<article><a href="'+escape(p.name)+'"><img loading="lazy" src="'+escape(p.name)+'"></a><p>'+escape(p.stem.replace('-', ' · '))+'</p></article>' for p in imagens)
           estilo = '<style>body{background:#091522;color:#edf5fa;font:16px system-ui;margin:24px}a{color:#39e4df}main{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px}article{background:#172b3a;padding:12px;border-radius:14px}img{max-width:100%;border-radius:8px}</style>'
           Path('personagens/index.html').write_text('<!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Personagens do Ateliê</title>'+estilo+'<h1>Personagens — frente e 3/4</h1><p><a href="../index.html">Voltar à galeria</a></p><main>'+itens+'</main></html>',encoding='utf8')
-          Path('index.html').write_text('<!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Capturas do Ateliê</title>'+estilo+'<h1>Ateliê — capturas reais dos testes</h1><p><a href="menu/index.html">Menu: categorias, subcategorias e prévias</a></p><p><a href="personagens/index.html">13 personagens: frente e 3/4</a></p></html>',encoding='utf8')
+          herois = '<p><a href="herois/index.html">Heróis: comparação anterior e em refinamento</a></p>' if Path('herois/index.html').exists() else ''
+          Path('index.html').write_text('<!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Capturas do Ateliê</title>'+estilo+'<h1>Ateliê — capturas reais dos testes</h1><p><a href="menu/index.html">Menu: categorias, subcategorias e prévias</a></p><p><a href="personagens/index.html">Catálogo de personagens: frente e 3/4</a></p>'+herois+'</html>',encoding='utf8')
           print('Imagens de personagens:',len(imagens),'| subcategorias:',len(list(Path('menu').glob('*.png'))))
           PY
           git add -f -A
