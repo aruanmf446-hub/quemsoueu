@@ -1,0 +1,140 @@
+name: Gerar comparação visual dos heróis
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/galeria-herois.yml
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: gerar-galeria-herois
+  cancel-in-progress: false
+
+jobs:
+  comparacao:
+    name: Renders comparativos e galeria pública
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      NODE_OPTIONS: --max-old-space-size=6144
+      HEROIS: paysandu_wolf,nana_explorer,moon_guardian,nico_inventor,ruby_sorceress,ruby_raven,forest_archer_f,forest_archer_m,forest_guard_f,forest_guard_m,forest_guard_veteran,forest_artificer,forest_princess,frontier_cowboy,desert_fennec,cowboy_on_fennec,bread_baker,bread_vigilante,cactus_soldier,cactus_soldier_large
+    steps:
+      - name: Código em refinamento
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Versão anterior preservada para comparação
+        uses: actions/checkout@v4
+        with:
+          ref: 77e1b9eed3bd8675d798dc9621f427af469cc5dc
+          path: referencia
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Preparar renderização 3D e composição
+        run: |
+          npm install --no-save --package-lock=false --no-audit --no-fund three@0.180.0 playwright
+          npx playwright install --with-deps chromium
+          sudo ln -sf "$(node -p "require('playwright').chromium.executablePath()")" /usr/bin/chromium
+          python3 -m venv .venv
+          .venv/bin/pip install --disable-pip-version-check pillow
+      - name: Servir as duas versões sem mudar seus códigos
+        run: |
+          python3 -m http.server 8000 --directory . >/tmp/herois-atuais-http.log 2>&1 &
+          python3 -m http.server 8001 --directory referencia >/tmp/herois-anteriores-http.log 2>&1 &
+          for porta in 8000 8001; do
+            for tentativa in $(seq 1 30); do
+              if curl -fsS "http://localhost:$porta/" -o /dev/null; then break; fi
+              sleep 1
+            done
+            curl -fsS "http://localhost:$porta/" -o /dev/null
+          done
+      - name: Capturar anterior — 20 personagens, três ângulos
+        run: |
+          ATELIE_SOURCE_ROOT="$GITHUB_WORKSPACE/referencia" \
+          ATELIE_BASE_URL=http://localhost:8001/ \
+          ATELIE_PERSONAGENS="$HEROIS" \
+          ATELIE_RENDERS="$GITHUB_WORKSPACE/renders/herois/comparacao/antes" \
+          node tests/refino-lotes.cjs refino-renders.cjs
+      - name: Capturar atual com as mesmas câmeras
+        run: |
+          ATELIE_BASE_URL=http://localhost:8000/ \
+          ATELIE_PERSONAGENS="$HEROIS" \
+          ATELIE_CAMERAS="$GITHUB_WORKSPACE/renders/herois/comparacao/antes/cameras.json" \
+          ATELIE_RENDERS="$GITHUB_WORKSPACE/renders/herois/comparacao/depois" \
+          node tests/refino-lotes.cjs refino-renders.cjs
+      - name: Capturar nova referência do Guardião da chama
+        run: |
+          ATELIE_BASE_URL=http://localhost:8000/ \
+          ATELIE_PERSONAGENS=flame_guardian \
+          ATELIE_RENDERS="$GITHUB_WORKSPACE/renders/herois/comparacao/depois" \
+          node tests/refino-lotes.cjs refino-renders.cjs
+      - name: Gerar enquadramento próprio amplo para Nico sem alterar a comparação
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path("renders/herois/comparacao")
+          data=json.loads((root/"antes/cameras.json").read_text(encoding="utf-8"))
+          cam=data["nico_inventor"]
+          for view in ["front","three","back"]:
+              c=cam[view]
+              target=c["target"]
+              c["position"]=[target[i]+(value-target[i])*1.42 for i,value in enumerate(c["position"])]
+          out=Path("renders/herois/cameras-nico-amplas.json")
+          out.write_text(json.dumps({"nico_inventor":cam},indent=2),encoding="utf-8")
+          PY
+          ATELIE_BASE_URL=http://localhost:8000/ \
+          ATELIE_PERSONAGENS=nico_inventor \
+          ATELIE_CAMERAS="$GITHUB_WORKSPACE/renders/herois/cameras-nico-amplas.json" \
+          ATELIE_RENDERS="$GITHUB_WORKSPACE/renders/herois/comparacao/enquadramento-atual" \
+          node tests/refino-lotes.cjs refino-renders.cjs
+      - name: Validar os 60 pares e gerar galeria e ZIP
+        run: |
+          .venv/bin/python tests/galeria-herois.py renders/herois/comparacao \
+            --referencia 77e1b9e --versao "$GITHUB_SHA" \
+            --entrega renders/herois/entrega
+      - name: Guardar artefatos de revisão
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: herois-em-refinamento
+          path: |
+            renders/herois/comparacao/index.html
+            renders/herois/comparacao/*.jpg
+            renders/herois/comparacao/*.json
+            renders/herois/entrega/
+          if-no-files-found: warn
+          retention-days: 30
+      - name: Abrir branch de capturas sem tocar na main
+        if: success()
+        uses: actions/checkout@v4
+        with:
+          ref: capturas-atelie
+          path: publicar
+      - name: Publicar somente galeria final e imagens compostas
+        if: success()
+        run: |
+          mkdir -p publicar/herois
+          find publicar/herois -maxdepth 1 -type f -delete
+          cp renders/herois/comparacao/*.jpg publicar/herois/
+          cp renders/herois/comparacao/index.html renders/herois/comparacao/manifesto.json renders/herois/comparacao/inventario.csv renders/herois/comparacao/LEIA-ME.txt publicar/herois/
+          cd publicar
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A herois
+          if ! git diff --cached --quiet; then
+            git commit -m "Publicar comparação visual dos heróis pendentes"
+            git push origin HEAD:capturas-atelie
+          fi
+      - name: Atualizar publicação no GitHub Pages
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run pages.yml --ref main
