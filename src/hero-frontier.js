@@ -17,12 +17,12 @@ export function buildHeroFrontier(C){
   }else{
     shirt=garment(human?'Camisa_negra_da_chama':'Camisa_de_linho','secondary','upper',{top:yN+(human?.045:-.045)*W,bottom:hem,t:.045*W,sleeve:human?'forearm':'short',short:.72,puff:.045*W,sleeveEase:.035*W,vneck:human?.03:.12,env:{ease:.033*W,hang:.55,cinch:waist,cinchK:.86,flareFrom:waist,flare:.10,folds:.018*W}});
     sleeveCuffs(shirt,'upper',human?'accent':'secondary',.11*W);
-    g=garment(human?'Casaca_vermelha_recortada':'Colete_de_couro_recortado','fabric','upper',{top:yN+.04,bottom:Y(human?.49:.43),t:.065*W,sleeve:null,open:human?.33:.26,openTaper:human?.62:.72,hollow:true,over:shirt.solid,overGap:.035*W,shoulderPad:.08,env:{ease:.065*W,hang:.5,cinch:waist,cinchK:.93,flareFrom:waist,flare:.12},hemCurve:human?.12*W:.045*W});
+    g=garment(human?'Casaca_negra_com_abas_rubi':'Colete_de_couro_recortado',human?'secondary':'fabric','upper',{top:yN+.04,bottom:Y(human?.415:.43),t:.065*W,sleeve:null,open:human?.33:.26,openTaper:human?.62:.72,hollow:true,over:shirt.solid,overGap:.035*W,shoulderPad:.08,env:{ease:.065*W,hang:.5,cinch:waist,cinchK:human?.68:.93,flareFrom:waist,flare:.12},hemCurve:human?.12*W:.045*W});
     edgeTube(g,'open','trim','upper',.012*W);edgeTube(g,'arm','leather','upper',.02*W);
     for(const side of [-1,1]){
       stitchLine(C,'upper',g.solid,Array.from({length:12},(_,i)=>[Y(.07+i*.027),side*(.34+i*.012)]),{channel:'trim',r:.0035*W});
       const coords=[[Y(.08),side*.56],[Y(.22),-side*.14],[Y(.32),-side*.57]];
-      strap(C,'upper','leather',g.solid,coords,.085,.07);fastener(C,'upper',g.solid,Y(.20),-side*.06,.11,.14,.11);
+      strap(C,'upper','leather',g.solid,coords,human?.135:.085,human?.11:.07);fastener(C,'upper',g.solid,Y(.20),-side*.06,.11,.14,.11);
     }
     if(human){
       // Gola alta em duas abas, com parede grossa e ponta arredondada.
@@ -33,7 +33,33 @@ export function buildHeroFrontier(C){
     }
   }
   const base=(x,y,z)=>Math.min(g.env(x,y,z),shirt?shirt.env(x,y,z)-.035*W:1000);
-  if(!soldier)trousers(human?'Pantalona_da_chama':'Calca_de_viagem','pants',{top:.35,ease:.055*W,cuff:human?.11:.17,puff:human?.085*W:.045*W,knee:.02*W,under:{fn:base,y:Y(.43)+.01}});
+  if(human){
+    // Casaca negra: vistas rubi estreitas e abas independentes deixam o centro preto legível.
+    for(const side of [-1,1]){
+      const panelPoint=(t,u)=>{const a=side*(.66+(u-.5)*.30),yy=lerp(Y(.075),Y(.405),t);return surfAt(g.solid,yy,a,.075*W)};
+      addGeoS('upper','fabric',clothSurface(54,22,panelPoint,{thickness:.025*W}));
+      for(const u of [0,1])addGeoS('upper','trim',tubeG(Array.from({length:45},(_,i)=>panelPoint(i/44,u)),.009*W,6));
+      const tail=(t,u)=>{const a=side*(.91+(u-.5)*.58),yy=lerp(Y(.34),Y(side>0?.60:.65),t)-.07*W*Math.sin(PI*u)*t**4,p=surfAt(g.env,yy,a,.10*W);p.addScaledVector(V(Math.sin(a),0,Math.cos(a)),t*.13*W);return p};
+      addGeoS('lower','fabric',clothSurface(48,30,tail,{thickness:.03*W}));
+      for(const u of [0,1])addGeoS('lower','trim',tubeG(Array.from({length:41},(_,i)=>tail(i/40,u)),.012*W,6));
+      fringe(C,'lower',u=>tail(1,u),15,.08);
+    }
+    // Duas pregas diagonais apoiadas nos ombros, com borda livre e sem aro rígido.
+    const upperCurve=new THREE.CatmullRomCurve3([
+      V(-S.x*.96,S.y+.17*W,S.z+.33*W),
+      surfAt(shirt.solid,yN-.10*W,-.56,.17*W),
+      surfAt(shirt.solid,yN-.21*W,.37,.17*W),
+      V(S.x*.87,S.y+.15*W,S.z+.29*W)
+    ]);
+    for(let layer=0;layer<2;layer++){
+      const drape=(t,u)=>{const p=upperCurve.getPoint(u),drop=(.22+.11*Math.sin(PI*u)+.08*(1-u))*W;p.y-=t*drop+layer*.065*W;p.z=Math.max(p.z,frontZ(p.x,p.y)+.18*W)+.045*W*Math.sin(PI*t)+.016*W*Math.sin(u*PI*5)*t;return p};
+      addGeoS('extras','accent',clothSurface(32,96,drape,{thickness:.024*W}));
+      if(layer===1)addGeoS('extras','trim',tubeG(Array.from({length:73},(_,i)=>drape(1,i/72)),.007*W,6));
+    }
+    curvedPlate(C,'upper',g.solid,Y(.075),-1.06,.42,.48,'fabric',{off:.08*W});
+    shapePlate(C,'upper','trim',badge('flame',.105*W,.018*W).parameters.shapes,Y(.075),-1.06,g.solid,{off:.155*W,depth:.016*W});
+  }
+  if(!soldier)trousers(human?'Pantalona_da_chama':'Calca_de_viagem','pants',{top:.35,ease:.055*W,cuff:human?.11:.17,puff:human?.055*W:.045*W,knee:.02*W,under:{fn:base,y:Y(.43)+.01}});
   else{
     // Saiote de combate: uma base curta e onze placas independentes com barras douradas.
     const skirt=garment('Saiote_curto_do_deserto','fabric','lower',{top:Y(.34),bottom:Y(.61),t:.04*W,env:{ease:.07*W,hang:.35,flareFrom:Y(.36),flare:.30,folds:.025*W,foldN:12}});
@@ -52,10 +78,10 @@ export function buildHeroFrontier(C){
     const flame=badge('flame',.17*W,.025*W);shapePlate(C,'lower','trim',new THREE.Shape(flame.parameters.shapes.getPoints(40)),Y(.51),0,skirt.env,{off:.15*W});flame.dispose();
   }
   // Cinto largo com contorno medido e fivela vazada. O escudo central tem dois relevos.
-  beltOn('Cinturao_de_couro','leather',base,waist,.16*W,.055*W);
-  beltOn('Cinturao_borda_superior','trim',base,waist+.075*W,.013*W,.065*W);
-  beltOn('Cinturao_borda_inferior','trim',base,waist-.075*W,.013*W,.065*W);
-  const central=shieldOutline(.34*W,.29*W);shapePlate(C,'belt','trim',central,waist,0,base,{off:.10*W,depth:.04*W});shapePlate(C,'belt','leather',central,waist,0,base,{off:.145*W,scale:.82,depth:.015*W});
+  beltOn('Cinturao_de_couro','leather',base,waist,(human?.26:.16)*W,.055*W);
+  beltOn('Cinturao_borda_superior','trim',base,waist+(human?.125:.075)*W,.013*W,.065*W);
+  beltOn('Cinturao_borda_inferior','trim',base,waist-(human?.125:.075)*W,.013*W,.065*W);
+  const central=shieldOutline((human?.44:.34)*W,(human?.34:.29)*W);shapePlate(C,'belt','trim',central,waist,0,base,{off:.10*W,depth:.04*W});shapePlate(C,'belt','leather',central,waist,0,base,{off:.145*W,scale:.82,depth:.015*W});
   const crestShape=badge(soldier||human?'flame':'star',.10*W,.015*W).parameters.shapes;
   shapePlate(C,'belt','trim',crestShape,waist,0,base,{off:.18*W,depth:.018*W});
   for(const side of [-1,1]){
@@ -63,13 +89,13 @@ export function buildHeroFrontier(C){
     for(let j=0;j<5;j++){const a=side*(.98+j*.19);addGeoS('belt','trim',sph(surfAt(base,waist,a,.11*W),.016*W,1,1,.5,12,8))}
     if(!soldier){
       const q=surfAt(base,waist-.20*W,side*1.12,.16*W),n=V(Math.sin(side*1.12),0,Math.cos(side*1.12));
-      addGeoS('belt','leather',orient(panel(.25*W,.36*W,.12*W),q,n));
-      addGeoS('belt','lining',orient(panel(.26*W,.13*W,.05*W),q.clone().add(V(0,.14*W,0)).addScaledVector(n,.075*W),n));
+      addGeoS('belt','leather',orient(panel((human?.34:.25)*W,(human?.46:.36)*W,.12*W),q,n));
+      addGeoS('belt','lining',orient(panel((human?.36:.26)*W,(human?.16:.13)*W,.05*W),q.clone().add(V(0,(human?.18:.14)*W,0)).addScaledVector(n,.075*W),n));
       fastener(C,'belt',base,waist-.16*W,side*1.12,.11,.12,.26);
     }
   }
   // Leitura de capa e estola: pregas amplas, barras e franjas visíveis.
-  const c=cape(cowboy?'Poncho_rasgado':'Capa_da_chama','accent',{top:.025,yBottom:Y(cowboy?.80:.94),span:cowboy?4.05:3.5,flare:cowboy?.33:.44,pleats:13,ragged:cowboy?.075*W:0,over:base,trim:'trim',refined:true});
+  const c=cape(cowboy?'Poncho_rasgado':'Capa_da_chama','accent',{top:.025,yBottom:Y(cowboy?.80:.94),span:cowboy?4.05:3.5,flare:cowboy?.33:.44,pleats:13,ragged:cowboy?.075*W:0,over:base,trim:'trim',refined:true,sway:human?-.30*W:0});
   if(c){
     const emblem=badge(cowboy?'star':'flame',(cowboy?.28:.43)*W,.02*W);C.capeEmblem(c,emblem,.45,.5);
     for(const u of [.04,.96]){
@@ -89,8 +115,8 @@ export function buildHeroFrontier(C){
     const bottom=B.cactus?Y(.12):Y(.13),headRadius=(B.cactus?.77*body.hs:0);
     for(let j=0;j<(B.cactus?1:3);j++){
       const pt=(t,u)=>{const a=-PI+2*PI*u,yy=lerp(top-j*.075*W,bottom-j*.025*W,t)-.055*W*Math.cos(a),p=surfAt(base,yy,a,.075*W);if(B.cactus){const r=Math.max(Math.hypot(p.x,p.z-z0),headRadius*(1-t)+.02*W);p.set(Math.sin(a)*r,yy,z0+Math.cos(a)*r)}p.addScaledVector(V(Math.sin(a),0,Math.cos(a)),Math.sin(PI*t)*.065*W);return p};
-      if(!B.cactus)addGeoS('extras','accent',clothSurface(24,120,pt,{closed:true,thickness:.025*W}));
-      else{
+      if(!B.cactus&&!human)addGeoS('extras','accent',clothSurface(24,120,pt,{closed:true,thickness:.025*W}));
+      else if(B.cactus){
         const collar=(t,u)=>{const a=-PI+2*PI*u,yy=top-.03*W-t*.15*W-.022*W*Math.cos(a),p=surfAt(base,yy,a,.055*W),r=Math.max(Math.hypot(p.x,p.z-z0),headRadius+.02*W)+.018*W*Math.sin(PI*t);return V(Math.sin(a)*r,yy,z0+Math.cos(a)*r)};
         addGeoS('extras','accent',clothSurface(20,112,collar,{closed:true,thickness:.022*W}));
         const bandana=(t,u)=>{const a=(u-.5)*2.35*(1-.88*t),yy=lerp(top-.12*W,Y(.235),t)+.025*W*Math.sin(u*PI*6)*Math.sin(t*PI);return surfAt(base,yy,a,.065*W+.025*W*Math.sin(PI*t))};
@@ -115,7 +141,7 @@ export function buildHeroFrontier(C){
       }
     }
     const mid=E.clone().lerp(Wr,.60);mid.x*=side;const r=limbR(E.clone().lerp(Wr,.6),Wr.clone().sub(E).normalize())+.07*W;
-    const outline=shieldOutline(.38*W,.59*W),pl=new THREE.ExtrudeGeometry(outline,{depth:.05*W,bevelEnabled:true,bevelSize:.015*W,bevelThickness:.012*W,bevelSegments:3});pl.translate(mid.x,mid.y,mid.z+r);addGeoS('extras','trim',pl);
+    const outline=shieldOutline((human?.45:.38)*W,(human?.85:.59)*W),pl=new THREE.ExtrudeGeometry(outline,{depth:.05*W,bevelEnabled:true,bevelSize:.015*W,bevelThickness:.012*W,bevelSegments:3});pl.translate(mid.x,mid.y,mid.z+r);addGeoS('extras','trim',pl);
     const inset=new THREE.ExtrudeGeometry(outline,{depth:.055*W,bevelEnabled:true,bevelSize:.01*W,bevelThickness:.01*W,bevelSegments:3});inset.scale(.83,.86,1);inset.translate(mid.x,mid.y,mid.z+r+.04*W);addGeoS('extras',soldier?'enamel':'leather',inset);
     const emblem=badge('flame',.12*W,.02*W);emblem.translate(mid.x,mid.y,mid.z+r+.105*W);addGeoS('extras','trim',emblem);
   }

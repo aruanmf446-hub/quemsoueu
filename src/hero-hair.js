@@ -45,7 +45,21 @@ export function buildHeroHair(fit,style,color){
   }
   const cap=new THREE.BufferGeometry();cap.setAttribute('position',new THREE.Float32BufferAttribute(cp,3));cap.setAttribute('color',new THREE.Float32BufferAttribute(cc,3));cap.setIndex(ci);cap.computeVertexNormals();
   const short=kind==='pixie'||kind==='tousled'||kind==='veteran',long=kind==='waves'||kind==='halfup';
-  if(short){
+  if(kind==='tousled'){
+    // Mechas onduladas com raízes baixas e pontas livres: o topete muda a silhueta da cabeça.
+    for(let row=0;row<3;row++)for(let j=0;j<20;j++){
+      const ph=j*2*PI/20+(row%2)*.19,a=scalp(.30+row*.30,ph,.045),b=scalp(.71+row*.26,ph+.28,.14+rand()*.07),c=scalp(1.12+row*.22,ph+.58,.12+rand()*.08);
+      b.y+=.10+.10*rand();const end=c.clone().add(V(Math.sin(ph+.6)*(.11+rand()*.10),-.06-rand()*.17,Math.cos(ph+.6)*(.07+rand()*.09)));
+      lock([a,b,c,end],.057+rand()*.035,.029+rand()*.018,{tip:.82,grooves:2,phase:j*.83,tone:.92+rand()*.12});
+    }
+    for(let j=0;j<15;j++){
+      const x=-.60+j*.082,a=outside(V(.30+j*.015,top-.13,cz+.18),.055),b=outside(V(x*.48+.13,top+.17+.08*Math.sin(j*.73),cz+.50),.08),c=outside(V(x+.09,brow+.35+.08*Math.cos(j*.93),cz+.82),.09),end=outside(V(x-.14,brow+.06+.15*Math.sin(j*.73),cz+.79),.055);
+      lock([a,b,c,end],.055+rand()*.028,.029+rand()*.014,{tip:.83,grooves:2,phase:j*.8,tone:1.02});
+    }
+    for(let j=0;j<10;j++){
+      const ph=.6+j*.52,a=scalp(.65,ph,.07),b=scalp(.90,ph+.16,.22),end=b.clone().add(V(Math.sin(ph)*.15,.05+rand()*.10,Math.cos(ph)*.14));lock([a,b,end],.035,.021,{tip:.66,grooves:2,tone:1.05});
+    }
+  }else if(short){
     // Três fileiras sobrepostas: nuca, laterais e coroa, com pontas soltas de verdade.
     for(let row=0;row<3;row++)for(let j=0;j<18;j++){
       const ph=2*PI*j/18+(row%2)*.16,a=scalp(.46+row*.24,ph,.035),b=scalp(.83+row*.23,ph+.38,.075),front=Math.cos(ph)>.45;
@@ -97,7 +111,7 @@ export function buildHeroHair(fit,style,color){
     }
     for(const side of [-1,1])for(let j=0;j<4;j++){const pts=[];for(let k=0;k<=50;k++){const t=k/50,a=t*PI*5+j;pts.push(outside(V(side*(.64+.045*j)+Math.sin(a)*.045,brow+.22-t*(.8+j*.09),cz+.38+Math.cos(a)*.055),.075))}lock(pts,.033,.03,{tip:.9,phase:j})}
   }
-  const hex=new THREE.Color(color),material=new THREE.MeshPhysicalMaterial({name:'Hair',color:hex,vertexColors:true,roughness:.38,sheen:.8,sheenColor:hex.clone().lerp(new THREE.Color('#fff1d4'),.36),sheenRoughness:.37,clearcoat:.16,clearcoatRoughness:.55}),baseMaterial=material.clone();baseMaterial.name='Hair_Base';baseMaterial.roughness=.54;
+  const hex=new THREE.Color(color),material=new THREE.MeshPhysicalMaterial({name:'Hair',color:hex,vertexColors:true,roughness:.38,sheen:.8,sheenColor:hex.clone().lerp(new THREE.Color('#fff1d4'),.36),sheenRoughness:.37,clearcoat:.16,clearcoatRoughness:.55}),baseMaterial=material.clone();baseMaterial.name='Hair_Base';baseMaterial.roughness=.54;if(kind==='tousled'){material.roughness=.50;material.sheen=.55;material.clearcoat=.07;}
   const group=new THREE.Group();group.name='Hair_'+style.id;
   const capMesh=new THREE.Mesh(cap,baseMaterial);capMesh.name='Hair_Cap';group.add(capMesh);
   if(parts.length){const geo=mergeGeometries(parts,false);parts.forEach(g=>g.dispose());const mesh=new THREE.Mesh(geo,material);mesh.name='Hair_Locks';group.add(mesh)}
