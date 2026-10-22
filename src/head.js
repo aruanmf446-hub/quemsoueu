@@ -183,10 +183,10 @@ function vnoise(x, y, z) {
 }
 
 // ---------- olho: quadro local ----------
-function cornerFn(u, peak) { // 0 nos cantos, 1 no ponto mais aberto
+function cornerFn(u, peak, power=.8) { // 0 nos cantos, 1 no ponto mais aberto
   if (Math.abs(u) >= 1) return 0;
   const w = u < peak ? (u - peak) / (peak + 1) : (u - peak) / (1 - peak);
-  return Math.pow(Math.cos(clamp(w, -1, 1) * Math.PI / 2), .8);
+  return Math.pow(Math.cos(clamp(w, -1, 1) * Math.PI / 2), power);
 }
 function eyeFrame(P, s) {
   const th = s * P.tilt, c = Math.cos(th), sn = Math.sin(th), Re = P.Re;
@@ -194,7 +194,7 @@ function eyeFrame(P, s) {
   e.Rl2 = e.Rl * e.Rl;
   e.local = (x, y) => { const dx = x - e.ex, dy = y - e.ey; return [s * (dx * c + dy * sn), -dx * sn + dy * c] };
   e.toHead = (U, V) => { const lx = s * U; return [e.ex + lx * c - V * sn, e.ey + lx * sn + V * c] };
-  e.H = (uN, up) => up ? e.hu * cornerFn(uN, P.peakU) : e.hl * cornerFn(uN, P.peakL);
+  e.H = (uN, up) => up ? e.hu * cornerFn(uN, P.peakU,P.upperLidPower??.8) : e.hl * cornerFn(uN, P.peakL,P.lowerLidPower??.8);
   return e;
 }
 
@@ -253,7 +253,7 @@ function makeFaceField(P, eyes) {
     // maçãs do rosto
     // maçãs: altas (logo abaixo do olho) e cheias, descendo até o canto da boca; o sorriso empurra para cima
     const chY = P.cheekY ?? (eyeY - .27), chX = P.cheekX ?? .42;
-    dz += P.cheekH * gau(ax - chX, .19) * gau(y - (chY + .025 * smS), .15) + P.cheekH * .45 * gau(ax - (mw + .1), .13) * gau(y - (ymC + .08), .12);
+    dz += P.cheekH * gau(ax - chX, P.cheekW??.19) * gau(y - (chY + .025 * smS), P.cheekTall??.15) + P.cheekH * .45 * gau(ax - (mw + .1), .13) * gau(y - (ymC + .08), .12);
     if (sX > 0) { // expressão de sorriso: maçã sobe e enche, canto empurra a bochecha
       dz += sX * .03 * gau(ax - (mw + .1), .12) * gau(y - (ymC + .12), .11) + sX * .02 * gau(ax - chX, .17) * gau(y - (chY + .05), .13);
     } else if (sX < 0) { // tristeza: queixo contrai (bolinha do queixo) e cantos afundam
@@ -270,6 +270,7 @@ function makeFaceField(P, eyes) {
       const bw = (.036 + .034 * qc * qc) * nW, xb = x / bw;
       const prof = P.noseH * Math.pow(qc, P.scoop) * exp(-((below / (P.tipR * .8)) ** 2));
       dz += prof * exp(-xb * xb);
+      dz += (P.bridgeBump||0)*gau(q-.55,.24)*gau(x,bw*1.1);
       hi += .4 * exp(-((x / (bw * .42)) ** 2)) * sstep(.3, .7, q) * (1 - sstep(.9, 1.1, q));
       ao += .22 * gau(ax - bw * 1.25, bw * .55) * sstep(.15, .5, q) * (1 - sstep(.85, 1.05, q)); // laterais da ponte
       const dy = y - (tipY + .012), ry = dy > 0 ? P.tipR * 1.9 : P.tipR * .78, r2 = (x / (P.tipR * nW)) ** 2 + (dy / ry) ** 2;
@@ -333,7 +334,7 @@ function makeFaceField(P, eyes) {
       }
     }
     // queixo
-    dz += P.chinH * gau(x, .2) * gau(y - (chinY + .06), .12);
+    dz += P.chinH * gau(x, P.chinW??.2) * gau(y - (chinY + .06), .12);
     hi += .35 * gau(x, .12) * gau(y - (chinY + .08), .08);
     // zona T e pálpebras levemente mais brilhantes (pele viva, não plástico uniforme)
     gloss += .3 * gau(x, .16) * gau(y - .42, .2) + .22 * gau(x, .06) * sstep(eyeY - .02, tipY + .02, y) * (y < rootY + .05 ? 1 : 0) + .18 * gau(x, .14) * gau(y - (chinY + .08), .08) + .15 * lid;
@@ -517,19 +518,6 @@ export function buildHead(presetId, adj, opts = {}) {
   const T0 = performance.now(), marks = {}, mark = l => { marks[l] = Math.round(performance.now() - T0) };
   const Q = opts.quality || 1;
   const P = resolve(presetId, adj);
-  // As novas identidades do deserto têm uma coluna larga que já encontra os ombros.
-  // O cacto pistoleiro anterior conserva seu preset e sua malha integralmente.
-  if (['frontier_cowboy','cactus_soldier','cactus_soldier_large'].includes(presetId)) {
-    P.lathe = { cz: -.04, zs: .88, y: [-1.45,-.85,-.2,.5,1.02], r: [.76,.80,.82,.81,.72], top: 1.02, rc: .48 };
-    P.neck = [.78,-.65,-.04,-.85,-.04,.24];
-    P.cran = [.3,-.04,.82,1.05,.72,.72,2];
-    P.pattern = {...P.pattern,n:10,depth:.047,top:1.3,bot:-1.1,faceFade:.6};
-    P.spines = {...P.spines,len:.105,r:.013,y0:-.72,y1:1.03,dy:.26};
-    P.eyeX=.335; P.eyeY=.20; P.Re=.285; P.openU=14*Math.PI/180; P.openL=-36*Math.PI/180;
-    P.peakU=.08; P.tilt=-6*Math.PI/180; P.browGap=.14; P.browTh=.085; P.browSlope=.045; P.browLen=1.12;
-    P.mouthY=-.43; P.mouthW=.35; P.smile=.09; P.smirk=presetId==='frontier_cowboy'?.75:.15;
-    P.skin='#668f2b'; P.patternColor=['#365b16','#a5bf51']; P.lidShadow='#47651f';
-  }
   if (P.kind === 'robot') return buildRobot(P, opts);
   // A fábrica mantém o grafo de módulos sem ciclos, necessário para o Worker de prévias.
   if (P.kind === 'companion') return buildCompanion(P, {...opts,buildRider:()=>buildHead('frontier_cowboy',{}, {quality:.45})});
@@ -601,8 +589,11 @@ export function buildHead(presetId, adj, opts = {}) {
     const LON = Math.round(310 * Q), LAT = Math.round(340 * Q), WARP = .5, W = LON + 1;
     const [, nty, ntz, nby, nbz] = P.neck, Cy = -.02, Cz = -.1, yBot = nby + .12;
     const TA = .76, TB = .93, thA = 150 * Math.PI / 180, thH = Math.PI / 2 * 1.04;
-    const NS = 600, cdf = new Float64Array(NS + 1);
-    for (let i = 1; i <= NS; i++) { const th = thA * (i - .5) / NS; cdf[i] = cdf[i - 1] + .32 + 1.4 * sstep(.8, 1.2, th) * (1 - sstep(2.4, 2.65, th)) }
+    const NS = 1024, cdf = new Float64Array(NS + 1);
+    // Redistribui o mesmo orçamento de vértices para as pálpebras e os lábios desta identidade.
+    // Evita gastar anéis uniformes na testa enquanto a borda da boca fica subamostrada.
+    const mouthTh=Math.atan2(Math.max(.2,surfZ(0,P.mouthY)-Cz),P.mouthY-Cy),eyeTh=Math.atan2(Math.max(.2,surfZ(P.eyeX,P.eyeY)-Cz),P.eyeY-Cy);
+    for (let i = 1; i <= NS; i++) { const th = thA * (i - .5) / NS; cdf[i] = cdf[i - 1] + .32 + 1.2 * sstep(.8, 1.2, th) * (1 - sstep(2.4, 2.65, th)) + .75*gau(th-eyeTh,.17)+1.3*gau(th-mouthTh,.115) }
     const invTh = s => { const tg = s * cdf[NS]; let lo = 0, hi = NS; while (hi - lo > 1) { const m = (lo + hi) >> 1; if (cdf[m] < tg) lo = m; else hi = m } return thA * (lo + (tg - cdf[lo]) / ((cdf[hi] - cdf[lo]) || 1)) / NS };
     const axisZ = y => y > nty ? Cz + (ntz - Cz) * clamp((Cy - y) / (Cy - nty), 0, 1) : ntz + (nbz - ntz) * clamp((nty - y) / (nty - nby), 0, 1);
     const sinP = new Float64Array(W), cosP = new Float64Array(W);

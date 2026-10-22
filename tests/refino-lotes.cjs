@@ -1,7 +1,7 @@
 // Executa o navegador em lotes pequenos para limitar a memória do SwiftShader.
 const {spawnSync}=require('node:child_process'),path=require('node:path'),assert=require('node:assert/strict');
 const script=process.argv[2]||'reino-lua.cjs';
-assert(['reino-lua.cjs','refino-renders.cjs','visuais.cjs'].includes(script),'Script de navegador desconhecido');
+assert(['reino-lua.cjs','refino-renders.cjs','visuais.cjs','identidades-visuais.cjs'].includes(script),'Script de navegador desconhecido');
 const ids=process.env.ATELIE_PERSONAGENS?.split(',');assert(ids?.length,'Informe ATELIE_PERSONAGENS');
 const size=Math.max(1,Math.min(5,Number(process.env.ATELIE_LOTE)||4));
 for(let i=0;i<ids.length;i+=size){

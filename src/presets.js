@@ -9,6 +9,7 @@
 // Relevo fino (olhos, nariz, boca, prega da pálpebra, zigomático…) e pele: src/head.js.
 import {FRONTIER_CHARACTERS,FRONTIER_COMPANIONS} from './frontier.js';
 import {FOREST_CHARACTERS} from './forest.js';
+import {refineFaceIdentities} from './face-identities.js';
 const deg = d => d * Math.PI / 180;
 
 export const PRESETS = {
@@ -280,6 +281,8 @@ for(const id of ['bread_baker','bread_vigilante'])sculpt(id,{...heroMale,Re:.259
 PRESETS.flame_guardian=derive('masculine_soft',{...heroMale,id:'flame_guardian',label:'Guardião da chama',family:'Humanos',sub:'Herói da chama, casaca preta, manto rubi e armadura dourada',
   skin:'#bb8866',lip:'#91574b',brow:'#302017',iris:['#be9354','#70502b','#2b1c0f'],tilt:deg(4),smile:.10,smirk:.34,browSlope:-.017,browTh:.059,
   loft:{...PRESETS.masculine_soft.loft,a:[.28,.40,.54,.65,.70,.73,.77,.78,.64,.45],n:2.7,cb:.08}});
+
+refineFaceIdentities(PRESETS);
 
 export const FAMILY_ORDER = ['Humanos', 'Criaturas', 'Vegetais', 'Robôs'];
 export const PRESET_ORDER = ['feminine_soft', 'masculine_soft', 'old_king', 'cute_round', 'feminine_bold', 'alchemist_villain', 'dwarf_bard', 'sad_clown',

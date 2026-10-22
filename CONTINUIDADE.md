@@ -4,7 +4,17 @@
 
 O usuário determinou: **sempre subir o trabalho para a `main`**. Ao concluir uma rodada, validar, registrar as alterações e enviar à `main`, preservando alterações remotas e sem force push. Distinguir o envio do código da conclusão do deploy do site.
 
-## Escopo atual — qualidade técnica de todos os 34 personagens (22/10/2026)
+## Rodada atual — escultura e identidade dos rostos (22/10/2026)
+
+O usuário autorizou **refinar a malha e diferenciar os rostos de todos os 34 personagens**, incluindo as bases antigas. O pedido é aproximar a anatomia e a escultura facial da linguagem da referência, sem substituir isso por iluminação, textura ou organização de roupa. A referência disponível é `.github/workflows/image.jpg`; as demais não estão disponíveis neste checkout. Não declarar fidelidade a imagens não consultadas nem aprovação estética.
+
+`src/face-identities.js` define contorno de mandíbula/queixo, volume das maçãs, proporções do crânio, abertura/curvatura das pálpebras, nariz/ponte nasal, íris e volumes dos lábios por identidade. O gerador aceita larguras próprias de queixo/bochecha e ponte nasal em relevo; a amostragem da malha concentra anéis nas pálpebras e boca sem aumentar o orçamento global de vértices. O bloco que sobrescrevia os três rostos de cacto por uma única anatomia saiu de `head.js` e passou aos presets independentes. Lobo, feneco, corvo e casco facial do robô também receberam escultura própria. Padeiro/vigilante e feneco/montaria conservam a mesma pessoa em suas skins.
+
+Comparação desta rodada: commit de partida `892e611`, retratos em `renders/identidades/antes` e `depois`, com frente, três quartos, perfil e malha sem cores. Cabelo, acessórios e figurino são ocultos só nas capturas de diagnóstico. `tests/identidades-faciais.mjs /copia/da/referencia` verifica mudança real das 34 malhas, diferenciação anatômica, geometrias válidas, morphs e clipes; `tests/galeria-identidades.py` exige os 34 personagens e câmeras/tamanhos idênticos. Comparações antigas de hash contra versões anteriores devem detectar estas mudanças intencionais de rosto.
+
+Validação local concluída: as 34 malhas mudaram em relação a `892e611`; as identidades compartilhadas das skins foram preservadas. Os 34 GLBs passaram, com mapas presentes e os mesmos clipes (12 nos animados, zero no robô). Worker real, expressões e cache passaram para arqueira, guarda veterano e feneco. Passaram os testes de tipos físicos/juntas/pescoço, a repetição dos cactos com novas silhuetas, identidade do deserto, cobertura padrão e qualidade de cabelo/pele/superfícies/tecido/pelagem. Galeria validada com 136 pares, incluindo malha sem cores, em `renders/identidades/index.html`. Relatórios em `renders/identidades/validacao` e `worker`. Nenhum personagem foi marcado como aprovado esteticamente.
+
+## Rodada anterior — qualidade técnica de todos os 34 personagens (22/10/2026)
 
 O usuário esclareceu que quer **qualidade de textura e malha em todos**, sem concentrar o trabalho no desenho de um personagem. A referência `.github/workflows/image.jpg` foi sincronizada da `main`; as tentativas locais de redesenhar rosto, cabelo, figurino e iluminação foram retiradas. Esta rodada atua nos geradores compartilhados, preservando proporções, silhuetas, cores e rig. As exigências históricas de preservar os 13 modelos anteriores continuam valendo para o desenho; suas normais e superfícies também recebem as correções técnicas solicitadas agora.
 

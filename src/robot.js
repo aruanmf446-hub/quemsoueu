@@ -55,6 +55,9 @@ export function buildRobot(P, opts = {}) {
       let r = R;
       const sd = Math.pow(Math.abs(u) / (SW + .07), 4) + Math.pow(Math.abs(v - SY) / (SH + .07), 4);
       r -= .035 * sstep(1.15, .95, sd); // recesso da tela
+      // Maçãs e queixo do casco enquadram o rosto, em vez de uma esfera uniforme.
+      const front=sstep(.1,.7,z)*sstep(.85,1.25,sd);
+      r+=front*(.035*Math.exp(-(((y+.32)/.30)**2)-((Math.abs(x)-.58)/.20)**2)-.04*Math.exp(-(((y+.76)/.20)**2)));
       const seamA = Math.abs(v - (SY - SH - .13)), seamB = Math.abs(Math.abs(u) - 1.55);
       r -= .012 * sstep(.02, .005, seamA) + .01 * sstep(.02, .005, seamB) * sstep(.9, .5, Math.abs(v));
       p.setXYZ(i, x * r, y * r, z * r);
