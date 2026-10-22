@@ -265,7 +265,7 @@ function makeFaceField(P, eyes) {
     if (P.hollow) { const ho = gau(ax - .5, .13) * gau(y - (mY + .1), .11); dz -= P.hollow * ho; ao += .45 * ho * P.hollow / .015 }
     if (P.temple) { const te = gau(ax - .66, .12) * gau(y - (eyeY + .2), .13); dz -= P.temple * te; ao += .25 * te * P.temple / .015 }
     // ---- nariz: forma contínua — ponte → ponta alongada (sem "bolinha") → base; asas baixas e recuadas; narinas por baixo ----
-    if (!noNose && ax < .42 && y < rootY + .25 && y > tipY - .3) {
+    if (!noNose && ax < (P.sculptedNose?.8:.42) && y < rootY + (P.sculptedNose?.35:.25) && y > tipY - (P.sculptedNose?.5:.3)) {
       const span = rootY - tipY, q = (rootY - y) / span, qc = clamp(q, 0, 1), below = Math.max(0, (q - 1) * span);
       const bw = (.036 + .034 * qc * qc) * nW, xb = x / bw;
       if(P.sculptedNose){
@@ -1066,7 +1066,8 @@ export function buildHead(presetId, adj, opts = {}) {
       for (let j = 0; j <= NY; j++) for (let i = 0; i <= NX2; i++) {
         const x = -span + 2 * span * i / NX2, v = j / NY, ph = Math.abs(Math.sin(Math.PI * (x + tw / 2) / tw)), edge = MCv.ym(x) + (upper ? .012 : -.012);
         const y = upper ? edge - v * h * (.86 + .14 * Math.pow(ph, .4)) : edge + v * h * (.86 + .14 * Math.pow(ph, .4)) - h * 1.05;
-        ps.push(x, y, surfZ(x, MCv.ym(x)) - (upper ? .05 : .065) - .05 * (x / span) ** 2);
+        const z=surfZ(x,MCv.ym(x))-(upper?.05:.065)-.05*(x/span)**2;
+        ps.push(x,y,Math.min(z,surfZ(x,y)-.03));
       }
       for (let j = 0; j < NY; j++) for (let i = 0; i < NX2; i++) { const a = j * (NX2 + 1) + i, b = a + 1, c2 = a + NX2 + 1, d = c2 + 1; ix2.push(a, c2, b, b, c2, d) }
       const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(ps, 3)); g.setIndex(ix2); g.computeVertexNormals();
@@ -1076,6 +1077,9 @@ export function buildHead(presetId, adj, opts = {}) {
     const th = Math.max(.035, MCv.mw * .2);
     addMesh(teeth(true, th), tm, 'Teeth_Upper'); addMesh(teeth(false, th * .55), tm, 'Teeth_Lower');
     { const g = new THREE.SphereGeometry(1, 32, 20); g.scale(MCv.mw * .62, .035, depth * .55); g.translate(0, cy - .085, zg - depth * .7);
+      const p=g.attributes.position;
+      for(let i=0;i<p.count;i++)p.setZ(i,Math.min(p.getZ(i),surfZ(p.getX(i),p.getY(i))-.035));
+      g.computeVertexNormals();
       setColors(g, (c, x) => c.set('#c85a66').multiplyScalar(1 - .25 * gau(x, .05)));
       addMesh(g, mat('#ffffff', { vertexColors: true, roughness: .4, clearcoat: .4 }), 'Tongue') }
   }

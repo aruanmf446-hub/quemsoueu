@@ -4,7 +4,17 @@
 
 O usuário determinou: **sempre subir o trabalho para a `main`**. Ao concluir uma rodada, validar, registrar as alterações e enviar à `main`, preservando alterações remotas e sem force push. Distinguir o envio do código da conclusão do deploy do site.
 
-## Rodada atual — qualidade orbital e fechamento das pálpebras (22/10/2026)
+## Rodada atual — projeção e proporções dos 34 rostos (22/10/2026)
+
+O usuário considerou `6bb2ee9` fraco e pediu uma mudança mais forte na escultura de todos. Esta rodada altera a anatomia, sem mudanças de iluminação, roupa ou materiais. Não declarar resultado aprovado nem equivalência à referência cinematográfica.
+
+`src/face-identities.js` separa cinco larguras do contorno e quatro profundidades absolutas (`planes`: queixo, boca, maçãs e arcada). Os perfis têm olhos menores e aberturas próprias, mandíbulas mais cheias, narizes mais projetados e diferenças de crânio/queixo. A projeção das maçãs vem principalmente do volume da cabeça, com menos relevo local. O domínio de fusão nasal foi ampliado para acomodar as novas pontas sem cortar a superfície. Dentes e língua das bocas fechadas são limitados à superfície interna; a revisão piloto revelou e corrigiu língua atravessando o queixo.
+
+Os seis vegetais receberam proporções próprias de corpo facial, olhos e boca. Lobo e feneco têm novas relações entre crânio, olhos e focinho; o corvo tem crânio mais largo, olhos menores e bico mais longo/curvo. A deformação frontal do robô alarga as laterais inferiores e encurta o queixo, aplicada também à tela e à borda para manter o encaixe. As skins compartilhadas continuam representando a mesma pessoa.
+
+Referência imutável desta rodada: `/workspace/outputs/escultura-v3-base` (`6bb2ee9`). Comparação em `renders/escultura-v3/antes` e `depois`, com câmeras idênticas; galeria validada em `renders/escultura-v3/index.html` (136 pares). Os testes geométricos confirmaram mudança real nas 34 malhas, continuidade nasal, interiores orais contidos, morphs/clipes e identidades compartilhadas. Passaram também qualidade orbital/fechamento das pálpebras dos 29 rostos humanos/vegetais, cactos, tipos físicos e cobertura. Os 34 GLBs passaram com mapas, 12 clipes nos animados e zero no robô; nenhum erro de navegador. Worker/expressões/cache passaram para arqueira, veterano e feneco. Foram revisadas pranchas dos 34 rostos sem cores e com cabelo/acessórios, além de cinco expressões para arqueira, veterano, feneco, soldado cacto e robô. Relatórios em `renders/escultura-v3/{depois,validacao,worker,expressoes}`. Estes artefatos são locais e ignorados pelo Git; podem ser regenerados com os scripts versionados. Isso conclui a validação técnica desta rodada, sem aprovação estética do usuário.
+
+## Rodada anterior — qualidade orbital e fechamento das pálpebras (22/10/2026)
 
 O usuário pediu para continuar após o checkpoint `858e2fb`. A revisão visual inicial incluiu os 34 rostos em pranchas de malha sem cores. A correção atual trata a integração entre olho e pele: a grade externa deixa de comprimir várias fileiras sobre a abertura; a malha anatômica própria desenha a borda nos 29 rostos humanos/vegetais. A esfera de apoio da pele acompanha mais de perto o raio do globo ocular. Nos companheiros, as bordas das pálpebras seguem a elipsoide real, com espessura menor.
 

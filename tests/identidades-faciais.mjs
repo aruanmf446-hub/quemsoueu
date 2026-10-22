@@ -22,6 +22,10 @@ for(const id of PRESET_ORDER){
    metrics.set(id,{jaw:width(-.72),cheek:width(-.24),nose:head.fit.surfZ(0,head.params.noseTipY)});
    const bag=head.group.getObjectByName('Mouth_Bag');
    if(bag){const a=bag.geometry.attributes.position;for(let i=0;i<a.count;i++)assert(a.getZ(i)<head.fit.surfZ(a.getX(i),a.getY(i))-.015,id+': cavidade oral atravessou a superfície facial')}
+   if(!head.params.open)for(const name of ['Teeth_Upper','Teeth_Lower','Tongue']){
+    const mesh=head.group.getObjectByName(name);if(!mesh)continue;const a=mesh.geometry.attributes.position;
+    for(let i=0;i<a.count;i++)assert(a.getZ(i)<head.fit.surfZ(a.getX(i),a.getY(i))-.015,id+'/'+name+': interior aparece pela pele em repouso');
+   }
    if(head.params.sculptedNose){
     const z=head.fit.surfZ,tip=head.params.noseTipY,root=head.params.eyeY-.02;
     // Regressão das linhas retas que a união suave gerava ao entrar/sair do campo nasal.

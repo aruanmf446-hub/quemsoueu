@@ -33,18 +33,18 @@ function paint(g,base,light,kind){
 }
 export function buildCompanion(P,opts={}){
  const fennec=P.species==='fennec',wolf=P.species==='wolf'||fennec,group=new THREE.Group();group.name='Head_V2_'+P.id;
- const eyeX=fennec?.315:wolf?.350:.320,eyeY=fennec?.285:wolf?.215:.245,eyeR=fennec?.258:wolf?.218:.250;
+ const eyeX=fennec?.300:wolf?.345:.320,eyeY=fennec?.260:wolf?.215:.245,eyeR=fennec?.225:wolf?.205:.217;
  const body=new THREE.Group();body.name='Body';group.add(body);const head=new THREE.Bone();head.name='Bone_Head';group.add(head);const face=new THREE.Group();face.name='Rosto';head.add(face);const mask=new THREE.Group();mask.name='Acessorio_Mascara';if(!wolf)face.add(mask);
  const fur=material('Pelagem',opts.skin||P.skin),light=material('Pelagem_clara',fennec?'#f3dfbb':wolf?'#ded7cc':'#eee1c8'),black=material('Nariz_bico','#181723'),pink=material('Interior_orelha',fennec?'#ce957b':'#9d787b'),white=material('Olho_branco','#faf2de'),iris=material('Iris',wolf?'#bb6c26':'#a53b35'),pupil=material('Pupila','#100e17');black.roughness=.28;black.clearcoat=.52;iris.roughness=.19;iris.clearcoat=.75;fur.roughness=.64;fur.sheen=.65;fur.sheenRoughness=.46;light.roughness=.72;light.sheen=.5;
  const coated=fur.clone();coated.name='Pelagem_esculpida';coated.color.set('#ffffff');coated.vertexColors=true;const strands=fur.clone();strands.name='Pelagem_mechas';strands.vertexColors=true;const paleStrands=light.clone();paleStrands.name='Pelagem_clara_mechas';paleStrands.vertexColors=true;
  if(wolf){
   // Feneco: testa cheia e focinho compacto. Lobo: arcadas e maçãs largas, focinho firme.
-  const skull=ellipse(V(0,fennec?.30:.23,-.06),V(fennec?.655:.775,fennec?.72:.64,fennec?.64:.66)),muzzle=ellipse(V(0,fennec?-.115:-.165,fennec?.49:.56),V(fennec?.335:.475,fennec?.245:.30,fennec?.425:.55)),cheeks=[-1,1].map(s=>ellipse(V(s*(fennec?.395:.475),fennec?-.07:-.15,.27),V(fennec?.315:.35,fennec?.33:.31,.37)));
+  const skull=ellipse(V(0,fennec?.30:.23,-.06),V(fennec?.700:.790,fennec?.69:.64,fennec?.64:.66)),muzzle=ellipse(V(0,fennec?-.115:-.165,fennec?.49:.56),V(fennec?.310:.475,fennec?.245:.30,fennec?.400:.60)),cheeks=[-1,1].map(s=>ellipse(V(s*(fennec?.395:.475),fennec?-.07:-.15,.27),V(fennec?.315:.35,fennec?.33:.31,.37)));
   const sockets=[-1,1].map(s=>ellipse(V(s*eyeX,eyeY,.57),V(eyeR*1.06,eyeR*.98,.24)));
   const sdf=(x,y,z)=>{let d=union(skull(x,y,z),muzzle(x,y,z),.19);for(const f of cheeks)d=union(d,f(x,y,z),.18);for(const f of sockets)d=Math.max(d,-f(x,y,z));return d};
   const frontAt=(x,y)=>{let z=1.6;for(let i=0;i<90;i++){const d=sdf(x,y,z);if(d<.0001)break;z-=Math.max(.0001,d*.85)}return z};
   const onFace=(points,pad=.005)=>points.map(p=>V(p.x,p.y,frontAt(p.x,p.y)+pad));
-  mesh(face,'Malha_rosto',paint(smoothCloth(sdfMesh(sdf,{x:1.1,y0:-.65,y1:1.03,z0:-.77,z1:1.12},.021),2),fur.color,light.color,'face'),coated);
+  mesh(face,'Malha_rosto',paint(smoothCloth(sdfMesh(sdf,{x:1.1,y0:-.65,y1:1.03,z0:-.77,z1:1.30},.021),2),fur.color,light.color,'face'),coated);
   for(const side of [-1,1]){
    ear(face,side,fur,pink,fennec,light);const cheekFur=[],browFur=[];
    for(let row=0;row<3;row++)for(let i=0;i<8;i++){const t=i/7,p=V(side*(.38+.10*row+.08*Math.sin(PI*t)),.18-t*.57,.37-row*.10);cheekFur.push(quill(p,p.clone().add(V(side*(.22+.05*row),-.13-.1*t,-.005)),.054,.025,.035))}
@@ -59,7 +59,7 @@ export function buildCompanion(P,opts={}){
   for(const side of [-1,1]){const smile=[];for(let i=0;i<=32;i++){const t=i/32;smile.push(V(side*.34*t,-.31-.035*Math.sin(PI*t)+(fennec?.055:.015)*t))}mesh(face,'Sorriso',tube(onFace(smile),.008),black);for(let i=0;i<6;i++){const x=side*(.13+.045*(i%3)),y=-.21-.042*Math.floor(i/3);mesh(face,'Ponto_bigode',orb(V(x,y,frontAt(x,y)+.004),.006),black)}for(let i=0;i<3;i++){const x=side*.28,y=-.22-i*.035,z=frontAt(x,y);mesh(face,'Bigode_fino',tube([V(x,y,z),V(side*.50,y+.02,z+.04),V(side*.69,y-.02,z+.01)],.002),light)}}
   const locks=[];for(let layer=0;layer<2;layer++)for(let i=-4;i<=4;i++)locks.push(quill(V(i*.09,.63+layer*.035,.0-layer*.16),V(i*.11+.06,.97+.10*(1-Math.abs(i)/5),-.13-layer*.18),.075,.036,.085));mesh(face,'Topete_pelagem',mergeVolumes(locks),strands);
  }else{
-  const skull=ellipse(V(0,.23,-.03),V(.73,.85,.69)),cheek=ellipse(V(0,-.26,.25),V(.60,.39,.47));
+  const skull=ellipse(V(0,.23,-.03),V(.76,.79,.69)),cheek=ellipse(V(0,-.26,.25),V(.62,.36,.47));
   mesh(face,'Cranio',smoothCloth(sdfMesh((x,y,z)=>union(skull(x,y,z),cheek(x,y,z),.20),{x:1.05,y0:-.79,y1:1.04,z0:-.8,z1:.87},.024),2),fur);
   // Máscara de osso esculpida, com órbitas vazadas e bordas arredondadas verdadeiras.
   const bone=ellipse(V(0,.36,.505),V(.75,.60,.225)),sculpt=[ellipse(V(0,.22,.655),V(.135,.40,.175)),...[-1,1].flatMap(side=>[ellipse(V(side*.23,.55,.615),V(.24,.12,.15)),ellipse(V(side*.47,.545,.565),V(.22,.12,.13)),ellipse(V(side*.60,.13,.50),V(.155,.305,.17))])],cuts=[...[-1,1].map(s=>ellipse(V(s*.32,.23,.67),V(.255,.275,.39))),ellipse(V(0,-.14,.67),V(.24,.31,.40))];
@@ -75,7 +75,7 @@ export function buildCompanion(P,opts={}){
    const cracks=[[V(side*.64,.62,.59),V(side*.58,.69,.61),V(side*.62,.77,.57)],[V(side*.53,-.04,.69),V(side*.59,-.11,.64),V(side*.58,-.20,.59)],[V(side*.14,.79,.62),V(side*.20,.73,.66),V(side*.18,.67,.69)]];
    const ink=material('Fissuras_osso','#8b705d');for(const line of cracks){const projected=line.map(p=>V(p.x,p.y,boneFront(p.x,p.y)+.004)).filter(p=>relief(p.x,p.y,p.z)<.018);if(projected.length>1)mesh(mask,'Fissura_mascara',tube(projected,.0032),ink);}
   }
-  const beak=clothSurface(64,56,(t,u)=>{const a=u*2*PI,r=Math.max(.002,.227*Math.sin(PI*(.13+.87*t))*(1-.78*t));return V(Math.cos(a)*r,-.045-.42*t*t+Math.sin(a)*r*.72,.62+.67*t)},{closed:true,thickness:.025});mesh(face,'Bico_superior',grain(beak,.045),black);
+  const beak=clothSurface(64,56,(t,u)=>{const a=u*2*PI,r=Math.max(.002,.250*Math.sin(PI*(.13+.87*t))*(1-.78*t));return V(Math.cos(a)*r,-.045-.46*t*t+Math.sin(a)*r*.72,.62+.72*t)},{closed:true,thickness:.025});mesh(face,'Bico_superior',grain(beak,.045),black);
   for(const side of [-1,1]){mesh(face,'Narina',orb(V(side*.122,-.035,.88),.029,V(1,.44,.3)),pupil);mesh(face,'Borda_bico',tube([V(side*.21,-.13,.68),V(side*.15,-.18,.91),V(side*.045,-.32,1.12)],.009),black)}
   const cheekFeathers=[],crest=[],scalp=[];
   for(const side of [-1,1])for(let row=0;row<4;row++)for(let i=0;i<6;i++){const p=V(side*(.47+row*.036),.08-i*.078,.17-row*.085);cheekFeathers.push(quill(p,p.clone().add(V(side*.21,-.21-.055*row,-.07)),.10,.025,.04,true))}

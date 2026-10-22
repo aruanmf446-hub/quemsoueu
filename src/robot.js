@@ -48,7 +48,19 @@ export function buildRobot(P, opts = {}) {
   root.name = 'Head_V2_' + P.id;
   let screenTex = null;
   const R = 1, shellC = col(P.shell || '#ece6da'), accent = col(P.accent || '#f08a24'), dark = col('#2b2a2a');
-  const add = (geo, m, name, parent = root) => { if (geo.attributes.normal) unitNormals(geo);if(!m.emissiveMap)heroSurface(geo,m,m.metalness>.5?'metal':'polymer');const o = new THREE.Mesh(track(geo), m); o.name = name; parent.add(o); return o };
+  const add = (geo, m, name, parent = root) => {
+    if(['Head_Shell','Screen','Borda_tela'].includes(name)){
+      // Escultura coerente do casco, vidro e borda: maçãs mais largas e queixo
+      // compacto. Os três seguem o mesmo campo, mantendo o encaixe da tela.
+      const p=geo.attributes.position;
+      for(let i=0;i<p.count;i++){
+        const x=p.getX(i),y=p.getY(i),z=p.getZ(i),front=sstep(.15,.85,z),cheek=Math.exp(-(((y+.30)/.40)**2));
+        p.setXYZ(i,x*(1+.15*front*cheek),y+.105*front*Math.exp(-(((y+.73)/.27)**2)),z+.045*front*cheek);
+      }
+      geo.computeVertexNormals();
+    }
+    if (geo.attributes.normal) unitNormals(geo);if(!m.emissiveMap)heroSurface(geo,m,m.metalness>.5?'metal':'polymer');const o = new THREE.Mesh(track(geo), m); o.name = name; parent.add(o); return o;
+  };
   // tela: janela em coordenadas angulares (longitude u, latitude v), super-elipse
   const SW = P.screenW || .78, SH = P.screenH || .5, SY = P.screenY || .12, inScreen = (u, v, pad = 0) => Math.pow(Math.abs(u) / (SW + pad), 4) + Math.pow(Math.abs(v - SY) / (SH + pad), 4) < 1;
 
