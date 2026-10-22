@@ -12,7 +12,9 @@ export function buildHeroFrontier(C){
   let g,shirt;
   if(soldier){
     // A frente fica aberta: o tronco verde e as nervuras fazem parte da silhueta do cacto.
-    g=garment('Corselete_aberto_do_deserto','leather','upper',{top:yN+.015,bottom:hem,t:.05*W,open:.72,openTaper:.75,hollow:true,shoulderPad:.12,env:{ease:.035*W,hang:.45,cinch:waist,cinchK:.82,flareFrom:waist,flare:.12}});
+    // Nas ombreiras, o colete precisa subir até o alto do ombro do tipo físico magro;
+    // só a parte superior e a folga da cava mudam, mantendo a abertura frontal.
+    g=garment('Corselete_aberto_do_deserto','leather','upper',{top:yN+.14*W,bottom:hem,t:.05*W,open:.72,openTaper:.75,hollow:true,shoulderPad:.18*W,env:{ease:.035*W,hang:.45,cinch:waist,cinchK:.82,flareFrom:waist,flare:.12}});
     edgeTube(g,'open','trim','upper',.018*W);edgeTube(g,'arm','trim','upper',.018*W);
   }else{
     // A camisa passa por cima das tampas dos ombros, por dentro do lenço. A barra da gola
