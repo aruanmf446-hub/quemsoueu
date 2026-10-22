@@ -24,7 +24,7 @@ export function buildHeroHair(fit,style,color){
       // Lado largo acompanha a superfície; a moldura do rosto conserva a espessura no perfil.
       n.set(c.x,Math.max(.12,c.y-cy)*.28,c.z-cz);if(n.lengthSq()<.01)n.set(0,0,1);
       n.addScaledVector(tan,-n.dot(tan)).normalize();if(n.lengthSq()<.01)n.set(0,0,1);bin.crossVectors(tan,n).normalize();n.crossVectors(bin,tan).normalize();
-      const root=.72+.28*smooth(0,.13,t),taper=Math.max(.008,1-smooth(tip,1,t)),w=width*root*Math.pow(taper,.6),h=thick*root*Math.pow(taper,.55);
+      const root=.72+.28*smooth(0,.13,t),taper=Math.max(.008,(1-.46*t)*(1-smooth(tip,1,t))),w=width*root*Math.pow(taper,.6),h=thick*root*Math.pow(taper,.55);
       for(let j=0;j<=cols;j++){
         const a=2*PI*j/cols,groove=1-(rope?.07:.12)*(.5+.5*Math.cos(a*grooves+(rope?t*22:phase))),q=c.clone().addScaledVector(bin,Math.cos(a)*w*groove).addScaledVector(n,Math.sin(a)*h*groove);
         p.push(q.x,q.y,q.z);const shade=baseTone*tone*(.72+.28*Math.max(0,Math.sin(a)))*(.7+.3*smooth(0,.25,t))*(.95+.05*Math.cos(a*grooves+(rope?t*22:phase)));colors.push(shade,shade,shade);uv.push(j/cols,t);
@@ -47,16 +47,16 @@ export function buildHeroHair(fit,style,color){
   const short=kind==='pixie'||kind==='tousled'||kind==='veteran',long=kind==='waves'||kind==='halfup';
   if(short){
     // Três fileiras sobrepostas: nuca, laterais e coroa, com pontas soltas de verdade.
-    for(let row=0;row<3;row++)for(let j=0;j<20;j++){
-      const ph=2*PI*j/20+(row%2)*.14,a=scalp(.25+row*.28,ph,.09+row*.01),b=scalp(.75+row*.27,ph+.25,.16),front=Math.cos(ph)>.45;
-      const endTheta=front?1.1+row*.08:1.65+row*.19,c=scalp(endTheta,ph+.4,.12+rand()*.09),d=c.clone().add(V(Math.sin(ph+.4)*(.12+rand()*.07),-.12-rand()*.12,Math.cos(ph+.4)*.09));
+    for(let row=0;row<3;row++)for(let j=0;j<18;j++){
+      const ph=2*PI*j/18+(row%2)*.16,a=scalp(.46+row*.24,ph,.035),b=scalp(.83+row*.23,ph+.38,.075),front=Math.cos(ph)>.45;
+      const endTheta=front?1.07+row*.075:1.62+row*.18,c=scalp(endTheta,ph+.58,.065+rand()*.035),d=c.clone().add(V(Math.sin(ph+.58)*(.10+rand()*.06),-.08-rand()*.08,Math.cos(ph+.58)*.055));
       if(kind==='pixie'&&Math.sin(ph)<-.15)d.y-=.08;
-      lock([a,b,c,d],(kind==='veteran'?.15:.14)+rand()*.055,.055+rand()*.025,{phase:j*.7,tip:.76});
+      lock([a,b,c,d],(kind==='veteran'?.10:.09)+rand()*.032,.028+rand()*.012,{phase:j*.7,tip:.65});
     }
     // Frange assimétrica que cruza a testa, com topete levantado em vez de um capacete liso.
-    for(let j=0;j<11;j++){
-      const x=-.59+j*.115,root=V(x*.5,top-.03,cz+.10),b=V(x-.16,top+.18+Math.sin(j*.8)*.10,cz+.46),c=outside(V(x+.10,brow+.24+.08*Math.sin(j*.9),cz+.82),.08),end=outside(V(x+.23,brow+.06+Math.abs(x)*.17,cz+.78),.05);
-      lock([outside(root,.08),b,c,end],.14+rand()*.035,.065,{phase:j,tip:.68,tone:1.04});
+    for(let j=0;j<8;j++){
+      const x=-.69+j*.17,root=outside(V(.16+j*.035,top-.20+j*.01,cz+.24),.035),b=outside(V(.10+j*.025,top-.02+Math.sin(j*.8)*.035,cz+.49),.045),c=outside(V(x+.19,brow+.28+.06*Math.sin(j*.9),cz+.78),.045),end=outside(V(x,brow+.04+Math.abs(x)*.11,cz+.73),.025);
+      lock([root,b,c,end],.095+rand()*.025,.027,{phase:j,tip:.65,tone:1.04});
     }
     if(kind==='pixie'){
       // Trança lateral de três fios, usada pela arqueira e pela guarda.

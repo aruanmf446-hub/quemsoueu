@@ -30,7 +30,7 @@ for(const id of (process.env.ATELIE_PERSONAGENS?.split(',')||ids)){
     g.traverse(m=>{if(m.isMesh){if(!m.geometry.attributes.position.array.every(Number.isFinite))throw Error('Vértice inválido');if(!m.geometry.attributes.normal.array.every(Number.isFinite))throw Error('Normal inválida')}});
     if(['frontier_cowboy','cactus_soldier','cactus_soldier_large'].includes(id)){
       // Um lenço no pescoço não pode subir até os olhos quando aumenta o porte do corpo.
-      const THREE=await import('three'),P=(await import('/src/presets.js')).PRESETS[id],b=a.body(),pv=b.pivot,hs=b.hs;
+      const THREE=await import('three'),P=a.group().userData.params,b=a.body(),pv=b.pivot,hs=b.hs;
       const y=pv.y+hs*(P.eyeY-pv.y),z=pv.z+hs*(P.lathe.cz+P.lathe.r[2]*P.lathe.zs-pv.z);
       a.clothes().group.updateMatrixWorld(true);
       for(const side of [-1,1]){const ray=new THREE.Raycaster(new THREE.Vector3(side*P.eyeX*hs,y,z+3),new THREE.Vector3(0,0,-1),0,3);if(ray.intersectObject(a.clothes().group,true).length)throw Error('Roupa cobrindo o olho do cacto: '+id)}

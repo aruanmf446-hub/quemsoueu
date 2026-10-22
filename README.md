@@ -220,6 +220,16 @@ Verificação: os 12 personagens orgânicos responderam aos toques em Magro/Padr
 
 ## Controle de aprovação dos refinamentos
 
+### Reconstrução em andamento — 22/10/2026
+
+O usuário reprovou o acabamento da rodada `77e1b9e` e pediu reconstrução mais fiel às referências, com checkpoints frequentes na `main`. Esta etapa muda **somente as novas identidades**: silhuetas compactas dos cactos, rostos/cabelos próprios, coletes com cavas paramétricas, camadas de tecido, armaduras e companheiros. Os 13 personagens anteriores continuam preservados. `hero-frontier.js`, `hero-forest.js`, `hero-lunar.js`, `hero-bread.js` e `hero-kit.js` separam a modelagem por família; `hero-material.js` gera trama e grão incorporados no GLB. O estúdio dos novos personagens usa iluminação própria em `hero-studio.js`, mantendo a apresentação anterior dos 13 originais.
+
+**Checkpoint técnico parcial, sem aprovação estética:** preservação por hash dos 13 anteriores passou; os três novos cactos passaram em silhueta, boca/olhos livres, geometrias e cores. A matriz de 27 conjuntos no corpo feminino suave passou, incluindo cache, tipos físicos e cobertura. Os quatro companheiros passaram no navegador com Worker, cores e GLB/12 clipes. A suíte completa de todos os corpos e os novos renders continuam em execução; os recortes e sobreposições ainda estão sendo revisados. Publicar um checkpoint não significa declarar a reconstrução concluída ou igual às imagens.
+
+Nova referência masculina recebida nesta etapa:
+
+- [ ] **Guardião da chama** (`flame_guardian`): cabelo castanho, casaca preta/rubi, capa, couro e brasões dourados. Pendente de refinamento e concordância do usuário, além dos 20 itens originais abaixo.
+
 A fila de refinamento reúne **20 personagens** (Reino da Lua, Floresta e Deserto). **Somente a concordância explícita do usuário permite retirar um personagem desta fila ou marcar seu refinamento como aprovado.** Testes, publicação na main e revisão do assistente não substituem essa aprovação. Enquanto não houver concordância, manter o item original desmarcado e registrar apenas o trabalho realizado e os renders disponíveis.
 
 ### Rodada de refinamento em avaliação

@@ -3,6 +3,14 @@
 Repositório: `aruanmf446-hub/quemsoueu`, branch `main`.
 Site: https://aruanmf446-hub.github.io/quemsoueu/
 
+## Prioridade atual — reconstrução fiel às referências (22/10/2026)
+
+O usuário reprovou a rodada `77e1b9e`, pediu qualidade máxima e checkpoints frequentes na `main`. A reconstrução dos **20 novos personagens** está em andamento, com uma nova referência masculina adicionada como `flame_guardian` (também pendente). É autorizado refinar rosto, cabelo, proporções e equipamentos **destas novas identidades**, preservando os 13 personagens anteriores. Nenhum item pode ser removido ou marcado aprovado sem concordância explícita do usuário.
+
+Arquivos novos: `hero-frontier.js`, `hero-forest.js`, `hero-lunar.js`, `hero-bread.js`, `hero-kit.js`, `hero-material.js`, `hero-hair.js`, `hero-studio.js`, `cactus-headgear.js`, `companion-detail.js`. `outfits.js` oferece os geradores e encaminha os novos estilos. A geometria antiga permanece no caminho anterior. Os coletes novos podem solicitar `garment(...,{mesh:false})` para usar seus campos e uma cava paramétrica limpa. O teste de cobertura dos novos estilos consulta as regiões dos próprios recortes de tecido, sem diminuir os testes históricos dos antigos.
+
+Checkpoint parcial: hash13 e teste específico dos três cactos passaram; matriz27 conjuntos no corpo feminino suave passou; quatro companheiros passaram em browser/GLB12clipes/Worker. **A suíte completa está em execução e os renders ainda estão sendo revisados.** Não declarar igualdade com as referências. Logs temporários `/tmp/hero-figurinos-final.log`, renders em `/workspace/outputs/hero*`. Antes de considerar uma entrega final, concluir cobertura nos builds, cores/slots/cache, GLB, console e frente/3/4/costas/rosto de todos. Câmeras dos testes agora desligam damping para impedir capturas antes de atingir a vista correta; `ATELIE_BASE_URL` e `ATELIE_SOURCE_ROOT` permitem renderizar a referência `77e1b9e` em servidor separado.
+
 ## Etapa atual — refinamento dos 20 personagens
 
 O usuário autorizou refinar todos os personagens das listas do README e determinou: **só retirar ou marcar um item depois de sua concordância explícita**. Manter as 20 caixas desmarcadas. Aprovação de testes não equivale a aprovação visual.

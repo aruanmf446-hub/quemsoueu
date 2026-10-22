@@ -2,7 +2,7 @@
 import {FRONTIER_CHARACTERS,FRONTIER_COMPANIONS} from './frontier.js';
 import {FOREST_CHARACTERS} from './forest.js';
 import {previewChoice} from './preview-spec.js';
-const VERSION='menu-v3-refinamento';
+const VERSION='menu-v4-herois';
 const FRONTIER=new Set([...FRONTIER_CHARACTERS.map(c=>c.id),...FRONTIER_COMPANIONS]);
 const FOREST=new Set(FOREST_CHARACTERS.map(c=>c.id));
 const LUNAR=new Set(['nana_explorer','moon_guardian','nico_inventor','ruby_sorceress','paysandu_wolf','ruby_raven']);
@@ -33,7 +33,7 @@ export class PreviewCatalog {
       const request={...context,spec};if(spec.kind==='character')request.look=window.__atelie.savedLook(spec.value);
       // O enquadramento novo dos brincos invalida somente as quatro miniaturas desse slot.
       const alvo=spec.kind==='character'?spec.value:context.id;
-      const versao=FRONTIER.has(alvo)?'deserto-refino-1':FOREST.has(spec.kind==='character'?spec.value:context.id)?'floresta-refino-1':LUNAR.has(spec.kind==='character'?spec.value:context.id)?'reino-lua-refino-1':spec.kind==='accessory'&&spec.slot==='ears'?'menu-v2-orelhas':VERSION;
+      const versao=FRONTIER.has(alvo)?'deserto-heroi-2':FOREST.has(spec.kind==='character'?spec.value:context.id)?'floresta-heroi-2':LUNAR.has(spec.kind==='character'?spec.value:context.id)?'reino-lua-heroi-2':spec.kind==='accessory'&&spec.slot==='ears'?'menu-v2-orelhas':VERSION;
       const key=versao+':'+stable(previewChoice(request));button._preview={key,request};
       if(frame.dataset.key!==key){frame.dataset.key=key;frame.replaceChildren(Object.assign(document.createElement('div'),{className:'preview-wait',textContent:'Gerando prévia…'}));frame.classList.add('loading');delete frame.dataset.ready}
       if(this.cache.has(key))this.display(button,key,this.cache.get(key));else this.observer.observe(button);

@@ -21,10 +21,10 @@ export function buildHeroLunar(c) {
     const gem=new THREE.IcosahedronGeometry(r,0);gem.scale(.82,1.22,.43);put(slot,ch,orient(gem,p.clone().addScaledVector(axis,r*.08),axis));
     for(let i=0;i<4;i++){const a=(i+.5)*PI/2,q=p.clone().add(V(Math.cos(a)*r*.72,Math.sin(a)*r*.95,0));put(slot,'trim',sph(q,r*.12,1,1,1,12,8));}
   }
-  function fittedPanel(slot,ch,fn,f0,f1,a0,a1,off=.045*W,tail=0) {
+  function fittedPanel(slot,ch,fn,f0,f1,a0,a1,off=.105*W,tail=0) {
     const point=(t,u)=>{
       const a=lerp(a0,a1,u),y=Y(lerp(f0,f1,t))-tail*Math.sin(PI*u)*t**5;
-      return surfAt(fn,y,a,off+.018*W*Math.sin(u*PI*6)*Math.sin(PI*t));
+      return surfAt(fn,y,a,off+.009*W*(.5+.5*Math.sin(u*PI*6))*Math.sin(PI*t));
     };
     put(slot,ch,clothSurface(40,24,point,{thickness:.024*W}));return point;
   }
@@ -135,9 +135,9 @@ export function buildHeroLunar(c) {
     }
   }
   function trouserFolds(legs) {
-    for(const side of [-1,1])for(const [f,rise,amp] of [[.54,.04,.023],[.64,-.025,.019],[.77,.035,.028],[.86,-.03,.035],[.89,.025,.035]]) {
+    for(const side of [-1,1])for(const [f,rise,amp] of [[.55,.10,.016],[.65,-.08,.019],[.85,.085,.022],[.89,-.055,.026]]) {
       const cx=side*lerp(H.x,A.x,clamp((f-.43)/.55,0,1));
-      const point=(t,u)=>{const ph=lerp(-1.15,1.15,u),yy=Y(f)+rise*W*Math.sin(ph*1.3)+(t-.5)*.065*W,p=surfAt(legs,yy,ph,.012*W+amp*W*Math.sin(PI*t)*Math.sin(PI*u),cx);return p;};
+      const point=(t,u)=>{const ph=lerp(-.75,.90,u)+side*.12,yy=Y(f)+rise*W*(u-.5)+(t-.5)*.09*W,p=surfAt(legs,yy,ph,.001*W+amp*W*Math.sin(PI*t)*Math.sin(PI*u),cx);return p;};
       put('lower','pants',clothSurface(10,36,point,{thickness:.012*W}));
     }
   }
@@ -149,13 +149,13 @@ export function buildHeroLunar(c) {
     let coat=shirt;
     if(!nico) {
       coat=garment('Jaqueta_curta_lunar_recortada','leather','upper',{
-        top:yN+.09*W,bottom:Y(.295),t:.065*W,sleeve:'forearm',sleeveEase:.09*W,puff:.105*W,open:.26,openTaper:.86,hollow:true,over:shirt.solid,overGap:.045*W,
+        top:yN+.09*W,bottom:Y(.295),t:.065*W,sleeve:'forearm',sleeveEase:.065*W,puff:.065*W,open:.26,openTaper:.86,hollow:true,over:shirt.solid,overGap:.045*W,
         env:{ease:.075*W,hang:.5,cinch:Y(.285),cinchK:.92,folds:.018*W,foldN:11},cell:.029*clamp(W,1,1.3)
       });
       edgeTube(coat,'open','trim','upper',.017*W);sleeveCuffs(coat,'upper','leather',.12*W);
       // Gola alta aberta e lapelas: painéis largos dobrados, não um tubo dourado.
       for(const side of [-1,1]) {
-        const collar=(t,u)=>{const ph=side*lerp(.29,1.13,u),p=surfAt(coat.env,yN+.025*W+t*.24*W,ph,.04*W);p.y+=.035*W*Math.sin(PI*u);return p;};
+        const collar=(t,u)=>{const ph=side*lerp(.29,PI,u),p=surfAt(coat.env,yN-.12*W+t*.36*W,ph,.065*W);p.y+=.035*W*Math.sin(PI*u);return p;};
         put('upper','leather',clothSurface(18,32,collar,{thickness:.035*W}));edgeLines('upper',collar,'trim',.010*W);
         const lapel=(t,u)=>surfAt(coat.solid,Y(.055+t*.12),side*(.29+u*(.25-.16*t)),.055*W+.055*W*Math.sin(PI*u));
         put('upper','fabric',clothSurface(24,16,lapel,{thickness:.025*W}));edgeLines('upper',lapel,'trim',.009*W,false);
@@ -178,7 +178,7 @@ export function buildHeroLunar(c) {
       for(const side of [-1,1]) {
         const strap=surfaceStrap('upper','fabric',shirt.env,.025,.15,side*.48,side*.52,.17,.065*W);disc('upper','trim',strap(.94,.5).add(V(0,0,.012*W)),.045*W);
         surfaceStrap('upper','fabric',shirt.env,.025,.34,side*(PI-.42),side*(PI-.70),.17,.055*W);
-        const collar=(t,u)=>surfAt(shirt.env,yN+.02*W-t*.18*W,side*(.20+u*.35-.12*t),.045*W+.03*W*Math.sin(PI*u));put('upper','secondary',clothSurface(20,20,collar,{thickness:.03*W}));edgeLines('upper',collar,'secondary',.012*W,false);
+        const collar=(t,u)=>surfAt(shirt.env,yN+.04*W-t*.19*W,side*lerp(.20,PI,u),.045*W+.03*W*Math.sin(PI*u));put('upper','secondary',clothSurface(20,20,collar,{thickness:.03*W}));edgeLines('upper',collar,'secondary',.012*W,false);
       }
       const pocket=fittedPanel('upper','fabric',shirt.env,.205,.29,-.34,.34,.085*W);edgeLines('upper',pocket,'secondary',.007*W);stitch('upper',pocket,.05,13,'trim');
       for(let i=0;i<3;i++) {
@@ -225,6 +225,7 @@ export function buildHeroLunar(c) {
     env:{ease:.065*W,hang:.06,flareFrom:Y(.42),flare:.34,folds:.075*W,foldN:15,foldTwist:1.2,back:.045,smooth:14}
   });
   const support=(x,y,z)=>y>Y(.335)?bodice.env(x,y,z):skirt.env(x,y,z);
+  const cloakSupport=(x,y,z)=>support(x,y,z)-(y>Y(.335)?.12:.26)*W;
   // O decote segue explicitamente os dois arcos do coração e suas costas.
   const neckline=[];
   for(let i=0;i<=128;i++) {
@@ -236,7 +237,7 @@ export function buildHeroLunar(c) {
     for(const ph of [side*.39,side*.84]){
       const seam=[];for(let i=0;i<=45;i++){const t=i/45;seam.push(surfAt(bodice.env,lerp(top-.04*W,waist,t),ph*(1-.28*Math.sin(PI*t)),.042*W));}line('upper','trim',seam,.009*W);
     }
-    const panelPoint=fittedPanel('upper','secondary',bodice.env,.12,.335,side*.54,side*.93,.026*W);edgeLines('upper',panelPoint,'trim',.009*W,false);
+    const panelPoint=fittedPanel('upper','secondary',bodice.outer,.12,.335,side*.54,side*.93,.095*W);edgeLines('upper',panelPoint,'trim',.009*W,false);
     armSleeve(side,ruby?'accent':'fabric',.28,.86,.21*W);
     const q=E.clone().lerp(Wr,.79);q.x*=side;q.z+=limbR(E.clone().lerp(Wr,.79),Wr.clone().sub(E).normalize())+.07*W;
     put('upper','trim',moved(panel(.24*W,.37*W,.045*W),q));facetGem('upper',q.clone().add(V(0,.01*W,.05*W)),.06*W);
@@ -245,7 +246,7 @@ export function buildHeroLunar(c) {
   }
   // Saias com painéis abertos, bordas duplas e sobreposição visível entre cores.
   for(const side of [-1,1])for(const [a,b,fEnd,channel] of [[.31,.97,.965,'accent'],[.95,1.65,.91,'secondary'],[1.63,2.40,.965,'accent']]) {
-    const p=fittedPanel('lower',channel,skirt.env,.347,fEnd,side*a,side*b,.047*W+.012*W*a,.12*W);
+    const p=fittedPanel('lower',channel,skirt.env,.347,fEnd,side*a,side*b,.105*W+.065*W*a,.12*W);
     edgeLines('lower',p,'trim',.013*W);stitch('lower',p,.96,21,'trim');
     for(let i=0;i<4;i++) {
       const t=.25+i*.17,u=.5,pt=p(t,u),g=crescent((i%2?.045:.065)*W,.015*W);g.rotateZ(side*.5);put('lower','trim',orient(g,pt.clone().addScaledVector(normalAt(pt),.02*W),normalAt(pt)));
@@ -260,11 +261,11 @@ export function buildHeroLunar(c) {
   for(const side of [-1,1]) {
     const chain=[];for(let i=0;i<=16;i++){const t=i/16;chain.push(surfAt(support,Y(.34+.045*Math.sin(PI*t)),side*(.18+t*1.3),.11*W));}put('belt','trim',chainG(chain,.018*W));
   }
-  const cloak=cape(ruby?'Manto_rubi_em_camadas':'Manto_azul_em_camadas','accent',{
-    top:.025,yBottom:hem-.02*W,span:4.65,flare:.56,pleats:13,over:support,trim:'trim',refined:true,sway:ruby?.06*W:0
+  const cloak=cape(ruby?'Capa_manto_rubi_em_camadas':'Capa_manto_azul_em_camadas','accent',{
+    top:.075,yBottom:hem-.02*W,span:4.65,flare:.56,pleats:13,over:cloakSupport,trim:'trim',refined:true,sway:ruby?.06*W:0
   });
   if(cloak) {
-    const sideBand=(side)=>{const point=(t,u)=>{const edge=side<0?u*.045:1-u*.045,p=cloak.at(t,edge);return p.addScaledVector(normalAt(p),.022*W);};put('cape','secondary',clothSurface(64,12,point,{thickness:.018*W}));edgeLines('cape',point,'trim',.012*W);return point;};
+    const sideBand=(side)=>{const point=(t,u)=>{const edge=side<0?u*.045:1-u*.045,p=cloak.at(t,edge);return p.addScaledVector(normalAt(p),.065*W);};put('cape','secondary',clothSurface(64,12,point,{thickness:.018*W}));edgeLines('cape',point,'trim',.012*W);return point;};
     for(const side of [-1,1]) {
       const border=sideBand(side);
       for(let i=0;i<11;i++){const t=.12+i*.073,p=border(t,.5),g=crescent(.055*W,.014*W);g.rotateZ(side*(i%2?.6:-.6));put('cape','trim',orient(g,p.clone().addScaledVector(normalAt(p),.025*W),normalAt(p)));}

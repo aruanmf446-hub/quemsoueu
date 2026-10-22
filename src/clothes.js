@@ -1,6 +1,7 @@
 // Figurinos procedurais no espaço do corpo. Nenhuma alteração na pele ou no rig facial.
 import * as THREE from 'three';
 import {finishMaterial} from './detail.js';
+import {heroSurface} from './hero-material.js';
 import {FRONTIER_OUTFITS} from './frontier.js';
 import {FOREST_OUTFITS} from './forest.js';
 import { buildLegacyClothes } from './legacy-clothes.js';
@@ -43,7 +44,7 @@ const SLOT_STYLES = {
 // Os conjuntos lunares usam os mesmos slots; combinações continuam clica-e-troca.
 for(const slot of Object.keys(SLOT_STYLES))SLOT_STYLES[slot].push(...(slot==='cape'?['lunar_guardian','lunar_ruby']:['lunar_explorer','lunar_guardian','lunar_inventor','lunar_ruby']));
 for(const slot of Object.keys(SLOT_STYLES))SLOT_STYLES[slot].push(...Object.keys(FOREST_OUTFITS));
-for(const slot of Object.keys(SLOT_STYLES))SLOT_STYLES[slot].push(...Object.keys(FRONTIER_OUTFITS));
+for(const slot of Object.keys(SLOT_STYLES))SLOT_STYLES[slot].push(...Object.keys(FRONTIER_OUTFITS),'flame_guardian');
 const PIECE_LABELS = {
   bread_baker:{upper:'Camisa de padeiro',lower:'Calça de padeiro',feet:'Botas do padeiro',cape:'Avental',belt:'Faixa laranja',extras:'Pão e utensílios'},
   bread_vigilante:{upper:'Túnica do vigilante',lower:'Calça do vigilante',feet:'Botas do vigilante',cape:'Manto escuro',belt:'Cinturão do vigilante',extras:'Cristal de âmbar'},
@@ -97,7 +98,7 @@ function template(body, style, slot) {
   // Gera um conjunto uma única vez: os slots compartilham medidas e campos de camada.
   const key = bodyKeys.get(body.sdf) + ':' + style + ':' + (SDF_OUTFITS[style] ? '*' : slot);
   if (templates.has(key)) { const item = templates.get(key); templates.delete(key); templates.set(key, item); return item }
-  const descriptors = [], details = new Map();
+  const descriptors = [], details = new Map(), coverage=[];
   const add = (name, geo, channel) => descriptors.push({ name, geo, channel, slot: geo.userData.slot || 'extras' });
   if(!SDF_OUTFITS[style]){
     const legacy=buildLegacyClothes(body,{outfit:style},slot);legacy.group.updateMatrixWorld(true);
@@ -107,7 +108,7 @@ function template(body, style, slot) {
   }else buildSdfOutfit(body, style, {}, {}, add, (ch, geo) => {
     const key = (geo.userData.slot || 'extras') + ':' + ch;
     if (!details.has(key)) details.set(key, []); details.get(key).push(geo);
-  }, null);
+  }, null, coverage);
   for (const [key, geos] of details) {
     const [slot, channel] = key.split(':'), normalized = geos.map(g => { const c = g.clone(); for (const k of Object.keys(c.attributes)) if (!['position', 'normal'].includes(k)) c.deleteAttribute(k); return c.index ? c.toNonIndexed() : c });
     const merged = mergeGeometries(normalized, false); normalized.forEach(g => g.dispose()); geos.forEach(g => g.dispose());
@@ -118,8 +119,11 @@ function template(body, style, slot) {
     for (let i = 0; i < colors.length / 3; i++) colors.fill(shade ? shade.getX(i) : 1, i * 3, i * 3 + 3);
     g.setAttribute('color', new THREE.BufferAttribute(colors, 3));
   }
-  const item = { descriptors, refs: 0 }; templates.set(key, item);
-  for (const [k, old] of templates) if (templates.size > 24 && !old.refs && old !== item) { old.descriptors.forEach(d => d.geo.dispose()); templates.delete(k) }
+  const item = { descriptors, coverage, refs: 0 }; templates.set(key, item);
+  // Um corpo precisa reter ao menos uma versão de cada conjunto do catálogo. Com mais de
+  // 24 estilos, o limite antigo expulsava a peça recém-aquecida e voltava a malhá-la na troca.
+  const templateLimit=Math.max(32,Object.keys(OUTFITS).length+4);
+  for (const [k, old] of templates) if (templates.size > templateLimit && !old.refs && old !== item) { old.descriptors.forEach(d => d.geo.dispose()); templates.delete(k) }
   return item;
 }
 
@@ -158,7 +162,7 @@ function paint(mesh, channel, colors, W) {
     const tex=new THREE.DataTexture(data,size,size);tex.wrapS=tex.wrapT=THREE.RepeatWrapping;tex.magFilter=tex.minFilter=THREE.LinearFilter;tex.needsUpdate=true;mat.map=tex;mat.needsUpdate=true;
     const uv=new Float32Array(p.count*2);for(let i=0;i<p.count;i++){uv[i*2]=Math.atan2(p.getX(i),p.getZ(i)+.15)*.62/.085;uv[i*2+1]=p.getY(i)/(.068*2)}g.setAttribute('uv',new THREE.BufferAttribute(uv,2));
   }
-  const a = new THREE.Color(colors[channel === 'veil' ? (mesh.userData.style==='mermaid_ruby'?'accent':'secondary') : 'fabric']), b = new THREE.Color(colors.accent), c = new THREE.Color();
+  const a = new THREE.Color(colors[channel === 'veil' ? (['mermaid_ruby','lunar_ruby','lunar_guardian'].includes(mesh.userData.style)?'accent':'secondary') : 'fabric']), b = new THREE.Color(colors.accent), c = new THREE.Color();
   const stripes = [new THREE.Color(colors.secondary), a, b];
   for (let i = 0; i < p.count; i++) {
     if (channel.startsWith('stripes')) { const h = channel === 'stripesV', k = Math.floor((h ? p.getX(i) / (.3 * W) : p.getY(i) / .07) + 30.5); c.copy(stripes[((k % (h ? 3 : 2)) + (h ? 3 : 2)) % (h ? 3 : 2)]) }
@@ -185,6 +189,7 @@ export function buildClothes(body, look) {
     for (const d of source.descriptors.filter(d => d.slot === slot)) {
       const own = patterned.has(d.channel), geo = own ? d.geo.clone() : d.geo, mat = pieceMaterial(d.channel, cc), mesh = new THREE.Mesh(geo, mat);
       if((FOREST_OUTFITS[style]||FRONTIER_OUTFITS[style]||style.startsWith('lunar_'))&&['fabric','secondary','pants','accent','leather','trim','sole','lining'].includes(d.channel))finishMaterial(mat,['trim'].includes(d.channel)?'metal':['leather','sole'].includes(d.channel)?'leather':'fabric');
+      if(FOREST_OUTFITS[style]||FRONTIER_OUTFITS[style]||style.startsWith('lunar_')||style==='flame_guardian')heroSurface(geo,mat,d.channel,body.proportions.W);
       if(!SDF_OUTFITS[style]){mat.roughness=d.channel==='trim'?.38:d.channel==='leather'?.78:.88;mat.sheen=.15;mat.clearcoat=0}
       mesh.name = 'Roupa_' + d.name; mesh.castShadow = !mat.transparent; mesh.receiveShadow = true; mesh.userData = { ownGeometry: own, channel: d.channel, slot, style }; paint(mesh, d.channel, cc, body.proportions.W); part.add(mesh);
     }
@@ -193,6 +198,8 @@ export function buildClothes(body, look) {
   for (const [slot, id] of Object.entries(selection)) setPiece(slot, id);
   return {
     group, selection, timing: Math.round(performance.now() - start),
+    get hasCoverageDesign(){return [...instances.values()].some(p=>p.template.coverage?.length)},
+    coveredByDesign(x,y,z){return [...instances].some(([slot,p])=>p.template.coverage?.some(r=>r.slot===slot&&r.contains(x,y,z)))},
     setPiece,
     setPieceColors(slot, colors) { const part = instances.get(slot); if (!part) return; Object.assign(part.colors, colors); part.group.traverse(m => { if (m.isMesh) paint(m, m.userData.channel, part.colors, body.proportions.W) }) },
     setColors(colors) { for (const slot of instances.keys()) this.setPieceColors(slot, colors) },

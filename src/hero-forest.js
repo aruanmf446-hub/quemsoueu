@@ -11,7 +11,7 @@ export function buildHeroForest(c){
   if(!['forest_archer','forest_guard','forest_artificer','forest_princess'].includes(style))return false;
   const princess=style==='forest_princess',guard=style==='forest_guard',artificer=style==='forest_artificer',archer=style==='forest_archer',female=(B.breasts||0)>.2;
   const emit=(slot,ch,g)=>addGeoS(slot,ch,g),P=(fn,f,a=0,off=.025*W)=>surfAt(fn,Y(f),a,off);
-  const line=(slot,ch,pts,r=.009*W)=>emit(slot,ch,tubeG(pts,r,8));
+  const line=(slot,ch,pts,r=.009*W)=>{const curve=new THREE.CatmullRomCurve3(pts),length=curve.getLength(),segments=Math.max(6,Math.min(160,Math.ceil(length/(.065*W))));emit(slot,ch,new THREE.TubeGeometry(curve,segments,r,r>.03*W?10:6,false));};
   const ball=(slot,ch,p,r=.018*W,sx=1,sy=1,sz=1)=>emit(slot,ch,sph(p,r,sx,sy,sz,16,10));
   function glyph(slot,fn,f,a,r,kind='leaf',off=.055*W){
     const g=kind==='tree'?treeGeo(r):leafGeo(r,.014*W),p=P(fn,f,a,off),n=V(Math.sin(a),0,Math.cos(a));
@@ -22,12 +22,12 @@ export function buildHeroForest(c){
     for(let i=0;i<n;i+=2)line(slot,ch,[curve.getPoint(i/n),curve.getPoint((i+.7)/n)],r);
   }
   // Bandeira com contorno de corte próprio: o painel mede toda a altura na envoltória, inclusive sob a cintura.
-  function hanging(slot,ch,fn,f0,f1,a,width,{tip=.08,rag=.012,flare=.08,taper=.88,fold=.025,slant=0,hem=true}={}){
+  function hanging(slot,ch,fn,f0,f1,a,width,{tip=.08,rag=.012,flare=.08,taper=.88,fold=.025,slant=0,hem=true,lift=.055}={}){
     const yt=Y(f0),yb=Y(f1),pt=(t,u)=>{
       const a2=a+(u-.5)*width*lerp(1,taper,t),y=lerp(yt,yb,t)+W*(tip*(Math.abs(2*u-1)-.45)+rag*(Math.sin(u*49)+.4*Math.sin(u*113))+slant*(u-.5))*t**7;
-      const q=surfAt(fn,y,a2,.055*W+flare*W*t*t+fold*W*Math.sin(u*PI*8+1.8*t)*Math.sin(PI*t));return q;
+      const q=surfAt(fn,y,a2,lift*W+flare*W*t*t+fold*W*Math.sin(u*PI*8+1.8*t)*Math.sin(PI*t));return q;
     };
-    emit(slot,ch,clothSurface(54,42,pt,{thickness:.022*W}));
+    emit(slot,ch,clothSurface(42,28,pt,{thickness:.022*W}));
     if(hem){for(const edge of [0,1])line(slot,'leather',Array.from({length:33},(_,i)=>pt(i/32,edge)),.012*W);line(slot,'trim',Array.from({length:43},(_,i)=>pt(1,i/42)),.012*W);}
     return pt;
   }
@@ -40,7 +40,7 @@ export function buildHeroForest(c){
   }
   function strap(slot,fn,f0,a0,f1,a1,width=.075*W,ch='leather',lift=.06*W){
     const pt=(t,u)=>{const y=Y(lerp(f0,f1,t)),a=lerp(a0,a1,t),q=surfAt(fn,y,a,lift),rho=Math.max(.25*W,Math.hypot(q.x,q.z-z0));return surfAt(fn,y,a+(u-.5)*width/rho,lift+.006*W*Math.sin(PI*u));};
-    emit(slot,ch,clothSurface(40,8,pt,{thickness:.018*W}));
+    emit(slot,ch,clothSurface(32,6,pt,{thickness:.018*W}));
     for(const edge of [.13,.87])stitched(slot,Array.from({length:31},(_,i)=>pt(i/30,edge)),.0045*W);
     return pt;
   }
@@ -69,8 +69,8 @@ export function buildHeroForest(c){
     for(const side of [-1,1])for(let layer=0;layer<3;layer++){
       const center=S.clone().lerp(E,.025+layer*.075);center.x*=side;
       const r=limbR(S.clone().lerp(E,.18),E.clone().sub(S).normalize())+(.12-layer*.025)*W;
-      const pt=(t,u)=>{const ph=u*PI*2,th=.04+t*1.66;return center.clone().add(V(Math.sin(th)*Math.cos(ph)*r*1.18,Math.cos(th)*r*.77+r*.32,Math.sin(th)*Math.sin(ph)*r*1.12));};
-      emit('upper','leather',clothSurface(22,72,pt,{closed:true,thickness:.035*W}));
+      const pt=(t,u)=>{const ph=u*PI*2,th=.04+t*1.66;return center.clone().add(V(Math.sin(th)*Math.sin(ph)*r*1.18,Math.cos(th)*r*.77+r*.32,Math.sin(th)*Math.cos(ph)*r*1.12));};
+      emit('upper','leather',clothSurface(18,56,pt,{closed:true,thickness:.035*W}));
       line('upper','trim',Array.from({length:73},(_,i)=>pt(1,i/72)),.022*W);
       for(let j=0;j<10;j++)ball('upper','trim',pt(.94,j/10),.018*W);
       if(layer===0){const p=center.clone().add(V(0,r*.77,r*.66));plate('upper',p,r*1.0,r*.7,'leather',V(side*.2,1,0),true);}
@@ -111,7 +111,7 @@ export function buildHeroForest(c){
     else{for(const s of [-1,1]){fastening('belt',fn,f,s*.68);pouch('belt',fn,.39,s*.88,.24*W,.31*W);}strap('belt',fn,.33,-1.4,.41,1.1,.10*W,'leather',.10*W);}
   }
   function mantle(fn,ragged=true){
-    const o={top:.018,yBottom:Y(princess?.985:artificer?.83:.80),span:princess?4.65:3.85,turn:archer?-.13:0,flare:princess?.55:.26,pleats:princess?13:11,ragged:ragged?.065*W:0,over:fn,trim:'trim',refined:true},cp=cape('Manto_com_pregas_floresta','accent',o);
+    const o={top:princess?.075:.018,yBottom:Y(princess?.985:artificer?.83:.80),span:princess?4.65:3.85,turn:archer?-.13:0,flare:princess?.55:.26,pleats:princess?13:11,ragged:ragged?.065*W:0,over:fn,trim:'trim',refined:true},cp=cape('Capa_com_pregas_floresta','accent',o);
     if(cp){
       // Barra dupla, bordado de árvore e ramos acompanham a deformação real da capa.
       const boundary=t=>Array.from({length:73},(_,i)=>cp.at(t,i/72));line('cape','trim',boundary(.965),.013*W);
@@ -134,22 +134,33 @@ export function buildHeroForest(c){
 
   if(princess){
     // O corpete tem decote coração, painéis laterais e cintura independente da saia.
-    const g=garment('Corpete_coeur_folhagem','fabric','upper',{top:yN-.04*W,bottom:Y(.355),t:.055*W,sleeve:'short',short:.58,sleeveEase:.055*W,puff:.035*W,vneck:.28*W,edge:(x,y,z)=>z>z0?.065*W*Math.exp(-(((Math.abs(x)-.28*W)/(.18*W))**2)):0,env:{ease:.05*W,hang:.65,cinch:Y(.325),cinchK:.97,cinchW:.16*W}});
+    const heart=(x,z)=>(.115*W*Math.exp(-(((x/W-.32)/.22)**2))-.070*W*Math.exp(-((x/(.14*W))**2)))*sstep(z0,z0+.22*W,z)+.075*W*sstep(z0,z0-.25*W,z),bodiceTop=Y(.105);
+    const g=garment('Corpete_coracao_folhagem','fabric','upper',{top:bodiceTop,bottom:Y(.355),t:.055*W,sleeve:null,cell:.026*clamp(W,1,1.3),edge:(x,y,z)=>heart(x,z),env:{ease:.05*W,hang:.65,cinch:Y(.325),cinchK:.97,cinchW:.16*W}});
+    const neckline=a=>{let y=bodiceTop,p;for(let k=0;k<4;k++){p=surfAt(g.solid,y,a,.022*W);y=bodiceTop+heart(Math.abs(p.x),p.z);}return surfAt(g.solid,y,a,.025*W);};
+    line('upper','trim',Array.from({length:145},(_,i)=>neckline(-PI+i/144*2*PI)),.017*W);
+    // Mangas de véu começam nos braços: os ombros e as clavículas ficam descobertos.
+    for(const side of [-1,1]){
+      const axis=E.clone().sub(S).normalize(),up=V(0,0,1),cross=up.clone().cross(axis).normalize(),R=limbR(S.clone().lerp(E,.42),axis)+.045*W;
+      const drape=(t,u)=>{const a=u*2*PI,center=S.clone().lerp(E,.27+.52*t),r=R+(.17*W*t)+.035*W*Math.sin(a*7+t*2)*t,q=center.clone().addScaledVector(cross,Math.cos(a)*r).addScaledVector(up,Math.sin(a)*r);q.y-=.26*W*t*t;q.x*=side;return q;};
+      emit('cape','veil',clothSurface(34,80,drape,{closed:true,thickness:.012*W}));
+      for(const t of [0,1])line('cape','trim',Array.from({length:81},(_,i)=>drape(t,i/80)),t===0?.023*W:.012*W);
+      const p=drape(.02,.25);ball('cape','gem',p,.055*W,.8,1.1,.6);
+    }
     const skirt=garment('Saia_inferior_princesa','secondary','lower',{top:Y(.33),bottom:ySole+.075*W,t:.06*W,sleeve:null,env:{ease:.075*W,hang:.25,flareFrom:Y(.36),flare:.40,folds:.065*W,foldN:17,foldTwist:.35,smooth:14}});
     const surface=skirt.env;
     for(const s of [-1,1]){
-      const cp=hanging('upper','leather',g.env,.11,.342,s*.60,.47,{tip:0,flare:0,rag:0,fold:0,taper:.78});
+      const cp=hanging('upper','accent',g.env,.115,.342,s*.60,.47,{tip:0,flare:0,rag:0,fold:0,taper:.78});
       for(const e of [0,1])line('upper','trim',Array.from({length:41},(_,i)=>cp(i/40,e)),.012*W);
       for(let i=0;i<3;i++)glyph('upper',g.env,.18+i*.05,s*(.55+.03*i),.06*W);
     }
-    // Pétales de tissu en trois longueurs: une coupe en cascade, et non un cylindre de robe.
+    // Pétalas de tecido com três comprimentos criam a saia em cascata.
     for(let layer=0;layer<3;layer++)for(let i=0;i<9;i++){
-      const a=-PI+2*PI*(i+.5*(layer%2))/9,width=.74,pt=hanging('lower',layer%2?'secondary':'accent',surface,.335+layer*.025,.96-layer*.15,a,width,{tip:.15,rag:.004,flare:.04+.035*layer,taper:.77,fold:.022,hem:true});
+      const a=-PI+2*PI*(i+.5*(layer%2))/9,width=.74,pt=hanging('lower',layer%2?'secondary':'accent',surface,.335+layer*.025,.96-layer*.15,a,width,{tip:.15,rag:.004,flare:.04+.035*layer,taper:.77,fold:.022,hem:true,lift:.10+.10*layer});
       if(layer===0&&i%2===0)embroidery('lower',pt,.105*W,.68,.5,'leaf');
     }
     for(const side of [-1,1]){
       for(let i=0;i<3;i++){
-        const pt=hanging('cape',i%2?'veil':'secondary',surface,.14+i*.10,.88-i*.07,side*(1.35+.18*i),.68,{tip:.22,flare:.12+.06*i,taper:.5,fold:.045});
+        const pt=hanging('cape',i%2?'veil':'secondary',surface,.14+i*.10,.88-i*.07,side*(1.35+.18*i),.68,{tip:.22,flare:.12+.06*i,taper:.5,fold:.045,lift:.40+.065*i});
         embroidery('cape',pt,.11*W,.65,.5,'leaf');
       }
     }
@@ -159,22 +170,43 @@ export function buildHeroForest(c){
       for(let i=0;i<6;i++){const t=i/5,p=P(surface,.385+.26*t,side*(.18+.75*t),.12*W);ball('belt','pearl',p,.023*W);}
       for(let i=0;i<6;i++)glyph('cape',surface,.45+i*.07,side*(1.35+.15*Math.sin(i)),.06*W);
     }
-    const necklace=[];for(let i=0;i<=64;i++){const a=lerp(-1.05,1.05,i/64),f=.055+.035*(1-Math.abs(a)/1.05);necklace.push(P(g.env,f,a,.04*W));}emit('extras','trim',chainG(necklace,.014*W));
-    for(let i=0;i<7;i++)glyph('extras',g.env,.06+.025*(1-Math.abs(i-3)/3),(i-3)*.21,.055*W);
-    const gem=P(g.env,.10,0,.10*W),stone=new THREE.OctahedronGeometry(.09*W,1);stone.scale(.75,1.35,.45);stone.translate(...gem.toArray());emit('extras','gem',stone);
+    const neckEnv=envelope(Y(.015),Y(.135),{ease:.008*W,hang:.8,drape:0,smooth:8}),necklace=[];for(let i=0;i<=64;i++){const a=lerp(-1.05,1.05,i/64),f=.055+.035*(1-Math.abs(a)/1.05);necklace.push(P(neckEnv,f,a,.04*W));}emit('extras','trim',chainG(necklace,.014*W));
+    for(let i=0;i<7;i++)glyph('extras',neckEnv,.06+.025*(1-Math.abs(i-3)/3),(i-3)*.21,.055*W);
+    const gem=P(neckEnv,.10,0,.065*W),stone=new THREE.OctahedronGeometry(.09*W,1);stone.scale(.75,1.35,.45);stone.translate(...gem.toArray());emit('extras','gem',stone);
     bootwork(false);return true;
   }
 
   const hem=archer?.39:artificer?.43:.49;
   // Camisa clara dos arqueiros possui folga nos braços e franzidos próprios.
-  const shirt=garment(archer?'Blusa_linho_arqueiro':artificer?'Camisa_artifice':'Tunica_guarda_ajustada',archer?'secondary':'fabric','upper',{top:yN+.045*W,bottom:Y(hem),t:.052*W,sleeve:artificer?'forearm':'short',short:guard?.68:.77,sleeveEase:(archer?.095:.065)*W,puff:(archer?.12:.045)*W,vneck:archer?.14*W:.06*W,env:{ease:.052*W,hang:.55,cinch:Y(.33),cinchK:.9,flareFrom:Y(.35),flare:archer?.07:.14,folds:.018*W,foldN:13,smooth:12}});
+  const shirt=garment(archer?'Blusa_linho_arqueiro':artificer?'Camisa_artifice':'Tunica_guarda_ajustada',archer?'secondary':'fabric','upper',{top:archer?Y(.10):yN+.045*W,bottom:Y(hem),t:.052*W,sleeve:archer?null:artificer?'forearm':'short',short:guard?.68:.77,sleeveEase:(archer?.095:.065)*W,puff:(archer?.060:.045)*W,vneck:archer?.14*W:.06*W,env:{ease:.052*W,hang:.55,cinch:Y(.33),cinchK:.9,flareFrom:Y(.35),flare:archer?.07:.14,folds:.018*W,foldN:13,smooth:12}});
   sleeveCuffs(shirt,'upper',archer?'leather':'trim',archer?.07*W:.055*W);
+  if(archer){
+    // A manga tem abertura no bíceps, ombro livre e punho enrolado; não é uma extensão quadrada da camisa.
+    const curve=new THREE.CatmullRomCurve3([S.clone().lerp(E,.26),S.clone().lerp(E,.62),E.clone(),E.clone().lerp(Wr,.43)]),nr=40,frames=curve.computeFrenetFrames(nr,false),radii=[];
+    for(let row=0;row<=nr;row++){
+      const t=row/nr,center=curve.getPoint(t),u=frames.normals[row],v=frames.binormals[row];let radius=.02*W;
+      for(let j=0;j<12;j++){const a=j/12*2*PI,dir=u.clone().multiplyScalar(Math.cos(a)).addScaledVector(v,Math.sin(a));let r=.01*W;for(let k=0;k<72;k++){const q=center.clone().addScaledVector(dir,r);if(bf(q.x,q.y,q.z)>0)break;r+=.012*W;}radius=Math.max(radius,r);}
+      radii.push(radius+.055*W+.085*W*Math.sin(PI*t));
+    }
+    for(const side of [-1,1]){
+      const point=(t,u)=>{const row=Math.min(nr-1,Math.floor(t*nr)),frac=t*nr-row,a=u*2*PI,center=curve.getPoint(t),rr=lerp(radii[row],radii[row+1],frac)+.008*W*Math.sin(a*11+t*3)*Math.sin(PI*t),normal=frames.normals[row].clone().lerp(frames.normals[row+1],frac).normalize(),binormal=frames.binormals[row].clone().lerp(frames.binormals[row+1],frac).normalize(),q=center.addScaledVector(normal,Math.cos(a)*rr).addScaledVector(binormal,Math.sin(a)*rr);q.x*=side;return q;};
+      emit('upper','secondary',clothSurface(nr,80,point,{closed:true,thickness:.025*W}));
+      for(const t of [0,.94,.975,1])line('upper',t===0?'leather':'secondary',Array.from({length:81},(_,i)=>point(t,i/80)),t===0?.028*W:.025*W);
+      const p=point(.04,.25),buckle=buckleGeo(.13*W,.095*W,.016*W);buckle.translate(...p.toArray());emit('upper','trim',buckle);
+    }
+  }
   rim('upper',archer?'secondary':'trim',shirt.outer,Y(hem)+.015*W,.018*W);
   let over=shirt.env,outer=shirt;
   if(archer||artificer){
-    const vest=garment(artificer?'Casaca_couro_artifice':'Corselet_aberto_arqueiro','leather','upper',{top:yN-.02*W,bottom:Y(artificer?.46:.365),sleeve:null,open:artificer?.24:.18,openTaper:artificer?1.35:.6,hollow:true,t:.065*W,over:shirt.solid,overGap:.065*W,shoulderPad:.015,hemCurve:artificer?.18*W:.035*W,env:{ease:.09*W,hang:.45,cinch:Y(.32),cinchK:.94,flareFrom:Y(.34),flare:artificer?.10:0,folds:.012*W,foldN:10}});
-    edgeTube(vest,'arm','leather','upper',.025*W);edgeTube(vest,'open','trim','upper',.016*W);outer=vest;
-    over=(x,y,z)=>Math.min(shirt.env(x,y,z),vest.env(x,y,z)-.035*W);
+    const vest=garment(artificer?'Casaca_couro_artifice':'Corselet_aberto_arqueiro','leather','upper',{top:yN-.02*W,bottom:Y(artificer?.46:.365),sleeve:null,cell:.034*clamp(W,1,1.3),open:artificer?.24:.18,openTaper:artificer?1.35:.6,hollow:true,mesh:false,t:.065*W,over:shirt.solid,overGap:.065*W,shoulderPad:.015,hemCurve:artificer?.18*W:.035*W,env:{ease:.09*W,hang:.45,cinch:Y(.32),cinchK:.94,flareFrom:Y(.34),flare:artificer?.10:0,folds:.012*W,foldN:10}});
+    // O loft tem cava e abertura definidas por curvas, sem bordas recortadas em células SDF.
+    const vestEnv=(x,y,z)=>Math.min(shirt.env(x,y,z)-.065*W,vest.env(x,y,z)-.025*W),a0=artificer?.24:.18;
+    const vestPoint=(t,u)=>{const a=lerp(a0,2*PI-a0,u),side=Math.abs(Math.sin(a)),front=Math.max(0,Math.cos(a)),ft=.015+.185*side**7+.045*front**6,yTop=Y(ft),yBot=Y(artificer?.46:.365)-.035*W*(1-Math.cos(a));return surfAt(vestEnv,lerp(yTop,yBot,t),a,.018*W);};
+    emit('upper','leather',clothSurface(56,144,vestPoint,{thickness:.030*W}));
+    for(const t of [0,1]){const pts=Array.from({length:145},(_,i)=>vestPoint(t,i/144));line('upper','leather',pts,.020*W);stitched('upper',pts,.005*W);}
+    for(const u of [0,1])line('upper','trim',Array.from({length:57},(_,i)=>vestPoint(i/56,u)),.013*W);
+    vest.solid=vestEnv;vest.outer=vestEnv;outer=vest;
+    over=(x,y,z)=>Math.min(shirt.env(x,y,z),vestEnv(x,y,z)-.020*W);
     for(const side of [-1,1]){
       strap('upper',vest.solid,.10,side*.75,.31,-side*.30,.11*W,'leather',.055*W);fastening('upper',vest.solid,.21,side*.27,.12*W,.10*W);
       const pts=[];for(let i=0;i<=36;i++)pts.push(P(vest.solid,.12+i/36*.20,side*(.60-.06*Math.sin(PI*i/36)),.05*W));stitched('upper',pts,.005*W);
@@ -190,8 +222,8 @@ export function buildHeroForest(c){
   if(archer){
     // Abas desencontradas mostram a construção da roupa e deixam a silhueta das pernas legível.
     for(const side of [-1,1]){
-      const back=hanging('lower','secondary',skirtEnv,.34,side>0?.64:.60,side*.78,1.12,{tip:.12,rag:.018,flare:.055,taper:.8,slant:side*.08});
-      const green=hanging('lower','fabric',skirtEnv,.34,side>0?.70:.62,side*.57,.65,{tip:.14,rag:.014,flare:.085,taper:.70,slant:-side*.07});
+      const back=hanging('lower','secondary',skirtEnv,.34,side>0?.64:.60,side*.78,1.12,{tip:.12,rag:.018,flare:.055,taper:.8,slant:side*.08,lift:.075});
+      const green=hanging('lower','fabric',skirtEnv,.34,side>0?.70:.62,side*.57,.65,{tip:.14,rag:.014,flare:.085,taper:.70,slant:-side*.07,lift:.18});
       embroidery('lower',green,.18*W,.58,.48,'tree');
       for(let i=0;i<5;i++)embroidery('lower',green,.047*W,.25+i*.12,.75,'leaf');
     }
@@ -199,12 +231,14 @@ export function buildHeroForest(c){
   }else{
     const central=hanging('upper',artificer?'accent':'fabric',shirt.env,.08,.49,0,.76,{tip:.055,rag:0,flare:.015,taper:.84,fold:.008});embroidery('upper',central,.24*W,.35,.5,'tree');
     for(const side of [-1,1]){
-      const pt=hanging('lower','fabric',skirtEnv,.34,artificer?.69:.67,side*.62,.74,{tip:.12,rag:artificer?.018:.005,flare:.07,taper:.75});embroidery('lower',pt,.17*W,.52,.50,'tree');
-      hanging('lower','secondary',skirtEnv,.35,.60,side*1.23,.45,{tip:.08,rag:.01,flare:.10,taper:.9});
+      const pt=hanging('lower','fabric',skirtEnv,.34,artificer?.69:.67,side*.62,.74,{tip:.12,rag:artificer?.018:.005,flare:.07,taper:.75,lift:.16});embroidery('lower',pt,.17*W,.52,.50,'tree');
+      hanging('lower','secondary',skirtEnv,.35,.60,side*1.23,.45,{tip:.08,rag:.01,flare:.10,taper:.9,lift:.065});
     }
     armoredShoulders();
   }
-  leafBelt(outer.solid,false);mantle(over,true);shoulderDrape(over);bracers();bootwork(true);
+  const neckSupport=envelope(yN+.16*W,Y(.17),{ease:.025*W,hang:.65,drape:.008*W,smooth:10});
+  const capeSupport=(x,y,z)=>lerp(neckSupport(x,y,z),over(x,y,z),sstep(Y(.045),Y(.14),y));
+  leafBelt(outer.solid,false);mantle(capeSupport,true);shoulderDrape(neckSupport);bracers();bootwork(true);
   // Alça da aljava/mochila separada dos cintos do gibão e seguindo toda a curvatura da roupa.
   if(archer||artificer){strap('extras',over,.025,-.87,.34,.92,.12*W,'leather',.10*W);fastening('extras',over,.20,.15,.15*W,.12*W);}
 
@@ -212,7 +246,7 @@ export function buildHeroForest(c){
     const p=V(-Wr.x-.055*W,Wr.y+.30*W,Wr.z+.61*W),r=.215*Lb;
     const frame=shieldGeo(r);frame.translate(...p.toArray());emit('extras','trim',frame);
     const wood=shieldGeo(r*.91);wood.translate(p.x,p.y,p.z+.095*W);emit('extras','leather',wood);
-    const shape=shieldGeo(r*.86);shape.translate(p.x,p.y,p.z+.14*W);emit('extras','secondary',shape);
+    const shape=shieldGeo(r*.86);shape.translate(p.x,p.y,p.z+.14*W);emit('extras','leather',shape);
     const tree=treeGeo(.42*r);tree.translate(p.x,p.y+.02*W,p.z+.22*W);emit('extras','trim',tree);
     // Juntas da madeira e rebites seguem a curvatura do escudo, deixando o brasão legível.
     for(const side of [-1,1])for(let i=0;i<5;i++){const yy=p.y+r*(.53-i*.23),xx=p.x+side*r*(.40-.04*i);ball('extras','trim',V(xx,yy,p.z+.15*W),.026*W);}

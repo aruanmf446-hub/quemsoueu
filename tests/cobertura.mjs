@@ -32,7 +32,13 @@ for(const id of ids.filter(id=>BODIES[id]))for(const build of builds){const h=bu
  const torso=!orc&&f>(mermaid?.14:.12)&&f<(mermaid?.185:.28)&&ax<.65*J.W;
  const upper=J.elbow.clone().sub(J.shoulder),point=V().set(ax,y,p.getZ(i)).sub(J.shoulder),t=point.dot(upper)/upper.lengthSq();
  const sleeve=!orc&&!mermaid&&ax>J.shoulder.x&&t>.30&&t<.48&&point.addScaledVector(upper,-t).length()<.7*J.W;
- if(!torso&&!sleeve&&(y>top||y<bottom||ax>J.W*(b.proportions.hip+.28)))continue;
+ // Os cortes novos têm áreas intencionalmente abertas. O contrato vem dos próprios planos de
+ // gola, cava, abertura, barra e punho; todos os vértices dessa região precisam encontrar a malha.
+ // Figurinos anteriores mantêm a amostragem histórica, sem reduzir sua cobertura.
+ if(c.hasCoverageDesign){if(!c.coveredByDesign(p.getX(i),y,p.getZ(i)))continue}
+ else if(!torso&&!sleeve&&(y>top||y<bottom||ax>J.W*(b.proportions.hip+.28)))continue;
+ // A emenda do pescoço tem tampas internas dentro da cabeça. Elas não são pele visível.
+ if(c.hasCoverageDesign){const pv=b.pivot,hs=b.hs;if(h.fit.sdf(pv.x+(p.getX(i)-pv.x)/hs,pv.y+(y-pv.y)/hs,pv.z+(p.getZ(i)-pv.z)/hs)<-.015)continue}
  // O saiote do orc tem vãos intencionais entre as tiras; ali a pele é descoberta, não atravessa tecido.
  if(orc&&y<J.Y(.42)){const ph=(Math.atan2(p.getX(i),p.getZ(i)-J.zCenter)+Math.PI*2)%(Math.PI*2),edge=ph%(Math.PI*2/13);if(edge<.06||edge>Math.PI*2/13-.06)continue}
  // contato entre as coxas (pele na linha do meio, normal apontando para a outra perna): ocluída pela própria perna
@@ -46,7 +52,9 @@ for(const id of ids.filter(id=>BODIES[id]))for(const build of builds){const h=bu
  }
 
 
- console.log(id,build,{vertices:checked,folgaMinima:min,falhas:misses.length});assert.equal(misses.length,0,`${id}: pele sem cobertura nos vértices ${misses.slice(0,12)}`);c.dispose();b.geo.dispose();h.dispose();}
+ assert(checked>0,id+': cobertura sem amostras');console.log(id,build,{vertices:checked,folgaMinima:min,falhas:misses.length});
+ if(misses.length)console.error('Amostras sem cobertura:',JSON.stringify(misses.slice(0,12).map(i=>({i,p:[p.getX(i),p.getY(i),p.getZ(i)],n:[n.getX(i),n.getY(i),n.getZ(i)],f:(J.yNeck-p.getY(i))/J.Lb}))));
+ assert.equal(misses.length,0,`${id}: pele sem cobertura nos vértices ${misses.slice(0,12)}`);c.dispose();b.geo.dispose();h.dispose();}
 
 }
 if(process.env.ATELIE_COBERTURA_TIPOS)checkCoverage(process.env.ATELIE_PERSONAGENS?.split(',')||Object.keys(BODIES),[{weight:-1,muscle:0},{weight:1,muscle:0},{weight:0,muscle:1}]);else checkCoverage();

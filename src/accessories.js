@@ -7,6 +7,7 @@ import { crescent } from './lunar.js';
 import {clothSurface} from './fabric.js';
 import {badge,tuft,buckleGeo,gear} from './detail.js';
 import {leafGeo} from './forest.js';
+import {cactusHeadgear} from './cactus-headgear.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
@@ -190,7 +191,7 @@ export function buildAccessories(fit, sel = {}, cols = {}, hairMeshes = []) {
     for (const s of [-1, 1]) add('gem2', gemGeo(c.clone().add(V(s * .085, .07, .03)), .026, o, 1.3));
     add('pearl', sphere(c.clone().add(V(0, .235, .03)), .02)); add('gem2', gemGeo(c.clone().add(V(0, .27, .03)), .022, o, 1.6));
   }
-  if (head === 'cowboy' || head === 'frontier_hat') {
+  if (head === 'cowboy') {
     const y0 = top - (P.lathe ? .42 : .36), R = ring(y0, -.05, .02), Hc = head==='frontier_hat'?.51:.42, Wb = head==='frontier_hat'?.56:.42;
     // copa: do anel até o topo com vinco central e "beliscões" na frente
     const NA = 72, NV = 16, cpos = [], cidx = [];
@@ -352,16 +353,7 @@ export function buildAccessories(fit, sel = {}, cols = {}, hairMeshes = []) {
     add('fabric',clothSurface(48,120,(t,u)=>{const ph=u*Math.PI*2,p=R.at(ph),r=Math.hypot(p.x,p.z-zc)*profile(t)+.014*Math.sin(ph*24)*Math.sin(Math.PI*t);return V(Math.sin(ph)*r,y+1.0*t,zc+Math.cos(ph)*r)},{closed:true,thickness:.025}));
     for(const dy of [0,.12])add('fabric',tube(Array.from({length:97},(_,i)=>R.at(i/96*Math.PI*2).add(V(0,dy,0))),.018));
   }
-  if(sel.head==='guard_helmet'){
-    mats.fabric.metalness=.5;mats.fabric.roughness=.4;mats.fabric.clearcoat=.25;
-    const y=top-.34,R=ring(y,-.05,.035),point=(t,u)=>{const ph=u*Math.PI*2,p=R.at(ph),r=Math.hypot(p.x,p.z-zc)*Math.cos(t*Math.PI*.49);return V(Math.sin(ph)*r,y+.59*Math.sin(t*Math.PI*.5),zc+Math.cos(ph)*r)};
-    add('fabric',clothSurface(36,120,point,{closed:true,thickness:.055}));
-    add('metal',tube(Array.from({length:121},(_,i)=>point(.02,i/120)),.027));
-    for(const side of [-1,1]){const p=R.at(side*1.18),g=new THREE.Shape();g.moveTo(-.11,.05);g.lineTo(.11,.05);g.lineTo(.085,-.43);g.quadraticCurveTo(0,-.52,-.09,-.43);g.closePath();const plate=new THREE.ExtrudeGeometry(g,{depth:.04,bevelEnabled:true,bevelSize:.018,bevelThickness:.012,bevelSegments:3});add('metal',place(plate,p,V(side,0,.3)))}
-    const f=R.at(0).add(V(0,.18,.035)),mark=badge('flame',.15,.025);mark.translate(...f.toArray());add('metal',mark);
-    for(let i=0;i<15;i++)add('plume',tuft(V(0,y+.48,-.42+i*.055),V(0,y+.86+.20*Math.sin(i/14*Math.PI),-.57+i*.045),.085,.04,.08));
-    for(let i=0;i<12;i++){const p=R.at(i/12*Math.PI*2).add(V(0,.045,0));add('metal',sphere(p,.019,1,1,.65))}
-  }
+  if(head==='frontier_hat'||head==='guard_helmet')cactusHeadgear({head,fit,ring,add,tube,sphere,place,gemGeo,mats});
   if(sel.head==='vigilante_hood'){
     const point=(t,u)=>{const ph=Math.PI*.32+u*Math.PI*1.36,y=-1.0+(top+1.16)*t,base=.08+.92*Math.sin(Math.PI*(.16+.84*t)),r=Math.max(base,outerR(y,ph)+.085);return V(Math.sin(ph)*r,y,zc+Math.cos(ph)*r)};
     add('fabric',clothSurface(64,96,point,{thickness:.038}));

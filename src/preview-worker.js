@@ -8,6 +8,7 @@ import {buildLook,attachLook,headOpts,defaultLook} from './look.js';
 import {PRESETS} from './presets.js';
 import {EXPRESSIONS} from './rig.js';
 import {previewChoice} from './preview-spec.js';
+import {heroStudio} from './hero-studio.js';
 
 // Texturas procedurais de íris e tela usam canvas também fora da página.
 globalThis.document={createElement:tag=>{if(tag==='canvas')return new OffscreenCanvas(1,1);throw Error('Elemento não disponível nas prévias: '+tag)}};
@@ -20,6 +21,7 @@ for(const [c,i,x,y,z]of [[0xfff7f0,2.9,-2.6,3.6,6],[0xf4ecea,.65,3.5,.6,5],[0xff
 let head,body,visual,clothes,root,headKey,bodyKey,visualKey,clothesKey;
 function clear(){if(clothes)clothes.dispose();if(visual)visual.dispose();if(body){body.geo.dispose();if(body.vegSkin)body.mesh.material.dispose()}if(head)head.dispose();root?.removeFromParent();head=body=visual=clothes=null;headKey=bodyKey=visualKey=clothesKey=null}
 function assemble(id,look){
+  heroStudio(scene,renderer,id);
   const hk=JSON.stringify([id,headOpts(look,PRESETS[id])]);
   if(hk!==headKey){clear();head=buildHead(id,{},{quality:1,...headOpts(look,PRESETS[id])});root=new THREE.Group();root.add(head.group);scene.add(root);headKey=hk}
   const bk=JSON.stringify([id,look.build]);

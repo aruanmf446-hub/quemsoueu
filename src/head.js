@@ -501,6 +501,19 @@ export function buildHead(presetId, adj, opts = {}) {
   const T0 = performance.now(), marks = {}, mark = l => { marks[l] = Math.round(performance.now() - T0) };
   const Q = opts.quality || 1;
   const P = resolve(presetId, adj);
+  // As novas identidades do deserto têm uma coluna larga que já encontra os ombros.
+  // O cacto pistoleiro anterior conserva seu preset e sua malha integralmente.
+  if (['frontier_cowboy','cactus_soldier','cactus_soldier_large'].includes(presetId)) {
+    P.lathe = { cz: -.04, zs: .88, y: [-1.45,-.85,-.2,.5,1.02], r: [.76,.80,.82,.81,.72], top: 1.02, rc: .48 };
+    P.neck = [.78,-.65,-.04,-.85,-.04,.24];
+    P.cran = [.3,-.04,.82,1.05,.72,.72,2];
+    P.pattern = {...P.pattern,n:10,depth:.047,top:1.3,bot:-1.1,faceFade:.6};
+    P.spines = {...P.spines,len:.105,r:.013,y0:-.72,y1:1.03,dy:.26};
+    P.eyeX=.335; P.eyeY=.20; P.Re=.285; P.openU=14*Math.PI/180; P.openL=-36*Math.PI/180;
+    P.peakU=.08; P.tilt=-6*Math.PI/180; P.browGap=.14; P.browTh=.085; P.browSlope=.045; P.browLen=1.12;
+    P.mouthY=-.43; P.mouthW=.35; P.smile=.09; P.smirk=presetId==='frontier_cowboy'?.75:.15;
+    P.skin='#668f2b'; P.patternColor=['#365b16','#a5bf51']; P.lidShadow='#47651f';
+  }
   if (P.kind === 'robot') return buildRobot(P, opts);
   // A fábrica mantém o grafo de módulos sem ciclos, necessário para o Worker de prévias.
   if (P.kind === 'companion') return buildCompanion(P, {...opts,buildRider:()=>buildHead('frontier_cowboy',{}, {quality:.45})});
@@ -886,11 +899,12 @@ export function buildHead(presetId, adj, opts = {}) {
   }
 
   // ---- linha da boca: traço fino no fundo do sulco (só sem fenda de rig) ----
-  if (!P.open && !SLIT) {
+  if (!P.open && (!SLIT || ['frontier_cowboy','cactus_soldier','cactus_soldier_large'].includes(presetId))) {
     const N = 40, pts = [], rw = [], mw = P.mouthW;
     for (let i = 0; i < N; i++) {
       const t = i / (N - 1), x = (t * 2 - 1) * mw * 1.02, y = mouthCurve(P).ym(x);
-      pts.push(new THREE.Vector3(x, y, surfZ(x, y) + .0015)); rw.push(.0052 * Math.pow(Math.sin(Math.PI * t), .6));
+      const heroCactus=['frontier_cowboy','cactus_soldier','cactus_soldier_large'].includes(presetId);
+      pts.push(new THREE.Vector3(x, y, surfZ(x, y) + (heroCactus?.014:.0015))); rw.push((heroCactus?.010:.0052) * Math.pow(Math.sin(Math.PI * t), .6));
     }
     const mat = track(new THREE.MeshStandardMaterial({ color: col(P.lipLine), roughness: .6, name: 'MouthLine' }));
     const m = new THREE.Mesh(track(ribbon(pts, rw, rw.map(r => r * .7), () => new THREE.Vector3(0, 0, 1), 8)), mat); m.name = 'Mouth_Line'; root.add(m);

@@ -6,6 +6,9 @@
 // Luvas usam recortes com folga nas normais; o corpo é somente consultado, nunca alterado.
 import * as THREE from 'three';
 import {badge,panel,buckleGeo,gear} from './detail.js';
+import {buildHeroFrontier} from './hero-frontier.js';
+import {buildHeroForest} from './hero-forest.js';
+import {buildHeroLunar} from './hero-lunar.js';
 import {FRONTIER_CHARACTERS,FRONTIER_OUTFITS,FRONTIER_COLORS} from './frontier.js';
 import {FOREST_CHARACTERS,FOREST_OUTFITS,FOREST_COLORS,treeGeo,leafGeo,shieldGeo} from './forest.js';
 import { crescent } from './lunar.js';
@@ -28,6 +31,7 @@ const memoField = fn => { let px=NaN,py,pz,value;return (x,y,z)=>{if(x===px&&y==
 
 // ---------- catálogo ----------
 export const SDF_OUTFITS = {
+  flame_guardian: {label:'Guardião da chama',sub:'Casaca negra e rubi, estola, couro e brasões dourados'},
   ...FOREST_OUTFITS, ...FRONTIER_OUTFITS,
   lunar_explorer: { label: 'Exploradora lunar', sub: 'Jaqueta curta, calça cargo, tênis e mochila', channels: ['fabric','secondary','pants','accent','leather','trim'] },
   lunar_guardian: { label: 'Guardiã da Lua', sub: 'Vestido escuro, manto azul e símbolos lunares', channels: ['fabric','secondary','accent','leather','trim'] },
@@ -46,6 +50,7 @@ export const SDF_OUTFITS = {
   cowboy: { label: 'Faroeste', sub: 'Camisa, colete de couro, lenço, cinturão e botas', channels: ['fabric', 'leather', 'secondary', 'pants', 'trim'] }
 };
 export const SDF_DEFAULT_COLORS = {
+  flame_guardian:{fabric:'#9f252a',secondary:'#242126',pants:'#242126',accent:'#b0252c',leather:'#38291f',trim:'#cc9c42'},
   ...FOREST_COLORS, ...FRONTIER_COLORS,
   lunar_explorer: {fabric:'#242133',secondary:'#4d3c64',pants:'#282737',accent:'#4ea9e8',leather:'#393346',trim:'#c89d52'},
   lunar_guardian: {fabric:'#191d30',secondary:'#252e56',accent:'#254982',leather:'#252233',trim:'#d7b15c'},
@@ -63,13 +68,14 @@ export const SDF_DEFAULT_COLORS = {
   inventor: { fabric: '#ece9e2', secondary: '#2f3f63', accent: '#7a2030', leather: '#3a2a22', trim: '#b8913f' },
   cowboy: { fabric: '#c9873e', leather: '#5a3826', secondary: '#a8282a', pants: '#2c3446', trim: '#c9a24a' }
 };
-export const SDF_DEFAULT_OUTFIT = { ...Object.fromEntries(FRONTIER_CHARACTERS.map(c=>[c.id,c.outfit])), ...Object.fromEntries(FOREST_CHARACTERS.map(c=>[c.id,c.outfit])), nana_explorer:'lunar_explorer', moon_guardian:'lunar_guardian', nico_inventor:'lunar_inventor', ruby_sorceress:'lunar_ruby', sad_clown: 'circus', orc_warrior: 'orc', dwarf_bard: 'adventurer', masculine_soft: 'desert', feminine_soft: 'mermaid_pearl', feminine_bold: 'mermaid_ruby' };
+export const SDF_DEFAULT_OUTFIT = { flame_guardian:'flame_guardian', ...Object.fromEntries(FRONTIER_CHARACTERS.map(c=>[c.id,c.outfit])), ...Object.fromEntries(FOREST_CHARACTERS.map(c=>[c.id,c.outfit])), nana_explorer:'lunar_explorer', moon_guardian:'lunar_guardian', nico_inventor:'lunar_inventor', ruby_sorceress:'lunar_ruby', sad_clown: 'circus', orc_warrior: 'orc', dwarf_bard: 'adventurer', masculine_soft: 'desert', feminine_soft: 'mermaid_pearl', feminine_bold: 'mermaid_ruby' };
 
-export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot = null) {
+export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot = null, coverage = []) {
   const J = body.joints, B = body.proportions, W = J.W, Y = J.Y, z0 = J.zCenter, Lb = J.Lb, bf = body.sdf, yN = J.yNeck;
   const S = J.shoulder, E = J.elbow, Wr = J.wrist, H = J.hip, K = J.knee, A = J.ankle, ySole = J.ySole;
   const dU = E.clone().sub(S).normalize(), dF = Wr.clone().sub(E).normalize();
   const cellBase = .03 * clamp(W, 1, 1.25);
+  const heroStyle=!!FOREST_OUTFITS[style]||!!FRONTIER_OUTFITS[style]||style.startsWith('lunar_')||style==='flame_guardian';
   const bx = J.bounds.x, zA = J.bounds.z0, zB = J.bounds.z1;
   // lado do braço: plano bissetor entre a lateral do tronco e o braço (axila)
   const aDir = V(dU.x, dU.y, 0).normalize(), bis = V(aDir.x, aDir.y - 1, 0).normalize(), nArm = V(-bis.y, bis.x, 0); if (nArm.x < 0) nArm.negate();
@@ -166,6 +172,7 @@ export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot 
       if (o.stripes) d = Math.max(d, o.stripes(x, y, z));
       return d;
     };
+    if(heroStyle)coverage.push({slot:'feet',contains:(x,y,z)=>Math.abs(x)<A.x+.9*W&&f(x,y,z)<-.02*W});
     piece(name, ch, f, { x: A.x + .9 * W, y0: ySole - .15, y1: yTop + .1, z0: A.z - .7 * W, z1: Math.max(A.z + 1.3 * W, zB) + .3 + (o.toe || 0) }, o.cell);
   }
   // faixa em volta do corpo (cinto, faixa, gola baixa)
@@ -325,12 +332,17 @@ export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot 
       return d;
     };
     const th = o.thick ?? .09 * W, hollow = !!o.hollow; // oco: só o vão entre (corpo + folga) e a parede interna do pano
+    if(heroStyle&&o.mesh!==false){
+      const region=(x,y,z)=>cut(x,y,z,-1e6)<-.02*W;
+      if(o.split!=null)for(const part of ['upper','lower'])coverage.push({slot:part,contains:(x,y,z)=>region(x,y,z)&&(part==='upper'?y>o.split+.02*W:y<o.split-.02*W)});
+      else coverage.push({slot,contains:region});
+    }
     const field = (x, y, z) => { const s = solid(x, y, z); let d = cut(x, y, z, s); if (hollow) d = Math.max(d, Math.min(-(s + th), bf(x, y, z) - t - .01)); if (o.over && armSide(Math.abs(x), y) < -.05 * W) d = Math.max(d, .012 - over(x, y, z)); return d };
     let geo = null;
     const pad = (o.env?.flare || 0) * (yTop - yBot) + (o.bell || 0) + .5;
     const bounds = { x: bx + pad, y0: yBot - .1 - (o.hemCurve || 0), y1: yTop + .25, z0: zA - pad, z1: zB + pad };
     if (o.split != null) { const sp = o.split; for (const part of ['upper', 'lower']) { const oo = o; activeSlot = part; const f2 = (x, y, z) => { const s = solid(x, y, z); let d = cut(x, y, z, s); d = Math.max(d, part === 'upper' ? sp - .012 - y : y - sp - .012); if (hollow) d = Math.max(d, Math.min(-(s + th), bf(x, y, z) - t - .01)); if (o.over && armSide(Math.abs(x), y) < -.05 * W) d = Math.max(d, .012 - over(x, y, z)); return d }; piece(name + (part === 'upper' ? '' : '_Saia'), ch, f2, part === 'upper' ? { ...bounds, y0: sp - .1 } : { ...bounds, y1: sp + .1 }, o.cell) } }
-    else { activeSlot = slot; geo = piece(name, ch, field, bounds, o.cell, hollow?{solid,clip:(x,y,z)=>cut(x,y,z,-1e9),thickness:Math.min(.04*W,t*.6)}:null) }
+    else { activeSlot = slot; if(o.mesh!==false)geo = piece(name, ch, field, bounds, o.cell, hollow?{solid,clip:(x,y,z)=>cut(x,y,z,-1e9),thickness:Math.min(.04*W,t*.6)}:null) }
     const outer = memoField((x, y, z) => cut(x, y, z, solid(x, y, z)));
     return { solid, outer, env, sl, geo, o };
   }
@@ -393,6 +405,7 @@ export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot 
       if (o.under && y > o.under.y) d = Math.max(d, o.under.fn(x, y, z) + .02 * W); // por dentro da túnica: não atravessa
       return Math.max(d, y - yTop, yBot - y);
     };
+    if(heroStyle)coverage.push({slot:'lower',contains:(x,y,z)=>f(x,y,z)<-.02*W});
     piece(name, ch, f, { x: Math.max(W*Math.max(B.hip,B.waist)*1.2+.4*W,H.x+rH+(o.puff||0)+.3*W), y0: yBot - .2, y1: yTop + .2, z0: zA - .3, z1: zB + .3 }, o.cell);
     return memoField(f);
   }
@@ -444,6 +457,8 @@ export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot 
   }
 
   // Deserto: peças iniciais compartilhadas entre as identidades e seus dois portes.
+  const heroContext={THREE,style,body,B,J,W,Y,Lb,z0,yN,S,E,Wr,H,K,A,ySole,bf,onlySlot,garment,envelope,trousers,boots,beltOn,cape,rim,edgeTube,sleeveCuffs,surfAt,frontZ,backZ,radAt,limbR,limbWrap,button,buckle,addGeoS,add,clothSurface,tubeG,sph,orient,chainG,mirror,patchOn,seamOn,pocketOn,bootFinish,pauldrons,capeEmblem,gradN,memoField,clamp,sstep,lerp,V,PI};
+  if(buildHeroFrontier(heroContext)||buildHeroForest(heroContext)||buildHeroLunar(heroContext))return;
   if(FRONTIER_OUTFITS[style]){
     const baker=style==='bread_baker',watch=style==='bread_vigilante',guard=style==='cactus_guard',cowboy=style==='frontier_cowboy';
     const hem=watch?.64:guard?.5:.46;
