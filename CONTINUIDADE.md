@@ -1,5 +1,13 @@
 # Continuidade — Ateliê Quem Sou Eu
 
+## Retomada após interrupção — 22/10/2026
+
+- Na revisão dos jobs, a execução `39775739335` encontrou dois vértices da gola do `bread_vigilante` magro descobertos; o ajuste em `src/hero-bread.js` foi salvo na `main` (commit `ddfd956`). A execução `39778404376` confirmou **zero falhas** para o vigilante magro, gordo e musculoso, mas apontou 11 vértices sem cobertura no `cactus_soldier` magro, nos ombros/parte alta do tórax.
+- O colete aberto do soldado recebeu extensão localizada da gola e da cava em `src/hero-frontier.js` (commit `9cd7742`), **ainda pendente de validação** pela execução `39779445530`. Não reduzir a exigência de cobertura e não marcar o personagem aprovado sem revisão do usuário.
+- O workflow `.github/workflows/galeria-herois.yml` (commit `1b3d78e`) produz 60 pares de frente/3/4/costas a partir da referência `77e1b9e` e do código atual, inclui Guardião da chama e enquadramento independente ampliado do Nico, valida as câmeras e publica JPGs na branch `capturas-atelie`, sob `/capturas/herois/`. Primeira execução: `39779098457`; **não declarar a galeria publicada até o job passar**. Uma execução de comparações iniciada antes de um novo ajuste pode representar o commit anterior; registrar o SHA na revisão.
+- Aprovado tecnicamente não significa aprovado visualmente. Preservar todos os 20 itens pendentes no README, modelos antigos, 12 clipes, cache e renderização sem redução de qualidade. Após o job do deserto, prosseguir pelos próximos pontos sem cobertura e pela revisão dos renders e sela do cowboy.
+
+
 Repositório: `aruanmf446-hub/quemsoueu`, branch `main`.
 Site: https://aruanmf446-hub.github.io/quemsoueu/
 
