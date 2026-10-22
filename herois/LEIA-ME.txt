@@ -1,0 +1,11 @@
+ATELIÊ — Reconstrução dos heróis
+
+Extraia o ZIP e abra index.html no navegador.
+Referência: 77e1b9e. Versão em avaliação: 1b3d78e90235be67a627c00682db16cb418f1cee.
+Os 20 personagens originais têm frente, 3/4 e costas em pares.
+Closes de rosto e a nova referência entram somente quando há capturas reais.
+Uma imagem sem captura anterior é identificada; não foi inventada uma versão anterior.
+Enquadramentos próprios atuais, quando presentes, usam câmeras independentes e não são pares antes/depois.
+Todos os personagens permanecem pendentes de aprovação explícita.
+As câmeras dos 60 pares obrigatórios foram conferidas nos metadados.
+O gerador apenas compõe e redimensiona os PNGs do navegador, sem retocar os personagens.
