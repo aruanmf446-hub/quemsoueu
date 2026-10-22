@@ -233,7 +233,10 @@ export function buildHeroForest(c){
     armoredShoulders();
   }
   const neckSupport=envelope(yN+.16*W,Y(.17),{ease:.025*W,hang:.65,drape:.008*W,smooth:10});
-  const capeSupport=(x,y,z)=>lerp(neckSupport(x,y,z),over(x,y,z),sstep(Y(.045),Y(.14),y));
+  // A capa dos arqueiros cai por fora das abas da saia, inclusive do painel traseiro.
+  // A transição começa na cintura: não alarga a gola nem desloca o apoio dos ombros.
+  const lowerSupport=archer?(x,y,z)=>lerp(over(x,y,z),Math.min(over(x,y,z),skirtEnv(x,y,z)-.31*W),sstep(Y(.29),Y(.37),y)):over;
+  const capeSupport=(x,y,z)=>lerp(neckSupport(x,y,z),lowerSupport(x,y,z),sstep(Y(.045),Y(.14),y));
   leafBelt(outer.solid,false);mantle(capeSupport,true);shoulderDrape(neckSupport);bracers();bootwork(true);
   // Alça da aljava/mochila separada dos cintos do gibão e seguindo toda a curvatura da roupa.
   if(archer||artificer){strap('extras',over,.025,-.87,.34,.92,.12*W,'leather',.10*W);fastening('extras',over,.20,.15,.15*W,.12*W);}
