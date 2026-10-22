@@ -340,7 +340,7 @@ export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot 
     const field = (x, y, z) => { const s = solid(x, y, z); let d = cut(x, y, z, s); if (hollow) d = Math.max(d, Math.min(-(s + th), bf(x, y, z) - t - .01)); if (o.over && armSide(Math.abs(x), y) < -.05 * W) d = Math.max(d, .012 - over(x, y, z)); return d };
     let geo = null;
     const pad = (o.env?.flare || 0) * (yTop - yBot) + (o.bell || 0) + .5;
-    const bounds = { x: bx + pad, y0: yBot - .1 - (o.hemCurve || 0), y1: yTop + .25, z0: zA - pad, z1: zB + pad };
+    const bounds = { x: bx + pad, y0: heroStyle&&sl?Math.min(yBot-.1-(o.hemCurve||0),sl.box.lo.y-.05):yBot-.1-(o.hemCurve||0), y1:heroStyle&&sl?Math.max(yTop+.25,sl.box.hi.y+.05):yTop+.25, z0: zA - pad, z1: zB + pad };
     if (o.split != null) { const sp = o.split; for (const part of ['upper', 'lower']) { const oo = o; activeSlot = part; const f2 = (x, y, z) => { const s = solid(x, y, z); let d = cut(x, y, z, s); d = Math.max(d, part === 'upper' ? sp - .012 - y : y - sp - .012); if (hollow) d = Math.max(d, Math.min(-(s + th), bf(x, y, z) - t - .01)); if (o.over && armSide(Math.abs(x), y) < -.05 * W) d = Math.max(d, .012 - over(x, y, z)); return d }; piece(name + (part === 'upper' ? '' : '_Saia'), ch, f2, part === 'upper' ? { ...bounds, y0: sp - .1 } : { ...bounds, y1: sp + .1 }, o.cell) } }
     else { activeSlot = slot; if(o.mesh!==false)geo = piece(name, ch, field, bounds, o.cell, hollow?{solid,clip:(x,y,z)=>cut(x,y,z,-1e9),thickness:Math.min(.04*W,t*.6)}:null) }
     const outer = memoField((x, y, z) => cut(x, y, z, solid(x, y, z)));

@@ -18,7 +18,7 @@ export const FOREST_OUTFITS={
   forest_princess:{label:'Princesa da floresta',sub:'Vestido verde, manto, folhas douradas e joias'}
 };
 const palette={fabric:'#405b3d',secondary:'#e1d5b7',accent:'#53673f',pants:'#2c302b',leather:'#60432d',trim:'#bc9655'};
-export const FOREST_COLORS=Object.fromEntries(Object.keys(FOREST_OUTFITS).map(id=>[id,{...palette,...(id==='forest_princess'?{fabric:'#61744c',accent:'#87966c',leather:'#a58a58'}:id==='forest_artificer'?{accent:'#719d32'}:{})}]));
+export const FOREST_COLORS=Object.fromEntries(Object.keys(FOREST_OUTFITS).map(id=>[id,{...palette,...(id==='forest_princess'?{fabric:'#344c2c',secondary:'#e9ddc1',accent:'#607a41',leather:'#896745',trim:'#d6bc74'}:id==='forest_artificer'?{accent:'#719d32'}:{})}]));
 export function leafGeo(r=.1,depth=.02){
   const s=new THREE.Shape();s.moveTo(0,-r);s.bezierCurveTo(-r*.8,-r*.25,-r*.65,r*.55,0,r);s.bezierCurveTo(r*.65,r*.55,r*.8,-r*.25,0,-r);return new THREE.ExtrudeGeometry(s,{depth,bevelEnabled:true,bevelSegments:2,bevelSize:depth*.25,bevelThickness:depth*.25,curveSegments:12});
 }
