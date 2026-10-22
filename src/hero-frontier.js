@@ -121,6 +121,7 @@ export function buildHeroFrontier(C){
   }
   if(!cowboy){limbWrap('Manopla_couro','leather',E,Wr,.28,.94,.045*W);addGeoS('extras','leather',handPatch(body,0,.018*W));}
   if(cowboy){
+    addGeoS('extras','leather',handPatch(body,0,.018*W));limbWrap('Punho_das_luvas','leather',E,Wr,.80,.97,.04*W);
     // Cartucheira, coldre e arma possuem silhueta e mecanismos próprios.
     for(let j=-5;j<=5;j++){
       const a=j*.13,p=surfAt(base,waist-.12*W,a,.14*W),cyl=new THREE.CylinderGeometry(.024*W,.022*W,.14*W,12);cyl.translate(...p.toArray());addGeoS('belt','trim',cyl);

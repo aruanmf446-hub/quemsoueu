@@ -423,7 +423,7 @@ export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot 
   }
   function bootFinish(h=.18,sneaker=false){
     for(const side of [-1,1]){
-      const sole=new THREE.CylinderGeometry(1,1,.09*W,56);sole.scale(.26*W*(B.foot||1),1,.52*W*(B.foot||1));sole.translate(side*A.x,ySole+.01*W,A.z+.19*W);addGeoS('feet',sneaker?'secondary':'sole',sole);
+      const L=.105*Lb*(B.foot||1)*(.9+.1*W),sole=new THREE.CylinderGeometry(1,1,.09*W,56);sole.scale(.19*L+.08*W,1,.61*L+.09*W);sole.translate(side*A.x,ySole+.01*W,A.z+.34*L+.01*W);addGeoS('feet',sneaker?'secondary':'sole',sole);
       const y=A.y+Math.min(h*Lb,.48*W),x=side*A.x,z=frontZ(x,y)+.10*W,b=buckleGeo(.13*W,.105*W,.017*W);b.translate(x,y,z);addGeoS('feet','trim',b);
       for(let i=0;i<(sneaker?4:3);i++){
         const yy=lerp(A.y+.08*W,A.y+(sneaker?.26:.38)*W,i/3),zz=frontZ(x,yy)+.10*W,pts=[V(x-.09*W,yy,zz),V(x,yy-.025*W,zz+.008*W),V(x+.09*W,yy,zz)];addGeoS('feet',sneaker?'secondary':'lining',tubeG(pts,.009*W,6));

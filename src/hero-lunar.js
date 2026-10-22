@@ -55,7 +55,7 @@ export function buildHeroLunar(c) {
     }
   }
   function shoeSole(side,top,depth,ch) {
-    const x=side*A.x,heel=A.z-.22*W*(B.foot||1),toe=Math.max(A.z+.48*W,frontZ(x,ySole+.12*W)+.06*W),ww=.255*W*(B.foot||1),length=toe-heel;
+    const footLength=.105*Lb*(B.foot||1)*(.9+.1*W),x=side*A.x,heel=A.z-.27*footLength-.065*W,toe=A.z+.95*footLength+.09*W,ww=.19*footLength+.085*W,length=toe-heel;
     const s=new THREE.Shape();s.moveTo(-ww*.7,heel);s.bezierCurveTo(-ww,heel-.04*W,-ww*1.05,heel+length*.35,-ww*.92,toe-.12*W);s.bezierCurveTo(-ww*.85,toe+.03*W,ww*.85,toe+.03*W,ww*.92,toe-.12*W);s.bezierCurveTo(ww*1.05,heel+length*.35,ww,heel-.04*W,ww*.7,heel);s.quadraticCurveTo(0,heel-.08*W,-ww*.7,heel);
     const geo=new THREE.ExtrudeGeometry(s,{depth,bevelEnabled:true,bevelSegments:3,bevelSize:.025*W,bevelThickness:.012*W,curveSegments:24});geo.rotateX(PI/2);geo.translate(x,top,0);put('feet',ch,geo);
     return {x,toe,heel,ww,length};

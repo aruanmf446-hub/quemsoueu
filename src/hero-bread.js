@@ -96,7 +96,7 @@ export function buildHeroBread(c){
   boots('Botas_couro_costurado','leather',{t:.075*W,h:.21,cuffT:.06*W,toe:.025*W,cell:.037*clamp(W,1,1.25)});
   for(const side of [-1,1]){
     const x=side*A.x,yTop=A.y+.21*Lb;
-    const sole=new THREE.CylinderGeometry(1,1,.095*W,64);sole.scale(.27*W*(B.foot||1),1,.54*W*(B.foot||1));sole.translate(x,ySole+.015*W,A.z+.19*W);emit('feet','sole',sole);
+    const footLength=.105*Lb*(B.foot||1)*(.9+.1*W),sole=new THREE.CylinderGeometry(1,1,.095*W,64);sole.scale(.19*footLength+.08*W,1,.61*footLength+.09*W);sole.translate(x,ySole+.015*W,A.z+.34*footLength+.01*W);emit('feet','sole',sole);
     for(const t of [.16,.48,.79]){
       const y=lerp(A.y+.10*W,yTop-.07*W,t),r=limbR(V(A.x,y,A.z),V(0,1,0))+.095*W;
       const p=V(x,y,Math.max(frontZ(x,y),A.z+r)+.025*W),g=buckleGeo(.13*W,.10*W,.016*W);g.translate(...p.toArray());emit('feet','trim',g);

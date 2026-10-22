@@ -79,8 +79,8 @@ export function buildHeroForest(c){
   function bootwork(tall=true){
     boots('Botas_esculpidas_floresta','leather',{t:.075*W,h:tall?.28:.075,cuffT:.08*W,toe:.055*W});
     for(const side of [-1,1]){
-      const x=side*A.x,sole=new RoundedBoxGeometry(.53*W*(B.foot||1),.12*W,1.08*W*(B.foot||1),5,.055*W);sole.translate(x,ySole+.015*W,A.z+.19*W);emit('feet','sole',sole);
-      const heel=new RoundedBoxGeometry(.43*W*(B.foot||1),.16*W,.35*W,3,.025*W);heel.translate(x,ySole+.08*W,A.z-.16*W);emit('feet','sole',heel);
+      const L=.105*Lb*(B.foot||1)*(.9+.1*W),x=side*A.x,sole=new RoundedBoxGeometry(.38*L+.17*W,.12*W,1.22*L+.18*W,5,.045*W);sole.translate(x,ySole+.015*W,A.z+.34*L+.01*W);emit('feet','sole',sole);
+      const heel=new RoundedBoxGeometry(.31*L+.13*W,.16*W,.25*L+.09*W,3,.025*W);heel.translate(x,ySole+.08*W,A.z-.12*L);emit('feet','sole',heel);
       const top=A.y+(tall?.24:.045)*Lb;
       for(let row=0;row<(tall?3:1);row++){
         const y=lerp(A.y+.19*W,top,row/(tall?2:1)),q=V(x,y,frontZ(x,y)+.11*W),w=.24*W;
