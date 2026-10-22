@@ -1,6 +1,6 @@
 """Galeria de escultura facial com câmeras iguais e imagens reais, sem retoque.
 
-Uso: python3 tests/galeria-identidades.py renders/identidades
+Uso: python3 tests/galeria-identidades.py renders/identidades [id ...]
 """
 import json
 import math
@@ -12,11 +12,19 @@ from pathlib import Path
 root = Path(sys.argv[1])
 before = json.loads((root / 'antes/cameras.json').read_text())
 after = json.loads((root / 'depois/cameras.json').read_text())
-assert set(before) == set(after), 'Faltam personagens na comparação'
-assert len(after) == 34, 'A galeria deve incluir os 34 personagens'
+selected = sys.argv[2:]
+if selected:
+    assert len(set(selected)) == len(selected), 'Personagem repetido na seleção'
+    assert set(selected) <= set(before) & set(after), 'Falta um personagem selecionado'
+    before = {identity: before[identity] for identity in selected}
+    after = {identity: after[identity] for identity in selected}
+else:
+    assert set(before) == set(after), 'Faltam personagens na comparação'
+    assert len(after) == 34, 'A galeria deve incluir os 34 personagens'
 for phase in ['antes', 'depois']:
     report = json.loads((root / phase / 'relatorio.json').read_text())
     assert not report['errors'], f'Erros de renderização em {phase}'
+    assert set(after) <= set(report['ids']), f'Relatório incompleto em {phase}'
 views = [('front', 'Frente'), ('three', 'Três quartos'), ('side', 'Perfil'), ('malha', 'Malha sem cores')]
 sections = []
 for identity in after:
@@ -47,5 +55,6 @@ body{font:16px system-ui;background:#16202a;color:#eef2f5;margin:24px auto;max-w
 document += ''.join(f'<button data-select="{view}" aria-pressed="{"true" if view == "three" else "false"}">{title}</button>' for view, title in views)
 document += '</nav>' + ''.join(sections)
 document += '''<script>document.querySelectorAll('[data-select]').forEach(button=>button.onclick=()=>{document.querySelectorAll('[data-select]').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));document.querySelectorAll('[data-view]').forEach(p=>p.hidden=p.dataset.view!==button.dataset.select)});</script></html>'''
+document = document.replace('34 identidades', f'{len(after)} identidades')
 (root / 'index.html').write_text(document, encoding='utf-8')
 print(f'Galeria validada: {len(after)} identidades, {len(after)*len(views)} pares e câmeras idênticas.')

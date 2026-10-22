@@ -20,7 +20,8 @@ const profiles={
  nico_inventor:{contour:[-0.84,0.31,0.59,0.8,0.78],planes:[0.69,0.78,0.86,0.66],eyes:[0.005,0.298,0.37,34,-29,1],nose:[-0.25,1.01,0.055,0.125,0.09],mouth:[-0.515,0.235,0.7,0.5,0.024,0.037,0.03],cheek:[.101,.46,-.26,.30,.27],chin:[.013,.21],brow:[.037,.040,.22],round:.52},
  ruby_sorceress:{contour:[-1.16,0.24,0.51,0.8,0.73],planes:[0.78,0.8,0.84,0.65],eyes:[0.075,0.253,0.338,21,-17,12],nose:[-0.38,0.91,0.14,0.17,0.076],mouth:[-0.76,0.29,0.05,0.65,0.042,0.061,0.036],cheek:[.030,.50,-.20,.27,.25],chin:[.057,.15],brow:[.032,.089,.21],round:.91,hook:.012},
  flame_guardian:{contour:[-1.16,0.5,0.86,0.84,0.79],planes:[0.93,0.88,0.86,0.71],eyes:[0.06,0.244,0.36,21,-19,3],nose:[-0.405,1.24,0.18,0.205,0.108],mouth:[-0.76,0.34,0.05,0.3,0.024,0.042,0.035],cheek:[.032,.51,-.22,.28,.25],chin:[.093,.34],brow:[.073,.026,.16],round:.78,square:3.0},
- forest_archer_f:{contour:[-0.94,0.28,0.58,0.8,0.73],planes:[0.74,0.8,0.87,0.66],eyes:[0.04,0.265,0.345,26,-20,8],nose:[-0.27,0.98,0.078,0.16,0.088],mouth:[-0.575,0.29,0.85,0.6,0.032,0.05,0.036],cheek:[.090,.47,-.24,.30,.27],chin:[.025,.20],brow:[.037,.057,.18],round:.63},
+ forest_archer_f:{contour:[-.91,.27,.54,.76,.73],planes:[.73,.80,.79,.66],eyes:[.065,.260,.345,22,-18,8],nose:[-.25,.95,.058,.115,.100],mouth:[-.555,.305,1.0,.70,.029,.052,.024],cheek:[.055,.46,-.19,.34,.33],chin:[.024,.22],brow:[.032,.045,.16],round:.90,
+  detail:{noseTipFullness:.45,noseTipAspect:[1.10,1.30,.020],noseWingRadius:[.060,.065],mouthSampling:3.0,sink:.230,socket:.006,lowerRoll:.001,upperLidPower:1.05,lowerLidPower:.72,irisAng:deg(29.5),browSlope:-.012,lashN:12,lashLen:.052}},
  forest_archer_m:{contour:[-1.15,0.35,0.66,0.82,0.76],planes:[0.86,0.85,0.88,0.69],eyes:[0.05,0.254,0.36,23,-20,4],nose:[-0.385,1.28,0.145,0.19,0.102],mouth:[-0.77,0.31,0.3,0.6,0.024,0.041,0.033],cheek:[.035,.49,-.21,.28,.25],chin:[.068,.24],brow:[.061,.032,.17],round:.78,square:2.5},
  forest_guard_f:{contour:[-1.06,0.42,0.76,0.79,0.75],planes:[0.8,0.83,0.85,0.68],eyes:[0.045,0.25,0.35,26,-21,3],nose:[-0.34,1.12,0.11,0.17,0.097],mouth:[-0.69,0.29,0.15,0.1,0.03,0.047,0.035],cheek:[.052,.46,-.27,.29,.26],chin:[.054,.29],brow:[.047,.030,.17],round:.67,square:2.7},
  forest_guard_m:{contour:[-1.03,0.43,0.75,0.82,0.76],planes:[0.83,0.84,0.87,0.69],eyes:[0.04,0.26,0.363,26,-22,-1],nose:[-0.325,1.19,0.11,0.18,0.106],mouth:[-0.69,0.32,0.8,0.15,0.025,0.043,0.032],cheek:[.065,.47,-.28,.30,.27],chin:[.058,.29],brow:[.055,.028,.18],round:.59,square:2.7},
@@ -47,6 +48,7 @@ export function refineFaceIdentities(presets){
   p.cheekH*=.55; // A massa principal agora está no perfil; relevo local apenas amacia a maçã.
   // Pálpebra, órbita e maçã formam volumes largos e contínuos. Evita a crista diagonal sob o olho.
   Object.assign(p,{sculptedFace:true,socket:f.mature?.024:.012,crease:f.mature?.010:.005,creaseGap:.046,orbit:f.mature?.019:.009,lidFold:.006,lowerRoll:.003,zyg:f.mature?.015:.005,hollow:f.mature?.017:.003,temple:.005,browRidge:f.mature?.040:.016,fold:f.mature?.65:.18,muzzle:.022,irisAng:deg(f.mature?29:33),lash:Math.min(p.lash,.015),flick:Math.min(p.flick,.025),lashLen:Math.min(p.lashLen,.060)});
+  Object.assign(p,f.detail);
   p.faceIdentity=id==='bread_vigilante'?'bread_baker':id;
  }
  // Vegetais: massas e relações faciais também próprias, preservando as espécies.

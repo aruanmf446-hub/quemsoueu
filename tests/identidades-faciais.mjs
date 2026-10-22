@@ -7,6 +7,8 @@ import {buildHead} from '../src/head.js';
 import {PRESETS,PRESET_ORDER} from '../src/presets.js';
 globalThis.document={createElement:()=>({getContext:()=>new Proxy({},{get:(_,k)=>k==='createLinearGradient'?()=>({addColorStop(){}}):()=>{}})})};
 const baseline=process.argv[2]?await import(pathToFileURL(resolve(process.argv[2],'src/head.js')).href):null;
+const expected=process.env.ATELIE_REFINADOS?.split(',');
+if(expected)for(const id of expected)assert(PRESET_ORDER.includes(id),'Refino desconhecido: '+id);
 const hashes=new Map(),metrics=new Map(),changes=[];
 function face(head){return head.group.getObjectByName('Head_Skin')||head.group.getObjectByName('Rosto')||head.group.getObjectByName('Head_Shell')}
 function hashGeometry(root){const hash=createHash('sha256');root.traverse(m=>{if(m.isMesh)hash.update(Buffer.from(m.geometry.attributes.position.array.buffer))});return hash.digest('hex')}
@@ -33,7 +35,7 @@ for(const id of PRESET_ORDER){
    }
   }
   if(id!=='robot_ball')assert.equal(head.rig.makeClips().length,12,id+': clipes faciais perdidos');
-  if(baseline){const old=baseline.buildHead(id,{}, {quality:.35,export:true});try{assert.notEqual(hash,hashGeometry(face(old)),id+': rosto não foi refinado');changes.push(id)}finally{old.dispose()}}
+  if(baseline){const old=baseline.buildHead(id,{}, {quality:.35,export:true});try{const previous=hashGeometry(face(old));if(!expected||expected.includes(id)){assert.notEqual(hash,previous,id+': rosto não foi refinado');changes.push(id)}else assert.equal(hash,previous,id+': refino individual alterou outro personagem')}finally{old.dispose()}}
   console.log('OK',id);
  }finally{head.dispose()}
 }

@@ -272,8 +272,15 @@ function makeFaceField(P, eyes) {
         // Ponte larga se funde com ponta e asas elípticas. Derivadas contínuas evitam
         // o antigo bico estreito, com degraus na base e na ponta do nariz.
         const bridge=P.noseH*Math.pow(qc,1.25)*gau(below,P.tipR*.95)*gau(x,(.052+.030*qc)*nW);
-        const tip=(P.tipH+P.noseH*.34)*Math.exp(-((x/(P.tipR*nW))**2)-((y-tipY-.018)/(P.tipR*1.12))**2);
-        const wings=P.alaeH*gau(ax-P.alaeX*nW,.055*nW)*gau(y-tipY+.018,.051);
+        // A ponta tem raios independentes: o perfil não precisa herdar a mesma
+        // curvatura estreita da ponte. As asas se fundem sem uma quina na base.
+        const [tipX,tipYScale,tipOffset]=P.noseTipAspect||[1,1.12,.018],wing=P.noseWingRadius||[.055,.051];
+        const tipR2=(x/(P.tipR*nW*tipX))**2+((y-tipY-tipOffset)/(P.tipR*tipYScale))**2;
+        // O termo radial reduz a curvatura da ponta sem recortar uma calota:
+        // volume e derivadas continuam suaves até a ponte e as asas.
+        const tipShape=Math.exp(-tipR2)*(1+(P.noseTipFullness||0)*tipR2);
+        const tip=(P.tipH+P.noseH*.34)*tipShape;
+        const wings=P.alaeH*gau(ax-P.alaeX*nW,wing[0]*nW)*gau(y-tipY+.018,wing[1]);
         dz+=smaxS(bridge,tip,.035)-.035*.25+wings+(P.bridgeBump||0)*gau(q-.53,.25)*gau(x,bw*1.3);
         const n2=((ax-.052*nW)/(.024*nW))**2+((y-tipY+.051)/.016)**2;
         nostril=Math.exp(-n2*1.4)*.65;dz-=.012*nostril;
@@ -608,7 +615,7 @@ export function buildHead(presetId, adj, opts = {}) {
     // Redistribui o mesmo orçamento de vértices para as pálpebras e os lábios desta identidade.
     // Evita gastar anéis uniformes na testa enquanto a borda da boca fica subamostrada.
     const mouthTh=Math.atan2(Math.max(.2,surfZ(0,P.mouthY)-Cz),P.mouthY-Cy),eyeTh=Math.atan2(Math.max(.2,surfZ(P.eyeX,P.eyeY)-Cz),P.eyeY-Cy);
-    for (let i = 1; i <= NS; i++) { const th = thA * (i - .5) / NS; cdf[i] = cdf[i - 1] + .32 + 1.2 * sstep(.8, 1.2, th) * (1 - sstep(2.4, 2.65, th)) + .75*gau(th-eyeTh,.17)+1.3*gau(th-mouthTh,.115) }
+    for (let i = 1; i <= NS; i++) { const th = thA * (i - .5) / NS; cdf[i] = cdf[i - 1] + .32 + 1.2 * sstep(.8, 1.2, th) * (1 - sstep(2.4, 2.65, th)) + .75*gau(th-eyeTh,.17)+(P.mouthSampling??1.3)*gau(th-mouthTh,.115) }
     const invTh = s => { const tg = s * cdf[NS]; let lo = 0, hi = NS; while (hi - lo > 1) { const m = (lo + hi) >> 1; if (cdf[m] < tg) lo = m; else hi = m } return thA * (lo + (tg - cdf[lo]) / ((cdf[hi] - cdf[lo]) || 1)) / NS };
     const axisZ = y => y > nty ? Cz + (ntz - Cz) * clamp((Cy - y) / (Cy - nty), 0, 1) : ntz + (nbz - ntz) * clamp((nty - y) / (nty - nby), 0, 1);
     const sinP = new Float64Array(W), cosP = new Float64Array(W);

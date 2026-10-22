@@ -4,7 +4,17 @@
 
 O usuário determinou: **sempre subir o trabalho para a `main`**. Ao concluir uma rodada, validar, registrar as alterações e enviar à `main`, preservando alterações remotas e sem force push. Distinguir o envio do código da conclusão do deploy do site.
 
-## Rodada atual — projeção e proporções dos 34 rostos (22/10/2026)
+## Revisão individual em andamento — arqueira da floresta (22/10/2026)
+
+O usuário pediu continuar melhorando **um por um**. O catálogo inteiro continua no escopo; este checkpoint começa pela arqueira (`forest_archer_f`), a única com referência visual disponível em `.github/workflows/image.jpg`. Não apresentar os outros personagens como revisados individualmente nesta passagem. Próxima identidade: Nana exploradora; depois seguir pelo catálogo, com diagnóstico e validação próprios de cada rosto.
+
+Na arqueira: contorno menos largo nas bochechas, mandíbula afunilada, olhos amendoados com íris menor, pálpebras mais embutidas, sobrancelhas menos arqueadas e cílios mais curtos e espaçados. A ponta nasal usa raios independentes e um campo radial suave para reduzir a curvatura aguda sem criar uma peça separada sobre a face. Ponte e asas acompanham a nova ponta. Os lábios têm menor projeção, sorriso assimétrico e mais amostras da malha ao redor da boca, sem aumentar o orçamento global de vértices. Não houve alteração de iluminação, material ou roupa.
+
+O bloco `detail` de cada perfil permite afinar sua escultura sem transferir os ajustes para as outras identidades. `ATELIE_REFINADOS=forest_archer_f node tests/identidades-faciais.mjs /workspace/outputs/individual-base` verifica alteração da arqueira e igualdade das outras 33 malhas contra `0ca62a8`, além dos contratos já existentes. A opção só muda a comparação com uma referência; sem ela, permanece o contrato antigo de todos os rostos alterados.
+
+Comparação local: `renders/individual-arqueira/index.html`, quatro pares com câmeras iguais, gerada por `python3 tests/galeria-identidades.py renders/individual-arqueira forest_archer_f`. A galeria continua exigindo os 34 quando a seleção não é informada. Capturas de cinco expressões em `depois/`; personagem completo e exportação em `validacao/`; Worker/expressões/cache em `worker/`. Validação concluída: as 34 identidades passaram, com somente a arqueira alterada contra `0ca62a8`; qualidade orbital e fechamento das pálpebras passaram nos 29 rostos humanos/vegetais. A arqueira passou na exportação GLB com mapas e 12 clipes, recoloração, Worker, expressões e cache, sem erros de navegador. As cinco expressões e o encaixe com cabelo/acessórios foram revisados visualmente. Artefatos locais continuam ignorados pelo Git. Nenhuma aprovação estética foi dada.
+
+## Rodada anterior — projeção e proporções dos 34 rostos (22/10/2026)
 
 O usuário considerou `6bb2ee9` fraco e pediu uma mudança mais forte na escultura de todos. Esta rodada altera a anatomia, sem mudanças de iluminação, roupa ou materiais. Não declarar resultado aprovado nem equivalência à referência cinematográfica.
 
