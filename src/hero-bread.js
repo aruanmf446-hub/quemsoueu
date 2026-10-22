@@ -58,14 +58,16 @@ export function buildHeroBread(c){
     }
   }
   // A camisa termina dentro da faixa; as mangas têm volume no bíceps e punho dobrado próprio.
+  // No vigilante, a gola interna sobe até o ombro e fecha a fresta sob a sobrecasaca aberta,
+  // inclusive no corpo magro; acompanha a mesma subida no acabamento, sem mudar o padeiro.
   const shirt=garment(baker?'Camisa_padeiro_pregueada':'Camisa_vigilante','fabric','upper',{
-    top:yN+.045,bottom:Y(.395),t:.045*W,cell:.039*clamp(W,1,1.25),sleeve:'forearm',sleeveEase:.048*W,puff:(baker?.105:.045)*W,bell:.006*W,vneck:baker?.065:.10,
+    top:yN+(watch?.11*W:.045),bottom:Y(.395),t:.045*W,cell:.039*clamp(W,1,1.25),sleeve:'forearm',sleeveEase:.048*W,puff:(baker?.105:.045)*W,bell:.006*W,vneck:baker?.065:.10,
     env:{ease:.045*W,hang:.42,cinch:Y(.33),cinchK:.92,flareFrom:Y(.34),flare:.055,folds:.018*W,foldN:17}
   });
   sleeveCuffs(shirt,'upper',baker?'secondary':'accent',.095*W);
   // Três voltas irregulares deixam a dobra da manga ter leitura de tecido enrolado.
   if(baker)for(let i=0;i<3;i++)ring('upper',i%2?'fabric':'secondary',E,Wr,.60+i*.042,.040*W,.075*W+i*.004*W);
-  rim('upper',baker?'secondary':'trim',shirt.outer,a=>yN+.025-.065*Math.max(0,Math.cos(a))**6,.018*W);
+  rim('upper',baker?'secondary':'trim',shirt.outer,a=>yN+(watch?.09*W:.025)-.065*Math.max(0,Math.cos(a))**6,.018*W);
   if(baker){
     for(const side of [-1,1]){
       const point=(t,u)=>{const x=side*(.055+.26*u)*W,y=lerp(yN+.03,Y(.095),t)+.11*W*u*(1-t);const p=column(shirt.solid,x,y,.045*W);p.z+=.035*W*Math.sin(PI*t);return p};
