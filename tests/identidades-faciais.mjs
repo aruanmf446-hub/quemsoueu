@@ -7,7 +7,7 @@ import {buildHead} from '../src/head.js';
 import {PRESETS,PRESET_ORDER} from '../src/presets.js';
 globalThis.document={createElement:()=>({getContext:()=>new Proxy({},{get:(_,k)=>k==='createLinearGradient'?()=>({addColorStop(){}}):()=>{}})})};
 const baseline=process.argv[2]?await import(pathToFileURL(resolve(process.argv[2],'src/head.js')).href):null;
-const expected=process.env.ATELIE_REFINADOS?.split(',');
+const expected=process.env.ATELIE_REFINADOS?.split(',').filter(Boolean);
 if(expected)for(const id of expected)assert(PRESET_ORDER.includes(id),'Refino desconhecido: '+id);
 const hashes=new Map(),metrics=new Map(),changes=[];
 function face(head){return head.params.kind==='robot'?head.group:head.group.getObjectByName('Head_Skin')||head.group.getObjectByName('Rosto')}

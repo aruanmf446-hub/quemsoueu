@@ -12,9 +12,10 @@ import {PRESET_ORDER,PRESETS} from '../src/presets.js';
 import {groomedLock,groomMaterial} from '../src/groom.js';
 globalThis.document={createElement:()=>({getContext:()=>new Proxy({},{get:(_,k)=>k==='createLinearGradient'?()=>({addColorStop(){}}):()=>{}})})};
 const old=process.argv[2]?{head:await import(pathToFileURL(resolve(process.argv[2],'src/head.js'))),hair:await import(pathToFileURL(resolve(process.argv[2],'src/hair.js'))),look:await import(pathToFileURL(resolve(process.argv[2],'src/look.js')))}:null;
-function fingerprint(root,surface=false){
+// A pintura removida no pescoço é permitida; geometria, morphs e cores acima do limite continuam protegidos.
+function fingerprint(root,surface=false,colorFloor=null){
  root.updateWorldMatrix(true,true);const h=createHash('sha256');root.traverse(m=>{if(!m.isMesh)return;h.update(m.name);h.update(JSON.stringify(m.matrixWorld.toArray()));const g=surface?(m.geometry.index?m.geometry.toNonIndexed():m.geometry.clone()):m.geometry;
- for(const [key,a]of Object.entries(g.attributes)){if(surface&&['uv','uv1','tangent'].includes(key))continue;h.update(key);h.update(Buffer.from(a.array.buffer,a.array.byteOffset,a.array.byteLength))}
+ for(const [key,a]of Object.entries(g.attributes)){if(surface&&['uv','uv1','tangent'].includes(key))continue;h.update(key);if(key==='color'&&colorFloor!==null){const protectedColors=a.array.slice(),p=g.attributes.position;for(let i=0;i<p.count;i++)if(p.getY(i)<colorFloor)protectedColors.fill(0,i*a.itemSize,(i+1)*a.itemSize);h.update(Buffer.from(protectedColors.buffer))}else h.update(Buffer.from(a.array.buffer,a.array.byteOffset,a.array.byteLength))}
  if(g.index)h.update(Buffer.from(g.index.array.buffer));for(const [key,attrs]of Object.entries(g.morphAttributes))for(const a of attrs){h.update(key);h.update(Buffer.from(a.array.buffer))}if(surface)g.dispose();
  });return h.digest('hex');
 }
@@ -38,7 +39,7 @@ for(const id of PRESET_ORDER){
  const look=defaultLook(id),opts={quality:.35,export:true,...headOpts(look,PRESETS[id])},head=buildHead(id,{},opts),before=old?.head.buildHead(id,{},opts);
  try{
   const protectedNames=PRESETS[id].kind==='companion'?['Malha_rosto','Cranio','Bico_superior','Nariz','Olho_L','Olho_R','Mandibula']:PRESETS[id].kind==='robot'?['Head_Shell','Screen']:['Head_Skin','Eye_L','Eye_R'];
-  let checked=0;for(const name of protectedNames){const m=head.group.getObjectByName(name);if(!m)continue;checked++;if(before){assert.equal(fingerprint(m,PRESETS[id].kind==='companion'),fingerprint(before.group.getObjectByName(name),PRESETS[id].kind==='companion'),id+'/'+name+': rosto alterado');faces++}}
+  let checked=0;for(const name of protectedNames){const m=head.group.getObjectByName(name);if(!m)continue;checked++;if(before){const floor=name==='Head_Skin'&&head.params.beardVol?head.params.loft.y[0]+.025:null;assert.equal(fingerprint(m,PRESETS[id].kind==='companion',floor),fingerprint(before.group.getObjectByName(name),PRESETS[id].kind==='companion',floor),id+'/'+name+': rosto alterado');faces++}}
   assert(checked>0,id+': rosto não exercitado');if(old)assert.deepEqual(look,old.look.defaultLook(id),id+': identidade do visual alterada');
   head.group.traverse(m=>{if(m.isMesh)valid(m.geometry,id+'/'+m.name)});
   if(id!=='robot_ball')assert.equal(head.rig.makeClips().length,12,id+': clipes perdidos');
@@ -70,11 +71,13 @@ for(const beard of ['none','shadow','full','stache','goatee']){
  try{
   const expected=beard==='shadow'||beard==='full'?'Beard_Locks':beard==='stache'||beard==='goatee'?'Mustache_L':null;
   if(expected){const m=h.group.getObjectByName(expected);assert(m,beard+': pelos ausentes');assert(m.geometry.attributes.uv&&m.material.normalMap,beard+': fibras ausentes');assert(m.geometry.morphAttributes.position.length>0,beard+': expressão perdida')}
+  const baseLocks=h.group.getObjectByName('Beard_Locks'),baseSkin=h.group.getObjectByName('Head_Skin'),offsets=[];
+  if(baseLocks?.geometry.userData.faceSources)for(let i=0;i<baseLocks.geometry.userData.faceSources.length;i++)offsets.push(baseLocks.getVertexPosition(i,new THREE.Vector3()).distanceTo(baseSkin.getVertexPosition(baseLocks.geometry.userData.faceSources[i],new THREE.Vector3())));
   for(const pose of [{smile:1},{jaw:.7},{pucker:1}]){
    h.rig.apply(pose);h.group.updateMatrixWorld(true);const locks=h.group.getObjectByName('Beard_Locks'),skin=h.group.getObjectByName('Head_Skin');
    if(locks?.geometry.userData.faceSources){
     const sources=locks.geometry.userData.faceSources;for(let i=0;i<sources.length;i+=Math.max(1,Math.floor(sources.length/100))){
-     const a=locks.getVertexPosition(i,new THREE.Vector3()),b=skin.getVertexPosition(sources[i],new THREE.Vector3());assert(a.distanceTo(b)<(locks.geometry.userData.beardSurface ? .006 : .022),beard+': pelos se soltaram da pele animada');
+     const a=locks.getVertexPosition(i,new THREE.Vector3()),b=skin.getVertexPosition(sources[i],new THREE.Vector3());assert(Math.abs(a.distanceTo(b)-offsets[i])<.006,beard+': pelos se soltaram da pele animada');assert(offsets[i]<.5,beard+': mecha fora do volume da barba');
     }
    }
   }h.group.traverse(m=>{if(m.isMesh)valid(m.geometry,'Barba/'+beard+'/'+m.name)});beards++;

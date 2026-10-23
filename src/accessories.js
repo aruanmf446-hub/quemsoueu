@@ -56,7 +56,7 @@ export const ACCESSORIES = {
 // ---------- geometria básica ----------
 function tube(pts,r,seg=8){
   const closed=pts.length>3&&pts[0].distanceToSquared(pts[pts.length-1])<1e-12,length=pts.slice(1).reduce((n,p,i)=>n+p.distanceTo(pts[i]),0);
-  return groomedLock(pts,1,1,{rows:Math.max(2,Math.min(320,Math.max(pts.length-1,Math.ceil(length/.025)))),segments:Math.max(12,seg),closed,tangents:false,profile:t=>{const rr=typeof r==='function'?r(t):r;return[rr,rr]},normal:()=>V(0,1,0)});
+  return groomedLock(pts,1,1,{rows:Math.max(2,Math.min(320,Math.max(pts.length-1,Math.ceil(length/.025)))),segments:Math.max(12,seg),closed,grooveStrength:0,tangents:false,profile:t=>{const rr=typeof r==='function'?r(t):r;return[rr,rr]},normal:()=>V(0,1,0)});
 }
 function lensGeometry(radius,sag=.018,thickness=.004){
   const nr=12,nc=64,p=[],uv=[],ix=[],ends=[];
@@ -101,13 +101,17 @@ export function buildAccessories(fit, sel = {}, cols = {}, hairMeshes = []) {
     flower: new THREE.MeshPhysicalMaterial({ name: 'Acc_Flower', color: cols.flower || '#f6f1e6', roughness: .55, sheen: .6, sheenColor: new THREE.Color('#ffffff') }),
     pollen: new THREE.MeshPhysicalMaterial({ name: 'Acc_Pollen', color: '#e8b52c', roughness: .7 }),
     glass: new THREE.MeshPhysicalMaterial({ name: 'Acc_Glass', color: '#f0f3f6', roughness: .03, metalness: 0, transparent: true, opacity: .035, specularIntensity: .6, clearcoat: .35, clearcoatRoughness: 0, depthWrite: false, side: THREE.DoubleSide }),
+    frame: new THREE.MeshPhysicalMaterial({name:'Acc_Frame',color:cols.gem2||'#5ab8ef',roughness:.42,metalness:.12,clearcoat:.16}),
+    nosePad: new THREE.MeshPhysicalMaterial({name:'Acc_NosePad',color:'#e5d7c4',transparent:true,opacity:.28,roughness:.38,depthWrite:false}),
+    pad: new THREE.MeshStandardMaterial({name:'Acc_Pad',color:'#292d35',roughness:.85}),
+    goggleGlass: new THREE.MeshPhysicalMaterial({name:'Acc_GoggleGlass',color:cols.gem2||'#5ab8ef',transparent:true,opacity:.24,roughness:.06,depthWrite:false}),
     visor: new THREE.MeshPhysicalMaterial({name:'Acc_Visor',color:cols.gem2||'#5ab8ef',transparent:true,opacity:.09,roughness:.03,clearcoat:.35,specularIntensity:.6,depthWrite:false,side:THREE.DoubleSide}),
     liquid: new THREE.MeshPhysicalMaterial({ name: 'Acc_Liquid', color: cols.gem || '#8e3fd0', emissive: cols.gem || '#8e3fd0', emissiveIntensity: .55, roughness: .3, transparent: true, opacity: .85 })
   };
   const setColors = c => {
     if (c.metal) mats.metal.color.set(c.metal);
     if (c.gem) { mats.gem.color.set(c.gem); mats.liquid.color.set(c.gem); mats.liquid.emissive.set(c.gem);mats.plume.color.set(c.gem) }
-    if (c.gem2) {mats.gem2.color.set(c.gem2);mats.visor.color.set(c.gem2)}
+    if (c.gem2) {mats.gem2.color.set(c.gem2);mats.visor.color.set(c.gem2);mats.frame.color.set(c.gem2);mats.goggleGlass.color.set(c.gem2)}
     if (c.fabric) { mats.fabric.color.set(c.fabric); mats.band.color.set(c.fabric).multiplyScalar(.45) }
     if (c.flower) mats.flower.color.set(c.flower);
   };
@@ -160,7 +164,8 @@ export function buildAccessories(fit, sel = {}, cols = {}, hairMeshes = []) {
       const shape = new THREE.Shape(); shape.moveTo(-w, 0); shape.quadraticCurveTo(-w * .35, h * .45, 0, h); shape.quadraticCurveTo(w * .35, h * .45, w, 0); shape.lineTo(-w, 0);
       const g = new THREE.ExtrudeGeometry(shape, { depth: .02, bevelEnabled: true, bevelThickness: .006, bevelSize: .006, bevelSegments: 3, curveSegments: 6 });
       g.translate(0, 0, -.01); g.rotateX(-.12); add('metal', place(g, p.clone().add(V(0, H * .85, 0)).addScaledVector(o, H * .1), o));
-      add('pearl', sphere(p.clone().add(V(0, H * .85 + h + .02, 0)).addScaledVector(o, H * .1 + .03), .022));
+      const pearlTip=p.clone().add(V(0,H*.85+h*Math.cos(.12)+.012,0)).addScaledVector(o,H*.1-h*Math.sin(.12)+.008);
+      add('pearl', sphere(pearlTip, .022));
       add(k === 0 ? 'gem' : 'gem2', gemGeo(p.clone().add(V(0, H * .5, 0)).addScaledVector(o, .02), k === 0 ? .055 : .032, o, k === 0 ? 1.5 : 1.2));
       const ph2 = ph + Math.PI / N, p2 = R.at(ph2), o2 = V(p2.x, 0, p2.z - zc).normalize();
       add('pearl', sphere(p2.clone().add(V(0, H * .5, 0)).addScaledVector(o2, .018), .016));
@@ -313,10 +318,13 @@ export function buildAccessories(fit, sel = {}, cols = {}, hairMeshes = []) {
     let zF=Math.max(...fit.eyes.map(e=>e.z+e.R))+.05;
     for(const e of fit.eyes)for(let j=0;j<72;j++){const a=j/72*Math.PI*2;zF=Math.max(zF,fit.surfZ(e.x+R*Math.cos(a),e.y-.01+R*Math.sin(a))+.045)}
     for (const e of fit.eyes) {
-      const c = V(e.x, e.y - .01, zF), g = new THREE.TorusGeometry(R, .014, 16, 72); g.translate(c.x, c.y, c.z); add('metal', g);
+      const c = V(e.x, e.y - .01, zF), g = new THREE.TorusGeometry(R, .018, 20, 96); g.translate(c.x, c.y, c.z); add('metal', g);
       const lens = lensGeometry(R,.010,.003); lens.translate(c.x, c.y, c.z - .003); add('glass', lens);
       const s = Math.sign(e.x), hinge = V(e.x + s * R, e.y, zF - .01), back = V(s * (traceR(sdf, e.y, s * 80 * DEG, zc) * Math.sin(80 * DEG) + .04), e.y + .02, (fit.ears[0] ? fit.ears[0].center.z : zc - .1) + .05);
-      add('metal', tube([hinge, hinge.clone().lerp(back, .5).add(V(s * .03, 0, 0)), back], .011, 6));
+      add('metal', tube([hinge, hinge.clone().lerp(back, .5).add(V(s * .03, .012, 0)), back], .012, 12));
+      add('pad',tube([back.clone().lerp(hinge,.18),back,back.clone().add(V(-s*.015,-.075,-.02))],.018,12));
+      add('metal',sphere(hinge,.023,1,1,.55));
+      const pad=V(e.x-s*R*.76,e.y-.025,0);pad.z=fit.surfZ(pad.x,pad.y)+.018;add('nosePad',sphere(pad,.016,.65,1.5,.55));add('metal',tube([V(e.x-s*R*.84,e.y+.025,zF),pad.clone().add(V(0,.015,.008)),pad],.004,10));
     }
     const a = fit.eyes[0], b = fit.eyes[1], mid = V(0, a.y + .04, zF + .01), pts = [];
     for (let i = 0; i <= 10; i++) { const t = i / 10; pts.push(V(a.x + (b.x - a.x) * t - Math.sign(a.x - b.x) * 0, 0, 0)) }
@@ -338,16 +346,16 @@ export function buildAccessories(fit, sel = {}, cols = {}, hairMeshes = []) {
   if(head==='goggles'){
     const R=ring(top-.3,-.06,.04);
     // A mesma correia e os mesmos óculos, agora com espessura, aro, junta e lente curva.
-    add('band',clothSurface(6,128,(t,u)=>R.at(u*Math.PI*2).add(V(0,(t-.5)*.065,0)),{closed:true,thickness:.016}));
+    add('band',clothSurface(6,128,(t,u)=>R.at(.62+u*(Math.PI*2-1.24)).add(V(0,(t-.5)*.065,0)),{thickness:.016}));
     for(const edge of [-.027,.027])for(let i=0;i<64;i++){
-      const a=i/64*Math.PI*2,b=(i+.48)/64*Math.PI*2;add('fabric',tube([R.at(a).add(V(0,edge,0)),R.at(b).add(V(0,edge,0))],.0025));
+      const a=.62+i/64*(Math.PI*2-1.24),b=.62+(i+.48)/64*(Math.PI*2-1.24);add('fabric',tube([R.at(a).add(V(0,edge,0)),R.at(b).add(V(0,edge,0))],.0025));
     }
     const centers=[];
     for(const side of [-1,1]){
       const p=R.at(side*.36).add(V(0,.05,.055)),dir=V(side*.18,.05,1).normalize();centers.push(p);
       const body=new THREE.CylinderGeometry(.177,.169,.050,64,1,true);body.rotateX(Math.PI/2);add('metal',place(body,p.clone().addScaledVector(dir,-.012),dir));
       for(const [radius,width,depth,key]of [[.164,.019,.025,'metal'],[.146,.008,.026,'band'],[.176,.008,-.035,'metal']])add(key,place(new THREE.TorusGeometry(radius,width,16,64),p.clone().addScaledVector(dir,depth),dir));
-      add('glass',place(lensGeometry(.145,.023,.006),p.clone().addScaledVector(dir,.020),dir));
+      add('goggleGlass',place(lensGeometry(.145,.023,.006),p.clone().addScaledVector(dir,.020),dir));
       for(let i=0;i<6;i++){
         const a=i/6*Math.PI*2,q=V(Math.cos(a)*.164,Math.sin(a)*.164,.038),disc=new THREE.CylinderGeometry(.008,.008,.006,16);disc.rotateX(Math.PI/2);disc.translate(...q.toArray());add('metal',place(disc,p,dir));
         add('band',place(tube([q.clone().add(V(-.005,0,.004)),q.clone().add(V(.005,0,.004))],.0016),p,dir));
@@ -357,18 +365,19 @@ export function buildAccessories(fit, sel = {}, cols = {}, hairMeshes = []) {
     add('metal',tube([centers[0].clone().add(V(.17,0,0)),V(0,centers[0].y+.02,centers[0].z+.02),centers[1].clone().add(V(-.17,0,0))],.014));
   }
   if(sel.face==='visor'&&fit.eyes?.length===2){
-    const y=fit.eyes.reduce((a,e)=>a+e.y,0)/2,halfW=Math.max(...fit.eyes.map(e=>Math.abs(e.x)+e.R*.90)),halfH=Math.max(...fit.eyes.map(e=>e.R))*.72,corner=Math.min(.07,halfH*.32),bend=.105;
+    const y=fit.eyes.reduce((a,e)=>a+e.y,0)/2,halfW=Math.max(...fit.eyes.map(e=>Math.abs(e.x)+e.R*.90)),halfH=Math.max(...fit.eyes.map(e=>e.R))*.88,corner=Math.min(.07,halfH*.32),bend=.105;
     const halfWidth=t=>{const q=Math.max(0,Math.abs((t-.5)*2*halfH)-(halfH-corner));return halfW-corner+Math.sqrt(Math.max(0,corner*corner-q*q))};
     let z=Math.max(...fit.eyes.map(e=>e.z+e.R))+.07;
     for(let i=0;i<=12;i++)for(let j=0;j<=32;j++){const t=i/12,x=(.5-j/32)*2*halfWidth(t),yy=y+(t-.5)*2*halfH;z=Math.max(z,fit.surfZ(x,yy)+.050+bend*(x/halfW)**2)}
-    const point=(t,u)=>{const x=(.5-u)*2*halfWidth(t);return V(x,y+(t-.5)*2*halfH,z-bend*(x/halfW)**2)};
+    const point=(t,u)=>{const x=(.5-u)*2*halfWidth(t);return V(x,y+(t-.5)*2*halfH+.065*Math.exp(-((x/.16)**2))*(1-t)**3,z-bend*(x/halfW)**2)};
     // Casca curva e fina, com contorno contínuo; o visor acompanha a largura real do rosto.
     add('visor',clothSurface(20,64,point,{thickness:.010}));
     const rim=[];for(let j=0;j<48;j++)rim.push(point(0,j/48));for(let i=0;i<24;i++)rim.push(point(i/24,1));for(let j=0;j<48;j++)rim.push(point(1,1-j/48));for(let i=0;i<=24;i++)rim.push(point(1-i/24,0));
-    add('metal',tube(rim,.010,12));
+    add('frame',tube(rim,.014,16));
+    add('frame',tube(Array.from({length:49},(_,j)=>point(1,j/48)),.023,16));
     for(const side of [-1,1]){
       const q=point(.5,side<0?1:0),ear=fit.ears.find(e=>Math.sign(e.center.x)===side)?.center||V(side*.78,y,-.12),hinge=V(side*(traceR(sdf,y,side*80*DEG,zc)*Math.sin(80*DEG)+.055),y+.01,ear.z+.06);
-      add('gem2',sphere(q.clone().add(V(side*.015,0,-.005)),.037,1,.85,.65));add('metal',tube([q,hinge.clone().lerp(q,.45),hinge],.012));
+      add('frame',sphere(q.clone().add(V(side*.015,0,-.005)),.036,1.2,.75,.65));add('frame',tube([q,hinge.clone().lerp(q,.45),hinge],.022));add('metal',sphere(q.clone().add(V(side*.018,0,.018)),.010));add('pad',tube([hinge.clone().lerp(q,.15),hinge,hinge.clone().add(V(-side*.01,-.075,-.03))],.023));
     }
   }
 
@@ -376,9 +385,9 @@ export function buildAccessories(fit, sel = {}, cols = {}, hairMeshes = []) {
     const e=fit.eyes.find(e=>e.x<0)||fit.eyes[0],r=Math.min(e.R*1.16,Math.abs(e.x)*.95);let front=e.z+e.R+.07;
     for(let j=0;j<72;j++){const a=j/72*Math.PI*2;front=Math.max(front,fit.surfZ(e.x+r*1.2*Math.cos(a),e.y+r*1.2*Math.sin(a))+.05)}
     const p=V(e.x,e.y,front),g=new THREE.TorusGeometry(r,.020,16,64);g.translate(...p.toArray());add('metal',g);
-    const cog=gear(r*1.16,.021);cog.translate(p.x,p.y,p.z-.017);add('metal',cog);
-    const glass=lensGeometry(r*.90,.009,.003);glass.translate(p.x,p.y,p.z);add('visor',glass);
-    const chain=[p.clone().add(V(-r,0,0)),p.clone().add(V(-r-.06,-.2,-.01)),p.clone().add(V(-r-.04,-.36,-.1))];add('metal',tube(chain,.008));
+    const shape=new THREE.Shape(),outer=r*1.12;for(let j=0;j<64;j++){const a=j/64*Math.PI*2,rr=outer*(j%4<2?1:.965);if(j)shape.lineTo(Math.cos(a)*rr,Math.sin(a)*rr);else shape.moveTo(Math.cos(a)*rr,Math.sin(a)*rr)}shape.closePath();const opening=new THREE.Path();opening.absarc(0,0,r*.94,0,Math.PI*2,false);shape.holes.push(opening);const cog=new THREE.ExtrudeGeometry(shape,{depth:.012,bevelEnabled:true,bevelSize:.003,bevelThickness:.003,bevelSegments:3,curveSegments:48});cog.translate(p.x,p.y,p.z-.02);add('metal',cog);
+    const glass=lensGeometry(r*.94,.012,.004);glass.translate(p.x,p.y,p.z);add('glass',glass);
+    for(let j=0;j<21;j++){const t=j/20,q=p.clone().add(V(-r-.045*Math.sin(t*Math.PI),-.015-j*.018,-.07*t)),link=new THREE.TorusGeometry(.012,.003,8,16);link.scale(.72,1,1);link.rotateY(j%2?Math.PI/2:0);link.translate(...q.toArray());add('metal',link)}
     add('gem2',sphere(p.clone().add(V(-r,0,.02)),.035));
   }
 
@@ -393,7 +402,10 @@ export function buildAccessories(fit, sel = {}, cols = {}, hairMeshes = []) {
     const point=(t,u)=>{const ph=Math.PI*.32+u*Math.PI*1.36,y=-1.0+(top+1.16)*t,base=.08+.92*Math.sin(Math.PI*(.16+.84*t)),r=Math.max(base,outerR(y,ph)+.085);return V(Math.sin(ph)*r,y,zc+Math.cos(ph)*r)};
     add('fabric',clothSurface(64,96,point,{thickness:.038}));
     for(const u of [0,1])add('band',tube(Array.from({length:65},(_,i)=>point(i/64,u)),.018));
-    const mask=clothSurface(32,48,(t,u)=>{const yy=P.mouthY+.40-.73*t,x=(u-.5)*1.17*(1-.16*t),z=Math.max(fit.surfZ(x,yy)+.12,fit.surfZ(0,Math.max(P.mouthY+.12,yy))+.10-.16*(x/.6)**2);return V(x,yy,z+.008*Math.sin(t*Math.PI*4))},{thickness:.018});add('fabric',mask);
+    const maskPoint=(t,u)=>{const x=(u-.5)*1.14*(1-.18*t),yy=THREE.MathUtils.lerp(P.noseTipY-.04,P.loft.y[0]-.015,t)+.055*Math.exp(-((x/.20)**2))*(1-t),z=fit.surfZ(x,yy)+.042+.012*Math.sin(t*Math.PI*3)*Math.sin(Math.PI*u);return V(x,yy,z)};
+    add('fabric',clothSurface(40,64,maskPoint,{thickness:.014}));
+    for(const t of [0,1])add('band',tube(Array.from({length:49},(_,j)=>maskPoint(t,j/48)),.009));
+    for(const u of [0,1])add('band',tube(Array.from({length:33},(_,j)=>maskPoint(j/32,u)),.009));
   }
 
   // Assentos e garras acompanham a lapidação de cada pedra, sem mudar seu desenho.

@@ -4,7 +4,17 @@
 
 O usuário determinou: **sempre subir o trabalho para a `main`**. Ao concluir uma rodada, validar, registrar as alterações e enviar à `main`, preservando alterações remotas e sem force push. Distinguir o envio do código da conclusão do deploy do site.
 
-## Rodada atual — regressão do queixo e retomada dos cabelos (23/10/2026)
+## Rodada atual — acessórios do rosto, barba e cabelo menos rígido
+
+O usuário aprovou `8d4acea` ("Ficou muito bom") e pediu revisar quais personagens precisam de acessórios do rosto, barba e cabelo, com prioridade para barba e acessórios. **Preservar os rostos e queixos aprovados.** Não usar a nova aprovação como conclusão de que as referências de cinema foram alcançadas.
+
+Auditoria dos 34 em [AUDITORIA-ACESSORIOS-BARBAS.md](AUDITORIA-ACESSORIOS-BARBAS.md). Prioridades: visor da Nana; óculos e goggles do Nico; monóculo do Artífice; máscara do Vigilante. Barbas: Rei, Anão, Orc, Arqueiro e Guarda veterano; curta do Masculino suave; bigode/cavanhaque do Artífice e Rei pimentão. Os 17 penteados recebem afilamento mais progressivo e cobertura menos espessa.
+
+Base imutável `/workspace/outputs/acessorios-barbas-base-8d4acea`; artefatos `renders/acessorios-barbas/`. O monóculo tinha um disco de engrenagem com furo de apenas 42% do raio: encobria o olho. Substituído por aro aberto. O gerador de tubos dos acessórios herdava sulcos de fios: agora usa seção lisa. A barba recebe mechas de caimento, implantação animada por referência à pele e pontas livres. A cor da barba cheia deixa de descer pelo pescoço. A pele mantém posições e proporções; somente essa pintura de barba no pescoço é retirada. Não retomar modificações de mandíbula ou olhos.
+
+O teste de adesão dos pelos agora mede a conservação do afastamento neutro durante a expressão, permitindo pontas livres em vez de exigir que todos os vértices fiquem a menos de 0,022 unidade da pele. Há também um limite de distância para detectar mechas fora do volume. `ATELIE_REFINADOS=''` no teste de identidades permite exigir zero alterações anatômicas contra uma base. Validação concluída: 109 peças anatômicas preservadas (exceto a pintura de barba removida no pescoço), 34 geometrias faciais iguais à base, 17 penteados, 21 acessórios e cinco opções de barba válidos. Capturas dos 34 visuais; oito barbas/bigodes de perfil e com 16 poses. Onze GLBs com 12 clipes e quatro Workers passaram; Nico foi reexportado e reconferido após o ajuste final dos óculos/goggles. Galeria com 34 personagens e 136 imagens passou em desktop/celular. Prévias `menu-v19-pelos-optica`. Resultado validado para envio à main sem force push; não declarar aprovação estética desta rodada antes da resposta do usuário.
+
+## Rodada anterior aprovada — recuperação dos queixos e retomada dos cabelos (`8d4acea`)
 
 O usuário **reprovou `22251b2`**: o mento da Arqueira ficou alongado, retangular e separado visualmente do rosto. A limitação do código a 11 perfis não torna o resultado aceitável. Não reutilizar o remapeamento mandibular dessa rodada nem o apresentar como aprovado.
 

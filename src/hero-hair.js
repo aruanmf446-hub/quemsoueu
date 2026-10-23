@@ -29,7 +29,7 @@ export function buildHeroHair(fit,style,color){
   const curve=new THREE.CatmullRomCurve3(points,false,'centripetal');
   const geometry=groomedLock(points,width,depth,{rows:clamp(Math.ceil(curve.getLength()*36),28,100),segments:24,detailFibers:false,sculpted:false,grooveStrength:rope?.13:.065,grooves:3,phase,twist:rope?8:0,tone:tone*(.98+rand()*.04),
    normal:normal||((t,p)=>V(p.x,Math.max(.18,p.y-cy)*.65,p.z-cz)),
-   profile:t=>{const taper=Math.pow(1-smooth(tip,1,t),.70),rise=root+(1-root)*smooth(0,.20,t);return[Math.max(.0004,width*rise*taper),Math.max(.0003,(rope?depth:Math.max(depth,width*.48))*rise*Math.pow(taper,.86))]}});
+   profile:t=>{const taper=Math.pow(1-smooth(tip,1,t),.80)*(1-.28*smooth(.28,.86,t)),rise=root+(1-root)*smooth(0,.20,t);return[Math.max(.0004,width*rise*taper),Math.max(.0003,(rope?depth:Math.max(depth,width*.38))*rise*Math.pow(taper,.86))]}});
   parts.push(geometry);return curve;
  }
  function ellipsoid(center,radii,tone=.92,rumple=0){
@@ -75,7 +75,7 @@ export function buildHeroHair(fit,style,color){
  const scalpUV=p=>{const d=p.clone().sub(V(0,cy,cz)).normalize();return[Math.atan2(d.dot(capRight),d.dot(capFront))/(PI*2)+.5,Math.acos(clamp(d.dot(capAxis),-1,1))/PI]};
  const capVertex=(q,unwrap=false)=>{
   const uv=scalpUV(q.p);if(unwrap&&uv[0]<.5)uv[0]+=1;const key=q.p.toArray().map(v=>Math.round(v*1e7)).join(':')+':'+(uv[0]>=1?1:0);if(remap.has(key))return remap.get(key);
-  const edge=smooth(0,.14,q.d),height=smooth(brow+.12,top,q.p.y),p=q.p.clone().addScaledVector(q.n,-.002+(.016+.046*height)*edge),index=cp.length/3;
+  const edge=smooth(0,.14,q.d),height=smooth(brow+.12,top,q.p.y),p=q.p.clone().addScaledVector(q.n,-.002+(.012+.030*height)*edge),index=cp.length/3;
   cp.push(...p.toArray());cc.push(.95,.95,.95);cu.push(...uv);remap.set(key,index);return index;
  };
  if(kind!=='clown')for(let i=0;i<src.index.count;i+=3){
@@ -99,7 +99,7 @@ export function buildHeroHair(fit,style,color){
   lock(pts,width,depth,{phase,tip,normal:(t,p)=>gradient(p),root:.025});
   // Submechas seguem a curva-mãe; compartilham início e ponta e não são fios aleatórios.
   if(sub)for(const sign of [-1,1]){
-   const child=pts.map((p,k)=>{const env=Math.sin(k/32*PI)**.65;return p.clone().addScaledVector(frames[k].side,sign*width*.38*env).addScaledVector(frames[k].n,Math.max(depth,width*.48)*.78*env)});
+   const child=pts.map((p,k)=>{const env=Math.sin(k/32*PI)**.65;return p.clone().addScaledVector(frames[k].side,sign*width*.38*env).addScaledVector(frames[k].n,Math.max(depth,width*.38)*.78*env)});
    lock(child,width*.26,depth*.44,{phase:phase+sign*.3,tip:tip+.08,normal:(t,p)=>gradient(p),root:.025});
   }
  }
@@ -235,7 +235,7 @@ export function buildHeroHair(fit,style,color){
  if(masses.length){const geo=mergeGeometries(masses,false);masses.forEach(g=>g.dispose());const m=new THREE.Mesh(geo,material);m.name='Hair_Mass';group.add(m)}
  if(parts.length){const geo=mergeGeometries(parts,false);parts.forEach(g=>g.dispose());const m=new THREE.Mesh(geo,material);m.name='Hair_Locks';group.add(m)}
  let metal=null;if(ornaments.length){metal=new THREE.MeshPhysicalMaterial({name:'Hair_Ring',color:'#b98d3f',metalness:.85,roughness:.32});const geo=mergeGeometries(ornaments,false);ornaments.forEach(g=>g.dispose());heroSurface(geo,metal,'metal');const m=new THREE.Mesh(geo,metal);m.name='Hair_Rings';group.add(m)}
- group.traverse(m=>{if(m.isMesh){m.castShadow=true;m.receiveShadow=true}});group.userData.timing=Math.round(performance.now()-started);group.userData.sculpture={version:3,style:style.id,locks:parts.length,filledMasses:masses.length};
+ group.traverse(m=>{if(m.isMesh){m.castShadow=true;m.receiveShadow=true}});group.userData.timing=Math.round(performance.now()-started);group.userData.sculpture={version:4,style:style.id,locks:parts.length,filledMasses:masses.length};
  return {group,material,meshes:group.children.filter(m=>m.isMesh),setColor(c){for(const m of [material,baseMaterial])groomColor(m,c)},dispose(){group.traverse(m=>{if(m.isMesh)m.geometry.dispose()});material.dispose();baseMaterial.dispose();metal?.dispose()}};
 }
 

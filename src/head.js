@@ -721,7 +721,7 @@ export function buildHead(presetId, adj, opts = {}) {
         }
         if (PA && f) paint(c, x, y, z, wf, f);
         if (f && f.cav > 0) { c.lerp(mouthIn, clamp(f.cav * 1.3, 0, 1)) }
-        if (bm > 0) { const n = vnoise(x * 34 + 2, y * 5.5, z * 34); c.lerp(beardHair.clone().multiplyScalar(.7 + .55 * n), clamp(bm * 1.6, 0, 1)) }
+        if (bm > 0) { const n = vnoise(x * 34 + 2, y * 5.5, z * 34); c.lerp(beardHair.clone().multiplyScalar(.7 + .55 * n), clamp(bm * 1.6, 0, 1)*sstep(P.loft.y[0]-.04,P.loft.y[0]+.025,y)) }
         if (P.skinGloss) gloss[i] = Math.max(gloss[i], P.skinGloss * (1 - bm));
         if (bm > 0) gloss[i] *= 1 - bm;
         if (eyeState === 2) c.lerp(blush, .22);

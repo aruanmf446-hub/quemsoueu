@@ -27,11 +27,11 @@ O acabamento dos 17 penteados usa volumes fechados, pontas afinadas, sulcos e fi
 
 `node tests/qualidade-pelos-acessorios.mjs` verifica malhas, materiais, os 17 penteados, 21 acessórios e cinco barbas. Um diretório de referência opcional permite comparar a preservação das peças anatômicas. Com o servidor em 8000, `node tests/pelos-exportacao.cjs` verifica os 34 GLBs e seis prévias no Worker. `tests/pelos-visuais.cjs` captura três vistas; `python3 tests/galeria-pelos.py` monta a comparação local em `renders/pelos/index.html` a partir de capturas anteriores/atuais e `catalogo.json`.
 
-### Revisão visual após a reprovação
+### Revisão de acessórios e pelos
 
-A extensão mandibular de `22251b2` foi reprovada: criou um queixo alongado e retangular. A [correção atual](RECUPERACAO-QUEIXOS-CABELOS.md) retira essa deformação e recupera o contorno anterior (`eeaa4f0`). O refinamento dos queixos recuados permanece aberto; não confundir a recuperação com uma nova solução anatômica concluída.
+O usuário aprovou a recuperação dos queixos de `8d4acea`. A [auditoria atual](AUDITORIA-ACESSORIOS-BARBAS.md) examina os 34 personagens e prioriza os acessórios de rosto da Nana, Nico, Artífice e Vigilante, as barbas do Rei, Anão, Orc, Arqueiro e Guarda veterano, a barba curta do Masculino e os bigodes/cavanhaques do Artífice e Rei pimentão. O contorno facial aprovado é preservado.
 
-O trabalho nos 17 penteados foi retomado: mechas mais espessas e arredondadas, raízes encaixadas, linha das têmporas contínua e cobertura dos cortes curtos. Luz, exposição e figurinos permanecem iguais. A [comparação pública](https://aruanmf446-hub.github.io/quemsoueu/revisao/) compara a versão reprovada com esta recuperação. Os rostos conservam as proporções de `54a1f87` e o apoio localizado de `eeaa4f0`. Testes técnicos não representam aprovação estética nem equivalência às referências de cinema.
+Os 17 penteados recebem afilamento progressivo e cobertura menos espessa. Os acessórios ganham correções de encaixe e construção; as barbas recebem guias de caimento e pontas livres. A [comparação pública](https://aruanmf446-hub.github.io/quemsoueu/revisao/) usa `8d4acea` como antes. Luz, exposição e figurinos permanecem iguais. Validação técnica não equivale a aprovação estética.
 
 ### Escultura facial e identidade
 
