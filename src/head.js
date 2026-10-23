@@ -13,6 +13,8 @@ import { resolve } from './presets.js';
 import { buildCompanion } from './companions.js';
 import { buildRobot } from './robot.js';
 import { createRig } from './rig.js';
+import {groomMaterial} from './groom.js';
+import {beardBundle,beardSurface,beardAttribute} from './beard.js';
 
 const { clamp } = THREE.MathUtils;
 const sqrt = Math.sqrt, exp = Math.exp;
@@ -1019,7 +1021,11 @@ export function buildHead(presetId, adj, opts = {}) {
     m.position.set(0, y, surfZ(0, y) + r * .55);
   }
 
-  const hairMat = c0 => mat(c0, { roughness: .85, sheen: .6, sheenColor: col(c0).lerp(col('#ffffff'), .3) });
+  const hairMat = c0 => {const m=groomMaterial(c0,'Beard_Hair');m.roughness=.61;return track(m)};
+  if(BV||P.beard){
+    const g=beardSurface(P,root.getObjectByName('Head_Skin'),(x,y,z)=>beardMask(x,y,z,field(x,y)),MCv);
+    if(g)addMesh(g,hairMat(BV?.color||opts.hairColor||'#302019'),'Beard_Locks');
+  }
   // ---- bigode (guidão com pontas viradas ou caído) ----
   if (P.stache) {
     const S = P.stache, yC = MCv.ym(0) + P.lipU + .028 + (S.y || 0), m2 = hairMat(S.color);
@@ -1031,7 +1037,7 @@ export function buildHead(presetId, adj, opts = {}) {
         if (t > .62) { const u = (t - .62) / .38; y += (S.curl || 0) * u * u; z += .04 * u - (Math.abs(x) > .45 ? .05 * u : 0) }
         pts.push(new THREE.Vector3(x, y, z)); const w = S.th * (1 - .85 * Math.pow(t, 1.3)) * (.75 + .25 * sstep(0, .1, t)) + .002; rw.push(w * 1.3); rh.push(w * .75);
       }
-      addMesh(ribbon(pts, rw, rh, (i, p) => normalAt(clamp(p.x, -.5, .5), p.y), 12), m2, 'Mustache_' + (sd < 0 ? 'L' : 'R'));
+      addMesh(beardBundle(pts,rw,rh,(i,p)=>normalAt(clamp(p.x,-.5,.5),p.y)), m2, 'Mustache_' + (sd < 0 ? 'L' : 'R'));
     }
   }
   // ---- cavanhaque pontudo ----
@@ -1042,7 +1048,7 @@ export function buildHead(presetId, adj, opts = {}) {
       const z = y > chinBot + .06 ? surfZ(0, y) + .012 : surfZ(0, chinBot + .06) + .012 - (chinBot + .06 - y) * .3;
       pts.push(new THREE.Vector3(0, y, z)); const w = G.w * Math.pow(1 - t, .8) * sstep(-.1, .2, t) + .002; rw.push(w); rh.push(w * .45 + .003);
     }
-    addMesh(ribbon(pts, rw, rh, () => new THREE.Vector3(0, 0, 1), 12), hairMat(G.color), 'Goatee');
+    addMesh(beardBundle(pts,rw,rh,()=>new THREE.Vector3(0,0,1),7), hairMat(G.color), 'Goatee');
   }
   // ---- presas (orc) ----
   if (P.tusks) {
@@ -1243,7 +1249,12 @@ export function buildHead(presetId, adj, opts = {}) {
     if (!obj.isMesh) continue;
     if (obj.name === 'Head_Skin') addMorphs(obj, 'skin');
     else if (obj.name.startsWith('Brow_')) addMorphs(obj, 'brow');
-    else if (obj.name.startsWith('Mustache_')) addMorphs(obj, 'mouthAcc');
+    else if(obj.name==='Beard_Locks'&&obj.geometry.userData.faceSources){
+      const g=obj.geometry,source=root.getObjectByName('Head_Skin').geometry,indices=g.userData.faceSources;
+      for(const key of g.userData.beardSurface?['position','normal']:['position'])if(source.morphAttributes[key])g.morphAttributes[key]=source.morphAttributes[key].map(a=>beardAttribute(a,indices));
+      g.morphTargetsRelative=true;obj.updateMorphTargets();morphMeshes.push(obj);
+    }
+    else if (obj.name.startsWith('Mustache_')||obj.name==='Goatee') addMorphs(obj, 'mouthAcc');
     else if (obj.name.startsWith('Teeth_') || obj.name === 'Mouth_Bag' || obj.name === 'Tongue' || obj.name === 'Mouth_Back') addMorphs(obj, 'teeth'); // dentes acompanham a boca (não aparecem pelos cantos)
   }
   mark('morphs');
@@ -1274,6 +1285,7 @@ export function buildHead(presetId, adj, opts = {}) {
     if (name.startsWith('Lid_Sculpt_')) return 'generic';
     if (name === 'Mouth_Line') return 'line';
     if (name.startsWith('Mustache_')) return 'head';
+    if (name==='Beard_Locks') return 'generic';
     if (name === 'Mouth_Bag') return 'bag';
     if (['Goatee', 'Teeth_Lower', 'Tongue'].includes(name) || name.startsWith('Tusk_')) return 'jaw';
     return 'head';
@@ -1300,6 +1312,7 @@ export function buildHead(presetId, adj, opts = {}) {
       : kind === 'generic' ? (x, y, z) => rig.weights(x, y, z)
       : (x, y, z) => rig.weights(x, y, z, { mode: kind });
     rig.skinAttributes(g, fn);
+    if(obj.name==='Beard_Locks'&&g.userData.faceSources){const source=root.getObjectByName('Head_Skin').geometry;for(const key of ['skinIndex','skinWeight'])g.setAttribute(key,beardAttribute(source.attributes[key],g.userData.faceSources))}
     const sm = new THREE.SkinnedMesh(g, obj.material); sm.name = obj.name; sm.renderOrder = obj.renderOrder;
     if (g.morphAttributes.position) { sm.updateMorphTargets(); const k = morphMeshes.indexOf(obj); if (k >= 0) morphMeshes[k] = sm }
     root.remove(obj); root.add(sm); sm.bind(skeleton);

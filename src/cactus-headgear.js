@@ -1,7 +1,12 @@
 // Chapelaria esculpida das novas skins do deserto. Não altera os modelos anteriores.
 import * as THREE from 'three';
 import {clothSurface} from './fabric.js';
-import {tuft,badge} from './detail.js';
+import {badge} from './detail.js';
+import {groomedLock} from './groom.js';
+function tuft(a,b,width,thickness,bend){
+ const axis=b.clone().sub(a).normalize(),u=new THREE.Vector3(0,0,1).cross(axis).normalize(),v=axis.clone().cross(u),points=Array.from({length:19},(_,i)=>a.clone().lerp(b,i/18).addScaledVector(v,bend*Math.sin(Math.PI*i/18)));
+ return groomedLock(points,width,thickness,{normal:()=>v,rows:24,segments:20,profile:t=>{const r=Math.max(.002,Math.sin(Math.PI*(.12+.88*t))**.8*(1-.6*t));return[width*r,thickness*r]}});
+}
 const PI=Math.PI,V=(x=0,y=0,z=0)=>new THREE.Vector3(x,y,z),mix=THREE.MathUtils.lerp;
 function smoothProfile(points,t){
   const n=points.length,d=points.slice(1).map((p,i)=>(p[1]-points[i][1])/(p[0]-points[i][0])),m=d.map((v,i)=>i?d[i-1]*v<=0?0:2*d[i-1]*v/(d[i-1]+v):v);m.push(d[d.length-1]);

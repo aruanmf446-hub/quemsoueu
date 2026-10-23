@@ -21,7 +21,7 @@ jobs:
   selecao:
     name: Seleção e prévias dos 34 personagens
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -40,12 +40,48 @@ jobs:
             if curl -fsS http://localhost:8000/ -o /dev/null; then break; fi
             sleep 1
           done
-          timeout 20m node tests/selecao-personagens.cjs
+          timeout 28m node tests/selecao-personagens.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: selecao-personagens
           path: renders/selecao-personagens/
+  acabamento:
+    name: Cabelos, barbas, acessórios e GLB dos 34 personagens
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      NODE_OPTIONS: --max-old-space-size=6144
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Preparar navegador e dependências
+        run: |
+          npm install --no-save --package-lock=false --no-audit --no-fund three@0.180.0 playwright
+          npx playwright install --with-deps chromium
+          sudo ln -sf "$(node -p "require('playwright').chromium.executablePath()")" /usr/bin/chromium
+      - name: Conferir malhas e animação dos pelos
+        run: |
+          node tests/qualidade-cabelo.mjs
+          node tests/qualidade-pelos-acessorios.mjs
+          node tests/qualidade-palpebras-companheiros.mjs
+      - name: Servir e conferir GLBs, recoloração e Worker
+        run: |
+          python3 -m http.server 8000 > /tmp/atelie-http.log 2>&1 &
+          for tentativa in $(seq 1 30); do
+            if curl -fsS http://localhost:8000/ -o /dev/null; then break; fi
+            sleep 1
+          done
+          timeout 25m node tests/pelos-exportacao.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acabamento-pelos-exportacao
+          path: renders/pelos/exportacao/
+          retention-days: 30
+
   menu:
     name: Prévias e subcategorias
     runs-on: ubuntu-latest

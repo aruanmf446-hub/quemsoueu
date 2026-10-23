@@ -5,6 +5,8 @@
 import * as THREE from 'three';
 import { crescent } from './lunar.js';
 import {clothSurface} from './fabric.js';
+import {groomedLock,groomSurface} from './groom.js';
+import {heroSurface} from './hero-material.js';
 import {badge,tuft,buckleGeo,gear} from './detail.js';
 import {leafGeo} from './forest.js';
 import {cactusHeadgear} from './cactus-headgear.js';
@@ -53,20 +55,24 @@ export const ACCESSORIES = {
 };
 
 // ---------- geometria básica ----------
-function tube(pts, r, seg = 8) { // r: número ou função(t)
-  const n = pts.length, pos = [], idx = [], T = V(), N = V(), B = V(), up = V(0, 1, 0);
-  let prevN = null;
-  for (let i = 0; i < n; i++) {
-    T.copy(pts[Math.min(n - 1, i + 1)]).sub(pts[Math.max(0, i - 1)]).normalize();
-    if (!prevN) { N.copy(Math.abs(T.y) > .9 ? V(1, 0, 0) : up).addScaledVector(T, -(Math.abs(T.y) > .9 ? T.x : T.y)).normalize() } else N.copy(prevN).addScaledVector(T, -prevN.dot(T)).normalize();
-    prevN = N.clone(); B.crossVectors(T, N);
-    const rr = typeof r === 'function' ? r(i / (n - 1)) : r;
-    for (let j = 0; j < seg; j++) { const a = j / seg * Math.PI * 2, c = Math.cos(a) * rr, s = Math.sin(a) * rr; pos.push(pts[i].x + N.x * c + B.x * s, pts[i].y + N.y * c + B.y * s, pts[i].z + N.z * c + B.z * s) }
-  }
-  for (let i = 0; i < n - 1; i++) for (let j = 0; j < seg; j++) { const a = i * seg + j, b = i * seg + (j + 1) % seg, c = a + seg, d = b + seg; idx.push(a, c, b, b, c, d) }
-  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals(); return g;
+function tube(pts,r,seg=8){
+  const closed=pts.length>3&&pts[0].distanceToSquared(pts[pts.length-1])<1e-12,length=pts.slice(1).reduce((n,p,i)=>n+p.distanceTo(pts[i]),0);
+  return groomedLock(pts,1,1,{rows:Math.max(2,Math.min(320,Math.max(pts.length-1,Math.ceil(length/.025)))),segments:Math.max(12,seg),closed,tangents:false,profile:t=>{const rr=typeof r==='function'?r(t):r;return[rr,rr]},normal:()=>V(0,1,0)});
 }
-const sphere = (p, r, sx = 1, sy = 1, sz = 1, ws = 16, hs = 12) => { const g = new THREE.SphereGeometry(r, ws, hs); g.scale(sx, sy, sz); g.translate(p.x, p.y, p.z); return g };
+function lensGeometry(radius,sag=.018,thickness=.004){
+  const nr=12,nc=64,p=[],uv=[],ix=[],ends=[];
+  for(const back of [false,true]){
+    const center=p.length/3;ends.push(center);p.push(0,0,back?sag*.5-thickness:sag);uv.push(.5,.5);
+    for(let i=1;i<=nr;i++)for(let j=0;j<nc;j++){const t=i/nr,a=j/nc*2*Math.PI,x=Math.cos(a)*radius*t,y=Math.sin(a)*radius*t;p.push(x,y,(back?sag*.5:sag)*(1-t*t)-(back?thickness:0));uv.push(.5+x/radius*.5,.5+y/radius*.5)}
+    const tri=(a,b,c)=>ix.push(a,...(back?[c,b]:[b,c]));
+    for(let j=0;j<nc;j++)tri(center,center+1+j,center+1+(j+1)%nc);
+    for(let i=1;i<nr;i++)for(let j=0;j<nc;j++){const a=center+1+(i-1)*nc+j,b=center+1+(i-1)*nc+(j+1)%nc,c=a+nc,d=b+nc;tri(a,c,b);tri(b,c,d)}
+  }
+  for(let j=0;j<nc;j++){const a=ends[0]+1+(nr-1)*nc+j,b=ends[0]+1+(nr-1)*nc+(j+1)%nc,c=ends[1]+1+(nr-1)*nc+j,d=ends[1]+1+(nr-1)*nc+(j+1)%nc;ix.push(a,c,b,b,c,d)}
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(p,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(ix);g.computeVertexNormals();return g;
+}
+
+const sphere = (p, r, sx = 1, sy = 1, sz = 1, ws = 24, hs = 16) => { const g = new THREE.SphereGeometry(r, ws, hs); g.scale(sx, sy, sz); g.translate(p.x, p.y, p.z); return g };
 function gemGeo(p, r, dir = V(0, 0, 1), stretch = 1) { // pedra lapidada (octaedro alongado), virada para dir
   // Lapidação com mesa, cintura e pavilhão: facetas menores que o antigo octaedro.
   const N = 10, tiers = [[.42, .43], [.92, .12], [1, 0], [.45, -.38]], pos = [], ix = [];
@@ -74,7 +80,7 @@ function gemGeo(p, r, dir = V(0, 0, 1), stretch = 1) { // pedra lapidada (octaed
   for (let j = 0; j < tiers.length - 1; j++) for (let i = 0; i < N; i++) { const a = j * N + i, b = j * N + (i + 1) % N, c = a + N, d = b + N; ix.push(a, b, c, b, d, c) }
   for (let i = 1; i < N - 1; i++) { ix.push(0, i + 1, i); ix.push(N * 3, N * 3 + i, N * 3 + i + 1) }
   const g = new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setIndex(ix);g.computeVertexNormals();
-  g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(V(0,0,1),dir.clone().normalize()));g.translate(p.x,p.y,p.z);return g;
+  g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(V(0,0,1),dir.clone().normalize()));g.translate(p.x,p.y,p.z);g.userData.setting={p:p.clone(),r,dir:dir.clone().normalize(),stretch};return g;
 }
 function place(g, p, dir, up = V(0, 1, 0)) { // geometria local (z = frente) orientada para dir
   const z = dir.clone().normalize(), x = up.clone().cross(z).normalize(), y = z.clone().cross(x);
@@ -95,7 +101,7 @@ export function buildAccessories(fit, sel = {}, cols = {}, hairMeshes = []) {
     band: new THREE.MeshPhysicalMaterial({ name: 'Acc_Band', color: new THREE.Color(cols.fabric || '#6b4228').multiplyScalar(.45), roughness: .7 }),
     flower: new THREE.MeshPhysicalMaterial({ name: 'Acc_Flower', color: cols.flower || '#f6f1e6', roughness: .55, sheen: .6, sheenColor: new THREE.Color('#ffffff') }),
     pollen: new THREE.MeshPhysicalMaterial({ name: 'Acc_Pollen', color: '#e8b52c', roughness: .7 }),
-    glass: new THREE.MeshPhysicalMaterial({ name: 'Acc_Glass', color: '#dfe9f2', roughness: .05, metalness: 0, transparent: true, opacity: .28, specularIntensity: 1, clearcoat: 1, clearcoatRoughness: 0, depthWrite: false, side: THREE.DoubleSide }),
+    glass: new THREE.MeshPhysicalMaterial({ name: 'Acc_Glass', color: '#dfe9f2', roughness: .05, metalness: 0, transparent: true, opacity: .10, specularIntensity: 1, clearcoat: 1, clearcoatRoughness: 0, depthWrite: false, side: THREE.DoubleSide }),
     visor: new THREE.MeshPhysicalMaterial({name:'Acc_Visor',color:cols.gem2||'#5ab8ef',transparent:true,opacity:.18,roughness:.05,clearcoat:.8,depthWrite:false,side:THREE.DoubleSide}),
     liquid: new THREE.MeshPhysicalMaterial({ name: 'Acc_Liquid', color: cols.gem || '#8e3fd0', emissive: cols.gem || '#8e3fd0', emissiveIntensity: .55, roughness: .3, transparent: true, opacity: .85 })
   };
@@ -149,9 +155,7 @@ export function buildAccessories(fit, sel = {}, cols = {}, hairMeshes = []) {
     for (let i = 0; i <= 96; i++) { const ph = -Math.PI + 2 * Math.PI * i / 96; band.push(R.at(ph)) }
     for (const dy of [0, H]) add('metal', tube(band.map(p => p.clone().add(V(0, dy, 0)).addScaledVector(V(p.x, 0, p.z - zc).normalize(), dy * .12)), .016, 8));
     // faixa (anel cônico levemente aberto para cima)
-    { const pos = [], idx = []; for (let i = 0; i <= 96; i++) for (const v of [0, 1]) { const p = band[i], o = V(p.x, 0, p.z - zc).normalize(); pos.push(p.x + o.x * v * H * .12, p.y + v * H, p.z + o.z * v * H * .12) }
-      for (let i = 0; i < 96; i++) { const a = i * 2; idx.push(a, a + 2, a + 1, a + 1, a + 2, a + 3) }
-      const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals(); add('metalD', g) }
+    add('metalD',clothSurface(6,96,(t,u)=>{const p=R.at(-Math.PI+2*Math.PI*u),out=V(p.x,0,p.z-zc).normalize();return p.addScaledVector(out,t*H*.12).add(V(0,t*H,0))},{closed:true,thickness:.012}));
     for (let k = 0; k < N; k++) { // pontas (prisma triangular afinando), mais alta na frente
       const ph = k / N * Math.PI * 2, p = R.at(ph), o = V(p.x, 0, p.z - zc).normalize(), front = Math.max(0, Math.cos(ph)), h = .2 + .1 * front, w = .085 + .02 * front;
       const shape = new THREE.Shape(); shape.moveTo(-w, 0); shape.quadraticCurveTo(-w * .35, h * .45, 0, h); shape.quadraticCurveTo(w * .35, h * .45, w, 0); shape.lineTo(-w, 0);
@@ -306,8 +310,8 @@ export function buildAccessories(fit, sel = {}, cols = {}, hairMeshes = []) {
   if (sel.face === 'glasses' && fit.eyes && fit.eyes.length === 2) {
     const R = fit.eyes[0].R * 1.42, zF = Math.max(...fit.eyes.map(e => e.z)) + fit.eyes[0].R + .07;
     for (const e of fit.eyes) {
-      const c = V(e.x, e.y - .01, zF), g = new THREE.TorusGeometry(R, .014, 8, 48); g.translate(c.x, c.y, c.z); add('metal', g);
-      const lens = new THREE.CircleGeometry(R, 40); lens.translate(c.x, c.y, c.z - .003); add('glass', lens);
+      const c = V(e.x, e.y - .01, zF), g = new THREE.TorusGeometry(R, .014, 16, 72); g.translate(c.x, c.y, c.z); add('metal', g);
+      const lens = lensGeometry(R,.010,.003); lens.translate(c.x, c.y, c.z - .003); add('glass', lens);
       const s = Math.sign(e.x), hinge = V(e.x + s * R, e.y, zF - .01), back = V(s * (traceR(sdf, e.y, s * 80 * DEG, zc) * Math.sin(80 * DEG) + .04), e.y + .02, (fit.ears[0] ? fit.ears[0].center.z : zc - .1) + .05);
       add('metal', tube([hinge, hinge.clone().lerp(back, .5).add(V(s * .03, 0, 0)), back], .011, 6));
     }
@@ -329,8 +333,25 @@ export function buildAccessories(fit, sel = {}, cols = {}, hairMeshes = []) {
     for(const side of [-1,1]){const q=R.at(side*.63).add(V(0,.11,.02)),m=crescent(.11,.022);m.rotateZ(side*.3);add('metal',place(m,q,V(Math.sin(side*.63),0,Math.cos(side*.63))));add('gem',gemGeo(q.clone().add(V(0,.12,0)),.035,V(side*.4,0,1),1.5));}
   }
   if(head==='goggles'){
-    const R=ring(top-.3,-.06,.04),band=[];for(let i=0;i<=80;i++)band.push(R.at(i/80*Math.PI*2));add('band',tube(band,.026));
-    for(const side of [-1,1]){const p=R.at(side*.36).add(V(0,.05,.055)),g=new THREE.TorusGeometry(.17,.035,10,40);g.translate(...p.toArray());add('metal',g);const lens=new THREE.CircleGeometry(.145,32);lens.translate(p.x,p.y,p.z+.015);add('glass',lens);add('gem2',sphere(p.clone().add(V(side*.21,0,0)),.035))}
+    const R=ring(top-.3,-.06,.04);
+    // A mesma correia e os mesmos óculos, agora com espessura, aro, junta e lente curva.
+    add('band',clothSurface(6,128,(t,u)=>R.at(u*Math.PI*2).add(V(0,(t-.5)*.065,0)),{closed:true,thickness:.016}));
+    for(const edge of [-.027,.027])for(let i=0;i<64;i++){
+      const a=i/64*Math.PI*2,b=(i+.48)/64*Math.PI*2;add('fabric',tube([R.at(a).add(V(0,edge,0)),R.at(b).add(V(0,edge,0))],.0025));
+    }
+    const centers=[];
+    for(const side of [-1,1]){
+      const p=R.at(side*.36).add(V(0,.05,.055)),dir=V(side*.18,.05,1).normalize();centers.push(p);
+      const body=new THREE.CylinderGeometry(.177,.169,.050,64,1,true);body.rotateX(Math.PI/2);add('metal',place(body,p.clone().addScaledVector(dir,-.012),dir));
+      for(const [radius,width,depth,key]of [[.164,.019,.025,'metal'],[.146,.008,.026,'band'],[.176,.008,-.035,'metal']])add(key,place(new THREE.TorusGeometry(radius,width,16,64),p.clone().addScaledVector(dir,depth),dir));
+      add('glass',place(lensGeometry(.145,.023,.006),p.clone().addScaledVector(dir,.020),dir));
+      for(let i=0;i<6;i++){
+        const a=i/6*Math.PI*2,q=V(Math.cos(a)*.164,Math.sin(a)*.164,.038),disc=new THREE.CylinderGeometry(.008,.008,.006,16);disc.rotateX(Math.PI/2);disc.translate(...q.toArray());add('metal',place(disc,p,dir));
+        add('band',place(tube([q.clone().add(V(-.005,0,.004)),q.clone().add(V(.005,0,.004))],.0016),p,dir));
+      }
+      add('gem2',sphere(p.clone().add(V(side*.21,0,0)),.035));
+    }
+    add('metal',tube([centers[0].clone().add(V(.17,0,0)),V(0,centers[0].y+.02,centers[0].z+.02),centers[1].clone().add(V(-.17,0,0))],.014));
   }
   if(sel.face==='visor'&&fit.eyes?.length===2){
     const y=fit.eyes.reduce((a,e)=>a+e.y,0)/2,z=Math.max(...fit.eyes.map(e=>e.z+e.R))+.09;
@@ -361,17 +382,27 @@ export function buildAccessories(fit, sel = {}, cols = {}, hairMeshes = []) {
     const mask=clothSurface(32,48,(t,u)=>{const yy=P.mouthY+.40-.73*t,x=(u-.5)*1.17*(1-.16*t),z=Math.max(fit.surfZ(x,yy)+.12,fit.surfZ(0,Math.max(P.mouthY+.12,yy))+.10-.16*(x/.6)**2);return V(x,yy,z+.008*Math.sin(t*Math.PI*4))},{thickness:.018});add('fabric',mask);
   }
 
+  // Assentos e garras acompanham a lapidação de cada pedra, sem mudar seu desenho.
+  for(const key of ['gem','gem2'])for(const stone of geos[key]||[]){
+    const S=stone.userData.setting;if(!S)continue;const seat=new THREE.TorusGeometry(S.r*1.015,S.r*.085,12,40);seat.scale(1,S.stretch,1);add('metal',place(seat,S.p.clone().addScaledVector(S.dir,-S.r*.04),S.dir));
+    for(let j=0;j<4;j++){
+      const a=Math.PI*.25+j*Math.PI/2,c=Math.cos(a),s=Math.sin(a),pts=[V(c*S.r*1.05,s*S.r*S.stretch*1.05,-S.r*.17),V(c*S.r*1.05,s*S.r*S.stretch*1.05,S.r*.12),V(c*S.r*.87,s*S.r*S.stretch*.87,S.r*.21)];
+      add('metal',place(tube(pts,Math.max(.0015,S.r*.052)),S.p,S.dir));
+    }
+  }
   // ---------------- malhas por material ----------------
   const matOf = k => k === 'metalD' ? mats.metal : mats[k];
   for (const [k, list] of Object.entries(geos)) {
-    const norm = list.map(g => { for (const attribute of Object.keys(g.attributes)) if (!['position','normal'].includes(attribute)) g.deleteAttribute(attribute); if (!g.attributes.normal) g.computeVertexNormals(); return g.index ? g.toNonIndexed() : g });
+    const norm = list.map(g => { for (const attribute of Object.keys(g.attributes)) if (!(k==='plume'?['position','normal','uv']:['position','normal']).includes(attribute)) g.deleteAttribute(attribute); if (!g.attributes.normal) g.computeVertexNormals(); return g.index ? g.toNonIndexed() : g });
     const merged = mergeGeometries(norm, false); norm.forEach(g => g.dispose()); list.forEach(g => g.dispose());
     if (!merged) continue;
     if(['metal','metalD','fabric','band'].includes(k)){
       const p=merged.attributes.position, colors=new Float32Array(p.count*3);
-      for(let i=0;i<p.count;i++){const variation=.94+.045*Math.sin(p.getX(i)*83+p.getY(i)*67)*Math.sin(p.getZ(i)*71);colors.fill(variation,i*3,i*3+3)}
+      for(let i=0;i<p.count;i++){const variation=.965;colors.fill(variation,i*3,i*3+3)}
       merged.setAttribute('color',new THREE.BufferAttribute(colors,3));matOf(k).vertexColors=true;
     }
+    if(k==='plume'&&merged.attributes.uv){groomSurface(matOf(k),{roughness:matOf(k).roughness,anisotropy:.3});merged.setIndex(Array.from({length:merged.attributes.position.count},(_,i)=>i));merged.computeTangents()}
+    else if(['metal','metalD','fabric','band'].includes(k))heroSurface(merged,matOf(k),k.startsWith('metal')||matOf(k).metalness>.5?'metal':k==='band'||['cowboy','frontier_hat'].includes(head)?'leather':'fabric');
     const m = new THREE.Mesh(merged, matOf(k)); m.name = 'Acc_' + (sel.head && ['metal', 'metalD', 'fabric', 'band', 'glass', 'liquid'].includes(k) ? '' : '') + k; m.castShadow = !matOf(k).transparent; m.receiveShadow = true;
     if (k === 'glass') m.renderOrder = 2;
     group.add(m);

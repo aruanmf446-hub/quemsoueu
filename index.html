@@ -256,7 +256,7 @@ function addBody(h,cell){
   h.root.add(m);h.body={...b,mesh:m};return h.body;
 }
 function syncBody(){if(current?.fit?.companion){ground.visible=el('showBody').checked;ground.position.y=(current.fit.ySole??-2.28);frameBody();return}const b=current&&current.body;ground.visible=!!b;if(b){const box=new THREE.Box3().setFromObject(clothesObj.group);ground.position.y=Math.min(b.ySole,box.isEmpty()?b.ySole:box.min.y)-.002}frameBody()}
-const hasFacialHair=()=>{const P=current&&current.params;return !!(P&&(P.beardVol||P.stache||P.goatee))};
+const hasFacialHair=()=>{const P=current&&current.params;return !!(P&&(P.beardVol||P.stache||P.goatee||P.beard))};
 
 // ---------- expressões (rig) ----------
 // pose final = sliders/expressão escolhida + piscar automático + fala

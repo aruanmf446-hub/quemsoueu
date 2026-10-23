@@ -4,7 +4,19 @@
 
 O usuário determinou: **sempre subir o trabalho para a `main`**. Ao concluir uma rodada, validar, registrar as alterações e enviar à `main`, preservando alterações remotas e sem force push. Distinguir o envio do código da conclusão do deploy do site.
 
-## Rodada atual — seleção confiável e deformação da boca (23/10/2026)
+## Rodada atual — malha e textura de cabelos, barbas e acessórios (23/10/2026)
+
+O usuário esclareceu que as referências são uma régua de **qualidade de malha e textura**, sem copiar os personagens nem mudar luz, rosto, penteado ou roupa. Pediu todos os personagens. A escultura facial fica para outra rodada. O refinamento desta etapa está documentado em [REFINO-PELOS-ACESSORIOS.md](REFINO-PELOS-ACESSORIOS.md), com a relação dos 34 personagens.
+
+`src/groom.js` reúne seções fechadas, tampas com UV próprio, fluxo de fibras, normal/rugosidade/cor procedurais de 512 px, anisotropia exportável e fibras secundárias em geometria nas mechas maiores. As configurações dos 17 penteados são preservadas. No coque da Nana, corrigiu-se a direção das raízes até o coque e o encaixe das bases sob a cobertura. `src/beard.js` mantém o volume facial original, acrescenta superfície contínua às barbas e pelos curtos à barba sombreada; deltas de morph e pesos de skin vêm dos mesmos vértices da pele. Bigodes e cavanhaques têm volumes fechados seguindo seus contornos anteriores. A cor da barba sombreada acompanha agora o seletor de cabelo.
+
+Acessórios recebem acabamento de construção: lentes curvas com espessura, juntas e aros, pesponto dos óculos de inventor, garras/assentos das pedras, faixa de coroa fechada e anilhas vazadas. Nos companheiros, UVs acompanham a pelagem/plumagem, com materiais de fibras separados; a busca por “gem” deixou de confundir “Pelagem” com pedra. Pálpebras mantêm o caminho anterior. Prévias usam `menu-v13-pelos-acabamento`.
+
+Referência imutável: `/workspace/outputs/pelos-base` (`37fadc2`). `node tests/qualidade-pelos-acessorios.mjs /workspace/outputs/pelos-base` passou nos 34 personagens, comparando 109 peças anatômicas e seus morphs, os parâmetros/contornos dos 17 penteados, 21 opções de acessórios e cinco opções de barba. A comparação dos companheiros usa os cantos dos triângulos para permitir os novos UVs sem alterar a superfície. O teste de barba mede a aderência à pele em sorriso, mandíbula aberta e beijo. Normais de cabelo e pálpebras dos quatro companheiros também passaram. Não é medição de FPS nem equivalência à referência cinematográfica.
+
+A galeria local é gerada por `python3 tests/galeria-pelos.py`: `renders/pelos/index.html`, com três pares por personagem, câmera e luz iguais. `tests/pelos-visuais.cjs` aceita `ATELIE_CAMERAS`, `ATELIE_COMPRIMENTO=1` para costas em corpo inteiro nos cabelos longos, `ATELIE_POSES` e `ATELIE_POSERS` para expressões. `tests/pelos-exportacao.cjs` confere os 34 GLBs, mapas/UVs/tangentes das fibras, clipes, recoloração da barba sombreada pelo controle real e cinco prévias de expressão no Worker. Validação final concluída: 102 pares dos 34 personagens, oito pares extras de comprimento e 24 imagens de expressões das barbas; 34 GLBs com mapas, UVs/tangentes e clipes preservados; recoloração pelo controle real e cinco prévias no Worker passaram, sem erros de navegador. Relatórios `renders/pelos/{depois,exportacao}/relatorio.json`; logs `/tmp/pelos-entrega-{renders,exportacao}.log`. Artefatos em `renders/pelos/`, ignorados pelo Git. Aprovação técnica não substitui a avaliação estética do usuário.
+
+## Rodada anterior — seleção confiável e deformação da boca (23/10/2026)
 
 O usuário disse que alguns personagens ficaram excelentes, mas outros não funcionam/não selecionam. Não identificou quais. Preservar a direção visual e não marcar identidades específicas como aprovadas sem essa indicação. Foi solicitada a identificação dos casos enquanto se verifica todo o catálogo.
 

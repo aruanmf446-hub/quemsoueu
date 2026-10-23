@@ -11,6 +11,8 @@
 import * as THREE from 'three';
 import {buildHeroHair} from './hero-hair.js';
 import {smoothHairNormals} from './hair-normals.js';
+import {groomedLock,groomMaterial,groomColor,groomCuff} from './groom.js';
+import {heroSurface} from './hero-material.js';
 
 const { clamp } = THREE.MathUtils;
 const sstep = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t) };
@@ -197,29 +199,13 @@ export function buildHair(fit, id, color = '#2a1a12') {
     return out;
   }
   // tubo achatado (lado largo virado para fora), afinando; cores = luz e sombra (raiz e parte de dentro mais escuras, fios)
-  function addTube(pts, width, thick, prm) {
-    const n = pts.length; if (n < 2) return;
-    const seg = prm.seg || 10, base = L.pos.length / 3, Tn = V(), Nn = V(), Bn = V(), tone = .9 + .2 * rand(), strands = [];
-    for (let j = 0; j < seg; j++) strands.push(.8 + .2 * rand());
-    let s = 0; const acc = [0]; for (let i = 1; i < n; i++) { s += pts[i].distanceTo(pts[i - 1]); acc.push(s) }
-    for (let i = 0; i < n; i++) {
-      const t = acc[i] / (s || 1);
-      Tn.copy(pts[Math.min(n - 1, i + 1)]).sub(pts[Math.max(0, i - 1)]).normalize();
-      if (prm.normal) Nn.copy(prm.normal(i, pts[i])); else grad(pts[i], Nn);
-      Bn.crossVectors(Tn, Nn).normalize(); Nn.crossVectors(Bn, Tn).normalize();
-      const prof = prm.profile ? prm.profile(t) : (.75 + .25 * sstep(0, .12, t)) * Math.pow(1 - sstep(prm.taper ?? .62, 1, t), .55);
-      const rw = Math.max(width * prof, .0015), rh = Math.max(thick * (prm.round ? prof : (.55 + .45 * prof)), .0012);
-      for (let j = 0; j < seg; j++) {
-        const al = j / seg * Math.PI * 2, c = Math.cos(al), sn = Math.sin(al), groove = 1 - .1 * (.5 + .5 * Math.cos(al * 3)) * (sn > 0 ? 1 : 0);
-        const x = c * rw * groove, y = sn * rh;
-        L.pos.push(pts[i].x + Bn.x * x + Nn.x * y, pts[i].y + Bn.y * x + Nn.y * y, pts[i].z + Bn.z * x + Nn.z * y);
-        const shade = (.55 + .45 * sstep(0, .22, t)) * (.7 + .3 * (.5 + .5 * sn)) * tone * strands[j] * (1 + .12 * t) * (prm.dark ?? 1) * 1.15;
-        L.col.push(shade, shade, shade); L.uv.push(t, j / seg);
-      }
-    }
-    for (let i = 0; i < n - 1; i++) for (let j = 0; j < seg; j++) {
-      const a = base + i * seg + j, b = base + i * seg + (j + 1) % seg, c = a + seg, d = b + seg; L.idx.push(a, c, b, b, c, d);
-    }
+  function addTube(pts,width,thick,prm){
+    if(pts.length<2)return;
+    const tone=.9+.2*rand(),oldSeg=prm.seg||10;for(let j=0;j<oldSeg;j++)rand();
+    const g=groomedLock(pts,width,thick,{detailFibers:true,sculpted:!prm.round,finish:false,tone:tone*(prm.dark??1),normal:(t,c)=>prm.normal?prm.normal(Math.round(t*(pts.length-1)),c):grad(c),
+      profile:t=>{const p=prm.profile?prm.profile(t):(.75+.25*sstep(0,.12,t))*Math.pow(1-sstep(prm.taper??.62,1,t),.55);return[Math.max(width*p,.0008),Math.max(thick*p,.0005)]}});
+    const base=L.pos.length/3;L.normalRanges.push({start:base,count:g.attributes.position.count});
+    for(const v of g.attributes.position.array)L.pos.push(v);for(const v of g.attributes.color.array)L.col.push(v);for(const v of g.attributes.uv.array)L.uv.push(v);for(const v of g.index.array)L.idx.push(base+v);g.dispose();
   }
 
   const endY = endYOf(), frameN = S.faceFrame || 0;
@@ -279,20 +265,36 @@ export function buildHair(fit, id, color = '#2a1a12') {
   }
   function strip(A, B, dark, sid) {
     for (let m = 0; m < A.length; m++) if (A[m].distanceTo(B[m]) > (S.maxStrip || .32)) return;
-    const M = A.length, K = 6, base = L.pos.length / 3, nrm = V(), mid = V(), q = V(), tone = (.9 + .2 * rand()) * dark, tipS = S.tip ?? .8;
-    // Cada mecha conserva sua própria borda; unificamos apenas a ponta colapsada dela.
-    L.normalRanges.push({start:base,count:M*(K+1)});
+    const M = A.length, K = dark<.8?4:8, base = L.pos.length / 3, nrm = V(), mid = V(), q = V(), tone = (.9 + .2 * rand()) * dark, tipS = S.tip ?? .8;
+    // Cada mecha conserva sua própria borda; suavizamos as costuras sem soldar mechas vizinhas.
+    L.normalRanges.push({start:base,count:2*M*(K+1)});
     for (let m = 0; m < M; m++) {
       const u = m / (M - 1); mid.copy(A[m]).add(B[m]).multiplyScalar(.5); grad(mid, nrm);
-      const wdt = A[m].distanceTo(B[m]), w = Math.pow(1 - sstep(tipS, 1, u), .65), bul = Math.min(S.bulge ?? .03, wdt * .32) * sstep(0, .12, u) * (.4 + .6 * w);
+      const wdt = A[m].distanceTo(B[m]), w = Math.max(.006,Math.pow(1 - sstep(tipS, 1, u), .65)), bul = Math.min(S.bulge ?? .03, wdt * .32) * sstep(0, .12, u) * (.4 + .6 * w);
       for (let k = 0; k <= K; k++) {
         const sk = k / K; q.copy(A[m]).lerp(B[m], sk).sub(mid).multiplyScalar(w).add(mid).addScaledVector(nrm, bul * Math.sin(Math.PI * sk));
         L.pos.push(q.x, q.y, q.z);
-        const sh = (.6 + .4 * Math.pow(Math.sin(Math.PI * sk), .6)) * (.6 + .4 * sstep(0, .2, u)) * tone * (.93 + .07 * Math.sin(sk * Math.PI * 5 + sid)) * (1 + .1 * u) * 1.1;
-        L.col.push(sh, sh, sh); L.uv.push(u, sk);
+
+        const tone2=tone*(.82+.15*sstep(0,.2,u))*(.98+.02*Math.cos(sk*Math.PI*6+sid));L.col.push(tone2,tone2,tone2); L.uv.push(sk,u);
       }
     }
-    for (let m = 0; m < M - 1; m++) for (let k = 0; k < K; k++) { const a2 = base + m * (K + 1) + k, b2 = a2 + 1, c2 = a2 + K + 1, d2 = c2 + 1; L.idx.push(a2, b2, c2, b2, d2, c2) }
+    // Avesso e bordas fechados; a frente mantém as guias e o volume do estilo.
+    const count=M*(K+1),start=L.idx.length;
+    for(let i=0;i<count;i++){
+      const k=(base+i)*3,p0=V(L.pos[k],L.pos[k+1],L.pos[k+2]),no=grad(p0),p1=p0.addScaledVector(no,-.008);
+      L.pos.push(p1.x,p1.y,p1.z);L.col.push(L.col[k]*.92,L.col[k+1]*.92,L.col[k+2]*.92);L.uv.push(L.uv[(base+i)*2],L.uv[(base+i)*2+1]);
+    }
+    let flip=false;
+    for(let m=0;m<M-1;m++)for(let k=0;k<K;k++){
+      const a=base+m*(K+1)+k,b=a+1,c=a+K+1,d=c+1;L.idx.push(a,c,b,b,c,d);
+    }
+    for(let i=start;i<L.idx.length;i+=3){const [a,b,c]=L.idx.slice(i,i+3).map(k=>V(...L.pos.slice(k*3,k*3+3))),no=b.sub(a).cross(c.sub(a));if(no.lengthSq()>1e-12){flip=no.dot(grad(a))<0;break}}
+    const frontEnd=L.idx.length;
+    for(let i=start;i<frontEnd;i+=3){if(flip)[L.idx[i+1],L.idx[i+2]]=[L.idx[i+2],L.idx[i+1]];L.idx.push(L.idx[i]+count,L.idx[i+2]+count,L.idx[i+1]+count)}
+    const join=(a,b)=>{if(flip)[a,b]=[b,a];L.idx.push(b,a,a+count,b,a+count,b+count)};
+    for(let m=0;m<M-1;m++){join(base+m*(K+1),base+(m+1)*(K+1));join(base+(m+1)*(K+1)+K,base+m*(K+1)+K)}
+    for(let k=0;k<K;k++){join(base+k+1,base+k);join(base+(M-1)*(K+1)+k,base+(M-1)*(K+1)+k+1)}
+
   }
   if (!S.tubesOnly) {
     if (S.flow === 'part') for (const side of [-1, 1]) { if (S.inner !== false) sheet(side, 1); sheet(side, 0) }
@@ -337,7 +339,7 @@ export function buildHair(fit, id, color = '#2a1a12') {
   // ---- coque: bola enrolada + base ----
   const extra = [];
   if (knot) {
-    const R = S.knot.R, ball = new THREE.SphereGeometry(R * .9, 28, 20); ball.translate(knot.x, knot.y, knot.z);
+    const R = S.knot.R, ball = new THREE.SphereGeometry(R * .9, 48, 32); ball.translate(knot.x, knot.y, knot.z);
     setGray(ball, .62); extra.push(ball);
     if(!S.curlBun){
     const pts = [], TURNS = 7; for (let i = 0; i <= 260; i++) { const s = i / 260, th = .25 + s * (Math.PI - .5), ph = s * TURNS * 2 * Math.PI; pts.push(V(Math.sin(th) * Math.cos(ph), Math.cos(th), Math.sin(th) * Math.sin(ph)).multiplyScalar(R * .93).add(knot)) }
@@ -392,9 +394,7 @@ export function buildHair(fit, id, color = '#2a1a12') {
   }
 
   // ---------------- materiais e malhas ----------------
-  const hex = new THREE.Color(color);
-  const mat = new THREE.MeshPhysicalMaterial({ name: 'Hair', color: hex, vertexColors: true, roughness: .42, metalness: 0, sheen: .7, sheenRoughness: .45, sheenColor: hex.clone().lerp(new THREE.Color('#ffffff'), .45), specularIntensity: .9, anisotropy: .85, clearcoat: .2, clearcoatRoughness: .45, side: THREE.DoubleSide });
-  mat.onBeforeCompile = sh => { sh.fragmentShader = sh.fragmentShader.replace('#include <color_fragment>', '#include <color_fragment>\n if (!gl_FrontFacing) diffuseColor.rgb *= .42;') }; mat.customProgramCacheKey = () => 'hair-v1';
+  const hex = new THREE.Color(color),mat=groomMaterial(color);
   const capMat = new THREE.MeshPhysicalMaterial({ name: 'Hair_Base', color: hex, vertexColors: true, roughness: .6, sheen: .4, sheenColor: hex.clone().lerp(new THREE.Color('#ffffff'), .3) });
   const group = new THREE.Group(); group.name = 'Hair_' + id;
   const capMesh = new THREE.Mesh(capGeo, capMat); capMesh.name = 'Hair_Cap'; group.add(capMesh);
@@ -402,18 +402,18 @@ export function buildHair(fit, id, color = '#2a1a12') {
   lg.setAttribute('position', new THREE.Float32BufferAttribute(L.pos, 3)); lg.setAttribute('color', new THREE.Float32BufferAttribute(L.col, 3)); lg.setAttribute('uv', new THREE.Float32BufferAttribute(L.uv, 2));
   lg.setIndex(L.idx); lg.computeVertexNormals(); smoothHairNormals(lg,L.normalRanges); unit(lg); lg.computeTangents();
   const locks = new THREE.Mesh(lg, mat); locks.name = 'Hair_Locks'; group.add(locks);
-  for (const g of extra) { g.deleteAttribute('uv'); const m = new THREE.Mesh(g, capMat); m.name = 'Hair_Bun'; group.add(m) }
+  for (const g of extra) { g.computeTangents(); const m = new THREE.Mesh(g, mat); m.name = 'Hair_Bun'; group.add(m) }
   let ringMat = null;
   if (rings.length) {
     ringMat = new THREE.MeshPhysicalMaterial({ name: 'Hair_Ring', color: '#b88a3e', metalness: 1, roughness: .32 });
-    const geos = rings.map(r => { const g = new THREE.CylinderGeometry(r.r, r.r, r.r * 1.1, 20, 1, false); g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(V(0, 1, 0), r.d)); g.translate(r.p.x, r.p.y, r.p.z); g.deleteAttribute('uv'); return g });
-    const m = new THREE.Mesh(merge(geos), ringMat); m.name = 'Hair_Rings'; group.add(m);
+    const geos = rings.map(r => { const g = groomCuff(r.r,r.r*1.1); g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(V(0, 1, 0), r.d)); g.translate(r.p.x, r.p.y, r.p.z); g.deleteAttribute('uv'); return g });
+    const geo=merge(geos);heroSurface(geo,ringMat,'metal');const m = new THREE.Mesh(geo, ringMat); m.name = 'Hair_Rings'; group.add(m);
   }
   group.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true } });
   group.userData.timing = Math.round(performance.now() - T0); group.userData.dbg = DBG;
   return {
     group, material: mat, meshes: group.children.filter(o => o.isMesh),
-    setColor(c) { mat.color.set(c); mat.sheenColor.set(c).lerp(new THREE.Color('#ffffff'), .45); capMat.color.set(c); capMat.sheenColor.set(c).lerp(new THREE.Color('#ffffff'), .3) },
+    setColor(c) { groomColor(mat,c); capMat.color.set(c); capMat.sheenColor.set(c).lerp(new THREE.Color('#ffffff'), .3) },
     dispose() { group.traverse(o => { if (o.isMesh) o.geometry.dispose() }); mat.dispose(); capMat.dispose(); if (ringMat) ringMat.dispose() }
   };
 }

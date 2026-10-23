@@ -9,12 +9,15 @@ import {V,orb,tube,crescent,disposeGroup} from './lunar.js';
 import {tuft,ribbon,badge,panel,buckleGeo,finishMaterial} from './detail.js';
 import {quill,mergeVolumes,grain,petalPlate,eyeDisc,smoothRingSeams} from './companion-detail.js';
 import {heroSurface} from './hero-material.js';
+import {groomSurface} from './groom.js';
+const groomMaterials=new WeakMap();
 const clamp=THREE.MathUtils.clamp,step=THREE.MathUtils.smoothstep,PI=Math.PI;
 const union=(a,b,k=.18)=>{const h=Math.max(k-Math.abs(a-b),0)/k;return Math.min(a,b)-h*h*k*.25};
 const ellipse=(p,r)=>(x,y,z)=>(Math.hypot((x-p.x)/r.x,(y-p.y)/r.y,(z-p.z)/r.z)-1)*Math.min(r.x,r.y,r.z);
-function material(name,color,metal=0){const m=new THREE.MeshPhysicalMaterial({name,color});m.userData.surfaceKind=metal?'metal':/gem/i.test(name)?'gem':/couro|leather/i.test(name)?'leather':/fur|pelagem|plum|feather|pena/i.test(name)?'fur':/fabric|cloth|tecido|calca/i.test(name)?'fabric':'polymer';return finishMaterial(m,metal?'metal':'fabric')}
+function material(name,color,metal=0){const m=new THREE.MeshPhysicalMaterial({name,color});m.userData.surfaceKind=metal?'metal':/(^|_)gem2?($|_)/i.test(name)?'gem':/couro|leather/i.test(name)?'leather':/fur|pelagem|plum|feather|pena/i.test(name)?'fur':/fabric|cloth|tecido|calca/i.test(name)?'fabric':'polymer';return finishMaterial(m,metal?'metal':'fabric')}
 function mesh(parent,name,geo,mat){
- if(/eye|iris|pupil|cornea|olho/i.test(name+' '+mat.name)){mat=mat.clone();mat.normalMap=null;mat.roughnessMap=null}
+ if(/eye|iris|pupil|cornea|olho|palpebra/i.test(name+' '+mat.name)){mat=mat.clone();mat.normalMap=null;mat.roughnessMap=null}
+ else if(geo.userData.groom&&/pelagem|plum|pena|mecha|pelage|fourrure|criniere/i.test(mat.name+' '+name)){let groom=groomMaterials.get(mat);if(!groom){groom=groomSurface(mat.clone(),{roughness:mat.roughness,anisotropy:.35});groomMaterials.set(mat,groom)}mat=groom;if(geo.index&&!geo.attributes.tangent)geo.computeTangents()}
  else heroSurface(geo,mat,mat.userData.surfaceKind||'fur');
  const m=new THREE.Mesh(geo,mat);m.name=name;m.castShadow=true;m.receiveShadow=true;parent.add(m);return m;
 }
