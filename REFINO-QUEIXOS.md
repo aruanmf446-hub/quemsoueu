@@ -1,5 +1,7 @@
 # Apoio do queixo e transição mandibular
 
+> Registro da rodada `eeaa4f0`, considerada insuficiente pelo usuário. A correção estrutural do grupo afetado está em [REFINO-MANDIBULA.md](REFINO-MANDIBULA.md).
+
 Após o envio de `54a1f87` à main, o usuário aprovou a direção visual e pediu continuar corrigindo personagens sem queixo. A revisão mantém as proporções anteriores dos olhos, nariz e boca.
 
 O diagnóstico da superfície mostrou maior recuo sob o lábio em Cute, Nico, Princesa da Floresta, Arqueira e Guardiã da Lua. O reforço é localizado: volume mais alto e largo sob o lábio, com largura/projeção próprias por identidade e transições suaves para a mandíbula e para a superfície original. O pescoço, a base do rosto e a posição da boca permanecem iguais; não é um alongamento global da cabeça.

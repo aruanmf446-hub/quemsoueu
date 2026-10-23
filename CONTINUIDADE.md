@@ -4,7 +4,19 @@
 
 O usuário determinou: **sempre subir o trabalho para a `main`**. Ao concluir uma rodada, validar, registrar as alterações e enviar à `main`, preservando alterações remotas e sem force push. Distinguir o envio do código da conclusão do deploy do site.
 
-## Rodada atual — apoio do queixo (23/10/2026)
+## Rodada atual — contorno mandibular do grupo afetado (23/10/2026)
+
+O usuário reprovou o efeito de `eeaa4f0` nas imagens da Princesa e Nico: o queixo ainda parece ausente. Esclareceu que eles são exemplos de um grupo maior, **somente os personagens com esse modelo de queixo**, e não todos os personagens. O apoio em relevo sob o lábio foi insuficiente: não corrigia a altura da silhueta inferior.
+
+A correção está limitada a 11 perfis de mandíbula curta/recuada: Feminino suave, Feminino intenso, Cute, Palhaço, Nana, Guardiã da Lua, Nico, Feiticeira rubi, Arqueira, Guarda feminina e Princesa. Os demais 23 preservam as malhas da base. Anão, Guarda jovem e skins do Padeiro mantêm o apoio anterior; não recebem esta mudança estrutural.
+
+`MANDIBLE_IDENTITIES` define extensão, largura e perfil próprios. `makeLoft` remapeia suavemente as fatias da própria casca inferior, estendendo a silhueta 0,10–0,12 unidade e modelando o mento. Olhos, nariz e boca ficam acima da união preservada. O apoio superficial anterior fica desativado nesses 11. O primeiro ensaio com um volume adicional foi descartado porque formava um bloco sob o rosto; a versão final usa uma única casca contínua. `jawChinY` acompanha a nova base no rig. Prévias `menu-v17-contorno-mandibular`.
+
+Base `/workspace/outputs/mandibula-referencia-eeaa4f0`; artefatos `renders/mandibula/`. Somente os 11 alvos são recapturados; os 23 preservados reutilizam as capturas finais da base. A comparação publicada passa a mostrar **somente os 11 afetados**, com abas com cabelo, escultura e perfil. `revisao/manifesto.json` identifica a seleção. Detalhes em [REFINO-MANDIBULA.md](REFINO-MANDIBULA.md). A comparação geométrica confirmou 11 rostos alterados e 23 preservados; o teste do queixo agora exige ganho real de silhueta, além de preservação dos traços superiores e do rig.
+
+Validação final: 11 malhas alteradas e 23 preservadas; ganho real de silhueta e 450 pontos superiores preservados; lábios, pescoço e deformações válidos; quatro GLBs e três Workers passaram. Capturas finais dos 11 e galeria com 66 imagens (incluindo perfil), busca e celular concluídos. Enviar a rodada para main. Não voltar à abordagem de mero relevo sob o lábio; o usuário pediu corrigir o contorno do grupo específico.
+
+## Rodada anterior, efeito insuficiente — apoio do queixo (23/10/2026)
 
 O usuário pediu enviar tudo à main: concluído em `54a1f87`, remoto verificado. Em seguida pediu continuar: "tá ficando incrível", mas há personagens sem queixo. A direção visual anterior foi aceita para continuação; preservar olhos, nariz e boca. Foi enviada pergunta opcional sobre quais nomes, ainda sem resposta; a auditoria do catálogo apontou 15 humanos com queixo mais recuado, sobretudo Cute, Nico, Princesa, Arqueira e Guardiã.
 

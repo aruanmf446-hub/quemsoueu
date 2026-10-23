@@ -29,9 +29,9 @@ O acabamento dos 17 penteados usa volumes fechados, pontas afinadas, sulcos e fi
 
 ### Revisão visual após a reprovação
 
-A continuação aprovada na direção visual concentra-se agora nos [queixos mais recuados](REFINO-QUEIXOS.md): 15 identidades recebem apoio sob o lábio, com transição para a mandíbula e preservação dos traços acima.
+A revisão atual corrige a [mandíbula curta e recuada](REFINO-MANDIBULA.md) em 11 perfis que compartilham esse problema. A silhueta inferior ganha altura e contorno; os outros 23 modelos permanecem iguais. O apoio superficial da [rodada anterior](REFINO-QUEIXOS.md) foi insuficiente.
 
-A rodada `b119a58` foi reprovada pelo usuário: olhos e íris exagerados e rostos adultos encurtados. A [correção de proporções faciais](CORRECAO-PROPORCOES-FACIAIS.md) ajusta os 23 perfis humanos e corrige a oclusão pintada nas pálpebras inferiores; o catálogo preserva as diferenças de idade e identidade. Essa etapa comparou a versão reprovada com a correção, com câmera e iluminação iguais. A [comparação pública](https://aruanmf446-hub.github.io/quemsoueu/revisao/) acompanha agora a rodada mais recente dos queixos, usando `54a1f87` como antes. Luz, exposição, cabelo e figurinos permanecem iguais nesta rodada. Testes técnicos não representam aprovação estética. A reconstrução anterior está documentada em [REVISAO-ESCULTURA-CATALOGO.md](REVISAO-ESCULTURA-CATALOGO.md).
+A rodada `b119a58` foi reprovada pelo usuário: olhos e íris exagerados e rostos adultos encurtados. A [correção de proporções faciais](CORRECAO-PROPORCOES-FACIAIS.md) ajusta os 23 perfis humanos e corrige a oclusão pintada nas pálpebras inferiores; o catálogo preserva as diferenças de idade e identidade. Essa etapa comparou a versão reprovada com a correção, com câmera e iluminação iguais. A [comparação pública](https://aruanmf446-hub.github.io/quemsoueu/revisao/) mostra agora apenas os 11 perfis afetados, usando `eeaa4f0` como antes, com uma aba adicional de perfil. Luz, exposição, cabelo e figurinos permanecem iguais nesta rodada. Testes técnicos não representam aprovação estética. A reconstrução anterior está documentada em [REVISAO-ESCULTURA-CATALOGO.md](REVISAO-ESCULTURA-CATALOGO.md).
 
 ### Escultura facial e identidade
 
