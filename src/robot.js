@@ -3,6 +3,7 @@
 // Mesmo contrato de buildHead: { group, dispose, params }.
 import * as THREE from 'three';
 import {heroSurface} from './hero-material.js';
+import {RoundedBoxGeometry} from 'three/addons/geometries/RoundedBoxGeometry.js';
 
 const { clamp } = THREE.MathUtils;
 const sstep = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t) };
@@ -49,7 +50,7 @@ export function buildRobot(P, opts = {}) {
   let screenTex = null;
   const R = 1, shellC = col(P.shell || '#ece6da'), accent = col(P.accent || '#f08a24'), dark = col('#2b2a2a');
   const add = (geo, m, name, parent = root) => {
-    if(['Head_Shell','Screen','Borda_tela'].includes(name)){
+    if(['Head_Shell','Screen','Borda_tela','Borda_laranja'].includes(name)){
       // Escultura coerente do casco, vidro e borda: maçãs mais largas e queixo
       // compacto. Os três seguem o mesmo campo, mantendo o encaixe da tela.
       const p=geo.attributes.position;
@@ -80,7 +81,7 @@ export function buildRobot(P, opts = {}) {
       c.copy(shellC);
       const band = sstep(.06, .03, Math.abs(v - (SY - SH - .22))) * sstep(1.3, 1.0, Math.abs(u));
       const side = sstep(.03, 0, Math.abs(Math.abs(u) - 1.35) - .08) * sstep(.95, .7, Math.abs(v)) * (1 - sstep(-.6, -.75, v));
-      c.lerp(accent, Math.max(band, side, .9 * sstep(.95, 1.1, sd) * sstep(1.25, 1.12, sd)));
+      c.lerp(accent, Math.max(band,side));
       if (v < -.55) c.lerp(dark, sstep(-.55, -.75, v) * .85); // base / rodas
       const n = Math.sin(x * 23.1 + y * 17.3) * Math.sin(y * 29.7 - z * 13.1) * Math.sin(z * 19.3 + x * 11.7);
       c.multiplyScalar(1 - .12 * sstep(.4, .9, n) - .06 * sstep(-.2, -.7, y));
@@ -90,15 +91,25 @@ export function buildRobot(P, opts = {}) {
     add(g, track(new THREE.MeshPhysicalMaterial({ vertexColors: true, roughness: .45, clearcoat: .4, clearcoatRoughness: .35, name: 'Shell' })), 'Head_Shell');
   }
   { // tela curva com rosto emissivo
-    const NR = 24, NA = 96, pos = [], uv = [], idx = [];
-    for (let i = 0; i <= NR; i++) for (let j = 0; j <= NA; j++) {
-      const r = i / NR, a = j / NA * Math.PI * 2, ca = Math.cos(a), sa = Math.sin(a);
-      const k = Math.pow(Math.pow(Math.abs(ca), 4) + Math.pow(Math.abs(sa), 4), -.25); // super-elipse
-      const u = ca * k * r * SW, v = SY + sa * k * r * SH, rr = R - .012 + .02 * (1 - r * r);
-      pos.push(Math.sin(u) * Math.cos(v) * rr, Math.sin(v) * rr, Math.cos(u) * Math.cos(v) * rr); uv.push(.5 + u / SW * .5, .5 + (v - SY) / SH * .5);
+    const NR=24,NA=96,pos=[],uv=[],idx=[],surfaces=[];
+    // Um único vértice central evita o leque de triângulos de área zero.
+    // Vidro curvo com avesso e parede reais, encaixado sob a borda do casco.
+    const point=(r,a,inset)=>{
+      const ca=Math.cos(a),sa=Math.sin(a),k=(Math.abs(ca)**4+Math.abs(sa)**4)**-.25,u=ca*k*r*SW,v=SY+sa*k*r*SH,rr=R-.012+.02*(1-r*r)-inset;
+      return [Math.sin(u)*Math.cos(v)*rr,Math.sin(v)*rr,Math.cos(u)*Math.cos(v)*rr,.5+u/SW*.5,.5+(v-SY)/SH*.5];
+    };
+    for(const back of [false,true]){
+      const center=pos.length/3,q=point(0,0,back?.025:0);surfaces.push(center);pos.push(...q.slice(0,3));uv.push(.5,.5);
+      for(let i=1;i<=NR;i++)for(let j=0;j<=NA;j++){const q=point(i/NR,j/NA*2*Math.PI,back?.025:0);pos.push(...q.slice(0,3));uv.push(...q.slice(3))}
+      const triangle=(a,b,c)=>idx.push(a,...(back?[c,b]:[b,c]));
+      for(let j=0;j<NA;j++)triangle(center,center+1+j,center+2+j);
+      for(let i=1;i<NR;i++)for(let j=0;j<NA;j++){const a=center+1+(i-1)*(NA+1)+j,b=a+1,c=a+NA+1,d=c+1;triangle(a,c,b);triangle(b,c,d)}
     }
-    for (let i = 0; i < NR; i++) for (let j = 0; j < NA; j++) { const a = i * (NA + 1) + j, b = a + 1, c = a + NA + 1, d = c + 1; idx.push(a, c, b, b, c, d) }
-    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals(); unitNormals(g);
+    for(let j=0;j<NA;j++){
+      const front=surfaces[0]+1+(NR-1)*(NA+1)+j,back=surfaces[1]+1+(NR-1)*(NA+1)+j;
+      idx.push(front,back,front+1,front+1,back,back+1);
+    }
+    const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(idx);g.computeVertexNormals();unitNormals(g);
     const tex = track(faceTexture(P)); screenTex = tex;
     add(g, track(new THREE.MeshPhysicalMaterial({ color: 0x050608, roughness: .12, clearcoat: 1, clearcoatRoughness: .05, emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 1.5, name: 'Screen' })), 'Screen');
   }
@@ -113,6 +124,15 @@ export function buildRobot(P, opts = {}) {
     const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(p,3));g.setIndex(idx);g.computeVertexNormals();
     add(g,track(new THREE.MeshPhysicalMaterial({color:shellC,roughness:.42,clearcoat:.35,name:'ScreenBezel'})),'Borda_tela');
   }
+  { // Filete contínuo: substitui a faixa de cor serrilhada na grade do casco.
+    const p=[],ix=[],NA=192,NR=6;
+    for(let i=0;i<=NR;i++)for(let j=0;j<=NA;j++){
+      const t=i/NR,a=j/NA*Math.PI*2,ca=Math.cos(a),sa=Math.sin(a),k=(Math.abs(ca)**4+Math.abs(sa)**4)**-.25,u=ca*k*(SW+.073+t*.032),v=SY+sa*k*(SH+.055+t*.030),r=.997+.003*t+.004*Math.sin(Math.PI*t);
+      p.push(Math.sin(u)*Math.cos(v)*r,Math.sin(v)*r,Math.cos(u)*Math.cos(v)*r);if(i<NR&&j<NA){const q=i*(NA+1)+j;ix.push(q,q+NA+1,q+1,q+1,q+NA+1,q+NA+2)}
+    }
+    const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(p,3));g.setIndex(ix);g.computeVertexNormals();
+    add(g,track(new THREE.MeshPhysicalMaterial({color:accent,roughness:.42,clearcoat:.35,name:'ScreenAccent'})),'Borda_laranja');
+  }
   // "orelhas": discos laterais com anel de luz
   const glowMat = track(new THREE.MeshBasicMaterial({ color: col(P.glow || '#5fe3ff'), name: 'Glow' }));
   const discMat = track(new THREE.MeshPhysicalMaterial({ color: accent, roughness: .4, clearcoat: .4, name: 'Accent' }));
@@ -123,7 +143,7 @@ export function buildRobot(P, opts = {}) {
     add(new THREE.CylinderGeometry(.24, .24, .02, 48).rotateX(Math.PI / 2), darkMat, 'Ear_Lens', grp).position.z = .095;
     add(new THREE.TorusGeometry(.2, .018, 12, 64), glowMat, 'Ear_Ring', grp).position.z = .1;
     // aleta no topo
-    const fin = add(new THREE.BoxGeometry(.2, .32, .07, 4, 4, 2), discMat, 'Fin_' + (s < 0 ? 'L' : 'R'));
+    const fin = add(new RoundedBoxGeometry(.2,.32,.07,4,.022), discMat, 'Fin_' + (s < 0 ? 'L' : 'R'));
     fin.position.set(s * .55, .93, -.1); fin.rotation.set(-.15, 0, s * -.5);
   }
   { // luz de coração e respiros
@@ -131,7 +151,10 @@ export function buildRobot(P, opts = {}) {
     const v = SY - SH - .23, ring = add(new THREE.TorusGeometry(.1, .018, 12, 48), track(new THREE.MeshBasicMaterial({ color: col(P.blushColor || '#ffb347'), name: 'HeartGlow' })), 'Heart_Ring');
     ring.position.set(0, Math.sin(v) * 1.01, Math.cos(v) * 1.01); ring.lookAt(0, Math.sin(v) * 3, Math.cos(v) * 3);
     const h = add(new THREE.ShapeGeometry(heart, 12), ring.material, 'Heart'); h.position.copy(ring.position).multiplyScalar(1.004); h.lookAt(0, Math.sin(v) * 3, Math.cos(v) * 3);
-    for (const s of [-1, 1]) { const vent = add(new THREE.BoxGeometry(.16, .05, .03), darkMat, 'Vent'); vent.position.set(s * .38, Math.sin(v + .03) * .985, Math.cos(v + .03) * .9); vent.lookAt(s * .38 * 3, Math.sin(v) * 3, Math.cos(v) * 3) }
+    for(const s of [-1,1]){
+      const vent=add(new RoundedBoxGeometry(.16,.05,.03,3,.012),darkMat,'Vent');vent.position.set(s*.38,Math.sin(v+.03)*.985,Math.cos(v+.03)*.9);vent.lookAt(s*.38*3,Math.sin(v)*3,Math.cos(v)*3);
+      const trim=add(new RoundedBoxGeometry(.19,.078,.018,3,.014),discMat,'Borda_respiro');trim.position.copy(vent.position).addScaledVector(vent.position.clone().normalize(),-.012);trim.quaternion.copy(vent.quaternion);
+    }
   }
   root.position.y = -.2;
   root.traverse(o => { if (o.isMesh) { o.castShadow = !(o.material.isMeshBasicMaterial); o.receiveShadow = true } });

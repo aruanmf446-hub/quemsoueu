@@ -10,7 +10,6 @@ import {heroSurface} from './hero-material.js';
 import {badge,tuft,buckleGeo,gear} from './detail.js';
 import {leafGeo} from './forest.js';
 import {cactusHeadgear} from './cactus-headgear.js';
-import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 const { clamp } = THREE.MathUtils;
@@ -101,8 +100,8 @@ export function buildAccessories(fit, sel = {}, cols = {}, hairMeshes = []) {
     band: new THREE.MeshPhysicalMaterial({ name: 'Acc_Band', color: new THREE.Color(cols.fabric || '#6b4228').multiplyScalar(.45), roughness: .7 }),
     flower: new THREE.MeshPhysicalMaterial({ name: 'Acc_Flower', color: cols.flower || '#f6f1e6', roughness: .55, sheen: .6, sheenColor: new THREE.Color('#ffffff') }),
     pollen: new THREE.MeshPhysicalMaterial({ name: 'Acc_Pollen', color: '#e8b52c', roughness: .7 }),
-    glass: new THREE.MeshPhysicalMaterial({ name: 'Acc_Glass', color: '#dfe9f2', roughness: .05, metalness: 0, transparent: true, opacity: .10, specularIntensity: 1, clearcoat: 1, clearcoatRoughness: 0, depthWrite: false, side: THREE.DoubleSide }),
-    visor: new THREE.MeshPhysicalMaterial({name:'Acc_Visor',color:cols.gem2||'#5ab8ef',transparent:true,opacity:.18,roughness:.05,clearcoat:.8,depthWrite:false,side:THREE.DoubleSide}),
+    glass: new THREE.MeshPhysicalMaterial({ name: 'Acc_Glass', color: '#f0f3f6', roughness: .03, metalness: 0, transparent: true, opacity: .035, specularIntensity: .6, clearcoat: .35, clearcoatRoughness: 0, depthWrite: false, side: THREE.DoubleSide }),
+    visor: new THREE.MeshPhysicalMaterial({name:'Acc_Visor',color:cols.gem2||'#5ab8ef',transparent:true,opacity:.09,roughness:.03,clearcoat:.35,specularIntensity:.6,depthWrite:false,side:THREE.DoubleSide}),
     liquid: new THREE.MeshPhysicalMaterial({ name: 'Acc_Liquid', color: cols.gem || '#8e3fd0', emissive: cols.gem || '#8e3fd0', emissiveIntensity: .55, roughness: .3, transparent: true, opacity: .85 })
   };
   const setColors = c => {
@@ -308,7 +307,11 @@ export function buildAccessories(fit, sel = {}, cols = {}, hairMeshes = []) {
   }
   // ---------------- rosto ----------------
   if (sel.face === 'glasses' && fit.eyes && fit.eyes.length === 2) {
-    const R = fit.eyes[0].R * 1.42, zF = Math.max(...fit.eyes.map(e => e.z)) + fit.eyes[0].R + .07;
+    const separation=Math.abs(fit.eyes[1].x-fit.eyes[0].x),R=Math.min(fit.eyes[0].R*1.22,separation*.47);
+    // Aros medidos contra o rosto completo: a ponte do nariz pode avançar além do globo.
+    // O antigo raio cruzava os dois aros e deixava os trechos internos enterrados na face.
+    let zF=Math.max(...fit.eyes.map(e=>e.z+e.R))+.05;
+    for(const e of fit.eyes)for(let j=0;j<72;j++){const a=j/72*Math.PI*2;zF=Math.max(zF,fit.surfZ(e.x+R*Math.cos(a),e.y-.01+R*Math.sin(a))+.045)}
     for (const e of fit.eyes) {
       const c = V(e.x, e.y - .01, zF), g = new THREE.TorusGeometry(R, .014, 16, 72); g.translate(c.x, c.y, c.z); add('metal', g);
       const lens = lensGeometry(R,.010,.003); lens.translate(c.x, c.y, c.z - .003); add('glass', lens);
@@ -354,16 +357,27 @@ export function buildAccessories(fit, sel = {}, cols = {}, hairMeshes = []) {
     add('metal',tube([centers[0].clone().add(V(.17,0,0)),V(0,centers[0].y+.02,centers[0].z+.02),centers[1].clone().add(V(-.17,0,0))],.014));
   }
   if(sel.face==='visor'&&fit.eyes?.length===2){
-    const y=fit.eyes.reduce((a,e)=>a+e.y,0)/2,z=Math.max(...fit.eyes.map(e=>e.z+e.R))+.09;
-    const lens=new RoundedBoxGeometry(1.24,.4,.025,5,.07);lens.translate(0,y,z);add('visor',lens);
-    add('metal',tube([V(-.64,y+.18,z),V(0,y+.21,z+.01),V(.64,y+.18,z)],.018));
-    for(const side of [-1,1]){add('gem2',sphere(V(side*.65,y,z-.015),.055,1,.85,.5));add('metal',tube([V(side*.64,y,z),V(side*.79,y+.01,.25),V(side*.79,y+.02,-.13)],.015))}
+    const y=fit.eyes.reduce((a,e)=>a+e.y,0)/2,halfW=Math.max(...fit.eyes.map(e=>Math.abs(e.x)+e.R*.90)),halfH=Math.max(...fit.eyes.map(e=>e.R))*.72,corner=Math.min(.07,halfH*.32),bend=.105;
+    const halfWidth=t=>{const q=Math.max(0,Math.abs((t-.5)*2*halfH)-(halfH-corner));return halfW-corner+Math.sqrt(Math.max(0,corner*corner-q*q))};
+    let z=Math.max(...fit.eyes.map(e=>e.z+e.R))+.07;
+    for(let i=0;i<=12;i++)for(let j=0;j<=32;j++){const t=i/12,x=(.5-j/32)*2*halfWidth(t),yy=y+(t-.5)*2*halfH;z=Math.max(z,fit.surfZ(x,yy)+.050+bend*(x/halfW)**2)}
+    const point=(t,u)=>{const x=(.5-u)*2*halfWidth(t);return V(x,y+(t-.5)*2*halfH,z-bend*(x/halfW)**2)};
+    // Casca curva e fina, com contorno contínuo; o visor acompanha a largura real do rosto.
+    add('visor',clothSurface(20,64,point,{thickness:.010}));
+    const rim=[];for(let j=0;j<48;j++)rim.push(point(0,j/48));for(let i=0;i<24;i++)rim.push(point(i/24,1));for(let j=0;j<48;j++)rim.push(point(1,1-j/48));for(let i=0;i<=24;i++)rim.push(point(1-i/24,0));
+    add('metal',tube(rim,.010,12));
+    for(const side of [-1,1]){
+      const q=point(.5,side<0?1:0),ear=fit.ears.find(e=>Math.sign(e.center.x)===side)?.center||V(side*.78,y,-.12),hinge=V(side*(traceR(sdf,y,side*80*DEG,zc)*Math.sin(80*DEG)+.055),y+.01,ear.z+.06);
+      add('gem2',sphere(q.clone().add(V(side*.015,0,-.005)),.037,1,.85,.65));add('metal',tube([q,hinge.clone().lerp(q,.45),hinge],.012));
+    }
   }
 
   if(sel.face==='monocle'&&fit.eyes?.length){
-    const e=fit.eyes.find(e=>e.x<0)||fit.eyes[0],r=e.R*1.25,p=V(e.x,e.y,e.z+e.R+.08),g=new THREE.TorusGeometry(r,.022,10,48);g.translate(...p.toArray());add('metal',g);
+    const e=fit.eyes.find(e=>e.x<0)||fit.eyes[0],r=Math.min(e.R*1.16,Math.abs(e.x)*.95);let front=e.z+e.R+.07;
+    for(let j=0;j<72;j++){const a=j/72*Math.PI*2;front=Math.max(front,fit.surfZ(e.x+r*1.2*Math.cos(a),e.y+r*1.2*Math.sin(a))+.05)}
+    const p=V(e.x,e.y,front),g=new THREE.TorusGeometry(r,.020,16,64);g.translate(...p.toArray());add('metal',g);
     const cog=gear(r*1.16,.021);cog.translate(p.x,p.y,p.z-.017);add('metal',cog);
-    const glass=new THREE.CircleGeometry(r*.9,40);glass.translate(p.x,p.y,p.z);add('visor',glass);
+    const glass=lensGeometry(r*.90,.009,.003);glass.translate(p.x,p.y,p.z);add('visor',glass);
     const chain=[p.clone().add(V(-r,0,0)),p.clone().add(V(-r-.06,-.2,-.01)),p.clone().add(V(-r-.04,-.36,-.1))];add('metal',tube(chain,.008));
     add('gem2',sphere(p.clone().add(V(-r,0,.02)),.035));
   }

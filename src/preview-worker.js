@@ -49,8 +49,10 @@ function focusBody(){const box=new THREE.Box3().setFromObject(root),size=box.get
 onmessage=async({data})=>{
   try{
     const {id,look,frame,expression}=previewChoice(data);
+    const size=data.imageSize||{width:320,height:384};
+    if(size.width!==canvas.width||size.height!==canvas.height){renderer.setSize(size.width,size.height,false);camera.aspect=size.width/size.height;camera.updateProjectionMatrix()}
     assemble(id,look);head.rig?.apply(expression?EXPRESSIONS[expression]:{});root.updateMatrixWorld(true);
     if(frame==='head')focusHead(data.spec?.kind==='accessory'&&data.spec?.slot==='ears');else focusBody();
-    renderer.render(scene,camera);const blob=await canvas.convertToBlob({type:'image/webp',quality:.88});postMessage({blob});
+    renderer.render(scene,camera);const blob=await canvas.convertToBlob({type:'image/webp',quality:.94});postMessage({blob});
   }catch(error){postMessage({message:error.message+'\n'+error.stack})}
 };

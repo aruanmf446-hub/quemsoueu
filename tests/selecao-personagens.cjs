@@ -1,11 +1,11 @@
 // Exercita os cartões reais com o Worker ativo, incluindo trocas rápidas e falha de montagem.
 const {chromium}=require('playwright'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const root=path.resolve(__dirname,'..'),three=path.resolve(path.dirname(require.resolve('three')),'..');
-const out=path.join(root,'renders','selecao-personagens');fs.mkdirSync(out,{recursive:true});
+const out=process.env.ATELIE_RENDERS||path.join(root,'renders','selecao-personagens');fs.mkdirSync(out,{recursive:true});
 (async()=>{
  const browser=await chromium.launch({executablePath:'/usr/bin/chromium',headless:true,args:['--no-sandbox','--use-gl=swiftshader','--enable-unsafe-swiftshader','--ignore-gpu-blocklist']});
  try{
-  const context=await browser.newContext({viewport:{width:1450,height:1000}}),page=await context.newPage(),errors=[],warnings=[],reports=[];page.setDefaultTimeout(120000);
+  const context=await browser.newContext({viewport:{width:1450,height:1000},deviceScaleFactor:Number(process.env.ATELIE_PREVIEW_DPR)||1}),page=await context.newPage(),errors=[],warnings=[],reports=[];page.setDefaultTimeout(120000);
   page.on('pageerror',e=>errors.push(e.message));
   page.on('console',m=>{if(m.type()==='error'&&!m.text().includes('favicon')&&!m.text().includes('falha controlada de montagem'))errors.push(m.text());if(m.type()==='warning'&&m.text().startsWith('Prévia'))warnings.push(m.text())});
   await context.route('https://cdn.jsdelivr.net/npm/three@0.180.0/**',r=>r.fulfill({path:three+'/'+r.request().url().split('three@0.180.0/')[1],contentType:'application/javascript'}));
@@ -18,6 +18,19 @@ function buildHead(...args){window.__headBuildCount=(window.__headBuildCount||0)
   await page.route('http://localhost:8000/',r=>r.fulfill({contentType:'text/html',body:html}));
   await page.goto('http://localhost:8000/');await page.waitForFunction(()=>window.__atelie?.editor);await page.evaluate(()=>window.__atelie.stopAuto());
   const ready=()=>page.waitForFunction(()=>!document.getElementById('status').textContent.includes('…'));
+  const preserveScene=()=>page.evaluate(()=>{const a=window.__atelie;window.__previewScene={head:a.group(),body:a.body(),look:a.lookObj(),clothes:a.clothes(),saved:JSON.stringify(a.getLook())}});
+  const fidelity=async button=>{
+   const result=await button.evaluate(button=>{
+    const a=window.__atelie,p=window.__previewScene,request=button._preview.request,img=button.querySelector('img'),box=button.querySelector('.preview-frame').getBoundingClientRect();
+    if(p&&(p.head!==a.group()||p.body!==a.body()||p.look!==a.lookObj()||p.clothes!==a.clothes()||p.saved!==JSON.stringify(a.getLook())))throw Error('Prévia mudou a cena principal');
+    return{request:request.look,saved:a.savedLook(button.dataset.preset),width:img.naturalWidth,height:img.naturalHeight,size:request.imageSize,aspect:box.width/box.height};
+   });
+   assert.deepEqual(result.request,result.saved,'Cartão herdou o visual do personagem ativo');
+   assert.equal(result.width,result.size.width);assert.equal(result.height,result.size.height);
+   assert(result.width>=320,'Raster fixo de 240 px ainda perde detalhes em cartões grandes');
+   assert(Math.abs(result.width/result.height-result.aspect)<.005,'Imagem e cartão têm proporções diferentes');
+   return{width:result.width,height:result.height};
+  };
   // Quatro cliques no mesmo quadro devem montar somente a última escolha.
   const rapid=await page.evaluate(async()=>{
    const count=window.__headBuildCount;
@@ -38,9 +51,11 @@ function buildHead(...args){window.__headBuildCount=(window.__headBuildCount||0)
    const start=Date.now();
    await page.locator('[data-category="character"]').click();await page.locator(`[data-section="${family}"]`).click();
    const button=page.locator(`[data-preset="${id}"]`);await button.scrollIntoViewIfNeeded();
+   await preserveScene();
    // Uma prévia ausente não pode passar como personagem funcional.
    await button.locator('[data-ready="true"] img').waitFor();
    await button.locator('img').evaluate(img=>img.decode());
+   const preview=await fidelity(button);
    await button.click();await ready();
    const report=await page.evaluate(id=>{
     const a=window.__atelie,g=a.group();window.__render();let meshes=0;
@@ -48,18 +63,20 @@ function buildHead(...args){window.__headBuildCount=(window.__headBuildCount||0)
     return{id,active:document.querySelector('[data-preset].active')?.dataset.preset,name:g.name,meshes,previews:a.editor.previews.stats()};
    },id);
    assert.equal(report.active,id);assert.equal(report.name,'Head_V2_'+id);assert(report.meshes>0);assert.equal(report.previews.failed,false);
-   report.ms=Date.now()-start;reports.push(report);console.log('OK',id,report.ms+'ms');
+   report.ms=Date.now()-start;report.preview=preview;reports.push(report);console.log('OK',id,report.ms+'ms',JSON.stringify(preview));
    fs.writeFileSync(path.join(out,'parcial.json'),JSON.stringify({reports,rapid,errors,warnings},null,2));
   }
   assert.equal(reports.length,34);assert.deepEqual(errors,[]);assert.deepEqual(warnings,[]);
   // Em tela estreita também se alcançam as quatro famílias pelos controles visíveis.
-  await page.setViewportSize({width:390,height:844});
+  await page.setViewportSize({width:390,height:844});const mobilePreviews=[];
   for(const family of [...new Set(ids.map(p=>p.family))]){
    await page.locator('[data-category="character"]').click();await page.locator(`[data-section="${family}"]`).click();
-   const id=ids.find(p=>p.family===family).id;await page.locator(`[data-preset="${id}"]`).click();await ready();assert.equal(await page.locator('[data-preset].active').getAttribute('data-preset'),id);
+   const id=ids.find(p=>p.family===family).id,button=page.locator(`[data-preset="${id}"]`);await button.scrollIntoViewIfNeeded();await preserveScene();await button.locator('[data-ready="true"] img').waitFor();await button.locator('img').evaluate(img=>img.decode());
+   const preview=await fidelity(button);assert.equal(preview.width,preview.height,'Cartão quadrado do celular foi renderizado em 5:6');mobilePreviews.push({id,...preview});
+   await button.click();await ready();assert.equal(await page.locator('[data-preset].active').getAttribute('data-preset'),id);
   }
   assert.deepEqual(errors,[]);assert.deepEqual(warnings,[]);
   await page.screenshot({path:path.join(out,'mobile.png'),fullPage:true});
-  fs.writeFileSync(path.join(out,'relatorio.json'),JSON.stringify({reports,rapid,recovery:true,mobileFamilies:4,errors,warnings},null,2));
+  fs.writeFileSync(path.join(out,'relatorio.json'),JSON.stringify({reports,rapid,recovery:true,mobileFamilies:4,mobilePreviews,errors,warnings},null,2));
  }finally{await browser.close()}
 })().catch(e=>{console.error(e);process.exitCode=1});

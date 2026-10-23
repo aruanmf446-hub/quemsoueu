@@ -19,7 +19,7 @@ try{
  let tested=0;
  for(let i=0;i<ix.length;i+=3){
   const a=ix[i],b=ix[i+1],c=ix[i+2],x=(p.getX(a)+p.getX(b)+p.getX(c))/3,y=(p.getY(a)+p.getY(b)+p.getY(c))/3,z=(p.getZ(a)+p.getZ(b)+p.getZ(c))/3;
-  if(Math.abs(x)>.40||y<-.48||y>-.28||z<.90)continue;
+  if(Math.abs(x)>head.params.tipR*head.params.noseW*1.65||y<head.params.noseTipY-.12||y>head.params.noseTipY+.10||z<head.fit.surfZ(x,y)-.05)continue;
   const before=cross(p.array,a,b,c);if(before.length()<1e-9)continue;
   assert(before.dot(cross(deformed,a,b,c))>0,'O sorriso dobrou a malha do nariz');tested++;
  }

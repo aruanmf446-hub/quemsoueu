@@ -272,6 +272,20 @@ function makeBodySDF(fit, presetId, hs = 1, mermaid = false, build = normalizeBu
   }
   joints.bounds = { x: Math.max(wrist.x + .5 * Lb * .1 * B.hand + .4, 1.4 * W + .4, shJ.x + rA * 1.6), y0: ySole - .1, y1: nby + .5, z0: z0 - 1.0 * W * B.depth - .6, z1: z0 + 1.2 * W * B.depth + .5 + bel * .4 };
   const result = finish(prims, joints, B);
+  if(P.sculptedFace&&!P.lathe){
+    // O antigo topo era uma cápsula mais larga que o pescoço da cabeça:
+    // sua calota aflorava como uma emenda em U. Na zona de sobreposição,
+    // limite o corpo ao mesmo cone oval da cabeça, ligeiramente por dentro.
+    // Abaixo dessa zona, o trapézio e os controles de corpo ficam livres.
+    const bodyField=result.f,ay=nty,az=ntz,by=nby,bz=nbz,dy=by-ay,dz=bz-az,l2=dy*dy+dz*dz,low=nby-.08*hs,high=nby+.12*hs;
+    result.f=(x,y,z)=>{
+      const d=bodyField(x,y,z);if(y<=low)return d;
+      const radial=Math.hypot(x*1.14,z-nbz),mask=1-sstep(nr*hs*1.30,nr*hs*1.80,radial);if(mask<=0)return d;
+      const xx=x/hs*1.14,yy=nby+(y-nby)/hs,zz=nbz+(z-nbz)/hs,t=clamp(((yy-ay)*dy+(zz-az)*dz)/l2,0,1);
+      const neck=(Math.hypot(xx,yy-ay-dy*t,zz-az-dz*t)-nr*(1+.08*t))*.92*hs+.006*hs;
+      return d+(Math.max(d,neck)-d)*sstep(low,high,y)*mask;
+    };
+  }
   if (build.weight || build.muscle) {
     // A faixa que encosta na cabeça conserva exatamente o campo original. A largura extra nasce abaixo dela.
     const neutral = makeBodySDF(fit, presetId, hs, mermaid), changed = result.f;

@@ -2,6 +2,8 @@
 
 Referência técnica: `37fadc2`. As imagens enviadas pelo usuário servem como régua de qualidade de malha e textura; não são modelos para copiar. Nesta etapa ficam preservados os penteados, as identidades, o rosto, a iluminação e os figurinos existentes.
 
+Esta rodada (`acf8bc2`) foi reprovada visualmente pelo usuário. A continuação está em [REVISAO-ESCULTURA-CATALOGO.md](REVISAO-ESCULTURA-CATALOGO.md), que reabre a escultura facial e reconstrói os penteados. Os testes de preservação descritos abaixo documentam a rodada anterior.
+
 ## Alterações
 
 - Cabelos: mechas com avesso e bordas fechadas, tampas com UVs próprios, pontas contínuas e moldura que acompanha o fluxo sem saltos. Seções esculpidas, sulcos longitudinais e mapas de cor, normal e rugosidade de fibras, com brilho anisotrópico exportável. Fibras secundárias em geometria acompanham as mechas maiores. Os parâmetros dos 17 penteados permanecem iguais; no coque da Nana, o fluxo das raízes foi corrigido para ir do couro cabeludo ao coque, com as bases escondidas sob a cobertura. Camadas internas recebem menos subdivisões que a superfície visível.

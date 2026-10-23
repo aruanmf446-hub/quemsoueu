@@ -8,6 +8,7 @@ on:
       - index.html
       - 'src/**'
       - 'tests/**'
+      - 'revisao/**'
   workflow_dispatch:
 
 permissions:
@@ -47,7 +48,7 @@ jobs:
           name: selecao-personagens
           path: renders/selecao-personagens/
   acabamento:
-    name: Cabelos, barbas, acessórios e GLB dos 34 personagens
+    name: Escultura, encaixes e GLB dos 34 personagens
     runs-on: ubuntu-latest
     timeout-minutes: 35
     env:
@@ -62,11 +63,16 @@ jobs:
           npm install --no-save --package-lock=false --no-audit --no-fund three@0.180.0 playwright
           npx playwright install --with-deps chromium
           sudo ln -sf "$(node -p "require('playwright').chromium.executablePath()")" /usr/bin/chromium
-      - name: Conferir malhas e animação dos pelos
+      - name: Conferir escultura, encaixes e animação
         run: |
           node tests/qualidade-cabelo.mjs
           node tests/qualidade-pelos-acessorios.mjs
           node tests/qualidade-palpebras-companheiros.mjs
+          node tests/identidades-faciais.mjs
+          node tests/continuidade-labios.mjs
+          node tests/encaixe-pescoco.mjs
+          node tests/encaixe-oculos.mjs
+          node tests/qualidade-companheiros-esculpidos.mjs
       - name: Servir e conferir GLBs, recoloração e Worker
         run: |
           python3 -m http.server 8000 > /tmp/atelie-http.log 2>&1 &
@@ -75,6 +81,7 @@ jobs:
             sleep 1
           done
           timeout 25m node tests/pelos-exportacao.cjs
+          node tests/galeria-reconstrucao.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

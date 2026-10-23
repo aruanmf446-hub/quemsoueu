@@ -14,6 +14,27 @@ const groomMaterials=new WeakMap();
 const clamp=THREE.MathUtils.clamp,step=THREE.MathUtils.smoothstep,PI=Math.PI;
 const union=(a,b,k=.18)=>{const h=Math.max(k-Math.abs(a-b),0)/k;return Math.min(a,b)-h*h*k*.25};
 const ellipse=(p,r)=>(x,y,z)=>(Math.hypot((x-p.x)/r.x,(y-p.y)/r.y,(z-p.z)/r.z)-1)*Math.min(r.x,r.y,r.z);
+// Projeta folículos na superfície esculpida, em vez de estimar um cilindro.
+// O primeiro anel fica enterrado: tampas planas não aparecem entre os tufos.
+function surfacePoint(point,field,pad=0,outward=null){
+ const p=point.clone(),n=V(),h=.002;
+ for(let i=0;i<36;i++){
+  const d=field(p.x,p.y,p.z);n.set(field(p.x+h,p.y,p.z)-field(p.x-h,p.y,p.z),field(p.x,p.y+h,p.z)-field(p.x,p.y-h,p.z),field(p.x,p.y,p.z+h)-field(p.x,p.y,p.z-h));
+  if(n.lengthSq()<1e-12)break;n.normalize();if(Math.abs(d)<.0001)break;p.addScaledVector(n,-d*.9);
+ }
+ return p.addScaledVector(outward?.clone().normalize()||n,pad);
+}
+function attachedQuill(field,start,end,width,depth,bend,feather,outward,projectTip=true){
+ const n=outward.clone().normalize(),a=surfacePoint(start,field,-Math.max(.027,depth*1.3),n),b=projectTip?surfacePoint(end,field,.012,n):end,h=.002;
+ const gradient=V(field(a.x+h,a.y,a.z)-field(a.x-h,a.y,a.z),field(a.x,a.y+h,a.z)-field(a.x,a.y-h,a.z),field(a.x,a.y,a.z+h)-field(a.x,a.y,a.z-h)).normalize();
+ let g,max;
+ for(let attempt=0;attempt<6;attempt++){
+  g=quill(a,b,width,depth,bend,feather,n);const p=g.attributes.position;max=-Infinity;
+  for(let i=0;i<=20;i++)max=Math.max(max,field(p.getX(i),p.getY(i),p.getZ(i)));
+  if(max<-.010)break;if(attempt<5)g.dispose();a.addScaledVector(gradient,-(max+.014)*1.35);
+ }
+ g.userData.rootSurfaceMax=max;return g;
+}
 function material(name,color,metal=0){const m=new THREE.MeshPhysicalMaterial({name,color});m.userData.surfaceKind=metal?'metal':/(^|_)gem2?($|_)/i.test(name)?'gem':/couro|leather/i.test(name)?'leather':/fur|pelagem|plum|feather|pena/i.test(name)?'fur':/fabric|cloth|tecido|calca/i.test(name)?'fabric':'polymer';return finishMaterial(m,metal?'metal':'fabric')}
 function mesh(parent,name,geo,mat){
  if(/eye|iris|pupil|cornea|olho|palpebra/i.test(name+' '+mat.name)){mat=mat.clone();mat.normalMap=null;mat.roughnessMap=null}
@@ -42,34 +63,45 @@ export function buildCompanion(P,opts={}){
  const coated=fur.clone();coated.name='Pelagem_esculpida';coated.color.set('#ffffff');coated.vertexColors=true;const strands=fur.clone();strands.name='Pelagem_mechas';strands.vertexColors=true;const paleStrands=light.clone();paleStrands.name='Pelagem_clara_mechas';paleStrands.vertexColors=true;
  if(wolf){
   // Feneco: testa cheia e focinho compacto. Lobo: arcadas e maçãs largas, focinho firme.
-  const skull=ellipse(V(0,fennec?.30:.23,-.06),V(fennec?.680:.800,fennec?.70:.64,fennec?.64:.66)),muzzle=ellipse(V(0,fennec?-.115:-.165,fennec?.49:.56),V(fennec?.330:.455,fennec?.250:.31,fennec?.400:.60)),cheeks=[-1,1].map(s=>ellipse(V(s*(fennec?.395:.475),fennec?-.07:-.15,.27),V(fennec?.300:.370,fennec?.32:.32,.37)));
+  const skull=ellipse(V(0,fennec?.31:.245,-.075),V(fennec?.705:.815,fennec?.715:.66,fennec?.65:.68)),muzzle=ellipse(V(0,fennec?-.105:-.16,fennec?.465:.545),V(fennec?.315:.435,fennec?.235:.285,fennec?.385:.565));
+  const cheeks=[-1,1].map(s=>ellipse(V(s*(fennec?.405:.475),fennec?-.055:-.115,.315),V(fennec?.315:.385,fennec?.315:.33,.35))),browMass=[-1,1].map(s=>ellipse(V(s*eyeX,eyeY+.185,.415),V(fennec?.27:.315,fennec?.145:.165,.235))),whiskerPads=[-1,1].map(s=>ellipse(V(s*(fennec?.125:.17),-.16,fennec?.665:.79),V(fennec?.19:.245,.15,fennec?.19:.245)));
   const sockets=[-1,1].map(s=>ellipse(V(s*eyeX,eyeY,.57),V(eyeR*1.06,eyeR*.98,.24)));
-  const sdf=(x,y,z)=>{let d=union(skull(x,y,z),muzzle(x,y,z),.19);for(const f of cheeks)d=union(d,f(x,y,z),.18);for(const f of sockets)d=Math.max(d,-f(x,y,z));return d};
+  const sdf=(x,y,z)=>{let d=union(skull(x,y,z),muzzle(x,y,z),.20);for(const f of cheeks)d=union(d,f(x,y,z),.19);for(const f of browMass)d=union(d,f(x,y,z),.13);for(const f of whiskerPads)d=union(d,f(x,y,z),.16);for(const f of sockets)d=-union(-d,f(x,y,z),.045);return d};
   const frontAt=(x,y)=>{let z=1.6;for(let i=0;i<90;i++){const d=sdf(x,y,z);if(d<.0001)break;z-=Math.max(.0001,d*.85)}return z};
   const onFace=(points,pad=.005)=>points.map(p=>V(p.x,p.y,frontAt(p.x,p.y)+pad));
   mesh(face,'Malha_rosto',paint(smoothCloth(sdfMesh(sdf,{x:1.1,y0:-.65,y1:1.03,z0:-.77,z1:1.30},.021),2),fur.color,light.color,'face'),coated);
   for(const side of [-1,1]){
-   ear(face,side,fur,pink,fennec,light);const cheekFur=[],browFur=[];
-   for(let row=0;row<3;row++)for(let i=0;i<8;i++){const t=i/7,p=V(side*(.38+.10*row+.08*Math.sin(PI*t)),.18-t*.57,.37-row*.10);cheekFur.push(quill(p,p.clone().add(V(side*(.22+.05*row),-.13-.1*t,-.005)),.054,.025,.035))}
+   ear(face,side,fur,pink,fennec,light);const cheekFur=[];
+   for(let row=0;row<3;row++)for(let i=0;i<6;i++){
+    const t=(i+.25*(row%2))/6,p=V(side*(.40+.080*row),.13-t*.35,.35-row*.07),variation=.93+.10*Math.sin(i*2.41+row*1.7),end=p.clone().add(V(side*(.08+.020*row)*variation,-(.08+.045*t)*variation,-.075));
+    cheekFur.push(attachedQuill(sdf,p,end,.047+.004*Math.sin(i),.018,.018,false,V(side*.78,.10,.62)));
+   }
    mesh(face,'Fourrure_bocheches',mergeVolumes(cheekFur),paleStrands);
-   for(let i=0;i<8;i++)browFur.push(quill(V(side*(.15+i*.045),.52+.035*Math.sin(i),.30),V(side*(.23+i*.049),.64+.035*Math.sin(i),.30),.045,.022,.02));
-   mesh(face,'Pelagem_sobrancelha',mergeVolumes(browFur),strands);
-   mesh(face,'Mascara_olho_clara',tube([V(side*.12,.35,.60),V(side*.23,.48,.57),V(side*.43,.47,.52),V(side*.54,.36,.48)],.034),light);
+   // A sobrancelha animada já define esta região. Removidos os tufos e a
+   // antiga barra clara sobrepostos, cujas pontas atravessavam a testa.
   }
-  const nose=new THREE.Shape();nose.moveTo(-.15,.045);nose.quadraticCurveTo(0,.105,.15,.045);nose.quadraticCurveTo(.15,-.025,.03,-.12);nose.quadraticCurveTo(0,-.15,-.03,-.12);nose.quadraticCurveTo(-.15,-.025,-.15,.045);const ng=new THREE.ExtrudeGeometry(nose,{depth:.065,bevelEnabled:true,bevelSize:.025,bevelThickness:.020,bevelSegments:5,curveSegments:32});ng.scale(fennec?.78:1.12,fennec?.82:1,1);ng.translate(0,-.095,0);const np=ng.attributes.position;for(let i=0;i<np.count;i++)np.setZ(i,np.getZ(i)+frontAt(np.getX(i),np.getY(i))+.006);ng.computeVertexNormals();mesh(face,'Nariz',ng,black);
+  // Cartilagem arredondada: o focinho recebe um nariz esculpido contínuo,
+  // sem a tampa triangular plana do antigo extrudado.
+  const noseWidth=fennec?.119:.175,noseHeight=fennec?.095:.112;
+  const ng=new THREE.SphereGeometry(1,48,32),np=ng.attributes.position;
+  for(let i=0;i<np.count;i++){
+   const x=np.getX(i),y=np.getY(i),z=np.getZ(i),pinch=.78+.22*THREE.MathUtils.smoothstep(y,-.8,.4),xx=x*noseWidth*pinch,yy=-.112+y*noseHeight,front=frontAt(xx,yy);
+   np.setXYZ(i,xx,yy,front+.025+z*.068+.018*Math.max(0,y));
+  }
+  ng.computeVertexNormals();mesh(face,'Nariz',ng,black);
   for(const side of [-1,1]){const x=side*(fennec?.073:.106);mesh(face,'Narina_focinho',orb(V(x,-.08,frontAt(x,-.08)+.075),.023,V(1,.55,.35)),pupil)}
   mesh(face,'Sulco_focinho',tube(onFace([V(0,-.22),V(0,-.27),V(0,-.31)]),.008),black);
   for(const side of [-1,1]){const smile=[];for(let i=0;i<=32;i++){const t=i/32;smile.push(V(side*.34*t,-.31-.035*Math.sin(PI*t)+(fennec?.055:.015)*t))}mesh(face,'Sorriso',tube(onFace(smile),.008),black);for(let i=0;i<6;i++){const x=side*(.13+.045*(i%3)),y=-.21-.042*Math.floor(i/3);mesh(face,'Ponto_bigode',orb(V(x,y,frontAt(x,y)+.004),.006),black)}for(let i=0;i<3;i++){const x=side*.28,y=-.22-i*.035,z=frontAt(x,y);mesh(face,'Bigode_fino',tube([V(x,y,z),V(side*.50,y+.02,z+.04),V(side*.69,y-.02,z+.01)],.002),light)}}
   const locks=[];for(let layer=0;layer<2;layer++)for(let i=-4;i<=4;i++)locks.push(quill(V(i*.09,.63+layer*.035,.0-layer*.16),V(i*.11+.06,.97+.10*(1-Math.abs(i)/5),-.13-layer*.18),.075,.036,.085));mesh(face,'Topete_pelagem',mergeVolumes(locks),strands);
  }else{
-  const skull=ellipse(V(0,.23,-.03),V(.76,.79,.69)),cheek=ellipse(V(0,-.26,.25),V(.62,.36,.47));
-  mesh(face,'Cranio',smoothCloth(sdfMesh((x,y,z)=>union(skull(x,y,z),cheek(x,y,z),.20),{x:1.05,y0:-.79,y1:1.04,z0:-.8,z1:.87},.024),2),fur);
+  const skull=ellipse(V(0,.23,-.03),V(.76,.79,.69)),cheek=ellipse(V(0,-.26,.25),V(.62,.36,.47)),faceField=(x,y,z)=>union(skull(x,y,z),cheek(x,y,z),.20);
+  mesh(face,'Cranio',smoothCloth(sdfMesh(faceField,{x:1.05,y0:-.79,y1:1.04,z0:-.8,z1:.87},.024),2),fur);
   // Máscara de osso esculpida, com órbitas vazadas e bordas arredondadas verdadeiras.
   const bone=ellipse(V(0,.36,.505),V(.75,.60,.225)),sculpt=[ellipse(V(0,.22,.655),V(.135,.40,.175)),...[-1,1].flatMap(side=>[ellipse(V(side*.23,.55,.615),V(.24,.12,.15)),ellipse(V(side*.47,.545,.565),V(.22,.12,.13)),ellipse(V(side*.60,.13,.50),V(.155,.305,.17))])],cuts=[...[-1,1].map(s=>ellipse(V(s*.32,.23,.67),V(.255,.275,.39))),ellipse(V(0,-.14,.67),V(.24,.31,.40))];
-  const relief=(x,y,z)=>sculpt.reduce((d,f)=>union(d,f(x,y,z),.055),bone(x,y,z));const plate=(x,y,z)=>cuts.reduce((d,f)=>Math.max(d,-f(x,y,z)),relief(x,y,z));
+  const relief=(x,y,z)=>sculpt.reduce((d,f)=>union(d,f(x,y,z),.055),bone(x,y,z));const plate=(x,y,z)=>cuts.reduce((d,f)=>-union(-d,f(x,y,z),.024),relief(x,y,z));
   const boneFront=(x,y)=>{let z=1.15;for(let i=0;i<70;i++){const d=relief(x,y,z);if(d<.0002)break;z-=Math.max(.002,d*.8);if(z<.2)return .45}return z};
   const boneMat=light.clone();boneMat.name='Osso_mascara';boneMat.userData.surfaceKind='polymer';boneMat.vertexColors=true;boneMat.roughness=.49;boneMat.clearcoat=.06;
-  const boneGeo=grain(smoothCloth(sdfMesh(plate,{x:.86,y0:-.43,y1:1.04,z0:.23,z1:.96},.011),4),.055),bp=boneGeo.attributes.position,bn=boneGeo.attributes.normal,bc=boneGeo.attributes.color;
+  const boneGeo=grain(smoothCloth(sdfMesh(plate,{x:.86,y0:-.43,y1:1.04,z0:.23,z1:.96},.009),4),.055),bp=boneGeo.attributes.position,bn=boneGeo.attributes.normal,bc=boneGeo.attributes.color;
   for(let i=0;i<bp.count;i++){const x=bp.getX(i),y=bp.getY(i),z=bp.getZ(i),orbit=Math.hypot((Math.abs(x)-.32)/.255,(y-.23)/.275),cavity=Math.exp(-(((orbit-1.03)/.12)**2))*.085,underBrow=Math.exp(-(((Math.abs(x)-.31)/.31)**2)-((y-.43)/.10)**2)*.055,edge=.94+.06*Math.max(0,bn.getZ(i)),hi=.025*Math.exp(-((x/.12)**2)-((y-.38)/.38)**2),factor=edge-cavity-underBrow+hi;for(let k=0;k<3;k++)bc.array[i*3+k]*=factor}
   mesh(mask,'Mascara_osso',boneGeo,boneMat);
   for(const side of [-1,1]){
@@ -83,9 +115,9 @@ export function buildCompanion(P,opts={}){
   const cheekFeathers=[],crest=[],scalp=[];
   for(const side of [-1,1])for(let row=0;row<4;row++)for(let i=0;i<6;i++){const p=V(side*(.47+row*.036),.08-i*.078,.17-row*.085);cheekFeathers.push(quill(p,p.clone().add(V(side*.21,-.21-.055*row,-.07)),.10,.025,.04,true))}
   mesh(face,'Plumagem_face',mergeVolumes(cheekFeathers),strands);
-  const down=[];for(let layer=0;layer<2;layer++)for(let row=0;row<3;row++)for(let i=0;i<35;i++){const a=(i+.33*(row%2))/35*2*PI,r=.65+layer*.027,p=V(Math.sin(a)*r,-.29-row*.067-layer*.025,-.04+Math.cos(a)*r),end=p.clone().add(V(Math.sin(a)*(.040+layer*.012),-.19-.027*Math.sin(i*2.1+row),Math.cos(a)*.052));down.push(quill(p,end,.032,.011,.023,false))}mesh(face,'Rufo_macío_queixo',mergeVolumes(down),strands);
+  const down=[];for(let layer=0;layer<2;layer++)for(let row=0;row<3;row++)for(let i=0;i<35;i++){const a=(i+.33*(row%2))/35*2*PI,r=.65+layer*.027,p=V(Math.sin(a)*r,-.29-row*.067-layer*.025,-.04+Math.cos(a)*r),end=p.clone().add(V(Math.sin(a)*(.040+layer*.012),-.19-.027*Math.sin(i*2.1+row),Math.cos(a)*.052));down.push(attachedQuill(faceField,p,end,.027,.009,.014,false,V(Math.sin(a),.04,Math.cos(a)),false))}mesh(face,'Rufo_macío_queixo',mergeVolumes(down),strands);
   for(let row=0;row<3;row++)for(let i=-4;i<=4;i++){const p=V(i*.09,.73-row*.025,-.03-row*.16),w=Math.sin(i*7.1+row*13);crest.push(quill(p,V(i*.11+.08*w,1.04+.11*Math.sin(i*2.1+row),-.19-row*.19),.09,.032,.11,true))}mesh(face,'Crista',mergeVolumes(crest),strands);
-  for(let row=0;row<8;row++)for(let i=0;i<22;i++){const y=.78-row*.137,a=1.01+(i/21)*(2*PI-2.02),r=Math.sqrt(Math.max(.03,1-((y-.16)/.81)**2)),p=V(Math.sin(a)*.823*r,y,-.03+Math.cos(a)*.68*r),end=p.clone().add(V(Math.sin(a)*.09,-.19,Math.cos(a)*.09));scalp.push(quill(p,end,.075,.021,.027,true))}mesh(face,'Plumagem_cabeca',mergeVolumes(scalp),strands);
+  for(let row=0;row<8;row++)for(let i=0;i<22;i++){const y=.78-row*.137,a=1.01+(i/21)*(2*PI-2.02),r=Math.sqrt(Math.max(.03,1-((y-.16)/.81)**2)),p=V(Math.sin(a)*.823*r,y,-.03+Math.cos(a)*.68*r),end=p.clone().add(V(Math.sin(a)*.09,-.19,Math.cos(a)*.09));scalp.push(attachedQuill(faceField,p,end,.067,.018,.022,true,V(Math.sin(a),.05,Math.cos(a))))}mesh(face,'Plumagem_cabeca',mergeVolumes(scalp),strands);
   const moon=crescent(.15,.018);moon.rotateZ(-.24);moon.translate(0,.70,0);const mp=moon.attributes.position;for(let i=0;i<mp.count;i++){const x=mp.getX(i),y=mp.getY(i);mp.setZ(i,boneFront(x,y)+.005+mp.getZ(i)*.55)}moon.computeVertexNormals();mesh(mask,'Lua_mascara',moon,material('Tinta_rubi','#9c263b'));
  }
 
@@ -139,16 +171,16 @@ export function buildCompanion(P,opts={}){
   const root=tp.length/3;tp.push(...tail[0].toArray(),...tail[3].toArray());fur.color.toArray(tc,tc.length);(fennec?black.color:light.color).toArray(tc,tc.length);for(let j=0;j<nc;j++)ti.push(root,j+1,j,root+1,nr*(nc+1)+j,nr*(nc+1)+j+1);
   const tg=new THREE.BufferGeometry();tg.setAttribute('position',new THREE.Float32BufferAttribute(tp,3));tg.setAttribute('color',new THREE.Float32BufferAttribute(tc,3));tg.setIndex(ti);tg.computeVertexNormals();smoothRingSeams(tg,nr+1,nc);const tm=fur.clone();tm.color.set('#ffffff');tm.vertexColors=true;mesh(body,'Cauda',tg,tm);
   const mane=[],paleMane=[],flanks=[],tailFur=[],tailTip=[];
-  for(let row=0;row<6;row++)for(let i=0;i<29;i++){const a=(i+.27*Math.sin(row*3+i))/29*2*PI,r=.46+row*.024,c=V(Math.sin(a)*r,-.39-row*.13+.018*Math.sin(i*3.1),Math.cos(a)*r-.08),end=c.clone().add(V(Math.sin(a)*(.16+.02*row),-.29-.035*Math.sin(i*1.3),Math.cos(a)*.13));(Math.cos(a)>.1?paleMane:mane).push(quill(c,end,.056,.027,.043))}
-  for(const side of [-1,1])for(let row=0;row<4;row++)for(let i=0;i<18;i++){const t=i/17,zz=-.30-t*1.65,c=V(side*(.48+.07*Math.sin(t*PI)),-.98-row*.15,zz);flanks.push(quill(c,c.clone().add(V(side*.06,-.20,-.13)),.052,.022,.025))}
+  for(let row=0;row<5;row++)for(let i=0;i<23;i++){const a=(i+.43*(row%2)+.11*Math.sin(i*2.1+row))/23*2*PI,r=.46+row*.028,c=V(Math.sin(a)*r,-.39-row*.145+.017*Math.sin(i*3.1),Math.cos(a)*r-.08),variation=.91+.15*Math.sin(i*1.7+row*2.6),end=c.clone().add(V(Math.sin(a)*(.105+.014*row),-(.29+.055*Math.sin(i*1.3))*variation,Math.cos(a)*.09));(Math.cos(a)>.1?paleMane:mane).push(attachedQuill(sdf,c,end,.066+.008*Math.sin(i*2.2),.020,.020,false,V(Math.sin(a),.10,Math.cos(a))))}
+  for(const side of [-1,1])for(let row=0;row<4;row++)for(let i=0;i<18;i++){const t=(i+.35*(row%2))/18,zz=-.30-t*1.65,c=V(side*(.48+.07*Math.sin(t*PI)),-.98-row*.15+.016*Math.sin(i*2.3),zz);flanks.push(attachedQuill(sdf,c,c.clone().add(V(side*.035,-.18-.025*Math.sin(i*1.7),-.15)),.057,.016,.015,false,V(side,.05,0)))}
   for(let row=1;row<17;row++)for(let i=0;i<17;i++){const t=row/18,k=Math.round(t*nr),a=(i+.4*(row%2))/17*PI*2,c=curve.getPointAt(t),rr=.42*Math.sin(PI*(.14+.86*t))**.63;c.addScaledVector(frames.normals[k],Math.cos(a)*rr*.97).addScaledVector(frames.binormals[k],Math.sin(a)*rr*.91);const end=curve.getPointAt(Math.min(.999,t+.055)).addScaledVector(frames.normals[k],Math.cos(a)*(rr+.014)).addScaledVector(frames.binormals[k],Math.sin(a)*(rr*.94+.014));(t>.64?tailTip:tailFur).push(quill(c,end,.030,.014,.012))}
 
   mesh(body,'Criniere',mergeVolumes(mane),strands);mesh(body,'Criniere_claire',mergeVolumes(paleMane),paleStrands);mesh(body,'Pelage_flancs',mergeVolumes(flanks),strands);mesh(body,'Pelage_cauda',mergeVolumes(tailFur),strands);const tipMat=(fennec?black:light).clone();tipMat.vertexColors=true;tipMat.roughness=.86;tipMat.clearcoat=0;mesh(body,'Pelage_ponta_cauda',mergeVolumes(tailTip),tipMat);
  }else{
   const claw=black.clone();claw.name='Garras';claw.roughness=.62;claw.clearcoat=.1;
-  const breast=ellipse(V(0,-1.03,-.13),V(.71,.86,.63)),shoulder=ellipse(V(0,-.62,-.23),V(.70,.56,.54));mesh(body,'Malha_corpo',smoothCloth(sdfMesh((x,y,z)=>union(breast(x,y,z),shoulder(x,y,z),.20),{x:.97,y0:-2.01,y1:.06,z0:-.98,z1:.71},.028),2),fur);
+  const breast=ellipse(V(0,-1.03,-.13),V(.71,.86,.63)),shoulder=ellipse(V(0,-.62,-.23),V(.70,.56,.54)),bodyField=(x,y,z)=>union(breast(x,y,z),shoulder(x,y,z),.20);mesh(body,'Malha_corpo',smoothCloth(sdfMesh(bodyField,{x:.97,y0:-2.01,y1:.06,z0:-.98,z1:.71},.028),2),fur);
   const chestFeathers=[],backFeathers=[],wingFeathers=[],tailFeathers=[];
-  for(let row=0;row<12;row++)for(let i=0;i<26;i++){const a=(i+.5*(row%2))/26*PI*2,y=-.43-row*.114,r=.61*Math.sqrt(Math.max(.1,1-((y+1.05)/.95)**2)),p=V(Math.sin(a)*r,y,-.13+Math.cos(a)*r*.91),end=p.clone().add(V(Math.sin(a)*.075,-.215,Math.cos(a)*.073));(Math.cos(a)>.1?chestFeathers:backFeathers).push(quill(p,end,.068+row*.0015,.020,.030,true))}
+  for(let row=0;row<12;row++)for(let i=0;i<26;i++){const a=(i+.5*(row%2))/26*PI*2,y=-.43-row*.114,r=.61*Math.sqrt(Math.max(.1,1-((y+1.05)/.95)**2)),p=V(Math.sin(a)*r,y,-.13+Math.cos(a)*r*.91),end=p.clone().add(V(Math.sin(a)*.075,-.215,Math.cos(a)*.073));(Math.cos(a)>.1?chestFeathers:backFeathers).push(attachedQuill(bodyField,p,end,.068+row*.0015,.020,.025,true,V(Math.sin(a),.07,Math.cos(a)),false))}
   for(const side of [-1,1]){
    mesh(body,'Base_asa',orb(V(side*.56,-1.03,-.16),.53,V(.38,1.14,.83)),fur);
    for(let layer=0;layer<4;layer++)for(let j=0;j<8;j++){const p=V(side*(.54+layer*.032),-.52-j*.085,.25-layer*.10),end=V(side*(.78+layer*.065),-1.03-j*.11-layer*.10,-.05-layer*.12);wingFeathers.push(quill(p,end,.11+layer*.012,.027,.05,true))}

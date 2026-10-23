@@ -32,11 +32,11 @@ const root=path.resolve(__dirname,'..'),out=process.env.ATELIE_RENDERS||path.joi
  await page.locator('#hairColors button[title="Ruivo"]').click();await page.waitForFunction(()=>!document.getElementById('status').textContent.includes('…'));
  assert.deepEqual(await page.evaluate(()=>({hair:window.__atelie.lookObj().hair.material.color.getHexString(),beard:window.__atelie.group().getObjectByName('Beard_Locks').material.color.getHexString()})),{hair:'b4441c',beard:'b4441c'});
  // Quatro caminhos distintos e o penteado mais denso no Worker real.
- for(const id of process.env.ATELIE_WORKER?.split(',')||['nico_inventor','old_king','feminine_bold','cactus_soldier','cowboy_on_fennec']){
+ for(const id of process.env.ATELIE_WORKER?.split(',')||['nico_inventor','nana_explorer','old_king','feminine_bold','cactus_soldier','cowboy_on_fennec']){
   await page.evaluate(id=>window.__atelie.setPreset(id),id);
   await page.evaluate(()=>{const e=window.__atelie.editor;e.previews.paused=false;e.select('expressions','ready')});
   await page.locator('#exprs [data-expr="feliz"] [data-ready="true"] img').waitFor();await page.locator('#exprs [data-expr="feliz"] img').evaluate(img=>img.decode());
   assert.equal(await page.evaluate(()=>window.__atelie.editor.previews.stats().failed),false);await page.evaluate(()=>window.__atelie.editor.previews.pause());console.log('Worker',id);
  }
- assert.deepEqual(errors,[]);fs.writeFileSync(path.join(out,'relatorio.json'),JSON.stringify({reports,worker:process.env.ATELIE_WORKER?.split(',')||['nico_inventor','old_king','feminine_bold','cactus_soldier','cowboy_on_fennec'],errors},null,2));
+ assert.deepEqual(errors,[]);fs.writeFileSync(path.join(out,'relatorio.json'),JSON.stringify({reports,worker:process.env.ATELIE_WORKER?.split(',')||['nico_inventor','nana_explorer','old_king','feminine_bold','cactus_soldier','cowboy_on_fennec'],errors},null,2));
 }finally{await browser.close()}})().catch(e=>{console.error(e);process.exitCode=1});

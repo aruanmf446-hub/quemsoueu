@@ -1,8 +1,8 @@
 // Prévias locais: imagens procedurais em segundo plano, sem mudar a cena principal.
 import {FRONTIER_CHARACTERS,FRONTIER_COMPANIONS} from './frontier.js';
 import {FOREST_CHARACTERS} from './forest.js';
-import {previewChoice} from './preview-spec.js';
-const VERSION='menu-v13-pelos-acabamento';
+import {previewChoice,previewSize} from './preview-spec.js';
+const VERSION='menu-v14-escultura-fidelidade';
 const FRONTIER=new Set([...FRONTIER_CHARACTERS.map(c=>c.id),...FRONTIER_COMPANIONS]);
 const FOREST=new Set(FOREST_CHARACTERS.map(c=>c.id));
 const LUNAR=new Set(['nana_explorer','moon_guardian','nico_inventor','ruby_sorceress','paysandu_wolf','ruby_raven']);
@@ -30,11 +30,11 @@ export class PreviewCatalog {
       }
       const spec=JSON.parse(button.dataset.preview);
       // Os personagens mostram o visual salvo de cada um; as outras opções usam a skin atual.
-      const request={...context,spec};if(spec.kind==='character')request.look=window.__atelie.savedLook(spec.value);
+      const size=frame.getBoundingClientRect(),request={...context,spec,imageSize:previewSize(size.width,size.height,globalThis.devicePixelRatio)};if(spec.kind==='character')request.look=window.__atelie.savedLook(spec.value);
       // O enquadramento novo dos brincos invalida somente as quatro miniaturas desse slot.
       const alvo=spec.kind==='character'?spec.value:context.id;
       const versao=alvo==='chili_bandit'?'boca-aberta-2':FRONTIER.has(alvo)?'deserto-heroi-4':FOREST.has(spec.kind==='character'?spec.value:context.id)?'floresta-heroi-4':LUNAR.has(spec.kind==='character'?spec.value:context.id)?'reino-lua-heroi-3':spec.kind==='accessory'&&spec.slot==='ears'?'menu-v2-orelhas':VERSION;
-      const key=VERSION+':'+versao+':'+stable(previewChoice(request));button._preview={key,request};
+      const key=VERSION+':'+versao+':'+stable({...previewChoice(request),imageSize:request.imageSize});button._preview={key,request};
       if(frame.dataset.key!==key){frame.dataset.key=key;frame.replaceChildren(Object.assign(document.createElement('div'),{className:'preview-wait',textContent:'Gerando prévia…'}));frame.classList.add('loading');delete frame.dataset.ready}
       if(this.cache.has(key))this.display(button,key,this.cache.get(key));else this.observer.observe(button);
     }
@@ -76,9 +76,10 @@ export class PreviewCatalog {
       }
       try{await import(await load(data.entry));urls.forEach(URL.revokeObjectURL);postMessage({type:'ready'})}catch(error){postMessage({type:'fatal',message:error.message})}
     };`;
-    const url=URL.createObjectURL(new Blob([bootstrap],{type:'text/javascript'}));this.worker=new Worker(url,{type:'module',name:'Prévias do ateliê'});this.bootstrapURL=url;
-    this.worker.onerror=e=>{e.preventDefault();this.fail(e.message)};
-    this.worker.onmessage=({data})=>{
+    const url=URL.createObjectURL(new Blob([bootstrap],{type:'text/javascript'})),worker=new Worker(url,{type:'module',name:'Prévias do ateliê'});this.worker=worker;this.bootstrapURL=url;
+    worker.onerror=e=>{e.preventDefault();if(this.worker===worker)this.fail(e.message)};
+    worker.onmessage=({data})=>{
+      if(this.worker!==worker)return;
       if(data.type==='ready'){URL.revokeObjectURL(this.bootstrapURL);this.ready=true;this.pump();return}
       if(data.type==='fatal'){this.fail(data.message);return}
       const job=this.running;this.running=null;

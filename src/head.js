@@ -106,7 +106,9 @@ function makeSDF(P) {
   const [cy, cz, crx, cry, crz, crzB = crz, cn0 = 2] = P.cran, cn = sqC(cn0), [nr, nty, ntz, nby, nbz, nk] = P.neck;
   const LA = P.lathe && makeLathe(P.lathe);
   const L = LA ? null : makeLoft(P.loft), kf = LA ? 0 : P.loft.k ?? .16, sl = { a: 0, zf: 0, zb: 0 }, oc = P.occ;
-  const cut = nby + .06;
+  // A tampa da cabeça fica dentro do alargamento do corpo. Cortá-la acima
+  // da base deixava o arredondamento dessa tampa visível como um anel.
+  const cut = P.sculptedFace&&!P.lathe?nby-.10:nby+.06;
   // esferas envolventes: se o ponto está longe de um volume, ele não altera a união suave → pula (bem mais rápido)
   const bs = (x, y, z, r) => ({ x, y, z, r }), far = (b, ax, y, z, d, k) => { const dx = ax - b.x, dy = y - b.y, dz = z - b.z; return sqrt(dx * dx + dy * dy + dz * dz) - b.r > d + k + .2 };
   const segB = (ax, ay, az, ra, bx2, by2, bz2, rb) => bs((ax + bx2) / 2, (ay + by2) / 2, (az + bz2) / 2, Math.hypot(bx2 - ax, by2 - ay, bz2 - az) / 2 + Math.max(ra, rb));
@@ -273,17 +275,22 @@ function makeFaceField(P, eyes) {
       if(P.sculptedNose){
         // Ponte larga se funde com ponta e asas elípticas. Derivadas contínuas evitam
         // o antigo bico estreito, com degraus na base e na ponta do nariz.
-        const bridge=P.noseH*Math.pow(qc,1.25)*gau(below,P.tipR*.95)*gau(x,(.052+.030*qc)*nW);
+        // A raiz se dissolve na glabela. Uma ponte que cresce até a ponta
+        // somava dois volumes no mesmo lugar e formava uma cunha comprida.
+        const bridgeEnd=1-sstep(.68,1.18,q),bridge=P.noseH*Math.pow(qc,1.10)*bridgeEnd*gau(below,P.tipR*.8)*gau(x,(.043+.027*qc)*nW);
         // A ponta tem raios independentes: o perfil não precisa herdar a mesma
         // curvatura estreita da ponte. As asas se fundem sem uma quina na base.
         const [tipX,tipYScale,tipOffset]=P.noseTipAspect||[1,1.12,.018],wing=P.noseWingRadius||[.055,.051];
         const tipR2=(x/(P.tipR*nW*tipX))**2+((y-tipY-tipOffset)/(P.tipR*tipYScale))**2;
         // O termo radial reduz a curvatura da ponta sem recortar uma calota:
         // volume e derivadas continuam suaves até a ponte e as asas.
-        const tipShape=Math.exp(-tipR2)*(1+(P.noseTipFullness||0)*tipR2);
-        const tip=(P.tipH+P.noseH*.34)*tipShape;
+        const tipShape=Math.exp(-tipR2*1.30)*(1+(P.noseTipFullness||0)*.55*tipR2);
+        const tip=(P.tipH+P.noseH*.14)*tipShape;
         const wings=P.alaeH*gau(ax-P.alaeX*nW,wing[0]*nW)*gau(y-tipY+.018,wing[1]);
-        dz+=smaxS(bridge,tip,.035)-.035*.25+wings+(P.bridgeBump||0)*gau(q-.53,.25)*gau(x,bw*1.3);
+        // Ponta e asa têm volumes próprios, fundidos por máximo suave em vez
+        // de empilhar uma asa inteira sobre a ponta. A columela fica curta.
+        const tipAndAlar=smaxS(tip,wings,.014)-.0035;
+        dz+=smaxS(bridge,tipAndAlar,.025)-.00625+(P.bridgeBump||0)*gau(q-.53,.25)*gau(x,bw*1.3);
         const n2=((ax-.052*nW)/(.024*nW))**2+((y-tipY+.051)/.016)**2;
         nostril=Math.exp(-n2*1.4)*.65;dz-=.012*nostril;
         ao+=.12*gau(ax-.104*nW,.027)*gau(y-tipY+.022,.045);
@@ -315,11 +322,15 @@ function makeFaceField(P, eyes) {
       // espessuras ao longo da largura: lábio de cima fino com arco do cupido macio; de baixo cheio e arredondado, afinando nos cantos
       const thU = P.lipU * Math.pow(Math.max(0, 1 - Math.pow(tc, 2.2)), .8) * (1 + P.bow * (.35 * gau(tc - .28, .14) - .28 * gau(tc, .07)));
       const thL = P.lipL * Math.pow(Math.max(0, 1 - Math.pow(tc, 1.8)), .75) * (1 + .12 * gau(tc - .32, .22));
+      const seamProjection=P.lipH*.78*Math.pow(Math.max(0,1-tc*tc),.85);
       if (y >= ym) {
         // lábio de cima: plano inclinado para a frente, mais saliente perto da borda; "rolinho" claro na borda (vermilion)
         const v = (y - ym) / Math.max(thU, .003), sh = v < .6 ? .55 + .45 * Math.sin(Math.PI * .5 * v / .6) : exp(-(((v - .6) / .6) ** 2));
-        const upper=P.sculptedFace?gau(v-.45,.72)*sstep(-.05,.18,v):sh*sstep(-.05,.25,v);
-        dz += P.lipH * .85 * (thU / P.lipU) * upper * xf + P.lipH * .06 * gau(v - 1.0, .12) * xf;
+        // O vermelhão tem uma seção redonda que já encontra o outro lábio
+        // na comissura. A antiga transição zero->pico criava duas arestas
+        // quase verticais separadas por uma incisão da mesma profundidade.
+        if(P.sculptedFace)dz+=(seamProjection*gau(v,.9)+P.lipH*.22*(thU/P.lipU)*sstep(0,.3,v)*gau(v-.38,.40))*xf;
+        else dz += P.lipH * .85 * (thU / P.lipU) * sh*sstep(-.05,.25,v) * xf + P.lipH * .06 * gau(v - 1.0, .12) * xf;
         lipU = (1 - sstep(.88, 1.2, v)) * sstep(.0015, .006, thU);
         hi += .18 * gau(v - 1.04, .1) * xf * sstep(.002, .01, thU);
       } else if (y > ymL) { // boca aberta: cavidade entre os lábios
@@ -327,25 +338,25 @@ function makeFaceField(P, eyes) {
       } else {
         // lábio de baixo: volume redondo (seção quase circular), mais cheio no centro
         const w = (ymL - y) / Math.max(thL, .003), r = clamp(1 - ((w - .45) / .75) ** 2, 0, 1);
-        const lower=P.sculptedFace?gau(w-.43,.72):r*(2-r);
-        dz += P.lipH * 1.2 * (thL / P.lipL) * lower * sstep(-.05, .2, w) * xf;
+        if(P.sculptedFace)dz+=(seamProjection*gau(w,.9)+P.lipH*.32*(thL/P.lipL)*sstep(0,.3,w)*gau(w-.38,.45))*xf;
+        else dz += P.lipH * 1.2 * (thL / P.lipL) * r*(2-r) * sstep(-.05, .2, w) * xf;
         lipL = (1 - sstep(.78, 1.22, w)) * sstep(.0015, .006, thL);
         lipHi = gau(w - .4, .2) * gau(x, mw * .4);
       }
       const lf = t < 1 ? 1 : exp(-(((t - 1) / .06) ** 2));
       const yl = clamp(y, ymL, ym); // distância à abertura (uma linha quando fechada)
-      dz -= .02 * gau(y - yl, .008 + .004 * tc) * lf;
-      line = gau(y - yl, .006 + .002 * tc) * lf;
-      const corner = gau(ax - mw * 1.0, .018) * gau(y - ymC, .02);
-      dz -= .018 * corner; ao += .6 * corner; // canto encaixado na bochecha
+      dz -= (P.sculptedFace?.004:.02) * gau(y - yl, P.sculptedFace?.006:.008 + .004 * tc) * lf;
+      line = gau(y - yl, P.sculptedFace?.0035:.006 + .002 * tc) * lf;
+      const corner = gau(ax - mw * 1.0, P.sculptedFace?.027:.018) * gau(y - ymC, P.sculptedFace?.026:.02);
+      dz -= (P.sculptedFace?.006:.018) * corner; ao += (P.sculptedFace?.22:.6) * corner; // canto encaixado na bochecha
       dz += Math.max(0, Math.min(smS, 1.4)) * .016 * gau(ax - (mw + .07), .06) * gau(y - (ymC + .03), .07);
       if (smS > .45) { // covinha curta além do canto: sorriso mais natural
-        const dm = gau(ax - (mw * 1.1 + .012), .013) * gau(y - (ymC + .012), .03) * Math.min(smS - .45, 1);
-        dz -= .012 * dm; ao += .9 * dm;
+        const dm = gau(ax - (mw * 1.1 + .012), P.sculptedFace?.026:.013) * gau(y - (ymC + .012), .03) * Math.min(smS - .45, 1);
+        dz -= (P.sculptedFace?.004:.012) * dm; ao += (P.sculptedFace?.25:.9) * dm;
       }
       const oC = MC.open(0), sul = gau(y - (mY - oC - P.lipL - .052), .03) * gau(x, mw * .85);
-      dz -= .016 * sul; ao += .4 * sul;
-      ao += .35 * gau(y - (mY - oC - P.lipL - .022), .02) * gau(x, mw * .7);
+      dz -= (P.sculptedFace?.005:.016) * sul; ao += (P.sculptedFace?.12:.4) * sul;
+      ao += (P.sculptedFace?.10:.35) * gau(y - (mY - oC - P.lipL - .022), .02) * gau(x, mw * .7);
       const band = sstep(mY + P.lipU * .9, mY + P.lipU * 1.5, y) * sstep(tipY - .03, tipY - .09, y);
       dz -= .0035 * gau(x, .024) * band; dz += .0018 * gau(ax - .032, .02) * band;
       gloss += lipU * .55 + lipL * 1.0;
@@ -428,25 +439,26 @@ function irisTexture(cols, pupil) {
   const W = 512, H = 256, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
   const c = cv.getContext('2d');
   // eixo y: do centro da pupila (topo) até a borda da íris (base). eixo x: ângulo (u≈.25 = parte de baixo do olho)
-  const p = pupil, g = c.createLinearGradient(0, 0, 0, H);
+  const p = clamp(pupil,.20,.62),g = c.createLinearGradient(0, 0, 0, H);
+  const irisLight=col(cols[0]).lerp(col('#f0dcc0'),.20).convertLinearToSRGB(),lightRGB=[irisLight.r,irisLight.g,irisLight.b].map(v=>Math.round(v*255)).join(',');
   g.addColorStop(0, '#040202'); g.addColorStop(p - .02, '#070404'); g.addColorStop(p + .03, cols[0]);
   g.addColorStop(p + .2, cols[1]); g.addColorStop(.8, cols[2]); g.addColorStop(.9, '#1c0e06'); g.addColorStop(1, '#0d0603');
   c.fillStyle = g; c.fillRect(0, 0, W, H);
   let seed = 11; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
   for (let i = 0; i < 900; i++) { // fibras radiais
     const x = rnd() * W, y0 = H * (p + .02 + rnd() * .08), y1 = H * (.55 + rnd() * .35);
-    c.strokeStyle = rnd() > .45 ? 'rgba(255,226,160,' + (.05 + rnd() * .12) + ')' : 'rgba(35,15,4,' + (.08 + rnd() * .16) + ')';
+    c.strokeStyle = rnd() > .45 ? 'rgba('+lightRGB+',' + (.04 + rnd() * .09) + ')' : 'rgba(35,15,4,' + (.08 + rnd() * .16) + ')';
     c.lineWidth = .8 + rnd() * 2.2; c.beginPath(); c.moveTo(x, y0); c.quadraticCurveTo(x + (rnd() - .5) * 8, (y0 + y1) / 2, x + (rnd() - .5) * 4, y1); c.stroke();
   }
   const ring = c.createLinearGradient(0, H * (p - .01), 0, H * (p + .14)); // colarete claro
-  ring.addColorStop(0, 'rgba(255,225,150,0)'); ring.addColorStop(.45, 'rgba(255,225,150,.32)'); ring.addColorStop(1, 'rgba(255,225,150,0)');
+  ring.addColorStop(0, 'rgba('+lightRGB+',0)'); ring.addColorStop(.45, 'rgba('+lightRGB+',.15)'); ring.addColorStop(1, 'rgba('+lightRGB+',0)');
   c.fillStyle = ring; c.fillRect(0, H * (p - .01), W, H * .15);
   // luz entrando por baixo (cáustica) e sombra da pálpebra em cima
   const lg = c.createLinearGradient(0, 0, W, 0);
-  for (let k = 0; k <= 16; k++) { const u = k / 16, v = Math.cos(2 * Math.PI * (u - .25)); lg.addColorStop(u, v > 0 ? 'rgba(255,200,120,' + (.38 * v * v).toFixed(3) + ')' : 'rgba(10,4,0,' + (.5 * v * v).toFixed(3) + ')') }
+  for (let k = 0; k <= 16; k++) { const u = k / 16, v = Math.cos(2 * Math.PI * (u - .25)); lg.addColorStop(u, v > 0 ? 'rgba('+lightRGB+',' + (.12 * v * v).toFixed(3) + ')' : 'rgba(10,4,0,' + (.35 * v * v).toFixed(3) + ')') }
   c.globalCompositeOperation = 'source-atop'; c.fillStyle = lg; c.fillRect(0, H * (p + .03), W, H * (.97 - p));
   c.globalCompositeOperation = 'source-over';
-  const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; t.wrapS = THREE.RepeatWrapping; return t;
+  const t = new THREE.CanvasTexture(cv);t.name='Iris_Radial';t.userData.pupilFraction=p;t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; t.wrapS = THREE.RepeatWrapping; return t;
 }
 
 // Pele: difusa com "wrap" colorido (luz vermelha atravessa o terminador) + rugosidade por vértice (brilho dos lábios)
@@ -744,6 +756,16 @@ export function buildHead(presetId, adj, opts = {}) {
     geo.setAttribute('position', new THREE.BufferAttribute(pos.subarray(0, NV * 3), 3)); geo.setIndex(new THREE.BufferAttribute(idx, 1));
     geo.computeVertexNormals();
     const nr = geo.attributes.normal;
+    // A grade por raios muda de origem na passagem mandíbula -> pescoço.
+    // Suas diagonais não devem virar faixas no sombreado de uma superfície
+    // lisa: abaixo da face usamos a normal do campo que gerou a superfície.
+    if(!P.lathe){
+      const e=.0025,limit=P.loft.y[0]-.055;
+      for(let i=0;i<NV;i++)if(pos[i*3+1]<limit){
+        const x=pos[i*3],y=pos[i*3+1],z=pos[i*3+2],nx=sdf(x+e,y,z)-sdf(x-e,y,z),ny=sdf(x,y+e,z)-sdf(x,y-e,z),nz=sdf(x,y,z+e)-sdf(x,y,z-e),l=Math.hypot(nx,ny,nz);
+        if(l>1e-9)nr.setXYZ(i,nx/l,ny/l,nz/l);
+      }
+    }
     { // costura e polos: normais unificadas
       const v = new THREE.Vector3();
       for (let iy = 1; iy < LAT; iy++) { const a = iy * W, b = a + LON; v.set(nr.getX(a) + nr.getX(b), nr.getY(a) + nr.getY(b), nr.getZ(a) + nr.getZ(b)).normalize(); nr.setXYZ(a, v.x, v.y, v.z); nr.setXYZ(b, v.x, v.y, v.z) }
@@ -760,6 +782,7 @@ export function buildHead(presetId, adj, opts = {}) {
       const s1 = Math.max(1, Math.round(3 * Q)), s2 = Math.max(2, Math.round(9 * Q));
       for (let i = 1; i < LAT; i++) for (let j = 0; j < W; j++) {
         const p = i * W + j; if (state[p] === 1 || state[p] === 3) continue;
+        if(!P.lathe&&pos[p*3+1]<P.loft.y[0]-.055)continue;
         const c1 = cav(i, j % LON, s1), c2 = cav(i, j % LON, s2);
         const dark = .3 * sstep(.0005, .005, c1) + .4 * sstep(.002, .016, c2), dn = sstep(-.3, -.85, nr.getY(p)) * .35;
         const lite = .1 * sstep(-.002, -.008, c1);
@@ -837,7 +860,7 @@ export function buildHead(presetId, adj, opts = {}) {
 
   // ---- olhos ----
   const scleraMat = track(new THREE.MeshPhysicalMaterial({ vertexColors: true, roughness: .35, clearcoat: .5, clearcoatRoughness: .25, name: 'Sclera' }));
-  const irisTex = track(irisTexture(P.iris, .3));
+  const irisTex = track(irisTexture(P.iris, P.irisPupil??(P.sculptedFace?.43:.3)));
   const irisMat = track(new THREE.MeshPhysicalMaterial({ map: irisTex, vertexColors: true, roughness: .55, name: 'Iris' }));
   const corneaMat = track(new THREE.MeshPhysicalMaterial({ color: 0xffffff, transparent: true, opacity: .12, roughness: .03, clearcoat: 1, clearcoatRoughness: 0, specularIntensity: 1, depthWrite: false, name: 'Cornea' }));
   const catchMat = track(new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .95, name: 'Catchlight' }));
@@ -901,7 +924,11 @@ export function buildHead(presetId, adj, opts = {}) {
         ps.push(x,y,z);c.copy(skin).lerp(blush,clamp(f.blush*(P.blushK??.5),0,.7)).lerp(lidC,clamp(f.lid*P.lidShade*.55,0,.5)).lerp(shade,clamp(f.ao*.5,0,.6));if(PA)paint(c,x,y,z,1,f);c.toArray(cs,cs.length);
         if(j<NT&&i<NU){const q=j*(NU+1)+i;if(up)ix.push(q,q+1,q+NU+1,q+1,q+NU+2,q+NU+1);else ix.push(q,q+NU+1,q+1,q+1,q+NU+1,q+NU+2)}
       }
-      const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(ps,3));g.setAttribute('color',new THREE.Float32BufferAttribute(cs,3));g.setIndex(ix);g.computeVertexNormals();fixNormals(g);
+      const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(ps,3));g.setAttribute('color',new THREE.Float32BufferAttribute(cs,3));g.setIndex(ix);g.computeVertexNormals();
+      // O anel e a pele sob ele usam a mesma derivada da superfície.
+      // Normais obtidas só dos pequenos quads do anel deixavam estrias nos
+      // cantos do olho e uma borda que parecia outra peça colada no rosto.
+      if(P.sculptedFace){const normals=g.attributes.normal;for(let i=0;i<ps.length/3;i++){const n=normalAt(ps[i*3],ps[i*3+1]);normals.setXYZ(i,n.x,n.y,n.z)}}fixNormals(g);
       const m=new THREE.Mesh(track(g),skinMat);m.name='Lid_Sculpt_'+(up?'U_':'L_')+(s<0?'L':'R');root.add(m);
     }
     { // borda inferior (linha d'água) em tom de pele

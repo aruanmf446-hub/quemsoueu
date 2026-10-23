@@ -10,7 +10,7 @@ const baseline=process.argv[2]?await import(pathToFileURL(resolve(process.argv[2
 const expected=process.env.ATELIE_REFINADOS?.split(',');
 if(expected)for(const id of expected)assert(PRESET_ORDER.includes(id),'Refino desconhecido: '+id);
 const hashes=new Map(),metrics=new Map(),changes=[];
-function face(head){return head.group.getObjectByName('Head_Skin')||head.group.getObjectByName('Rosto')||head.group.getObjectByName('Head_Shell')}
+function face(head){return head.params.kind==='robot'?head.group:head.group.getObjectByName('Head_Skin')||head.group.getObjectByName('Rosto')}
 function hashGeometry(root){const hash=createHash('sha256');root.traverse(m=>{if(m.isMesh)hash.update(Buffer.from(m.geometry.attributes.position.array.buffer))});return hash.digest('hex')}
 for(const id of PRESET_ORDER){
  const head=buildHead(id,{}, {quality:.35,export:true});
@@ -21,7 +21,7 @@ for(const id of PRESET_ORDER){
   if(!['robot','companion'].includes(PRESETS[id].kind)){
    assert.equal(root.geometry.morphAttributes.position.length,11,id+': blendshapes perdidos');const p=root.geometry.attributes.position;
    const width=y=>{let w=0;for(let i=0;i<head.fit.skinN;i++)if(Math.abs(p.getY(i)-y)<.035&&p.getZ(i)>.05)w=Math.max(w,Math.abs(p.getX(i)));return w};
-   metrics.set(id,{jaw:width(-.72),cheek:width(-.24),nose:head.fit.surfZ(0,head.params.noseTipY)});
+   metrics.set(id,{jaw:width(head.params.loft.y[0]+(head.params.mouthY-head.params.loft.y[0])*.45),cheek:width(head.params.cheekY??head.params.eyeY-.2),nose:head.fit.surfZ(0,head.params.noseTipY)});
    const bag=head.group.getObjectByName('Mouth_Bag');
    if(bag){const a=bag.geometry.attributes.position;for(let i=0;i<a.count;i++)assert(a.getZ(i)<head.fit.surfZ(a.getX(i),a.getY(i))-.015,id+': cavidade oral atravessou a superfície facial')}
    if(!head.params.open)for(const name of ['Teeth_Upper','Teeth_Lower','Tongue']){
