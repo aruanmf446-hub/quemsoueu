@@ -369,7 +369,17 @@ function makeFaceField(P, eyes) {
       }
     }
     // queixo
-    dz += P.chinH * gau(x, P.chinW??.2) * gau(y - (chinY + .06), .12);
+    const originalChin=P.chinH*gau(x,P.chinW??.2)*gau(y-(chinY+.06),.12);
+    dz+=originalChin;
+    if(P.chinShape){
+      const C=P.chinShape,bottom=P.loft.y[0],lowerLip=mY-P.lipL;
+      // O apoio fica entre o lábio e a base mandibular. A máscara termina
+      // antes do lábio e sob o queixo: não altera a boca nem cria um nódulo no pescoço.
+      const center=bottom+(lowerLip-bottom)*.46;
+      const support=sstep(lowerLip-.015,lowerLip-.17,y)*sstep(bottom-.03,bottom+.08,y);
+      const supportChin=C.depth*gau(x,C.width)*gau(y-center,C.tall);
+      dz+=(supportChin-originalChin)*support;
+    }
     hi += .35 * gau(x, .12) * gau(y - (chinY + .08), .08);
     // zona T e pálpebras levemente mais brilhantes (pele viva, não plástico uniforme)
     gloss += .3 * gau(x, .16) * gau(y - .42, .2) + .22 * gau(x, .06) * sstep(eyeY - .02, tipY + .02, y) * (y < rootY + .05 ? 1 : 0) + .18 * gau(x, .14) * gau(y - (chinY + .08), .08) + .15 * lid;

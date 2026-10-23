@@ -4,7 +4,15 @@
 
 O usuário determinou: **sempre subir o trabalho para a `main`**. Ao concluir uma rodada, validar, registrar as alterações e enviar à `main`, preservando alterações remotas e sem force push. Distinguir o envio do código da conclusão do deploy do site.
 
-## Rodada atual — correção das proporções faciais (23/10/2026)
+## Rodada atual — apoio do queixo (23/10/2026)
+
+O usuário pediu enviar tudo à main: concluído em `54a1f87`, remoto verificado. Em seguida pediu continuar: "tá ficando incrível", mas há personagens sem queixo. A direção visual anterior foi aceita para continuação; preservar olhos, nariz e boca. Foi enviada pergunta opcional sobre quais nomes, ainda sem resposta; a auditoria do catálogo apontou 15 humanos com queixo mais recuado, sobretudo Cute, Nico, Princesa, Arqueira e Guardiã.
+
+`CHIN_IDENTITIES` em `face-identities.js` fornece projeção/largura/altura próprias para esses 15; demais 19 formas ficam iguais. O campo da pele faz a transição sob o lábio e termina antes do pescoço. O ensaio com faixa abrupta sob o lábio foi descartado em favor de uma transição larga. A anatomia acima da região conserva o relevo anterior. Não alterar novamente as proporções aprovadas para disfarçar o problema.
+
+Base imutável `/workspace/outputs/queixo-referencia-54a1f87`; capturas em `renders/queixos/`. Antes/19 modelos preservados vêm das capturas finais de 54a1f87; os 15 alvos são recapturados. `qualidade-queixos.mjs` confirmou 450 amostras da superfície superior preservadas, projeção adicional suave nos 15 e 12 clipes em cada um. A comparação geométrica contra a base confirmou somente 15 malhas alteradas e preservação das skins. Documentação: [REFINO-QUEIXOS.md](REFINO-QUEIXOS.md). Prévias `menu-v16-apoio-queixo`. Validação concluída: 15 alvos recapturados; 450 pontos preservados; 15 malhas alteradas contra a base; continuidade labial, deformações e pescoço válidos; cinco GLBs e três Workers passaram. Sorriso/surpresa de Nico e Guardiã conferidos. Galeria com 136 imagens passou em desktop/mobile. Refinamento final pronto para envio à main sem force push. A conferência de poses revelou borda triangular na boca da surpresa do Nico e dobras marcadas no sorriso da Guardiã; reproduzidos na base 54a1f87 em `renders/queixos/poses-referencia/`, portanto anteriores à rodada dos queixos. São limitações abertas para o refino das expressões; não declarar aprovação estética dessas poses.
+
+## Rodada anterior — correção das proporções faciais (23/10/2026)
 
 O usuário reprovou também `b119a58` e enviou o antes/depois de `feminine_soft`. A correção reconhece a regressão: aumentar olhos/íris e encurtar o terço médio infantilizou os adultos e criou um olhar arregalado. Não apresentar a reconstrução anterior como aprovada.
 

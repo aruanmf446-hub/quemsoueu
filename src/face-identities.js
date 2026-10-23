@@ -32,6 +32,25 @@ const profiles={
  bread_baker:{"contour":[-0.97,0.45,0.77,0.905,0.81],"planes":[0.78,0.84,0.885,0.73],"eyes":[0.065,0.268,0.375,24,-21,-2],"nose":[-0.285,1.34,0.049449999999999994,0.155,0.145],"mouth":[-0.605,0.34,0.85,0.2,0.041,0.06,0.035],"cheek":[0.05472,0.5,-0.24,0.35719999999999996,0.3196],"chin":[0.041,0.32],"brow":[0.062,0.038,0.20590596237874592],"round":0.75,"square":2.1,"detail":{"noseTipFullness":0.35,"noseTipAspect":[1.12,1.05,0.005],"noseWingRadius":[0.06,0.057],"mouthSampling":3.0,"sink":0.23852,"upperLidPower":1.08,"lowerLidPower":0.94,"irisAng":0.5235987755982988,"irisPupil":0.39,"domeK":0.045,"bagK":0.1}},
 };
 profiles.bread_vigilante=profiles.bread_baker;
+// Apoio abaixo do lábio, com projeção e largura próprias. As outras identidades
+// já têm uma mandíbula projetada; não recebem o mesmo queixo por padrão.
+export const CHIN_IDENTITIES={
+ feminine_soft:{depth:.090,width:.235,tall:.14},
+ cute_round:{depth:.125,width:.29,tall:.16},
+ feminine_bold:{depth:.080,width:.23,tall:.14},
+ dwarf_bard:{depth:.090,width:.33,tall:.14},
+ sad_clown:{depth:.075,width:.27,tall:.13},
+ nana_explorer:{depth:.085,width:.28,tall:.14},
+ moon_guardian:{depth:.090,width:.22,tall:.14},
+ nico_inventor:{depth:.105,width:.245,tall:.17},
+ ruby_sorceress:{depth:.085,width:.205,tall:.15},
+ forest_archer_f:{depth:.100,width:.23,tall:.13},
+ forest_guard_f:{depth:.075,width:.27,tall:.14},
+ forest_guard_m:{depth:.090,width:.30,tall:.145},
+ forest_princess:{depth:.100,width:.225,tall:.15},
+ bread_baker:{depth:.090,width:.32,tall:.14}
+};
+CHIN_IDENTITIES.bread_vigilante=CHIN_IDENTITIES.bread_baker;
 const skulls={feminine_soft:[0.79,0.75,0.8],masculine_soft:[0.84,0.78,0.83],cute_round:[0.87,0.79,0.83],feminine_bold:[0.78,0.8,0.78],old_king:[0.86,0.81,0.84],alchemist_villain:[0.72,0.9,0.76],dwarf_bard:[0.88,0.73,0.84],sad_clown:[0.85,0.77,0.81],orc_warrior:[0.92,0.75,0.89],nana_explorer:[0.86,0.72,0.83],moon_guardian:[0.77,0.82,0.78],nico_inventor:[0.84,0.8,0.81],ruby_sorceress:[0.76,0.83,0.77],flame_guardian:[0.87,0.75,0.85],forest_archer_f:[0.8,0.73,0.8],forest_archer_m:[0.82,0.79,0.82],forest_guard_f:[0.82,0.74,0.8],forest_guard_m:[0.84,0.75,0.81],forest_guard_veteran:[0.86,0.77,0.85],forest_artificer:[0.76,0.82,0.77],forest_princess:[0.84,0.79,0.81],bread_baker:[0.88,0.74,0.84]};
 skulls.bread_vigilante=skulls.bread_baker;
 export const FACE_IDENTITIES=profiles;
@@ -51,6 +70,7 @@ export function refineFaceIdentities(presets){
   // Pálpebra, órbita e maçã formam volumes largos e contínuos. Evita a crista diagonal sob o olho.
   Object.assign(p,{sculptedFace:true,socket:f.mature?.024:.012,crease:f.mature?.010:.005,creaseGap:.046,orbit:f.mature?.019:.009,lidFold:.006,lowerRoll:.003,zyg:f.mature?.015:.005,hollow:f.mature?.017:.003,temple:.005,browRidge:f.mature?.040:.016,fold:f.mature?.65:.18,muzzle:.016,irisAng:deg(f.mature?29:33),lash:Math.min(p.lash,.015),flick:Math.min(p.flick,.025),lashLen:Math.min(p.lashLen,.060)});
   Object.assign(p,f.detail);
+  if(CHIN_IDENTITIES[id])p.chinShape=CHIN_IDENTITIES[id];
   p.faceIdentity=id==='bread_vigilante'?'bread_baker':id;
  }
  // Vegetais: massas e relações faciais também próprias, preservando as espécies.

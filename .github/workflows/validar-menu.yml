@@ -70,6 +70,7 @@ jobs:
           node tests/qualidade-palpebras-companheiros.mjs
           node tests/identidades-faciais.mjs
           node tests/continuidade-labios.mjs
+          node tests/qualidade-queixos.mjs
           node tests/encaixe-pescoco.mjs
           node tests/encaixe-oculos.mjs
           node tests/qualidade-companheiros-esculpidos.mjs

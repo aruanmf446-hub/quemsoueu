@@ -1,5 +1,7 @@
 # Correção das proporções faciais
 
+> Registro da rodada `54a1f87`, já enviada à main. A comparação pública acompanha o refinamento seguinte dos [queixos](REFINO-QUEIXOS.md); as capturas desta etapa permanecem em `renders/correcao-rosto/`.
+
 O usuário reprovou `b119a58` com uma comparação de `feminine_soft`: o rosto ficou com olhos arregalados, íris enormes e proporções infantis. A rodada anterior corrigiu defeitos técnicos, mas piorou essas proporções. Esta correção não representa aprovação estética nem equivalência às referências.
 
 ## Alterações
