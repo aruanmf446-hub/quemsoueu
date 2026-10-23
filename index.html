@@ -76,7 +76,7 @@ import {RoomEnvironment} from 'three/addons/environments/RoomEnvironment.js';
 import {buildHead,BEARD_STYLES} from './src/head.js';
 import {PRESETS,PRESET_ORDER,FAMILY_ORDER} from './src/presets.js';
 import {EXPRESSIONS,NEUTRAL,talkPose} from './src/rig.js';
-import {buildBody,headScale,normalizeBuild,BODIES} from './src/body.js';
+import {buildBody,headScale,bodyViewHeight,normalizeBuild,BODIES} from './src/body.js';
 import {buildClothes,OUTFITS,CLOTH_COLORS,CLOTH_CHANNELS,outfitColors,CLOTH_SLOTS,pieceOptions,pieceSelection} from './src/clothes.js';
 import {heroStudio} from './src/hero-studio.js';
 import {defaultLook,buildLook,attachLook,headOpts,skinPalette,HAIR_STYLES,HAIR_COLORS,ACCESSORIES,ACC_SLOTS,ACC_COLORS} from './src/look.js';
@@ -91,7 +91,7 @@ const TARGET=new THREE.Vector3(0,-.2,0);
 let frame={ty:-.2,dist:7.4};
 function aim(x,y,z){const k=frame.dist/7.4;camera.position.set(x*k,frame.ty+(y+.2)*k,z*k);TARGET.set(0,frame.ty,0);orbit.target.copy(TARGET);orbit.update()}
 const VIEWS={front:[0,-.05,7.4],side:[7.4,-.05,.02],three:[3.4,.8,6.5]};
-function frameBody(){if(current?.fit?.companion){const box=new THREE.Box3().setFromObject(current.group),size=box.getSize(new THREE.Vector3());frame={ty:box.getCenter(new THREE.Vector3()).y,dist:Math.max(7.4,Math.max(size.y,size.x/camera.aspect,size.z)*2.15)};return}const b=current&&current.body;if(b){const box=clothesObj?new THREE.Box3().setFromObject(clothesObj.group):null,top=Math.max(new THREE.Box3().setFromObject(current.group).max.y+.15,b.pivot.y+b.hs*(current.fit.top-b.pivot.y)+.1,box&&!box.isEmpty()?box.max.y:-Infinity),bottom=Math.min(b.ySole,box&&!box.isEmpty()?box.min.y:Infinity);frame={ty:(top+bottom)/2,dist:Math.max(9,(top-bottom)*2.05)}}else frame={ty:-.2,dist:7.4}}
+function frameBody(){if(current?.fit?.companion){const box=new THREE.Box3().setFromObject(current.group),size=box.getSize(new THREE.Vector3());frame={ty:box.getCenter(new THREE.Vector3()).y,dist:Math.max(7.4,Math.max(size.y,size.x/camera.aspect,size.z)*2.15)};return}const b=current&&current.body;if(b){const box=clothesObj?new THREE.Box3().setFromObject(clothesObj.group):null,top=Math.max(new THREE.Box3().setFromObject(current.group).max.y+.15,b.pivot.y+b.hs*(current.fit.top-b.pivot.y)+.1,box&&!box.isEmpty()?box.max.y:-Infinity),bottom=Math.min(b.ySole,box&&!box.isEmpty()?box.min.y:Infinity);const height=bodyViewHeight(presetId,top-bottom);frame={ty:bottom+height/2,dist:Math.max(9,height*2.05)}}else frame={ty:-.2,dist:7.4}}
 aim(...VIEWS.three);
 
 renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFShadowMap;

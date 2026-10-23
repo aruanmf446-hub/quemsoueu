@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import {RoomEnvironment} from 'three/addons/environments/RoomEnvironment.js';
 import {buildHead} from './head.js';
-import {buildBody,headScale,BODIES} from './body.js';
+import {buildBody,headScale,bodyViewHeight,BODIES} from './body.js';
 import {buildClothes,OUTFITS} from './clothes.js';
 import {buildLook,attachLook,headOpts,defaultLook} from './look.js';
 import {PRESETS} from './presets.js';
@@ -45,7 +45,7 @@ function focusHead(ears=false){
   const height=Math.max(2.8,(head.fit?.top||1.2)+1.6)*hs,dist=height/(2*Math.tan(THREE.MathUtils.degToRad(15)))*(ears?1.33:1.15);
   camera.position.copy(center).add(new THREE.Vector3(ears?1.25:.12,.04,1).normalize().multiplyScalar(dist));camera.lookAt(center);
 }
-function focusBody(){const box=new THREE.Box3().setFromObject(root),size=box.getSize(new THREE.Vector3()),center=box.getCenter(new THREE.Vector3());const dist=Math.max(size.y,size.x/camera.aspect)/(2*Math.tan(THREE.MathUtils.degToRad(15)))*1.12;camera.position.copy(center).add(new THREE.Vector3(.08,.015,1).normalize().multiplyScalar(dist));camera.lookAt(center)}
+function focusBody(){const box=new THREE.Box3().setFromObject(root),size=box.getSize(new THREE.Vector3()),center=box.getCenter(new THREE.Vector3());const height=bodyViewHeight(head.params.id,size.y);center.y=box.min.y+height/2;const dist=Math.max(height,size.x/camera.aspect)/(2*Math.tan(THREE.MathUtils.degToRad(15)))*1.12;camera.position.copy(center).add(new THREE.Vector3(.08,.015,1).normalize().multiplyScalar(dist));camera.lookAt(center)}
 onmessage=async({data})=>{
   try{
     const {id,look,frame,expression}=previewChoice(data);

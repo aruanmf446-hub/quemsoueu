@@ -1,6 +1,18 @@
 # Continuidade
 
-## Rodada atual — nova reprovação de c4673ef
+## Rodada atual — prioridades explícitas após reprovação de f9b83df
+
+O usuário pediu Nico baixo, mais magro, menos cabeçudo e com rosto revisto; visor, roupa e tênis melhores na Nana; capuz e máscara cobrindo a boca no Vigilante. Esta rodada altera apenas esses três. Padeiro é controle preservado. Não considerar testes ou envio para main como aprovação visual.
+
+Nico tem cabeça em escala .74, largura corporal .70, altura total 5.5294 e silhueta mais fina, incluindo mangas e calças. O rosto infantil foi revisto sem alterar os outros 33 rostos. O enquadramento de corpo inteiro e das miniaturas usa altura mínima 8.2 para preservar sua aparência baixa; a redução também existe na malha exportada.
+
+Nana recebe visor azul mais largo e fino, hastes curvas com apoios laterais, gola e lapelas escuras menores e alças sem pontas penduradas sobre a barriga. O tênis tem cabedal fechado próprio unido à entressola, biqueira, língua, atacadores, taloneira e sola de borracha sem acabamento cerâmico.
+
+Vigilante: foi detectado o capuz atravessando a parte posterior do crânio. A superfície agora respeita o volume real da cabeça e desce até os ombros. A máscara é uma malha separada que envolve nariz/boca e laterais, com folga medida em relação aos lábios. Testes verificam cobertura posterior, altura do capuz, máscara à frente dos lábios, ajuste do visor e cobertura dos pés.
+
+Base imutável: `/workspace/outputs/reprovado-f9b83df`. Capturas: `renders/ajustes-prioritarios/{before,after}`, com câmeras iguais, incluindo close dos tênis. Comparação publicada em `revisao/personagens/`. Cache de miniaturas: `menu-v23-nico-menor-visor-capuz`. Luz e exposição preservadas. Detalhes em [AJUSTES-PRIORITARIOS.md](AJUSTES-PRIORITARIOS.md).
+
+## Histórico — tentativa f9b83df, reprovada
 
 O usuário disse que `c4673ef` ainda não está aceitável. A comparação anterior não é aprovação. Esta rodada refaz as seções e o afunilamento das mechas do Nico/Padeiro/Vigilante, usa cachos de seção redonda na Nana, reduz a armação do Nico e encurta seu rosto, redesenha o capuz com seções próprias e apoio na face, amplia a ligação do cachecol aos ombros, adiciona pregas à malha das calças e mapas de cor/relevo/rugosidade aos quatro figurinos. Os olhos desses quatro recebem córnea menos opaca e acabamento de pele menos envernizado. Nana/Nico/Vigilante continuam sendo os alvos; Padeiro compartilha anatomia com Vigilante.
 

@@ -4,7 +4,7 @@ Protótipo separado do jogo principal para aprovar a anatomia facial de personag
 
 ## Revisão de Nana, Nico e Vigilante
 
-As tentativas `c2baedb` e `c4673ef` foram reprovadas. A revisão atual inclui rosto, cabelo, materiais e figurinos dos três personagens e a skin Padeiro, que compartilha a identidade do Vigilante. Compare as malhas reais de corpo inteiro e em close em [revisao/personagens/](revisao/personagens/). O acabamento das referências continua sendo o objetivo visual; testes técnicos não equivalem a aprovação estética. Detalhes em [REVISAO-PERSONAGENS-COMPLETOS.md](REVISAO-PERSONAGENS-COMPLETOS.md).
+As tentativas `c2baedb`, `c4673ef` e `f9b83df` foram reprovadas. A revisão atual reduz e afina Nico, reconstrói visor e tênis da Nana e corrige a cobertura do capuz e da máscara do Vigilante. Compare as malhas reais, incluindo o close dos tênis, em [revisao/personagens/](revisao/personagens/). Testes técnicos não equivalem a aprovação estética. Detalhes em [AJUSTES-PRIORITARIOS.md](AJUSTES-PRIORITARIOS.md).
 
 ## Tipos físicos
 

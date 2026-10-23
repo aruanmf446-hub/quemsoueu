@@ -60,12 +60,13 @@ export function buildHeroLunar(c) {
     }
   }
   function shoeSole(side,top,depth,ch) {
-    const footLength=.105*Lb*(B.foot||1)*(.9+.1*W),x=side*A.x,heel=A.z-.27*footLength-.065*W,toe=A.z+.95*footLength+.09*W,ww=.19*footLength+.085*W,length=toe-heel;
+    const footLength=.105*Lb*(B.foot||1)*(.9+.1*W),x=side*A.x,heel=A.z-.27*footLength-.065*W,toe=A.z+.95*footLength+.09*W,ww=(nico?.19:.22)*footLength+(nico?.085:.095)*W,length=toe-heel;
     const s=new THREE.Shape();s.moveTo(-ww*.7,heel);s.bezierCurveTo(-ww,heel-.04*W,-ww*1.05,heel+length*.35,-ww*.92,toe-.12*W);s.bezierCurveTo(-ww*.85,toe+.03*W,ww*.85,toe+.03*W,ww*.92,toe-.12*W);s.bezierCurveTo(ww*1.05,heel+length*.35,ww,heel-.04*W,ww*.7,heel);s.quadraticCurveTo(0,heel-.08*W,-ww*.7,heel);
-    const geo=new THREE.ExtrudeGeometry(s,{depth,bevelEnabled:true,bevelSegments:3,bevelSize:.025*W,bevelThickness:.012*W,curveSegments:24});geo.rotateX(PI/2);geo.translate(x,top,0);put('feet',ch,geo);
+    const geo=new THREE.ExtrudeGeometry(s,{depth,bevelEnabled:true,bevelSegments:3,bevelSize:(nico?.025:.045)*W,bevelThickness:(nico?.012:.018)*W,curveSegments:24});geo.rotateX(PI/2);geo.translate(x,top,0);put('feet',ch,geo);
     return {x,toe,heel,ww,length};
   }
   function expeditionShoes() {
+    if(!nico){nanaSneakers();return}
     boots('Tenis_tecnico_cabedal','leather',{t:.08*W,h:nico?.10:.075,cuffT:.07*W,toe:.08});
     for(const side of [-1,1]) {
       const foot=shoeSole(side,ySole+.08*W,.09*W,'sole');shoeSole(side,ySole+.17*W,.085*W,nico?'secondary':'pearl');
@@ -83,6 +84,48 @@ export function buildHeroLunar(c) {
         const heelTab=panel(.06*W,.19*W,.04*W);heelTab.translate(x+s*.08*W,A.y+.18*W,heel+.04*W);put('feet','trim',heelTab);
       }
       for(let j=0;j<6;j++){const yy=ySole+.015*W,zz=lerp(heel,toe,(j+.5)/6);line('feet','sole',[V(x-ww*.8,yy,zz),V(x,yy-.01*W,zz),V(x+ww*.8,yy,zz)],.013*W);}
+    }
+  }
+  function nanaSneakers(){
+    for(const side of [-1,1]){
+      const foot=shoeSole(side,ySole+.075*W,.080*W,'sole');
+      shoeSole(side,ySole+.19*W,.105*W,'pearl');
+      const {x,heel,toe,ww}=foot;
+      // Cabedal fechado com volume próprio, sem o cano de bota da versão anterior.
+      const upper=new THREE.SphereGeometry(1,64,40),pos=upper.attributes.position;
+      const point=(t,angle,lift=0)=>{
+        const z=lerp(heel+.01*W,toe-.02*W,t),r=Math.sqrt(Math.max(0,1-(2*t-1)**8)),width=ww*.97*(.94+.06*Math.sin(PI*t));
+        return V(x+Math.cos(angle)*(width+lift)*r,ySole+.185*W+(.30-.14*t)*W*r+Math.sin(angle)*((.30-.14*t)*W+lift)*r,z);
+      };
+      for(let i=0;i<pos.count;i++){
+        const t=(pos.getZ(i)+1)/2,angle=Math.atan2(pos.getY(i),pos.getX(i)),p=point(t,angle);
+        pos.setXYZ(i,p.x,p.y,p.z);
+      }
+      upper.computeVertexNormals();put('feet','leather',upper);
+      const heelCounter=new RoundedBoxGeometry(.46*W,.46*W,.26*W,4,.065*W);heelCounter.translate(x,ySole+.39*W,heel+.11*W);put('feet','leather',heelCounter);
+      const toeGuard=(t,u)=>point(lerp(.72,.97,t),u*PI,.014*W);
+      put('feet','leather',clothSurface(20,40,toeGuard,{thickness:.018*W}));
+      line('feet','leather',Array.from({length:41},(_,i)=>toeGuard(.04,i/40)),.012*W);
+      // Língua e atacadores acompanham o peito do pé em vez de subir pela canela.
+      const tongue=(t,u)=>{const p=point(lerp(.38,.77,t),PI/2,.020*W);p.x+=(u-.5)*.24*W;p.y+=.02*W*Math.sin(PI*u);return p};
+      put('feet','leather',clothSurface(20,12,tongue,{thickness:.022*W}));
+      for(let j=0;j<5;j++){
+        const t=.46+j*.065,p=point(t,PI/2,.047*W),span=.13*W;
+        for(const s of [-1,1]){
+          const ring=new THREE.TorusGeometry(.018*W,.0045*W,8,20);ring.rotateX(-PI/2);ring.translate(p.x+s*span,p.y-.025*W,p.z);put('feet','trim',ring);
+        }
+        line('feet','secondary',[p.clone().add(V(-span,0,-.018*W)),p.clone().add(V(0,.025*W,.012*W)),p.clone().add(V(span,0,.026*W))],.009*W);
+      }
+      for(const flank of [-1,1]){
+        const ph=flank<0?PI:.0,outline=Array.from({length:25},(_,i)=>point(.18+i/24*.57,ph,.015*W));
+        line('feet','secondary',outline,.014*W);
+        const blue=point(.28,ph,.035*W);put('feet','gem',sph(blue,.048*W,.7,.55,1.6,20,12));
+      }
+      const heelLoop=[point(.10,PI/2,.008*W),point(.12,PI/2,.09*W),point(.19,PI/2,.10*W),point(.24,PI/2,.012*W)];line('feet','secondary',heelLoop,.018*W);
+      for(let j=0;j<8;j++){
+        const z=lerp(heel,toe,(j+.5)/8),r=Math.sqrt(Math.max(0,1-((j+.5)/8*2-1)**2));
+        line('feet','sole',[V(x-ww*.85*r,ySole+.008*W,z),V(x,ySole-.004*W,z),V(x+ww*.85*r,ySole+.008*W,z)],.012*W);
+      }
     }
   }
   function armSleeve(side,ch,t0=.35,t1=.88,bell=.16*W) {
@@ -110,7 +153,7 @@ export function buildHeroLunar(c) {
       line('extras','leather',[V(xp,base.y+h*.42,bagFront-.045*W),V(xp,base.y,bagFront-.05*W),V(xp,base.y-h*.49,bagFront)],.034*W);
       const buckle=buckleGeo(.115*W,.13*W,.02*W);buckle.rotateY(PI);buckle.translate(xp,base.y+.075*W,bagFront-.06*W);put('extras','trim',buckle);
       for(let i=0;i<7;i++)put('extras','trim',sph(V(xp,base.y-.07*W-i*.047*W,bagFront-.08*W),.009*W,1,1,.4,10,6));
-      surfaceStrap('extras','leather',fn,.025,.315,side*.47,side*.6,.15,.055*W);
+      surfaceStrap('extras','leather',fn,.025,nico?.315:.235,side*.47,side*.6,.15,.055*W);
       // Bolsos laterais, aba, duas costuras e tampas, sem caixas soltas.
       const p=base.clone().add(V(side*.55*W,-.14*W,.015*W)),po=panel(.29*W,.48*W,.26*W);po.translate(...p.toArray());put('extras','leather',po);
       const lid=panel(.31*W,.17*W,.075*W);lid.translate(p.x,p.y+.15*W,p.z-.145*W);put('extras','fabric',lid);
@@ -141,7 +184,7 @@ export function buildHeroLunar(c) {
   }
   if (!magic) {
     const shirt=garment(nico?'Camisa_inventor_manga_dobrada':'Top_curto_lunar',nico?'secondary':'fabric','upper',{
-      top:nico?yN+.035:Y(.065),bottom:Y(nico?.345:.24),t:.045*W,sleeve:nico?'short':null,short:.86,sleeveEase:.075*W,puff:nico?.09*W:0,vneck:nico?.13*W:0,cell:.020*clamp(W,1,1.3),
+      top:nico?yN+.035:Y(.065),bottom:Y(nico?.345:.24),t:.045*W,sleeve:nico?'short':null,short:.86,sleeveEase:(nico?.040:.075)*W,puff:nico?.050*W:0,vneck:nico?.13*W:0,cell:.020*clamp(W,1,1.3),
       env:{ease:.055*W,hang:.5,cinch:Y(.30),cinchK:.9,folds:.012*W,foldN:10}
     });
     let coat=shirt;
@@ -153,10 +196,10 @@ export function buildHeroLunar(c) {
       edgeTube(coat,'open','trim','upper',.017*W);sleeveCuffs(coat,'upper','leather',.12*W);
       // Gola alta aberta e lapelas: painéis largos dobrados, não um tubo dourado.
       for(const side of [-1,1]) {
-        const collar=(t,u)=>{const ph=side*lerp(.29,PI,u),p=surfAt(coat.env,yN-.48*W+t*.65*W,ph,.18*W);p.y+=.025*W*Math.sin(PI*u);return p;};
-        put('upper','leather',clothSurface(18,32,collar,{thickness:.035*W}));edgeLines('upper',collar,'trim',.010*W);
+        const collar=(t,u)=>{const ph=side*lerp(.43,PI,u),p=surfAt(coat.env,yN-.25*W+t*.52*W,ph,.115*W);p.y+=.035*W*Math.sin(PI*u);return p;};
+        put('upper','leather',clothSurface(24,40,collar,{thickness:.035*W}));edgeLines('upper',collar,'leather',.011*W);
         const lapel=(t,u)=>surfAt(coat.solid,Y(.055+t*.12),side*(.29+u*(.25-.16*t)),.055*W+.055*W*Math.sin(PI*u));
-        put('upper','fabric',clothSurface(24,16,lapel,{thickness:.025*W}));edgeLines('upper',lapel,'trim',.009*W,false);
+        put('upper','leather',clothSurface(24,16,lapel,{thickness:.025*W}));edgeLines('upper',lapel,'leather',.008*W,false);
         const bottom=fittedPanel('upper','leather',coat.env,.225,.245,side*.35,side*1.4,.05*W);stitch('upper',bottom,.8,19,'trim');
         const pk=surfAt(coat.solid,Y(.22),side*.75,.07*W);put('upper','leather',orient(panel(.28*W,.19*W,.045*W),pk,normalAt(pk)));disc('upper','trim',pk.clone().add(V(0,.035*W,.035*W)),.022*W);
       }
@@ -182,7 +225,7 @@ export function buildHeroLunar(c) {
       for(const side of [-1,1]) {
         const strap=surfaceStrap('upper','fabric',shirt.env,.012,.125,side*.48,side*.52,.28,.095*W);disc('upper','trim',strap(.94,.5).add(V(0,0,.012*W)),.045*W);
         surfaceStrap('upper','fabric',shirt.env,.012,.34,side*(PI-.42),side*(PI-.70),.28,.065*W);
-        const collar=(t,u)=>surfAt(shirt.env,yN+.015*W-t*.23*W,side*(.12+u*(.55-.22*t)),.055*W+.06*W*Math.sin(PI*u));put('upper','secondary',clothSurface(20,20,collar,{thickness:.03*W}));edgeLines('upper',collar,'secondary',.009*W,false);
+        const shape=new THREE.Shape();shape.moveTo(side*.06*W,-.02*W);shape.lineTo(side*.32*W,-.04*W);shape.lineTo(side*.22*W,-.30*W);shape.closePath();const collar=new THREE.ExtrudeGeometry(shape,{depth:.015*W,bevelEnabled:true,bevelSize:.005*W,bevelThickness:.005*W,bevelSegments:2});const cp=collar.attributes.position;for(let i=0;i<cp.count;i++){const q=frontPanel(shirt.env,cp.getX(i),yN+cp.getY(i),.035*W+cp.getZ(i));cp.setXYZ(i,q.x,q.y,q.z)}collar.computeVertexNormals();put('upper','secondary',collar);
       }
       const pocket=fittedPanel('upper','fabric',shirt.env,.205,.29,-.34,.34,.085*W);edgeLines('upper',pocket,'secondary',.007*W);stitch('upper',pocket,.05,13,'trim');
       for(let i=0;i<3;i++) {
@@ -190,7 +233,7 @@ export function buildHeroLunar(c) {
       }
     }
     const legs=trousers(nico?'Jardineira_calcas_com_folga':'Cargo_bombacha_com_pregas','pants',{
-      top:nico?.33:.32,ease:(nico?.11:.16)*W,cuff:nico?.065:.045,puff:(nico?.13:.18)*W,flareLeg:(nico?.025:.055)*W,folds:.040*W,t:.05*W,cell:.023*clamp(W,1,1.3),
+      top:nico?.33:.32,ease:(nico?.075:.16)*W,cuff:nico?.065:.045,puff:(nico?.065:.18)*W,flareLeg:(nico?.025:.055)*W,folds:(nico?.025:.040)*W,t:.05*W,cell:.023*clamp(W,1,1.3),
       under:nico?{fn:shirt.solid,y:Y(.345)+.03*W}:undefined
     });
     cargoPockets(legs,nico);expeditionShoes();

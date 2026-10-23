@@ -1,6 +1,10 @@
 # Revisão de personagem completo
 
-## Rodada após a reprovação de c4673ef
+## Revisão atual: proporções e acessórios
+
+Após a reprovação de `f9b83df`, as prioridades são Nico menor e magro, visor/jaqueta/tênis da Nana e cobertura efetiva do capuz/máscara do Vigilante. Consulte [AJUSTES-PRIORITARIOS.md](AJUSTES-PRIORITARIOS.md). A comparação em [revisao/personagens/](revisao/personagens/) usa `f9b83df` como antes e inclui um close dos tênis. O Padeiro é controle preservado nesta rodada.
+
+## Histórico — tentativa f9b83df, também reprovada
 
 `c4673ef` também foi reprovado pelo usuário. A rodada atual usa essa versão como antes da comparação. As mudanças desta vez são:
 

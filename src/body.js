@@ -96,7 +96,7 @@ for(const c of FOREST_CHARACTERS)BODIES[c.id]={...BODIES[c.body]};
 for(const id of ['forest_archer_f','forest_guard_f'])BODIES[id]={...BODIES[id],head:.95,heads:5.55,W:.88,sh:.91,chest:.94,waist:.91,hip:1,arm:1.03,leg:.96};
 for(const id of ['moon_guardian','ruby_sorceress','forest_princess'])BODIES[id]={...BODIES[id],head:.95,heads:5.65,W:.87,sh:.91,chest:.95,waist:.90,hip:1,leg:.97};
 BODIES.nana_explorer={...BODIES.nana_explorer,head:1,heads:5.1,neckUp:.27,neckBase:1.05,W:.96,sh:1,chest:.98,waist:.88,hip:1.04,hand:1.08,foot:1.15,leg:.97};
-BODIES.nico_inventor={...BODIES.nico_inventor,head:1,heads:3.65,neckUp:.52,W:.93,sh:1.03,waist:1,hip:.98,arm:1.02,hand:1.13,foot:1.25,leg:.96};
+BODIES.nico_inventor={...BODIES.nico_inventor,head:.74,heads:3.50,neckUp:.44,W:.70,sh:.94,chest:.91,waist:.91,hip:.90,depth:.90,belly:.025,arm:1.02,hand:1.03,foot:1.15,leg:.97};
 
 for(const c of FRONTIER_CHARACTERS)BODIES[c.id]={...BODIES[c.body],...(c.large?{W:1.95,heads:6.1,sh:1.02,arm:1.18,hand:1.08}: {})};
 // Duas roupas do mesmo jovem: escala e anatomia permanecem idênticas entre as skins.
@@ -110,6 +110,9 @@ BODIES.cactus_soldier_large={...DESERT_CACTUS,head:1,heads:2.8,W:1.52,sh:1.12,ch
 
 // escala da cabeça com corpo (a cabeça é desenhada grande para o close do rosto; no corpo inteiro ela diminui)
 export const headScale = id => (BODIES[id] && BODIES[id].head) || 1;
+// O quadro de corpo inteiro conserva espaço acima da criança. O zoom automático
+// não deve apresentar Nico com a mesma altura aparente das figuras adultas.
+export const bodyViewHeight = (id,height) => id==='nico_inventor'?Math.max(height,8.2):height;
 
 // Valores normalizados também identificam os caches; NaN e valores fora da faixa não chegam à geometria.
 export function normalizeBuild(build = {}) {

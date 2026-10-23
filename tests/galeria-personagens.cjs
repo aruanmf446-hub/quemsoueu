@@ -13,10 +13,13 @@ const manifest=JSON.parse(fs.readFileSync('revisao/personagens/manifest.json','u
    assert.equal(await page.locator('section').count(),4);
    for(const view of Object.keys(manifest.views)){
     await page.locator(`[data-view="${view}"]`).click();
-    await page.locator('img').evaluateAll(async images=>{images.forEach(im=>im.loading='eager');await Promise.race([Promise.all(images.map(im=>im.decode())),new Promise((_,reject)=>setTimeout(()=>reject(Error('Imagem não carregou')),15000))])});
-    assert.equal(await page.locator('img').evaluateAll(images=>images.every(im=>im.naturalWidth===900&&im.naturalHeight===806)),true);
-    assert.equal(await page.locator('img').evaluateAll((images,v)=>images.every(im=>im.src.endsWith('-'+v+'.webp')),view),true);
+    await page.locator('img[data-id]').evaluateAll(async images=>{images.forEach(im=>im.loading='eager');await Promise.race([Promise.all(images.map(im=>im.decode())),new Promise((_,reject)=>setTimeout(()=>reject(Error('Imagem não carregou')),15000))])});
+    assert.equal(await page.locator('img[data-id]').evaluateAll(images=>images.every(im=>im.naturalWidth===900&&im.naturalHeight===806)),true);
+    assert.equal(await page.locator('img[data-id]').evaluateAll((images,v)=>images.every(im=>im.src.endsWith('-'+v+'.webp')),view),true);
    }
+   await page.locator('summary').click();
+   await page.locator('.feet-detail').evaluateAll(async images=>{images.forEach(im=>im.loading='eager');await Promise.all(images.map(im=>im.decode()))});
+   assert.equal(await page.locator('.feet-detail').count(),2);
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'Comparação transbordou no celular');
   }
   assert.deepEqual(errors,[]);console.log(`OK: ${manifest.assets.length} imagens, quatro vistas, desktop e celular.`);

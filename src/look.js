@@ -38,7 +38,7 @@ export const DEFAULT_LOOKS = {
   cactus_cowboy: { hair: 'none', hairColor: '#24170f', acc: { head: 'cowboy' }, colors: { fabric: '#6b4228', metal: '#b8a27a' } },
   pepper_king: { hair: 'none', hairColor: '#120c0c', acc: { head: 'crown' } },
   chili_bandit: { hair: 'none', hairColor: '#140a08', acc: {} },
-  nana_explorer: { hair: 'lunar_curls', hairColor: '#20131c', acc: { face: 'visor', ears: 'hoops' }, colors: { gem2: '#729bda' } },
+  nana_explorer: { hair: 'lunar_curls', hairColor: '#20131c', acc: { face: 'visor', ears: 'hoops' }, colors: { gem2: '#68afe4' } },
   moon_guardian: { hair: 'court_waves', hairColor: '#201419', acc: { head: 'moon_crown', ears: 'drop' }, colors: { gem: '#416ec4', gem2: '#416ec4' } },
   nico_inventor: { hair: 'short_curls', hairColor: '#432619', beard: 'none', acc: { face: 'glasses', head: 'goggles' } },
   ruby_sorceress: { hair: 'hero_halfup', hairColor: '#20131a', acc: { head: 'moon_crown', ears: 'drop', forehead: 'tikka' }, colors: { gem: '#c0182a', gem2: '#c0182a' } },

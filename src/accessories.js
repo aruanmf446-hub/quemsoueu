@@ -7,7 +7,7 @@ import { crescent } from './lunar.js';
 import {clothSurface} from './fabric.js';
 import {groomedLock,groomSurface} from './groom.js';
 import {heroSurface} from './hero-material.js';
-import {badge,tuft,buckleGeo,gear} from './detail.js';
+import {badge,tuft,buckleGeo,gear,panel} from './detail.js';
 import {leafGeo} from './forest.js';
 import {cactusHeadgear} from './cactus-headgear.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
@@ -95,6 +95,7 @@ export function buildAccessories(fit, sel = {}, cols = {}, hairMeshes = []) {
     gem: new THREE.MeshPhysicalMaterial({ name: 'Acc_Gem', color: cols.gem || '#c0182a', metalness: 0, roughness: .06, clearcoat: 1, clearcoatRoughness: .02, specularIntensity: 1, ior: 2.2, flatShading: true }),
     gem2: new THREE.MeshPhysicalMaterial({ name: 'Acc_Gem2', color: cols.gem2 || '#2fa6c9', metalness: 0, roughness: .06, clearcoat: 1, clearcoatRoughness: .02, specularIntensity: 1, ior: 2.2, flatShading: true }),
     pearl: new THREE.MeshPhysicalMaterial({ name: 'Acc_Pearl', color: '#f4eee2', roughness: .25, sheen: 1, sheenColor: new THREE.Color('#ffe8f0'), clearcoat: .8 }),
+    mask: new THREE.MeshPhysicalMaterial({name:'Acc_Mask',color:new THREE.Color(cols.fabric||'#242129').multiplyScalar(.60),roughness:.91,sheen:.18,side:THREE.DoubleSide}),
     fabric: new THREE.MeshPhysicalMaterial({ name: 'Acc_Fabric', color: cols.fabric || '#6b4228', roughness: .82, sheen: .5, sheenRoughness: .6, sheenColor: new THREE.Color('#ffffff').multiplyScalar(.25) }),
     plume: new THREE.MeshPhysicalMaterial({name:'Acc_Penacho',color:cols.gem||'#a82c2b',roughness:.87,sheen:.6}),
     band: new THREE.MeshPhysicalMaterial({ name: 'Acc_Band', color: new THREE.Color(cols.fabric || '#6b4228').multiplyScalar(.45), roughness: .7 }),
@@ -107,14 +108,14 @@ export function buildAccessories(fit, sel = {}, cols = {}, hairMeshes = []) {
     nosePad: new THREE.MeshPhysicalMaterial({name:'Acc_NosePad',color:'#e5d7c4',transparent:true,opacity:.28,roughness:.38,depthWrite:false}),
     pad: new THREE.MeshStandardMaterial({name:'Acc_Pad',color:'#292d35',roughness:.85}),
     goggleGlass: new THREE.MeshPhysicalMaterial({name:'Acc_GoggleGlass',color:cols.gem2||'#5ab8ef',transparent:true,opacity:.24,roughness:.06,depthWrite:false}),
-    visor: new THREE.MeshPhysicalMaterial({name:'Acc_Visor',color:cols.gem2||'#5ab8ef',transparent:true,opacity:.09,roughness:.03,clearcoat:.35,specularIntensity:.6,depthWrite:false,side:THREE.DoubleSide}),
+    visor: new THREE.MeshPhysicalMaterial({name:'Acc_Visor',color:cols.gem2||'#5ab8ef',transparent:true,opacity:fit?.P?.id==='nana_explorer'?.17:.09,roughness:.03,clearcoat:.35,specularIntensity:.6,depthWrite:false,side:THREE.DoubleSide}),
     liquid: new THREE.MeshPhysicalMaterial({ name: 'Acc_Liquid', color: cols.gem || '#8e3fd0', emissive: cols.gem || '#8e3fd0', emissiveIntensity: .55, roughness: .3, transparent: true, opacity: .85 })
   };
   const setColors = c => {
     if (c.metal) {mats.metal.color.set(c.metal);mats.optical.color.set(c.metal)}
     if (c.gem) { mats.gem.color.set(c.gem); mats.liquid.color.set(c.gem); mats.liquid.emissive.set(c.gem);mats.plume.color.set(c.gem) }
     if (c.gem2) {mats.gem2.color.set(c.gem2);mats.visor.color.set(c.gem2);mats.frame.color.set(c.gem2);mats.goggleGlass.color.set(c.gem2)}
-    if (c.fabric) { mats.fabric.color.set(c.fabric); mats.band.color.set(c.fabric).multiplyScalar(.45) }
+    if (c.fabric) { mats.fabric.color.set(c.fabric); mats.band.color.set(c.fabric).multiplyScalar(.45);mats.mask.color.set(c.fabric).multiplyScalar(.60) }
     if (c.flower) mats.flower.color.set(c.flower);
   };
   const dispose = () => { group.traverse(o => { if (o.isMesh) o.geometry.dispose() }); Object.values(mats).forEach(m => m.dispose()) };
@@ -369,19 +370,24 @@ export function buildAccessories(fit, sel = {}, cols = {}, hairMeshes = []) {
     add('metal',tube([centers[0].clone().add(V(.17,0,0)),V(0,centers[0].y+.02,centers[0].z+.02),centers[1].clone().add(V(-.17,0,0))],.014));
   }
   if(sel.face==='visor'&&fit.eyes?.length===2){
-    const y=fit.eyes.reduce((a,e)=>a+e.y,0)/2,halfW=Math.max(...fit.eyes.map(e=>Math.abs(e.x)+e.R*.90)),halfH=Math.max(...fit.eyes.map(e=>e.R))*.88,corner=Math.min(P.id==='nana_explorer'?.105:.07,halfH*.42),bend=P.id==='nana_explorer'?.235:.105;
+    const y=fit.eyes.reduce((a,e)=>a+e.y,0)/2,halfW=Math.max(...fit.eyes.map(e=>Math.abs(e.x)+e.R*.90))*(P.id==='nana_explorer'?1.23:1),halfH=Math.max(...fit.eyes.map(e=>e.R))*(P.id==='nana_explorer'?.85:.88),corner=Math.min(P.id==='nana_explorer'?.135:.07,halfH*.56),bend=P.id==='nana_explorer'?.32:.105;
     const halfWidth=t=>{const q=Math.max(0,Math.abs((t-.5)*2*halfH)-(halfH-corner));return halfW-corner+Math.sqrt(Math.max(0,corner*corner-q*q))};
     let z=Math.max(...fit.eyes.map(e=>e.z+e.R))+.07;
     for(let i=0;i<=12;i++)for(let j=0;j<=32;j++){const t=i/12,x=(.5-j/32)*2*halfWidth(t),yy=y+(t-.5)*2*halfH;z=Math.max(z,fit.surfZ(x,yy)+.050+bend*(x/halfW)**2)}
-    const point=(t,u)=>{const x=(.5-u)*2*halfWidth(t);return V(x,y+(t-.5)*2*halfH+.065*Math.exp(-((x/.16)**2))*(1-t)**3,z-bend*(x/halfW)**2)};
+    const point=(t,u)=>{const x=(.5-u)*2*halfWidth(t),temple=P.id==='nana_explorer'?.038*(x/halfW)**2:0;return V(x,y+(t-.5)*2*halfH+.065*Math.exp(-((x/.16)**2))*(1-t)**3+temple,z-bend*(x/halfW)**2)};
     // Casca curva e fina, com contorno contínuo; o visor acompanha a largura real do rosto.
-    add('visor',clothSurface(20,64,point,{thickness:.010}));
+    add('visor',clothSurface(P.id==='nana_explorer'?28:20,P.id==='nana_explorer'?80:64,point,{thickness:P.id==='nana_explorer'?.005:.010}));group.userData.visorFit={halfWidth:halfW,halfHeight:halfH,centerY:y};
     const rim=[];for(let j=0;j<48;j++)rim.push(point(0,j/48));for(let i=0;i<24;i++)rim.push(point(i/24,1));for(let j=0;j<48;j++)rim.push(point(1,1-j/48));for(let i=0;i<=24;i++)rim.push(point(1-i/24,0));
-    add('frame',tube(rim,P.id==='nana_explorer'?.010:.014,16));
-    add('frame',tube(Array.from({length:49},(_,j)=>point(1,j/48)),P.id==='nana_explorer'?.019:.023,16));
+    add('frame',tube(rim,P.id==='nana_explorer'?.005:.014,16));
+    add('frame',tube(Array.from({length:49},(_,j)=>point(1,j/48)),P.id==='nana_explorer'?.015:.023,16));
     for(const side of [-1,1]){
       const q=point(.5,side<0?1:0),ear=fit.ears.find(e=>Math.sign(e.center.x)===side)?.center||V(side*.78,y,-.12),hinge=V(side*(traceR(sdf,y,side*80*DEG,zc)*Math.sin(80*DEG)+.055),y+.01,ear.z+.06);
-      add('frame',sphere(q.clone().add(V(side*.015,0,-.005)),.036,1.2,.75,.65));add('frame',tube([q,hinge.clone().lerp(q,.45),hinge],.022));add('metal',sphere(q.clone().add(V(side*.018,0,.018)),.010));add('pad',tube([hinge.clone().lerp(q,.15),hinge,hinge.clone().add(V(-side*.01,-.075,-.03))],.023));
+      if(P.id==='nana_explorer'){
+        const dir=V(side*.6,0,.8).normalize(),plate=panel(.105,.066,.035);add('frame',place(plate,q.clone().add(V(side*.018,0,.005)),dir));
+        const path=new THREE.CatmullRomCurve3([q,hinge.clone().lerp(q,.5).add(V(side*.025,.008,0)),hinge]);
+        add('frame',clothSurface(24,4,(t,u)=>path.getPoint(t).add(V(0,(u-.5)*.040,0)),{thickness:.015}));
+      }else{add('frame',sphere(q.clone().add(V(side*.015,0,-.005)),.036,1.2,.75,.65));add('frame',tube([q,hinge.clone().lerp(q,.45),hinge],.022))}
+      add('metal',sphere(q.clone().add(V(side*.018,0,.018)),.010));add('pad',tube([hinge.clone().lerp(q,.15),hinge,hinge.clone().add(V(-side*.01,-.075,-.03))],.023));
     }
   }
 
@@ -406,28 +412,42 @@ export function buildAccessories(fit, sel = {}, cols = {}, hairMeshes = []) {
   if(head==='frontier_hat'||head==='guard_helmet')cactusHeadgear({head,fit,ring,add,tube,sphere,place,gemGeo,mats});
   if(sel.head==='vigilante_hood'){
     // Capuz alto e afunilado, aberto em diagonal ao redor da testa e das maçãs.
-    const sections=[[0,.67,.64],[.28,.85,.76],[.56,.91,.79],[.76,.85,.75],[.88,.67,.59],[1,.014,.014]];
+    const bottom=-1.88,upper=top+.20,sections=[[0,1.45,.80],[.18,.87,.77],[.40,.88,.81],[.64,.96,.88],[.82,.84,.78],[.93,.54,.48],[1,.014,.014]];
     const section=t=>{let i=1;while(t>sections[i][0])i++;const a=sections[i-1],b=sections[i],q=sstep(a[0],b[0],t);return[a[1]+(b[1]-a[1])*q,a[2]+(b[2]-a[2])*q]};
     const point=(t,u)=>{
-      const opening=THREE.MathUtils.lerp(.27,.17,sstep(.22,.76,t))*Math.PI,ph=opening+u*(2*Math.PI-2*opening),y=-1.03+(top+1.19)*t,[rx,rz]=section(t),sn=Math.sin(ph),cs=Math.cos(ph),box=cs<0?.78:1;
-      const x=Math.sign(sn)*Math.pow(Math.abs(sn),box)*rx,z=Math.sign(cs)*Math.pow(Math.abs(cs),box)*rz;
-      const fold=.024*Math.sin(ph*8+t*3)*Math.sin(Math.PI*t),normal=V(x,0,z).normalize();
-      const p=V(x,y,zc+z+.44*sstep(.72,1,t)).addScaledVector(normal,fold);if(cs>0&&y>P.loft.y[0]&&y<top-.02)p.z=Math.max(p.z,fit.surfZ(p.x,y)+.045);return p;
+      const opening=THREE.MathUtils.lerp(.43,.25,sstep(.05,.60,t))*Math.PI*(1-.44*sstep(.85,1,t)),ph=opening+u*(2*Math.PI-2*opening),y=THREE.MathUtils.lerp(bottom,upper,t),[rx,rz]=section(t),sn=Math.sin(ph),cs=Math.cos(ph);
+      const x=sn*rx,z=cs*rz,fold=(.025*Math.sin(ph*7+t*4)+.012*Math.sin(ph*11-t*2))*Math.sin(Math.PI*t),normal=V(x,0,z).normalize();
+      const p=V(x,y,zc+z+.47*sstep(.83,1,t)).addScaledVector(normal,fold);
+      if(y>P.loft.y[0]-.25&&y<top-.02){
+        const angle=Math.atan2(p.x,p.z-zc),r=Math.hypot(p.x,p.z-zc),support=traceR(sdf,y,angle,zc)+.085;
+        if(r<support){p.x*=support/r;p.z=zc+(p.z-zc)*support/r}
+      }
+      if(cs>0&&y>P.loft.y[0]&&y<top-.02)p.z=Math.max(p.z,fit.surfZ(p.x,y)+.065);
+      return p;
     };
-    add('fabric',clothSurface(64,96,point,{thickness:.032}));
+    add('fabric',clothSurface(80,112,point,{thickness:.035}));
     for(const u of [0,1]){
       const direction=u===0?1:-1;
-      add('lining',clothSurface(56,4,(t,v)=>point(t,u+direction*v*.020).add(V(0,0,.027)),{thickness:.010}));
-      add('band',tube(Array.from({length:65},(_,i)=>point(i/64,u)),.012));
-      const stitch=[];for(let i=0;i<=46;i++){const t=.18+i/46*.77,q=point(t,u+direction*(i%2?.005:.016));q.z+=.042;stitch.push(q)}add('metal',tube(stitch,.0028));
+      add('lining',clothSurface(80,8,(t,v)=>point(t,u+direction*v*.045).add(V(0,0,.022)),{thickness:.012}));
+      add('band',tube(Array.from({length:81},(_,i)=>point(i/80,u)),.014));
+      for(let j=0;j<24;j++){
+        const t=.11+j*.033,diamond=[point(t,u+direction*.012),point(t+.012,u+direction*.030),point(t+.024,u+direction*.012),point(t+.012,u+direction*.004),point(t,u+direction*.012)];
+        add('metal',tube(diamond.map(p=>p.add(V(0,0,.040))),.0022));
+      }
     }
-    const cap=V(0,top+.16,zc+.44);add('fabric',sphere(cap,.012,1,.7,1));
-    // O tecido cobre o nariz e atravessa a região da boca sem imprimir os lábios.
-    const topY=P.noseTipY+.13,bottom=P.loft.y[0]-.025,frontTop=Math.max(fit.surfZ(0,topY),fit.surfZ(0,P.noseTipY))+.055,frontBottom=fit.surfZ(0,bottom+.13)+.045;
-    const maskPoint=(t,u)=>{const halfW=.70-.36*Math.pow(t,1.1),x=(u-.5)*2*halfW,upper=topY+.08*(1-(x/halfW)**2),yy=THREE.MathUtils.lerp(upper,bottom+.10*(x/halfW)**2,t),drape=THREE.MathUtils.lerp(frontTop,frontBottom,t)-(.38-.10*t)*(x/halfW)**2+.016*Math.sin(t*Math.PI*3)*Math.sin(u*Math.PI);return V(x,yy,Math.max(drape,fit.surfZ(x,yy)+.027))};
-    add('fabric',clothSurface(40,64,maskPoint,{thickness:.015}));
-    for(const t of [0,1])add('band',tube(Array.from({length:49},(_,j)=>maskPoint(t,j/48)),.007));
-    for(const u of [0,1])add('band',tube(Array.from({length:33},(_,j)=>maskPoint(j/32,u)),.007));
+    add('fabric',sphere(V(0,upper,zc+.47),.016,1,.8,1));
+    // Lenço envolvente: cobre nariz, boca e base do queixo e encontra o capuz nas laterais.
+    const topY=P.noseTipY+.16,maskBottom=P.loft.y[0]-.24,frontTop=Math.max(fit.surfZ(0,topY),fit.surfZ(0,P.noseTipY))+.085,frontBottom=fit.surfZ(0,P.loft.y[0]-.08)+.15;
+    const maskPoint=(t,u)=>{
+      const a=(u-.5)*3.50,side=Math.sin(a),width=THREE.MathUtils.lerp(.72,.56,t),yy=THREE.MathUtils.lerp(topY+.020*side*side,maskBottom+.07*side*side,t),front=THREE.MathUtils.lerp(frontTop,frontBottom,t)-zc;
+      const p=V(side*width,yy,zc+Math.cos(a)*front+.018*Math.sin(t*Math.PI*3+.6*Math.cos(a*2))*Math.cos(a));
+      const angle=Math.atan2(p.x,p.z-zc),r=Math.hypot(p.x,p.z-zc),support=traceR(sdf,yy,angle,zc)+.095;
+      if(r<support){p.x*=support/r;p.z=zc+(p.z-zc)*support/r}
+      return p;
+    };
+    add('mask',clothSurface(48,80,maskPoint,{thickness:.022}));
+    for(const t of [0,1])add('band',tube(Array.from({length:65},(_,j)=>maskPoint(t,j/64)),.009));
+    group.userData.hood={bottom,top:upper};group.userData.mask={top:topY,bottom:maskBottom};
   }
 
   // Assentos e garras acompanham a lapidação de cada pedra, sem mudar seu desenho.
@@ -444,13 +464,13 @@ export function buildAccessories(fit, sel = {}, cols = {}, hairMeshes = []) {
     const norm = list.map(g => { for (const attribute of Object.keys(g.attributes)) if (!(k==='plume'?['position','normal','uv']:['position','normal']).includes(attribute)) g.deleteAttribute(attribute); if (!g.attributes.normal) g.computeVertexNormals(); return g.index ? g.toNonIndexed() : g });
     const merged = mergeGeometries(norm, false); norm.forEach(g => g.dispose()); list.forEach(g => g.dispose());
     if (!merged) continue;
-    if(['metal','metalD','fabric','band','lining'].includes(k)){
+    if(['metal','metalD','fabric','band','lining','mask'].includes(k)){
       const p=merged.attributes.position, colors=new Float32Array(p.count*3);
       for(let i=0;i<p.count;i++){const variation=.965;colors.fill(variation,i*3,i*3+3)}
       merged.setAttribute('color',new THREE.BufferAttribute(colors,3));matOf(k).vertexColors=true;
     }
     if(k==='plume'&&merged.attributes.uv){groomSurface(matOf(k),{roughness:matOf(k).roughness,anisotropy:.3});merged.setIndex(Array.from({length:merged.attributes.position.count},(_,i)=>i));merged.computeTangents()}
-    else if(['metal','metalD','fabric','band','lining'].includes(k))heroSurface(merged,matOf(k),k.startsWith('metal')||matOf(k).metalness>.5?'metal':k==='band'||['cowboy','frontier_hat'].includes(head)?'leather':'fabric',1,{detail:['nana_explorer','nico_inventor','bread_baker','bread_vigilante'].includes(P.id)&&['fabric','lining','band'].includes(k)});
+    else if(['metal','metalD','fabric','band','lining','mask'].includes(k))heroSurface(merged,matOf(k),k.startsWith('metal')||matOf(k).metalness>.5?'metal':k==='band'||['cowboy','frontier_hat'].includes(head)?'leather':'fabric',1,{detail:['nana_explorer','nico_inventor','bread_baker','bread_vigilante'].includes(P.id)&&['fabric','lining','band','mask'].includes(k)});
     const m = new THREE.Mesh(merged, matOf(k)); m.name = 'Acc_' + (sel.head && ['metal', 'metalD', 'fabric', 'band', 'glass', 'liquid'].includes(k) ? '' : '') + k; m.castShadow = !matOf(k).transparent; m.receiveShadow = true;
     if (k === 'glass') m.renderOrder = 2;
     group.add(m);

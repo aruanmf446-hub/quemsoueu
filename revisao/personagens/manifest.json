@@ -1,11 +1,11 @@
 {
-  "base": "c4673ef",
+  "base": "f9b83df",
   "status": "revisão visual",
   "characters": {
-    "nana_explorer": "Nana exploradora",
     "nico_inventor": "Nico inventor",
+    "nana_explorer": "Nana exploradora",
     "bread_vigilante": "Vigilante",
-    "bread_baker": "Padeiro · mesma identidade"
+    "bread_baker": "Padeiro · controle preservado"
   },
   "views": {
     "body-front": "Frente",
@@ -14,14 +14,6 @@
     "three": "Rosto e acessórios"
   },
   "assets": [
-    "before-nana_explorer-body-front.webp",
-    "after-nana_explorer-body-front.webp",
-    "before-nana_explorer-body-three.webp",
-    "after-nana_explorer-body-three.webp",
-    "before-nana_explorer-body-back.webp",
-    "after-nana_explorer-body-back.webp",
-    "before-nana_explorer-three.webp",
-    "after-nana_explorer-three.webp",
     "before-nico_inventor-body-front.webp",
     "after-nico_inventor-body-front.webp",
     "before-nico_inventor-body-three.webp",
@@ -30,6 +22,14 @@
     "after-nico_inventor-body-back.webp",
     "before-nico_inventor-three.webp",
     "after-nico_inventor-three.webp",
+    "before-nana_explorer-body-front.webp",
+    "after-nana_explorer-body-front.webp",
+    "before-nana_explorer-body-three.webp",
+    "after-nana_explorer-body-three.webp",
+    "before-nana_explorer-body-back.webp",
+    "after-nana_explorer-body-back.webp",
+    "before-nana_explorer-three.webp",
+    "after-nana_explorer-three.webp",
     "before-bread_vigilante-body-front.webp",
     "after-bread_vigilante-body-front.webp",
     "before-bread_vigilante-body-three.webp",
@@ -45,6 +45,8 @@
     "before-bread_baker-body-back.webp",
     "after-bread_baker-body-back.webp",
     "before-bread_baker-three.webp",
-    "after-bread_baker-three.webp"
+    "after-bread_baker-three.webp",
+    "before-nana_explorer-feet.webp",
+    "after-nana_explorer-feet.webp"
   ]
 }
