@@ -1,3 +1,5 @@
+> **Rodada reprovada e retirada.** O usuário mostrou que `22251b2` formou um queixo alongado e retangular na Arqueira. O remapeamento abaixo foi removido; o contorno retorna à base `eeaa4f0`. Os testes técnicos desta rodada não constituíram aprovação estética. Continuação em [RECUPERACAO-QUEIXOS-CABELOS.md](RECUPERACAO-QUEIXOS-CABELOS.md).
+
 # Contorno da mandíbula curta e recuada
 
 As imagens da Princesa e Nico enviadas pelo usuário mostram que `eeaa4f0` acrescentou relevo sob o lábio, mas conservou uma silhueta inferior curta/recuada. O usuário esclareceu o escopo: corrigir todos os personagens com esse modelo de queixo, preservando os outros formatos.

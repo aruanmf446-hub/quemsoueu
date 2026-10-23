@@ -29,9 +29,9 @@ O acabamento dos 17 penteados usa volumes fechados, pontas afinadas, sulcos e fi
 
 ### Revisão visual após a reprovação
 
-A revisão atual corrige a [mandíbula curta e recuada](REFINO-MANDIBULA.md) em 11 perfis que compartilham esse problema. A silhueta inferior ganha altura e contorno; os outros 23 modelos permanecem iguais. O apoio superficial da [rodada anterior](REFINO-QUEIXOS.md) foi insuficiente.
+A extensão mandibular de `22251b2` foi reprovada: criou um queixo alongado e retangular. A [correção atual](RECUPERACAO-QUEIXOS-CABELOS.md) retira essa deformação e recupera o contorno anterior (`eeaa4f0`). O refinamento dos queixos recuados permanece aberto; não confundir a recuperação com uma nova solução anatômica concluída.
 
-A rodada `b119a58` foi reprovada pelo usuário: olhos e íris exagerados e rostos adultos encurtados. A [correção de proporções faciais](CORRECAO-PROPORCOES-FACIAIS.md) ajusta os 23 perfis humanos e corrige a oclusão pintada nas pálpebras inferiores; o catálogo preserva as diferenças de idade e identidade. Essa etapa comparou a versão reprovada com a correção, com câmera e iluminação iguais. A [comparação pública](https://aruanmf446-hub.github.io/quemsoueu/revisao/) mostra agora apenas os 11 perfis afetados, usando `eeaa4f0` como antes, com uma aba adicional de perfil. Luz, exposição, cabelo e figurinos permanecem iguais nesta rodada. Testes técnicos não representam aprovação estética. A reconstrução anterior está documentada em [REVISAO-ESCULTURA-CATALOGO.md](REVISAO-ESCULTURA-CATALOGO.md).
+O trabalho nos 17 penteados foi retomado: mechas mais espessas e arredondadas, raízes encaixadas, linha das têmporas contínua e cobertura dos cortes curtos. Luz, exposição e figurinos permanecem iguais. A [comparação pública](https://aruanmf446-hub.github.io/quemsoueu/revisao/) compara a versão reprovada com esta recuperação. Os rostos conservam as proporções de `54a1f87` e o apoio localizado de `eeaa4f0`. Testes técnicos não representam aprovação estética nem equivalência às referências de cinema.
 
 ### Escultura facial e identidade
 

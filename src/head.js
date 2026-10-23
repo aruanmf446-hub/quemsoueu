@@ -68,7 +68,7 @@ function pchip(xs, vs) {
     return (2 * t3 - 3 * t2 + 1) * vs[i] + (t3 - 2 * t2 + t) * h[i] * m[i] + (-2 * t3 + 3 * t2) * vs[i + 1] + (t3 - t2) * h[i] * m[i + 1];
   };
 }
-function makeLoft(L, mandible=null) {
+function makeLoft(L) {
   const Y = L.y, y0 = Y[0], y1 = Y[Y.length - 1], NT = 1024, dy = (y1 - y0) / (NT - 1);
   const fa = pchip(Y, L.a), ff = pchip(Y, L.zf), fb = pchip(Y, L.zb);
   let A = new Float64Array(NT), F = new Float64Array(NT), B = new Float64Array(NT);
@@ -83,20 +83,7 @@ function makeLoft(L, mandible=null) {
     const mid = (F[i] + B[i]) / 2; A[i] *= f; F[i] = mid + (F[i] - mid) * f; B[i] = mid + (B[i] - mid) * f;
   }
   const cF = sqC(L.n ?? 2.4);
-  const base={ y0, y1, cF, at(y, out) { const fi = clamp((y - y0) / dy, 0, NT - 1.0001), i = fi | 0, t = fi - i; out.a = A[i] + (A[i + 1] - A[i]) * t; out.zf = F[i] + (F[i + 1] - F[i]) * t; out.zb = B[i] + (B[i + 1] - B[i]) * t; return out } };
-  if(!mandible)return base;
-  const J=mandible;
-  return{y0:J.bottom,y1,cF,at(y,out){
-    if(y>=J.join)return base.at(y,out);
-    // Redistribui a própria casca inferior: o queixo ganha altura e perfil,
-    // sem empilhar um segundo volume sob o rosto. As tangentes se encontram na união.
-    const shift=J.extension*sstep(J.join,J.bottom+.04,y);
-    base.at(y+shift,out);
-    const support=sstep(J.join,J.bottom+.14,y)*sstep(J.bottom,J.bottom+.08,y);
-    out.a*=1+(J.widthRatio-1)*support;
-    out.zf+=J.advance*support;
-    return out;
-  }};
+  return { y0, y1, cF, at(y, out) { const fi = clamp((y - y0) / dy, 0, NT - 1.0001), i = fi | 0, t = fi - i; out.a = A[i] + (A[i + 1] - A[i]) * t; out.zf = F[i] + (F[i + 1] - F[i]) * t; out.zb = B[i] + (B[i + 1] - B[i]) * t; return out } };
 }
 
 // ---------- forma por perfil girado (vegetais): largura r(y) em volta de um eixo vertical + tampa arredondada ----------
@@ -118,7 +105,7 @@ function makeLathe(Lt) {
 function makeSDF(P) {
   const [cy, cz, crx, cry, crz, crzB = crz, cn0 = 2] = P.cran, cn = sqC(cn0), [nr, nty, ntz, nby, nbz, nk] = P.neck;
   const LA = P.lathe && makeLathe(P.lathe);
-  const L = LA ? null : makeLoft(P.loft,P.mandible), kf = LA ? 0 : P.loft.k ?? .16, sl = { a: 0, zf: 0, zb: 0 }, oc = P.occ;
+  const L = LA ? null : makeLoft(P.loft), kf = LA ? 0 : P.loft.k ?? .16, sl = { a: 0, zf: 0, zb: 0 }, oc = P.occ;
   // A tampa da cabeça fica dentro do alargamento do corpo. Cortá-la acima
   // da base deixava o arredondamento dessa tampa visível como um anel.
   const cut = P.sculptedFace&&!P.lathe?nby-.10:nby+.06;
@@ -384,7 +371,7 @@ function makeFaceField(P, eyes) {
     // queixo
     const originalChin=P.chinH*gau(x,P.chinW??.2)*gau(y-(chinY+.06),.12);
     dz+=originalChin;
-    if(P.chinShape&&!P.mandible){
+    if(P.chinShape){
       const C=P.chinShape,bottom=P.loft.y[0],lowerLip=mY-P.lipL;
       // O apoio fica entre o lábio e a base mandibular. A máscara termina
       // antes do lábio e sob o queixo: não altera a boca nem cria um nódulo no pescoço.

@@ -51,21 +51,6 @@ export const CHIN_IDENTITIES={
  bread_baker:{depth:.090,width:.32,tall:.14}
 };
 CHIN_IDENTITIES.bread_vigilante=CHIN_IDENTITIES.bread_baker;
-// Família de mandíbula curta e recuada: a correção muda o contorno inferior,
-// e não apenas o relevo sob o lábio. Mandíbulas largas/projetadas ficam fora.
-export const MANDIBLE_IDENTITIES={
- feminine_soft:{extension:.10,width:.275,front:.73},
- feminine_bold:{extension:.10,width:.30,front:.77},
- cute_round:{extension:.12,width:.335,front:.73},
- sad_clown:{extension:.11,width:.38,front:.76},
- nana_explorer:{extension:.10,width:.40,front:.81},
- moon_guardian:{extension:.11,width:.28,front:.725},
- nico_inventor:{extension:.12,width:.295,front:.715},
- ruby_sorceress:{extension:.10,width:.275,front:.77},
- forest_archer_f:{extension:.12,width:.285,front:.74},
- forest_guard_f:{extension:.10,width:.37,front:.78},
- forest_princess:{extension:.12,width:.295,front:.73}
-};
 const skulls={feminine_soft:[0.79,0.75,0.8],masculine_soft:[0.84,0.78,0.83],cute_round:[0.87,0.79,0.83],feminine_bold:[0.78,0.8,0.78],old_king:[0.86,0.81,0.84],alchemist_villain:[0.72,0.9,0.76],dwarf_bard:[0.88,0.73,0.84],sad_clown:[0.85,0.77,0.81],orc_warrior:[0.92,0.75,0.89],nana_explorer:[0.86,0.72,0.83],moon_guardian:[0.77,0.82,0.78],nico_inventor:[0.84,0.8,0.81],ruby_sorceress:[0.76,0.83,0.77],flame_guardian:[0.87,0.75,0.85],forest_archer_f:[0.8,0.73,0.8],forest_archer_m:[0.82,0.79,0.82],forest_guard_f:[0.82,0.74,0.8],forest_guard_m:[0.84,0.75,0.81],forest_guard_veteran:[0.86,0.77,0.85],forest_artificer:[0.76,0.82,0.77],forest_princess:[0.84,0.79,0.81],bread_baker:[0.88,0.74,0.84]};
 skulls.bread_vigilante=skulls.bread_baker;
 export const FACE_IDENTITIES=profiles;
@@ -86,10 +71,6 @@ export function refineFaceIdentities(presets){
   Object.assign(p,{sculptedFace:true,socket:f.mature?.024:.012,crease:f.mature?.010:.005,creaseGap:.046,orbit:f.mature?.019:.009,lidFold:.006,lowerRoll:.003,zyg:f.mature?.015:.005,hollow:f.mature?.017:.003,temple:.005,browRidge:f.mature?.040:.016,fold:f.mature?.65:.18,muzzle:.016,irisAng:deg(f.mature?29:33),lash:Math.min(p.lash,.015),flick:Math.min(p.flick,.025),lashLen:Math.min(p.lashLen,.060)});
   Object.assign(p,f.detail);
   if(CHIN_IDENTITIES[id])p.chinShape=CHIN_IDENTITIES[id];
-  if(MANDIBLE_IDENTITIES[id]){
-    p.mandible={...MANDIBLE_IDENTITIES[id],bottom:bottom-MANDIBLE_IDENTITIES[id].extension,join:p.mouthY-p.lipL-.03,widthRatio:MANDIBLE_IDENTITIES[id].width/chin,advance:MANDIBLE_IDENTITIES[id].front-chinZ};
-    p.jawChinY=p.mandible.bottom+.02;
-  }
   p.faceIdentity=id==='bread_vigilante'?'bread_baker':id;
  }
  // Vegetais: massas e relações faciais também próprias, preservando as espécies.

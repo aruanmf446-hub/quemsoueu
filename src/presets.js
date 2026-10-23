@@ -302,7 +302,6 @@ export function resolve(presetId, adj = DEFAULT_ADJ) {
     return v * W * (1 + (J - 1) * 1.1 * low) * (1 + (C - 1) * .06 * mid) }) } : { ...L };
   if (b.lathe) { const T = b.lathe; P.lathe = { ...T, r: T.r.map((v, i) => v * W * (1 + (J - 1) * .8 * Math.min(1, Math.max(0, (-.4 - T.y[i]) / .4)))) } }
   P.neck = b.neck.slice(); P.scm = b.scm ? b.scm.slice() : null;
-  if(b.mandible)P.mandible={...b.mandible};
   P.cheekH = b.cheekH * C;
   P.Re = b.Re * E; P.eyeX = b.eyeX * G * (1 + (W - 1) * .5);
   // olhos + sobrancelha nunca passam da silhueta do crânio (combinações extremas dos sliders)

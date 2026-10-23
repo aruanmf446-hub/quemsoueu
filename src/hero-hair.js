@@ -21,12 +21,15 @@ export function buildHeroHair(fit,style,color){
    for(let k=0;k<55;k++){const d=sdf(dir.x*r,cy+dir.y*r,cz+dir.z*r);if(Math.abs(d)<.00025)break;r-=clamp(d*.9,-.1,.15)}p=c.addScaledVector(dir,r);surfaceCache.set(key,p)}
   return p.clone().addScaledVector(gradient(p),lift);
  }
- function lock(points,width,depth,{rope=false,phase=0,tone=1,tip=.60,detail=false,normal=null,root=.34}={}){
+ function lock(points,width,depth,{rope=false,phase=0,tone=1,tip=.60,detail=false,normal=null,root=.025}={}){
   if(points.length<3||points.some(p=>!Number.isFinite(p.lengthSq())))return;
+  points=points.map(p=>p.clone());
+  // As raízes entram na cobertura: a tampa da mecha não aparece como um corte.
+  if(!rope){const p=points[0],d=sdf(p.x,p.y,p.z);if(Math.abs(d)<.25)p.addScaledVector(gradient(p),.006-d)}
   const curve=new THREE.CatmullRomCurve3(points,false,'centripetal');
-  const geometry=groomedLock(points,width,depth,{rows:clamp(Math.ceil(curve.getLength()*36),28,100),segments:24,detailFibers:false,sculpted:!rope,grooves:rope?3:1,phase,twist:rope?8:0,tone:tone*(.98+rand()*.04),
+  const geometry=groomedLock(points,width,depth,{rows:clamp(Math.ceil(curve.getLength()*36),28,100),segments:24,detailFibers:false,sculpted:false,grooveStrength:rope?.13:.065,grooves:3,phase,twist:rope?8:0,tone:tone*(.98+rand()*.04),
    normal:normal||((t,p)=>V(p.x,Math.max(.18,p.y-cy)*.65,p.z-cz)),
-   profile:t=>{const taper=Math.pow(1-smooth(tip,1,t),.70),rise=root+(1-root)*smooth(0,.20,t);return[Math.max(.0004,width*rise*taper),Math.max(.0003,depth*rise*Math.pow(taper,.86))]}});
+   profile:t=>{const taper=Math.pow(1-smooth(tip,1,t),.70),rise=root+(1-root)*smooth(0,.20,t);return[Math.max(.0004,width*rise*taper),Math.max(.0003,(rope?depth:Math.max(depth,width*.48))*rise*Math.pow(taper,.86))]}});
   parts.push(geometry);return curve;
  }
  function ellipsoid(center,radii,tone=.92,rumple=0){
@@ -57,15 +60,15 @@ export function buildHeroHair(fit,style,color){
     pts.push(surface(c.clone().addScaledVector(uu,du).addScaledVector(vv,dv),-.008+.041*Math.sin(PI*t)+patchLift));
    }
    const flowNormal=(t,p)=>V((p.x-center.x)/(radii.x*radii.x),(p.y-center.y)/(radii.y*radii.y),(p.z-center.z)/(radii.z*radii.z)).normalize();
-   lock(pts,r*.44,r*.16,{phase:a,tip:.82,normal:flowNormal,root:.25});
+   lock(pts,r*.44,r*.16,{phase:a,tip:.82,normal:flowNormal,root:.025});
    if(j%3===0){
     const paired=pts.map((p,k)=>surface(p.clone().addScaledVector(vv,r*.24),.030+.006*Math.sin(k/30*PI)));
-    lock(paired,r*.18,r*.075,{phase:a+.4,tip:.73,normal:flowNormal,root:.20});
+    lock(paired,r*.18,r*.075,{phase:a+.4,tip:.73,normal:flowNormal,root:.025});
    }
   }
  }
  // A cobertura recebe volume suave no alto. A linha do cabelo encontra a pele sem dentes repetidos.
- const line=q=>{const a=Math.abs(Math.atan2(q.x,q.z-cz)),front=style.id==='hero_tousled'?.31:kind==='pixie'?.28:.25;return a<.90?brow+front-.07*Math.sin(a*2):a<1.75?earY+.045-(a-.90)*.42:lobe-.18};
+ const line=q=>{const a=Math.abs(Math.atan2(q.x,q.z-cz)),front=style.id==='hero_tousled'?.31:kind==='pixie'?.28:.25;const forehead=brow+front-.07*Math.sin(Math.min(a,.9)*2),temple=THREE.MathUtils.lerp(forehead,earY+.045,smooth(.65,1.75,a));return THREE.MathUtils.lerp(temple,lobe-.18,smooth(1.75,2.3,a))};
  const src=fit.skinGeo,sp=src.attributes.position,sn=src.attributes.normal,N=fit.skinN,remap=new Map(),cp=[],cc=[],cu=[],ci=[];
  // Cada aresta cruza a linha do cabelo por interpolação, sem degraus de triângulos descartados.
  const capAxis=V(kind==='curlup'?-.08:.16,top+.20-cy,kind==='curlup'?-.18:-.10).normalize(),capFront=V(0,0,1).addScaledVector(capAxis,-capAxis.z).normalize(),capRight=capAxis.clone().cross(capFront).normalize();
@@ -90,20 +93,20 @@ export function buildHeroHair(fit,style,color){
   const curve=new THREE.CatmullRomCurve3(points,false,'centripetal'),pts=[],frames=[];
   for(let k=0;k<=32;k++){
    const t=k/32,p=curve.getPoint(t),tangent=curve.getTangent(t),n=gradient(p),side=tangent.clone().cross(n).normalize(),env=Math.sin(PI*t),wave=t*PI*2*cycles+phase;
-   p.addScaledVector(side,amp*Math.sin(wave)*env).addScaledVector(n,amp*.45*Math.cos(wave)*env);outside(p,.035);
+   p.addScaledVector(side,amp*Math.sin(wave)*env).addScaledVector(n,amp*.80*Math.cos(wave)*env);outside(p,.035);
    pts.push(p);frames.push({n,side});
   }
-  lock(pts,width,depth,{phase,tip,normal:(t,p)=>gradient(p),root:.25});
+  lock(pts,width,depth,{phase,tip,normal:(t,p)=>gradient(p),root:.025});
   // Submechas seguem a curva-mãe; compartilham início e ponta e não são fios aleatórios.
   if(sub)for(const sign of [-1,1]){
-   const child=pts.map((p,k)=>{const env=Math.sin(k/32*PI)**.65;return p.clone().addScaledVector(frames[k].side,sign*width*.43*env).addScaledVector(frames[k].n,depth*.82*env)});
-   lock(child,width*.22,depth*.34,{phase:phase+sign*.3,tip:tip+.08,normal:(t,p)=>gradient(p),root:.20});
+   const child=pts.map((p,k)=>{const env=Math.sin(k/32*PI)**.65;return p.clone().addScaledVector(frames[k].side,sign*width*.38*env).addScaledVector(frames[k].n,Math.max(depth,width*.48)*.78*env)});
+   lock(child,width*.26,depth*.44,{phase:phase+sign*.3,tip:tip+.08,normal:(t,p)=>gradient(p),root:.025});
   }
  }
  function crownFlow({short=false,neat=false,pixie=false}={}){
-  const n=pixie?13:short?16:18;
+  const n=pixie?19:short?18:20;
   for(let layer=0;layer<2;layer++)for(let j=0;j<n;j++){
-   const phi=.52+j*(2*PI-1.04)/(n-1)+(layer?.12:0),front=Math.cos(phi)>.30,a=scalp(.26+layer*.36,phi-.26,.012),b=scalp(.66+layer*.24,phi-.08,.11+(neat?0:.035*Math.sin(j*1.9))),endTheta=front?1.10:(pixie?1.57:1.72)+layer*.11,c=scalp(endTheta,phi+.17,.075),d=c.clone().add(V(Math.sin(phi)*.035,pixie?-.025:-.075,Math.cos(phi)*.025));
+   const phi=.52+j*(2*PI-1.04)/(n-1)+(layer?.12:0),front=Math.cos(phi)>.30,a=scalp(.26+layer*.36,phi-.26,.012),b=scalp(.66+layer*.24,phi-.08,.11+(neat?0:.035*Math.sin(j*1.9))),endTheta=front?1.10:(pixie?1.76:1.82)+layer*.11,c=scalp(endTheta,phi+.17,.075),d=c.clone().add(V(Math.sin(phi)*.035,pixie?-.025:-.075,Math.cos(phi)*.025));
    lock([a,b,c,d],(pixie?.095:short?.115:.10)*(1+.18*Math.sin(j*2.7)),neat?.023:pixie?.026:.034,{tip:.53,phase:j});
   }
  }
@@ -134,7 +137,7 @@ export function buildHeroHair(fit,style,color){
   // Corte mais curto, franja diagonal e uma trança exposta no lado oposto da risca.
   for(let j=0;j<6;j++){
    const a=outside(V(.24+j*.019,top-.19+j*.010,cz+.12),.025),b=outside(V(.12+j*.018,top+.015,cz+.40),.065),c=outside(V(-.32-j*.035,brow+.34+.045*Math.sin(j),cz+.72),.070),end=outside(V(-.59-j*.027,brow+.12+j*.027,cz+.52),.04);
-   coherentClump([a,b,c,end],.087+.012*Math.sin(j),.023,j*.8,{amp:.010,cycles:.9,sub:j%2===0,tip:.59});
+   coherentClump([a,b,c,end],.073+.014*Math.sin(j),.038,j*.8,{amp:.023,cycles:1.05,sub:j%2===0,tip:.67});
   }
   for(let strand=0;strand<3;strand++){
    const pts=[];for(let k=0;k<=56;k++){
@@ -232,7 +235,7 @@ export function buildHeroHair(fit,style,color){
  if(masses.length){const geo=mergeGeometries(masses,false);masses.forEach(g=>g.dispose());const m=new THREE.Mesh(geo,material);m.name='Hair_Mass';group.add(m)}
  if(parts.length){const geo=mergeGeometries(parts,false);parts.forEach(g=>g.dispose());const m=new THREE.Mesh(geo,material);m.name='Hair_Locks';group.add(m)}
  let metal=null;if(ornaments.length){metal=new THREE.MeshPhysicalMaterial({name:'Hair_Ring',color:'#b98d3f',metalness:.85,roughness:.32});const geo=mergeGeometries(ornaments,false);ornaments.forEach(g=>g.dispose());heroSurface(geo,metal,'metal');const m=new THREE.Mesh(geo,metal);m.name='Hair_Rings';group.add(m)}
- group.traverse(m=>{if(m.isMesh){m.castShadow=true;m.receiveShadow=true}});group.userData.timing=Math.round(performance.now()-started);group.userData.sculpture={version:2,style:style.id,locks:parts.length,filledMasses:masses.length};
+ group.traverse(m=>{if(m.isMesh){m.castShadow=true;m.receiveShadow=true}});group.userData.timing=Math.round(performance.now()-started);group.userData.sculpture={version:3,style:style.id,locks:parts.length,filledMasses:masses.length};
  return {group,material,meshes:group.children.filter(m=>m.isMesh),setColor(c){for(const m of [material,baseMaterial])groomColor(m,c)},dispose(){group.traverse(m=>{if(m.isMesh)m.geometry.dispose()});material.dispose();baseMaterial.dispose();metal?.dispose()}};
 }
 

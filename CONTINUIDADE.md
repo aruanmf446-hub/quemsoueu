@@ -4,17 +4,21 @@
 
 O usuário determinou: **sempre subir o trabalho para a `main`**. Ao concluir uma rodada, validar, registrar as alterações e enviar à `main`, preservando alterações remotas e sem force push. Distinguir o envio do código da conclusão do deploy do site.
 
-## Rodada atual — contorno mandibular do grupo afetado (23/10/2026)
+## Rodada atual — regressão do queixo e retomada dos cabelos (23/10/2026)
 
-O usuário reprovou o efeito de `eeaa4f0` nas imagens da Princesa e Nico: o queixo ainda parece ausente. Esclareceu que eles são exemplos de um grupo maior, **somente os personagens com esse modelo de queixo**, e não todos os personagens. O apoio em relevo sob o lábio foi insuficiente: não corrigia a altura da silhueta inferior.
+O usuário **reprovou `22251b2`**: o mento da Arqueira ficou alongado, retangular e separado visualmente do rosto. A limitação do código a 11 perfis não torna o resultado aceitável. Não reutilizar o remapeamento mandibular dessa rodada nem o apresentar como aprovado.
 
-A correção está limitada a 11 perfis de mandíbula curta/recuada: Feminino suave, Feminino intenso, Cute, Palhaço, Nana, Guardiã da Lua, Nico, Feiticeira rubi, Arqueira, Guarda feminina e Princesa. Os demais 23 preservam as malhas da base. Anão, Guarda jovem e skins do Padeiro mantêm o apoio anterior; não recebem esta mudança estrutural.
+Foram retirados `MANDIBLE_IDENTITIES`, o remapeamento de `makeLoft`, a extensão inferior e a substituição de `jawChinY`. A anatomia retorna exatamente à base `eeaa4f0`, anterior ao bloco. Isso recupera o contorno anterior; **não significa concluir o pedido antigo de melhorar os queixos recuados**. Olhos, nariz, boca e diferenças de identidade aprovadas anteriormente são preservados.
 
-`MANDIBLE_IDENTITIES` define extensão, largura e perfil próprios. `makeLoft` remapeia suavemente as fatias da própria casca inferior, estendendo a silhueta 0,10–0,12 unidade e modelando o mento. Olhos, nariz e boca ficam acima da união preservada. O apoio superficial anterior fica desativado nesses 11. O primeiro ensaio com um volume adicional foi descartado porque formava um bloco sob o rosto; a versão final usa uma única casca contínua. `jawChinY` acompanha a nova base no rig. Prévias `menu-v17-contorno-mandibular`.
+A retomada dos cabelos usa o gerador dos 17 penteados: seção elíptica completa e mais espessa, sulcos menores, raízes finas encaixadas na cobertura, mais cobertura dos cortes curtos e franja menos achatada na Arqueira. A linha de implantação passa continuamente pela têmpora, sem o salto do gerador anterior. Acessórios, barbas, roupas, luz e exposição não foram redesenhados. O parâmetro opcional de sulco em `groom.js` conserva o comportamento anterior para seus outros consumidores.
 
-Base `/workspace/outputs/mandibula-referencia-eeaa4f0`; artefatos `renders/mandibula/`. Somente os 11 alvos são recapturados; os 23 preservados reutilizam as capturas finais da base. A comparação publicada passa a mostrar **somente os 11 afetados**, com abas com cabelo, escultura e perfil. `revisao/manifesto.json` identifica a seleção. Detalhes em [REFINO-MANDIBULA.md](REFINO-MANDIBULA.md). A comparação geométrica confirmou 11 rostos alterados e 23 preservados; o teste do queixo agora exige ganho real de silhueta, além de preservação dos traços superiores e do rig.
+Prévias `menu-v18-queixos-cabelos`. Artefatos em `renders/recuperacao-cabelos/`; o antes visual é `22251b2`, o depois usa a geometria restaurada e o cabelo atual. As capturas de escultura do depois são reutilizadas da base `eeaa4f0`, cuja igualdade geométrica é verificada pelo teste de preservação. A vista 3/4 com cabelo foi recapturada em todo o catálogo. Esta rodada é recuperação da regressão e continuação do cabelo; não declarar equivalência às referências de cinema nem aprovação estética do usuário.
 
-Validação final: 11 malhas alteradas e 23 preservadas; ganho real de silhueta e 450 pontos superiores preservados; lábios, pescoço e deformações válidos; quatro GLBs e três Workers passaram. Capturas finais dos 11 e galeria com 66 imagens (incluindo perfil), busca e celular concluídos. Enviar a rodada para main. Não voltar à abordagem de mero relevo sob o lábio; o usuário pediu corrigir o contorno do grupo específico.
+Validação concluída: 34 identidades recuperadas e 109 peças anatômicas iguais à base `eeaa4f0`; alterações de geometria confirmadas nos 17 penteados. Os testes de normais, continuidade labial, apoio localizado do queixo, pescoço, óculos, criaturas e identidades passaram. Cinco GLBs (Arqueira, Nico, Nana, Guardiã e Guardião) conservam 12 clipes e os mapas/UVs/tangentes dos cabelos; três Workers passaram, assim como a recoloração pelo controle real. A comparação pública retorna ao catálogo completo, com 136 imagens; a vista 3/4 com cabelo foi recapturada nos 34. Sem aprovação estética inferida dos testes. Galeria conferida em desktop e celular: 34 personagens, 136 imagens, abas e busca válidos. Rodada validada para envio à main sem force push.
+
+## Rodada reprovada — extensão mandibular (`22251b2`)
+
+O remapeamento estendia 0,10–0,12 unidade em 11 perfis. Os testes anteriores confirmavam a extensão e a preservação dos traços superiores, mas **não detectaram o aspecto de bloco**, depois demonstrado pelo usuário no jogo. O teste não deve exigir mais o alongamento reprovado. Histórico em [REFINO-MANDIBULA.md](REFINO-MANDIBULA.md).
 
 ## Rodada anterior, efeito insuficiente — apoio do queixo (23/10/2026)
 
