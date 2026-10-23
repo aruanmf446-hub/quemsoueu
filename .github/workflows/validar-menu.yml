@@ -18,6 +18,34 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  selecao:
+    name: Seleção e prévias dos 34 personagens
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Preparar navegador e dependências
+        run: |
+          npm install --no-save --package-lock=false --no-audit --no-fund three@0.180.0 playwright
+          npx playwright install --with-deps chromium
+          sudo ln -sf "$(node -p "require('playwright').chromium.executablePath()")" /usr/bin/chromium
+      - name: Servir e testar cartões, recuperação e celular
+        run: |
+          node tests/qualidade-expressao.mjs
+          python3 -m http.server 8000 > /tmp/atelie-http.log 2>&1 &
+          for tentativa in $(seq 1 30); do
+            if curl -fsS http://localhost:8000/ -o /dev/null; then break; fi
+            sleep 1
+          done
+          timeout 20m node tests/selecao-personagens.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: selecao-personagens
+          path: renders/selecao-personagens/
   menu:
     name: Prévias e subcategorias
     runs-on: ubuntu-latest

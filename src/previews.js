@@ -33,7 +33,7 @@ export class PreviewCatalog {
       const request={...context,spec};if(spec.kind==='character')request.look=window.__atelie.savedLook(spec.value);
       // O enquadramento novo dos brincos invalida somente as quatro miniaturas desse slot.
       const alvo=spec.kind==='character'?spec.value:context.id;
-      const versao=FRONTIER.has(alvo)?'deserto-heroi-4':FOREST.has(spec.kind==='character'?spec.value:context.id)?'floresta-heroi-4':LUNAR.has(spec.kind==='character'?spec.value:context.id)?'reino-lua-heroi-3':spec.kind==='accessory'&&spec.slot==='ears'?'menu-v2-orelhas':VERSION;
+      const versao=alvo==='chili_bandit'?'boca-aberta-2':FRONTIER.has(alvo)?'deserto-heroi-4':FOREST.has(spec.kind==='character'?spec.value:context.id)?'floresta-heroi-4':LUNAR.has(spec.kind==='character'?spec.value:context.id)?'reino-lua-heroi-3':spec.kind==='accessory'&&spec.slot==='ears'?'menu-v2-orelhas':VERSION;
       const key=VERSION+':'+versao+':'+stable(previewChoice(request));button._preview={key,request};
       if(frame.dataset.key!==key){frame.dataset.key=key;frame.replaceChildren(Object.assign(document.createElement('div'),{className:'preview-wait',textContent:'Gerando prévia…'}));frame.classList.add('loading');delete frame.dataset.ready}
       if(this.cache.has(key))this.display(button,key,this.cache.get(key));else this.observer.observe(button);

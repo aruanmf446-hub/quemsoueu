@@ -4,7 +4,19 @@
 
 O usuário determinou: **sempre subir o trabalho para a `main`**. Ao concluir uma rodada, validar, registrar as alterações e enviar à `main`, preservando alterações remotas e sem force push. Distinguir o envio do código da conclusão do deploy do site.
 
-## Rodada atual — revisão individual de todo o catálogo (22/10/2026)
+## Rodada atual — seleção confiável e deformação da boca (23/10/2026)
+
+O usuário disse que alguns personagens ficaram excelentes, mas outros não funcionam/não selecionam. Não identificou quais. Preservar a direção visual e não marcar identidades específicas como aprovadas sem essa indicação. Foi solicitada a identificação dos casos enquanto se verifica todo o catálogo.
+
+Reprodução: os 34 cliques individuais carregaram modelos, mas quatro cliques rápidos enfileiravam quatro montagens do mesmo destino. `busy` agora cancela tarefas de personagens anteriores por revisão, segura novas prévias durante a montagem, trata falhas e libera o estado ocupado. `setPreset` retorna uma Promise booleana. A cabeça, o corpo, o visual e as roupas anteriores só são descartados após a próxima montagem completa; uma falha restaura a cena anterior. A liberação inclui o material próprio dos corpos vegetais.
+
+Na pimenta (`chili_bandit`), a normal dos detalhes e a distância da cavidade à superfície faziam fileiras dos lábios ficarem para trás nos morphs. Para bocas abertas em repouso, a normal da superfície base orienta a máscara, toda a cavidade acompanha a deformação e a alteração da abertura se distribui pela altura existente. As demais identidades mantêm o caminho anterior; nenhuma escultura em repouso foi alterada. O cache das prévias foi invalidado somente para a pimenta.
+
+`tests/qualidade-expressao.mjs` preserva a regressão do sorriso do anão e acrescenta feliz/beijo/triste da pimenta: 26.921 triângulos frontais por pose, sem inversões e com movimento efetivo. O mesmo teste falha contra `bfa8c3e`. Paredes quase de perfil são excluídas dessa projeção, pois a rotação natural dos lábios pode mudar o sinal da projeção sem inverter a superfície. A checagem inicial por produto escalar das normais deu falsos positivos em outros vegetais; não confundir isso com dobras confirmadas.
+
+Validação concluída: `tests/selecao-personagens.cjs` passou nos 34 cartões com prévias reais antes dos cliques, quatro cliques no mesmo quadro (uma montagem), restauração após falha e as quatro famílias em 390 px; sem erros nem avisos de prévias. A pimenta passou em GLB de 30,36 MB com 12 clipes, edição de peças e Worker real de expressão. Seis imagens antes/depois foram comparadas com câmeras idênticas; os cantos da boca acompanham melhor a expressão, sem reesculpir o repouso. `tests/fluidez.cjs` passou em giro, zoom, perda de foco, retomada de fila, quatro miniaturas e preservação do visual; navegação entre quatro seções em 22,6 ms nessa execução (não é medição de FPS). O workflow `validar-menu.yml` ganhou uma suíte própria. Relatórios em `renders/selecao-personagens/` e comparação da pimenta em `renders/funcionamento-pimenta/index.html` (base `bfa8c3e`, arquivo em `/workspace/outputs/funcionamento-base`). Artefatos locais ignorados pelo Git.
+
+## Rodada anterior — revisão individual de todo o catálogo (22/10/2026)
 
 O usuário corrigiu o encerramento após só a arqueira: **quer todos os personagens**. Não repetir entrega de um único alvo como conclusão do pedido. Esta continuação refina os outros 33, preservando a arqueira de `7ccbaa9`; junto com ela, cobre os 34. A relação de alterações de cada personagem está em `REFINO-PERSONAGENS.md`.
 

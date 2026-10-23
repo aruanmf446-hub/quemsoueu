@@ -111,14 +111,44 @@ let presetId='feminine_soft',current=null,lookObj=null,clothesObj=null;const loo
 const getLook=()=>looks[presetId]||(looks[presetId]=defaultLook(presetId));
 let activeClothSlot='upper',editor=null;
 const statusEl=document.getElementById('status');
-function busy(msg,fn){statusEl.textContent=msg;requestAnimationFrame(()=>setTimeout(()=>{fn();statusEl.textContent=PRESETS[presetId].label},0))}
+let presetRevision=0,updateSerial=0,pendingUpdates=0;
+function busy(msg,fn){
+  const revision=presetRevision,serial=++updateSerial;
+  ++pendingUpdates;editor?.previews.hold('montagem',true);
+  statusEl.textContent=msg;host.setAttribute('aria-busy','true');
+  return new Promise(resolve=>requestAnimationFrame(()=>setTimeout(()=>{
+    try{
+      // Trocas antigas não podem reconstruir o último personagem repetidas vezes.
+      if(revision!==presetRevision){resolve(false);return}
+      fn();if(serial===updateSerial)statusEl.textContent=PRESETS[presetId].label;resolve(true);
+    }catch(error){
+      console.error('Falha ao aplicar personagem:',error);
+      statusEl.textContent='Não foi possível aplicar. Escolha novamente para tentar.';resolve(false);
+    }finally{
+      if(!--pendingUpdates){host.setAttribute('aria-busy','false');editor?.previews.hold('montagem',false)}
+    }
+  },0)));
+}
+function disposeCharacter(head,visual,clothes){
+  head?.root?.removeFromParent();clothes?.dispose();visual?.dispose();
+  if(head?.body){head.body.geo.dispose();if(head.body.vegSkin)head.body.mesh.material.dispose()}
+  head?.dispose();
+}
 function rebuildHead(){
-  heroStudio(scene,renderer,presetId);
-  el('bodyFeedback').textContent='';
-  if(clothesObj){clothesObj.dispose();clothesObj=null}
-  if(current){scene.remove(current.root);if(current.body)current.body.geo.dispose();current.dispose()}if(lookObj){lookObj.dispose();lookObj=null}
-  const look=getLook();current=buildHead(presetId,{},{quality:1,...headOpts(look,PRESETS[presetId])});wrap(current);scene.add(current.root);
-  addBody(current);rebuildClothes();syncBody();rebuildLook();applyPose();refreshUI();
+  const previous={head:current,visual:lookObj,clothes:clothesObj};
+  current=null;lookObj=null;clothesObj=null;
+  try{
+    heroStudio(scene,renderer,presetId);el('bodyFeedback').textContent='';
+    const look=getLook();current=buildHead(presetId,{},{quality:1,...headOpts(look,PRESETS[presetId])});wrap(current);scene.add(current.root);
+    addBody(current);rebuildClothes();syncBody();rebuildLook();applyPose();refreshUI();
+  }catch(error){
+    // Mantém o personagem anterior utilizável se uma montagem falhar.
+    disposeCharacter(current,lookObj,clothesObj);
+    current=previous.head;lookObj=previous.visual;clothesObj=previous.clothes;
+    if(current){presetId=current.params.id;heroStudio(scene,renderer,presetId);syncBody();refreshUI()}
+    throw error;
+  }
+  disposeCharacter(previous.head,previous.visual,previous.clothes);
 }
 function rebuildClothes(){
   if(clothesObj){clothesObj.group.removeFromParent();clothesObj.dispose()}
@@ -254,7 +284,13 @@ syncPoseUI();
 const presetsEl=document.getElementById('presets');
 for(const fam of FAMILY_ORDER){const ids=PRESET_ORDER.filter(id=>PRESETS[id].family===fam);if(!ids.length)continue;const h=document.createElement('div');h.className='fam';h.textContent=fam;presetsEl.append(h);
   for(const id of ids){const b=document.createElement('button');b.className='preset';b.dataset.preset=id;b.dataset.family=fam;b.dataset.preview=JSON.stringify({kind:'character',value:id,label:PRESETS[id].label});b.innerHTML='<b>'+PRESETS[id].label+'</b>';b.title=PRESETS[id].sub;b.onclick=()=>setPreset(id);presetsEl.append(b)}}
-function setPreset(id){editor?.previews.hold('corpo',false);el('bodyFeedback').textContent='';el('gBody').setAttribute('aria-busy','false');++buildRevision;clearTimeout(buildSliderTimer);presetId=id;busy('Montando '+PRESETS[id].label+'…',()=>{rebuildHead();aim(...VIEWS.three)})}
+function setPreset(id){
+  if(!Object.hasOwn(PRESETS,id))return Promise.resolve(false);
+  ++presetRevision;++buildRevision;clearTimeout(buildSliderTimer);
+  el('bodyFeedback').textContent='';el('gBody').setAttribute('aria-busy','false');presetId=id;
+  const update=busy('Montando '+PRESETS[id].label+'…',()=>{rebuildHead();aim(...VIEWS.three)});
+  editor?.previews.hold('corpo',false);return update;
+}
 document.getElementById('front').onclick=()=>aim(...VIEWS.front);
 document.getElementById('bodyView').onclick=()=>{if(!el('showBody').checked){el('showBody').checked=true;busy('Montando…',()=>{rebuildHead();aim(...VIEWS.three)})}else{frameBody();aim(...VIEWS.three)}};
 document.getElementById('faceView').onclick=()=>{frame={ty:-.2,dist:7.4};aim(...VIEWS.three)};

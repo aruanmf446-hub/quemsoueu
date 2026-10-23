@@ -22,7 +22,7 @@ Rodada de 22/10/2026: a arqueira foi revista em `7ccbaa9`; esta continuação co
 | Orc (`orc_warrior`) | Queixo largo, mandíbula menos quadrada, nariz amplo de ponta cheia e boca mais larga com menos relevo labial. |
 | Cacto pistoleiro (`cactus_cowboy`) | Perfil de base/queixo próprio, olhos menos circulares, bochecha mais suave e boca larga assimétrica. |
 | Rei pimentão (`pepper_king`) | Silhueta mais arredondada no terço médio, olhos mais afastados e estreitos, boca mais larga e maçãs mais suaves. |
-| Pimenta bandida (`chili_bandit`) | Perfil mais afunilado no alto, olhos menos redondos e mais separados, sorriso mais largo e assimétrico. |
+| Pimenta bandida (`chili_bandit`) | Perfil mais afunilado no alto, olhos menos redondos e mais separados, sorriso mais largo e assimétrico. Na continuação, lábios e cavidade passaram a deformar juntos, corrigindo fileiras presas nas expressões. |
 | Robô (`robot_ball`) | Laterais superiores mais estreitas, queixo mais curto e frente inferior mais cheia, com tela/borda/casco no mesmo campo de deformação. |
 | Arqueira (`forest_archer_f`) | Revisão anterior mantida: mandíbula afunilada, olhos amendoados, ponta nasal curta e suave, lábios menos salientes e mais amostras na boca. |
 | Arqueiro (`forest_archer_m`) | Contorno de face mais estreito, queixo projetado, nariz arredondado e boca assimétrica mais larga. |
@@ -48,3 +48,7 @@ A máscara de deformação dos rostos passou a desaparecer de forma contínua pe
 Referência desta continuação: `7ccbaa9`, cópia local em `/workspace/outputs/todos-individual-base`. `identidades-faciais.mjs` compara os 33 alvos e exige a arqueira inalterada. Galeria em `renders/individual-todos/index.html`: quatro vistas por personagem com câmera igual antes/depois, comparando a rodada completa contra `0ca62a8` (antes da revisão da arqueira). Três expressões adicionais por personagem: feliz, surpreso e piscadela. `tests/qualidade-palpebras-companheiros.mjs` verifica orientação/área dos triângulos, fechamento central, preservação do globo e animações das pálpebras nos quatro companheiros.
 
 Validação concluída: 34 malhas alteradas contra `0ca62a8`, 136 pares de comparação e 102 capturas finais de expressões; 34 GLBs com mapas e os clipes preservados; Worker/expressões/cache para arqueira, veterano, Nana, feneco e corvo, sem erros de navegador. Tipos físicos, cobertura, cactos, pálpebras e regressão do sorriso passaram. A revisão visual incluiu todos os 34, em frente/perfil, expressões e com cabelo/acessórios. Os resultados de testes são verificações técnicas; não representam aprovação estética.
+
+## Continuação — seleção e expressões
+
+Após o relato de personagens que não selecionavam, os 34 cartões foram exercitados com prévias reais e cliques, além das quatro famílias no celular. As trocas rápidas agora descartam montagens ultrapassadas e uma falha mantém o personagem anterior utilizável. A escultura em repouso foi preservada. A boca da pimenta recebeu a correção de deformação descrita acima, com comparação em `renders/funcionamento-pimenta/index.html` e regressão de 26.921 triângulos frontais por expressão feliz/beijo/triste. Detalhes e relatórios em `CONTINUIDADE.md`.

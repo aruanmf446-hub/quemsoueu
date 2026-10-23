@@ -1158,14 +1158,17 @@ export function buildHead(presetId, adj, opts = {}) {
     const M1 = MCv, M2 = curveFor(d), u = x / M1.mw, au = Math.abs(u);
     let xT = au <= 1 ? u * M2.mw : x + Math.sign(x) * (M2.mw - M1.mw);
     if (d.widen && (d.side === 0 || Math.sign(x) === d.side)) xT += Math.sign(x) * d.widen * gau(Math.abs(x) - M1.mw, .14);
-    const yT = y + (M2.ym(xT) - MCv.ym(x)) - (M2.open(xT) - M1.open(x)) * sstep(MCv.ym(x), MCv.ym(x) - .05, y);
+    // Distribui a mudança de abertura por toda a cavidade existente; concentrá-la
+    // em .05 fazia a parede atravessar a borda em bocas já abertas em repouso.
+    const opening=P.open?clamp((M1.ym(x)-y)/Math.max(.05,M1.open(x)),0,1):sstep(MCv.ym(x),MCv.ym(x)-.05,y);
+    const yT = y + (M2.ym(xT) - MCv.ym(x)) - (M2.open(xT) - M1.open(x)) * opening;
     const w = gau(y - M1.ym(x), .17) * (au < 1 ? 1 : exp(-(((au - 1) / .7) ** 2)));
     return [x + w * (xT - x), y + w * (yT - y)];
   }
   // pele: inclinação da superfície pela normal + diferença de relevo reavaliada na posição nova
   function morphSkin(headMesh, d, withNormals) {
     const g = headMesh.geometry, p = g.attributes.position, nr = g.attributes.normal, vi = headMesh.userData.vinfo, n = p.count;
-    const out = new Float32Array(n * 3), f2 = d.mouth ? fieldFor(d) : null, xLim = d.mouth ? Math.min(.85, MCv.mw * 2.6 + .15) : .85;
+    const out = new Float32Array(n * 3), f2 = d.mouth ? fieldFor(d) : null, xLim = d.mouth ? Math.min(.85, MCv.mw * 2.6 + .15) : .85,openMouth=!!(P.open&&d.mouth);
     if (!vi.baseDz) { vi.baseDz = new Float32Array(n).fill(NaN) }
     for (let i = 0; i < n; i++) {
       const wf = vi.wfA[i]; if (wf < .02 || (i < vi.N && vi.state[i] === 1)) continue;
@@ -1173,11 +1176,19 @@ export function buildHead(presetId, adj, opts = {}) {
       if (d.mouth && (y > P.eyeY - .02 || y < (P.loft?.y?.[0] ?? -1.2) - .36)) continue;
       // região da boca some suavemente (sem degrau): até a pálpebra de baixo em cima, abaixo do queixo embaixo
       const fz0 = FZ(x, y),surfaceDistance=Math.abs(fz0-z);
-      if(surfaceDistance>.24)continue;
+      if(surfaceDistance>.24&&!openMouth)continue;
       // Transição contínua entre a frente móvel e nariz/barba/silhueta.
       // Um corte binário em .14 deixava fileiras vizinhas imóveis no sorriso.
-      const surfaceFade=1-sstep(.08,.24,surfaceDistance);
-      const fade = surfaceFade * (d.mouth ? sstep(P.eyeY - .03, P.eyeY - .16, y) * sstep((P.loft?.y?.[0] ?? -1.2) - .35, (P.loft?.y?.[0] ?? -1.2) - .1, y) : 1) * sstep(.12, .3, nr.getZ(i));
+      // A cavidade aberta inteira acompanha o lábio, inclusive a parede recuada.
+      const surfaceFade=openMouth?1:1-sstep(.08,.24,surfaceDistance);
+      let normalZ=nr.getZ(i);
+      if(openMouth){
+        // A parede do lábio aberto aponta para dentro, mas acompanha a boca.
+        // Atenuar pela normal desse detalhe deixava fileiras vizinhas para trás.
+        const step=.006,sx=(FZ(x+step,y)-FZ(x-step,y))/(2*step),sy=(FZ(x,y+step)-FZ(x,y-step))/(2*step);
+        normalZ=1/Math.sqrt(1+sx*sx+sy*sy);
+      }
+      const fade = surfaceFade * (d.mouth ? sstep(P.eyeY - .03, P.eyeY - .16, y) * sstep((P.loft?.y?.[0] ?? -1.2) - .35, (P.loft?.y?.[0] ?? -1.2) - .1, y) : 1) * sstep(.12, .3, normalZ);
       if (fade < .001) continue;
       let [x2, y2] = warpXY(d, x, y); x2 = x + (x2 - x) * fade; y2 = y + (y2 - y) * fade;
       const dx = x2 - x, dy = y2 - y;

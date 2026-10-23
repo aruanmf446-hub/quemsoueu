@@ -183,10 +183,15 @@ Os modelos são cartões com prévias do próprio personagem, visíveis antes de
 
 Depuração: `window.__atelie.editor.select('body','type')`, `.select('clothes','upper')`, `.sections()` e `.previews.stats()`. `.previews.pause()` interrompe a geração para testes isolados do personagem, sem alterar a skin.
 
+Nas trocas rápidas de personagem, montagens pendentes de escolhas anteriores são descartadas. A cena anterior só é liberada depois que a próxima montagem termina; se houver falha, ela continua utilizável e o status permite tentar novamente. Novas prévias aguardam a montagem principal, sem reduzir a qualidade dos modelos. `await window.__atelie.setPreset(id)` informa se a troca terminou ou foi cancelada/falhou.
+
 ```sh
 # Com o servidor local na porta 8000:
 node tests/menu-previas.cjs
+node tests/selecao-personagens.cjs
 ```
+
+`selecao-personagens.cjs` verifica os 34 cartões com o Worker ativo, imagens decodificadas antes do clique, malhas carregadas, troca rápida, recuperação após falha controlada e acesso às quatro famílias no celular. Relatório em `renders/selecao-personagens/`. A suíte roda também no workflow `validar-menu.yml`.
 
 Esse teste percorre as 26 subcategorias, captura suas telas em `renders/menu/`, confere que a prévia não altera a cena principal, exercita o cache após clique e recarga, os controles, o layout móvel e a exportação GLB.
 
