@@ -18,7 +18,7 @@ fs.mkdirSync(out,{recursive:true});
   const ids=process.env.ATELIE_PERSONAGENS?.split(',')||await page.evaluate(async()=>(await import('/src/presets.js')).PRESET_ORDER);
   for(const id of ids){
    await page.evaluate(id=>window.__atelie.setPreset(id),id);await page.waitForFunction(()=>!document.getElementById('status').textContent.includes('…'));
-   await page.evaluate(()=>{const a=window.__atelie;a.setPose({});a.clothes().group.visible=false;if(a.body()?.mesh)a.body().mesh.visible=false;if(a.lookObj()?.group)a.lookObj().group.visible=false});
+   await page.evaluate(()=>{const a=window.__atelie;a.setPose({});a.clothes().group.visible=false;if(a.body()?.mesh)a.body().mesh.visible=false;if(a.lookObj()?.group)a.lookObj().group.visible=false;a.group().traverse(m=>{if(m.name.startsWith('Ear_'))m.visible=true})});
    const onlyPoses=process.env.ATELIE_SOMENTE_POSES==='1';
    if(onlyPoses)assert(fixed[id]?.three,'Captura de expressões requer câmera de referência');
    cameras[id]=onlyPoses?fixed[id]:{};

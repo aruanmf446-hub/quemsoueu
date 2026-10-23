@@ -1,5 +1,5 @@
 """Publica capturas reais do catálogo ou de uma seleção, com câmeras iguais."""
-import html,json,math,sys,subprocess
+import html,json,math,sys,subprocess,os
 from pathlib import Path
 from PIL import Image
 root=Path(sys.argv[1] if len(sys.argv)>1 else 'renders/reconstrucao')
@@ -14,6 +14,8 @@ if len(sys.argv)>6:
  selected=sys.argv[6].split(',');assert len(set(selected))==len(selected)
  catalog=[item for item in catalog if item['id'] in selected]
  assert len(catalog)==len(selected),'Seleção contém personagem desconhecido'
+priority=[id for id in os.environ.get('ATELIE_PRIORIDADE','').split(',') if id]
+catalog.sort(key=lambda item:priority.index(item['id']) if item['id'] in priority else len(priority))
 profiles=len(sys.argv)>7 and sys.argv[7]=='profile'
 cameras={}
 for stage in ['antes','depois']:
@@ -44,6 +46,6 @@ page='''<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name
 page=page.replace('__SCOPE__',html.escape(scope)).replace('__COUNT__',str(len(catalog)))
 page=page.replace('__PROFILE__','<button data-mode="profile" aria-pressed="false">Perfil do queixo</button>' if profiles else '')
 (out/'index.html').write_text(page)
-(out/'manifesto.json').write_text(json.dumps({'ids':[item['id'] for item in catalog],'images':len(catalog)*(6 if profiles else 4),'profiles':profiles,'before':before_label,'after':after_label},ensure_ascii=False,indent=2))
+(out/'manifesto.json').write_text(json.dumps({'ids':[item['id'] for item in catalog],'images':len(catalog)*(6 if profiles else 4),'profiles':profiles,'priority':priority,'before':before_label,'after':after_label},ensure_ascii=False,indent=2))
 (root/'catalogo.json').write_text(json.dumps(catalog,ensure_ascii=False,indent=2))
 print(f'{out}/index.html: {len(catalog)} personagens, {len(catalog)*(6 if profiles else 4)} capturas WebP com câmera igual.')

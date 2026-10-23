@@ -67,6 +67,7 @@ jobs:
         run: |
           node tests/qualidade-cabelo.mjs
           node tests/qualidade-pelos-acessorios.mjs
+          node tests/referencias-tres-herois.mjs
           node tests/qualidade-palpebras-companheiros.mjs
           node tests/identidades-faciais.mjs
           node tests/continuidade-labios.mjs

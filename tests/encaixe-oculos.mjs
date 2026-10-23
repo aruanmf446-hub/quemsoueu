@@ -9,7 +9,7 @@ let samples=0;
 for(const id of ['nico_inventor','cute_round','moon_guardian','old_king','orc_warrior']){
  const h=buildHead(id,{}, {quality:.35}),a=buildAccessories(h.fit,{face:'glasses'});
  try{
-  a.group.updateMatrixWorld(true);const metal=a.group.getObjectByName('Acc_metal'),eyes=h.fit.eyes;
+  a.group.updateMatrixWorld(true);const metal=(a.group.getObjectByName('Acc_optical')||a.group.getObjectByName('Acc_metal')),eyes=h.fit.eyes;
   const separation=Math.abs(eyes[0].x-eyes[1].x),radius=Math.min(eyes[0].R*1.22,separation*.47);
   for(const eye of eyes)for(let j=0;j<24;j++){
    const angle=j/24*Math.PI*2,x=eye.x+radius*Math.cos(angle),y=eye.y-.01+radius*Math.sin(angle);

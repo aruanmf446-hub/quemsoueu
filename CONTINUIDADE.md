@@ -4,7 +4,17 @@
 
 O usuário determinou: **sempre subir o trabalho para a `main`**. Ao concluir uma rodada, validar, registrar as alterações e enviar à `main`, preservando alterações remotas e sem force push. Distinguir o envio do código da conclusão do deploy do site.
 
-## Rodada atual — acessórios do rosto, barba e cabelo menos rígido
+## Rodada atual — referências de Nana, Nico e Vigilante
+
+O usuário anexou as pranchas de Nana, Nico e Padeiro/Vigilante e informou que os três não se parecem com os personagens desejados. Escopo desta rodada: **Nana, Nico e Vigilante**, com Padeiro atualizado por ser a identidade compartilhada na referência. Preservar os outros 30. Não retomar alteração global de rostos/queixos. Detalhes em [REFERENCIAS-NANA-NICO-VIGILANTE.md](REFERENCIAS-NANA-NICO-VIGILANTE.md).
+
+Foram revistos os perfis de `nana_explorer`, `nico_inventor` e `bread_baker` (alias do Vigilante). Os primeiros dois mantêm idades/proporções diferentes; o par Padeiro/Vigilante deixa a aparência infantil. Cabelo específico por identidade: Nana ganha rabo alto lateral em cascata e mechas clara/violeta; Nico ganha mechas mais volumosas e armação escura com goggles mais altos; Vigilante ganha franja contida sob um capuz pontudo com borda ferrugem e máscara curva cobrindo o nariz. O capuz oculta as orelhas e as restaura ao ser retirado. O retrato de escultura desativa essa ocultação quando remove o figurino.
+
+Base `/workspace/outputs/tres-referencias-base-5c8c2a3`; artefatos `renders/tres-referencias/`. A galeria compara o antes `5c8c2a3` e abre com os quatro alvos; outros 30 reutilizam capturas cuja igualdade de visuais foi conferida contra os geradores atuais. Prévias `menu-v20-nana-nico-vigilante`. Corpos, figurinos, luz e exposição preservados. Não declarar equivalência às pranchas nem aprovação estética desta rodada antes da resposta do usuário.
+
+Validação concluída: quatro anatomias alteradas e 30 preservadas; 30 visuais completos comparados (malhas, atributos, matrizes, materiais e visibilidade). Teste dos quatro modelos reais cobre normais, fibras, mechas da Nana, armação do Nico e troca do capuz. Catálogo, lábios, queixos, pescoço, óculos e identidade Padeiro/Vigilante passaram. Quatro GLBs com 12 clipes e três Workers passaram. Capturas em vários ângulos e oito poses; galeria com 34/136, busca, abas e celular válida. Sempre enviar resultado validado à main sem force push.
+
+## Rodada anterior — acessórios e pelos (`5c8c2a3`)
 
 O usuário aprovou `8d4acea` ("Ficou muito bom") e pediu revisar quais personagens precisam de acessórios do rosto, barba e cabelo, com prioridade para barba e acessórios. **Preservar os rostos e queixos aprovados.** Não usar a nova aprovação como conclusão de que as referências de cinema foram alcançadas.
 

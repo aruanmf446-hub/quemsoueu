@@ -10,7 +10,7 @@ const smooth=(a,b,x)=>{const t=clamp((x-a)/(b-a),0,1);return t*t*(3-2*t)};
 function random(seed){let n=seed;return()=>{n=Math.imul(n^n>>>15,1|n)+0x6D2B79F5|0;return((n^n>>>14)>>>0)/4294967296}}
 
 export function buildHeroHair(fit,style,color){
- const started=performance.now(),{P,sdf,top,cz,cy,browY:brow}=fit,kind=style.hero,rand=random(701+style.id.length*53),parts=[],ornaments=[],masses=[];
+ const started=performance.now(),{P,sdf,top,cz,cy,browY:brow}=fit,kind=style.hero,rand=random(701+style.id.length*53),parts=[],ornaments=[],masses=[],accents={};
  const earY=fit.ears.length?Math.max(...fit.ears.map(e=>e.top.y)):brow-.4,lobe=fit.ears.length?Math.min(...fit.ears.map(e=>e.lobe.y)):brow-.9;
  const gradient=p=>{const e=.005;return V(sdf(p.x+e,p.y,p.z)-sdf(p.x-e,p.y,p.z),sdf(p.x,p.y+e,p.z)-sdf(p.x,p.y-e,p.z),sdf(p.x,p.y,p.z+e)-sdf(p.x,p.y,p.z-e)).normalize()};
  function outside(p,offset=.04){for(let i=0;i<3;i++){const d=sdf(p.x,p.y,p.z);if(d>=offset-.001)break;p.addScaledVector(gradient(p),offset-d)}return p}
@@ -21,7 +21,7 @@ export function buildHeroHair(fit,style,color){
    for(let k=0;k<55;k++){const d=sdf(dir.x*r,cy+dir.y*r,cz+dir.z*r);if(Math.abs(d)<.00025)break;r-=clamp(d*.9,-.1,.15)}p=c.addScaledVector(dir,r);surfaceCache.set(key,p)}
   return p.clone().addScaledVector(gradient(p),lift);
  }
- function lock(points,width,depth,{rope=false,phase=0,tone=1,tip=.60,detail=false,normal=null,root=.025}={}){
+ function lock(points,width,depth,{rope=false,phase=0,tone=1,tip=.60,detail=false,normal=null,root=.025,accent=null}={}){
   if(points.length<3||points.some(p=>!Number.isFinite(p.lengthSq())))return;
   points=points.map(p=>p.clone());
   // As raízes entram na cobertura: a tampa da mecha não aparece como um corte.
@@ -30,7 +30,7 @@ export function buildHeroHair(fit,style,color){
   const geometry=groomedLock(points,width,depth,{rows:clamp(Math.ceil(curve.getLength()*36),28,100),segments:24,detailFibers:false,sculpted:false,grooveStrength:rope?.13:.065,grooves:3,phase,twist:rope?8:0,tone:tone*(.98+rand()*.04),
    normal:normal||((t,p)=>V(p.x,Math.max(.18,p.y-cy)*.65,p.z-cz)),
    profile:t=>{const taper=Math.pow(1-smooth(tip,1,t),.80)*(1-.28*smooth(.28,.86,t)),rise=root+(1-root)*smooth(0,.20,t);return[Math.max(.0004,width*rise*taper),Math.max(.0003,(rope?depth:Math.max(depth,width*.38))*rise*Math.pow(taper,.86))]}});
-  parts.push(geometry);return curve;
+  (accent?(accents[accent]||(accents[accent]=[])):parts).push(geometry);return curve;
  }
  function ellipsoid(center,radii,tone=.92,rumple=0){
   const g=new THREE.SphereGeometry(1,48,32),p=g.attributes.position;
@@ -89,18 +89,18 @@ export function buildHeroHair(fit,style,color){
   for(let k=1;k<polygon.length-1;k++)ci.push(capVertex(polygon[0],unwrap),capVertex(polygon[k],unwrap),capVertex(polygon[k+1],unwrap));
  }
  const cap=new THREE.BufferGeometry();cap.setAttribute('position',new THREE.Float32BufferAttribute(cp,3));cap.setAttribute('color',new THREE.Float32BufferAttribute(cc,3));cap.setAttribute('uv',new THREE.Float32BufferAttribute(cu,2));cap.setIndex(ci);cap.computeVertexNormals();smoothHairNormals(cap);cap.computeTangents();
- function coherentClump(points,width,depth,phase,{amp=.035,cycles=1.35,sub=true,tip=.65}={}){
+ function coherentClump(points,width,depth,phase,{amp=.035,cycles=1.35,sub=true,tip=.65,accent=null}={}){
   const curve=new THREE.CatmullRomCurve3(points,false,'centripetal'),pts=[],frames=[];
   for(let k=0;k<=32;k++){
    const t=k/32,p=curve.getPoint(t),tangent=curve.getTangent(t),n=gradient(p),side=tangent.clone().cross(n).normalize(),env=Math.sin(PI*t),wave=t*PI*2*cycles+phase;
    p.addScaledVector(side,amp*Math.sin(wave)*env).addScaledVector(n,amp*.80*Math.cos(wave)*env);outside(p,.035);
    pts.push(p);frames.push({n,side});
   }
-  lock(pts,width,depth,{phase,tip,normal:(t,p)=>gradient(p),root:.025});
+  lock(pts,width,depth,{phase,tip,normal:(t,p)=>gradient(p),root:.025,accent});
   // Submechas seguem a curva-mãe; compartilham início e ponta e não são fios aleatórios.
   if(sub)for(const sign of [-1,1]){
    const child=pts.map((p,k)=>{const env=Math.sin(k/32*PI)**.65;return p.clone().addScaledVector(frames[k].side,sign*width*.38*env).addScaledVector(frames[k].n,Math.max(depth,width*.38)*.78*env)});
-   lock(child,width*.26,depth*.44,{phase:phase+sign*.3,tip:tip+.08,normal:(t,p)=>gradient(p),root:.025});
+   lock(child,width*.26,depth*.44,{phase:phase+sign*.3,tip:tip+.08,normal:(t,p)=>gradient(p),root:.025,accent});
   }
  }
  function crownFlow({short=false,neat=false,pixie=false}={}){
@@ -109,6 +109,40 @@ export function buildHeroHair(fit,style,color){
    const phi=.52+j*(2*PI-1.04)/(n-1)+(layer?.12:0),front=Math.cos(phi)>.30,a=scalp(.26+layer*.36,phi-.26,.012),b=scalp(.66+layer*.24,phi-.08,.11+(neat?0:.035*Math.sin(j*1.9))),endTheta=front?1.10:(pixie?1.76:1.82)+layer*.11,c=scalp(endTheta,phi+.17,.075),d=c.clone().add(V(Math.sin(phi)*.035,pixie?-.025:-.075,Math.cos(phi)*.025));
    lock([a,b,c,d],(pixie?.095:short?.115:.10)*(1+.18*Math.sin(j*2.7)),neat?.023:pixie?.026:.034,{tip:.53,phase:j});
   }
+ }
+ function referenceCurls(mature=false){
+  const covered=P.id==='bread_vigilante',count=mature?48:62;
+  if(!covered)for(let j=0;j<count;j++){
+   const phi=j*2.399963,front=Math.cos(phi)>.25,theta=.25+Math.sqrt((j+.5)/count)*(front?1.00:1.30),lift=.10+.055*(.5+.5*Math.sin(j*1.7));
+   const pts=[scalp(Math.max(.10,theta-.24),phi-.20,.014),scalp(theta-.05,phi-.06,lift),scalp(theta+.13,phi+.16,lift*.90),scalp(theta+.27,phi+.30,.045)];
+   coherentClump(pts,(mature?.067:.078)+.012*Math.sin(j*.9),.043,j*.73,{amp:.023,cycles:.85,sub:j%6===0,tip:.73});
+  }
+  const n=covered?6:7;
+  for(let j=0;j<n;j++){
+   const phi=-.85+j*(1.7/(n-1)),start=covered?.50:.40,pts=[scalp(start,phi*.5,.016),scalp(.77,phi*.73,covered?.06:.18),scalp(1.02,phi+.03,covered?.045:.11),scalp(1.20+.08*Math.sin(j),phi+.15,.03)];
+   coherentClump(pts,covered?.057:.082,covered?.032:.047,j*.9,{amp:covered?.023:.040,cycles:1.05,sub:!covered&&j%3===0,tip:.68});
+  }
+ }
+ function nanaPonytail(){
+  const anchor=V(-.10,top+.11,cz-.28);
+  referenceCurls(false);
+  curlMass(V(-.95,top+.10,cz-.27),V(.39,.48,.30),40,.095);
+  curlMass(V(-1.12,top-.40,cz-.30),V(.35,.43,.29),28,.085);
+  curlMass(V(-1.08,-.55,cz-.30),V(.30,.55,.27),26,.080);
+  // Rabo alto aberto em cachos, com silhueta lateral e pontas caindo atrás da orelha.
+  for(let j=0;j<44;j++){
+   const phi=j*2.399963,layer=j%3,spread=.22+layer*.10,guide=new THREE.CatmullRomCurve3([anchor.clone().add(V(Math.cos(phi)*.08,.02,Math.sin(phi)*.07)),V(-.96+Math.cos(phi)*spread,top+.41+.08*Math.sin(j),cz-.27+Math.sin(phi)*spread*.7),V(-1.13+Math.cos(phi)*spread,top-.12,cz-.34+Math.sin(phi)*spread),V(-1.11+Math.cos(phi)*spread,-.95-.55*(.5+.5*Math.sin(j*1.7)),cz-.33+Math.sin(phi)*spread)],false,'centripetal'),pts=[];
+   const coil=.058+.018*(.5+.5*Math.sin(j)),phase=j*.9;
+   for(let k=0;k<=56;k++){const t=k/56,q=guide.getPoint(t),tangent=guide.getTangent(t),axis=V(0,0,1).addScaledVector(tangent,-tangent.z).normalize(),side=tangent.clone().cross(axis).normalize(),a=phase+t*PI*(7+layer),r=coil*smooth(0,.14,t);q.addScaledVector(axis,r*Math.cos(a)).addScaledVector(side,r*Math.sin(a));pts.push(q)}
+   lock(pts,.026+(j%4)*.003,.023,{rope:true,tip:.89,phase,accent:j%15===0?'purple':null});
+  }
+  // Mecha clara e mechas violetas acompanham o mesmo fluxo do cabelo frontal.
+  for(let j=0;j<4;j++){
+   const side=j<3?-1:1,shift=(j%3)*.060,guide=new THREE.CatmullRomCurve3([scalp(.30,side*(.12+shift),.04),scalp(.65,side*(.37+shift),.16),scalp(1.00,side*(.73+shift),.12),outside(V(side*(.72+shift*.30),brow-.10,cz+.48),.045),outside(V(side*(.72+shift*.40),-.36-(j%3)*.05,cz+.39),.05)],false,'centripetal'),pts=[];
+   for(let k=0;k<=40;k++){const t=k/40,q=guide.getPoint(t);q.x+=.047*Math.sin(t*PI*5+j*.6)*smooth(.10,.35,t);q.z+=.024*Math.cos(t*PI*5+j*.6)*Math.sin(t*PI);if(j===1)q.z+=.04;pts.push(q)}
+   lock(pts,j===1?.034:.027,.025,{rope:true,tip:.84,phase:j,accent:j===0?'purple':null});
+  }
+  coherentClump([scalp(.35,.10,.06),scalp(.62,-.15,.20),scalp(.90,-.35,.16),scalp(1.14,-.62,.09),scalp(1.34,-.85,.06)],.048,.031,.8,{amp:.045,cycles:1.2,sub:true,tip:.77,accent:'white'});
  }
  function inventorCurls(){
   // Curto cacheado do Nico: curvas em S e grupos secundários, sem franja em lâminas.
@@ -182,7 +216,11 @@ export function buildHeroHair(fit,style,color){
     const pts=[];for(let k=0;k<=60;k++){const t=k/60,q=curve.getPoint(t),a=t*PI*11+strand*2*PI/3;q.x+=Math.sin(a)*.026;q.z+=Math.cos(a)*.026;pts.push(q)}lock(pts,.024,.021,{rope:true,tip:.91,root:.9})}
   }
  }
- if(kind==='tousled'){
+ if(P.id==='nana_explorer'&&style.id==='lunar_curls'){
+  nanaPonytail();
+ }else if(style.id==='short_curls'&&['nico_inventor','bread_baker','bread_vigilante'].includes(P.id)){
+  referenceCurls(P.id!=='nico_inventor');
+ }else if(kind==='tousled'){
   if(style.id==='short_curls')inventorCurls();else heroForelock();
  }else if(kind==='pixie'){
   pixieSweep();
@@ -230,13 +268,18 @@ export function buildHeroHair(fit,style,color){
   for(const sg of [-1,1])curlMass(V(sg*.79,brow+.01,cz-.05),V(.235,.30,.23),28,.065);
  }
  const material=groomMaterial(color),baseMaterial=material.clone();baseMaterial.name='Hair_Base';baseMaterial.normalScale.set(.22,.22);baseMaterial.anisotropy=.40;baseMaterial.roughness=.52;
+ if(P.id==='nana_explorer'&&style.id==='lunar_curls'){material.roughness=.59;material.normalScale.set(.38,.38)}else if(['nico_inventor','bread_baker','bread_vigilante'].includes(P.id)&&style.id==='short_curls'){material.roughness=.56;material.normalScale.set(.38,.38)}
  const group=new THREE.Group();group.name='Hair_'+style.id;
  if(cp.length){const capMesh=new THREE.Mesh(cap,baseMaterial);capMesh.name='Hair_Cap';group.add(capMesh)}else cap.dispose();
  if(masses.length){const geo=mergeGeometries(masses,false);masses.forEach(g=>g.dispose());const m=new THREE.Mesh(geo,material);m.name='Hair_Mass';group.add(m)}
  if(parts.length){const geo=mergeGeometries(parts,false);parts.forEach(g=>g.dispose());const m=new THREE.Mesh(geo,material);m.name='Hair_Locks';group.add(m)}
+ const accentMaterials=[];
+ for(const [name,geos]of Object.entries(accents)){
+  const geo=mergeGeometries(geos,false);geos.forEach(g=>g.dispose());const mat=groomMaterial(name==='white'?'#e7dfed':'#7d3bc1','Hair_Streak_'+name);accentMaterials.push(mat);const mesh=new THREE.Mesh(geo,mat);mesh.name='Hair_Streak_'+name;group.add(mesh);
+ }
  let metal=null;if(ornaments.length){metal=new THREE.MeshPhysicalMaterial({name:'Hair_Ring',color:'#b98d3f',metalness:.85,roughness:.32});const geo=mergeGeometries(ornaments,false);ornaments.forEach(g=>g.dispose());heroSurface(geo,metal,'metal');const m=new THREE.Mesh(geo,metal);m.name='Hair_Rings';group.add(m)}
  group.traverse(m=>{if(m.isMesh){m.castShadow=true;m.receiveShadow=true}});group.userData.timing=Math.round(performance.now()-started);group.userData.sculpture={version:4,style:style.id,locks:parts.length,filledMasses:masses.length};
- return {group,material,meshes:group.children.filter(m=>m.isMesh),setColor(c){for(const m of [material,baseMaterial])groomColor(m,c)},dispose(){group.traverse(m=>{if(m.isMesh)m.geometry.dispose()});material.dispose();baseMaterial.dispose();metal?.dispose()}};
+ return {group,material,meshes:group.children.filter(m=>m.isMesh),setColor(c){for(const m of [material,baseMaterial])groomColor(m,c)},dispose(){group.traverse(m=>{if(m.isMesh)m.geometry.dispose()});material.dispose();baseMaterial.dispose();accentMaterials.forEach(m=>m.dispose());metal?.dispose()}};
 }
 
 // Sardas discretas, posicionadas na superfície do rosto dos novos personagens.

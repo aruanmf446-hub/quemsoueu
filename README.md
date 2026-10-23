@@ -27,11 +27,11 @@ O acabamento dos 17 penteados usa volumes fechados, pontas afinadas, sulcos e fi
 
 `node tests/qualidade-pelos-acessorios.mjs` verifica malhas, materiais, os 17 penteados, 21 acessórios e cinco barbas. Um diretório de referência opcional permite comparar a preservação das peças anatômicas. Com o servidor em 8000, `node tests/pelos-exportacao.cjs` verifica os 34 GLBs e seis prévias no Worker. `tests/pelos-visuais.cjs` captura três vistas; `python3 tests/galeria-pelos.py` monta a comparação local em `renders/pelos/index.html` a partir de capturas anteriores/atuais e `catalogo.json`.
 
-### Revisão de acessórios e pelos
+### Referências de Nana, Nico e Vigilante
 
-O usuário aprovou a recuperação dos queixos de `8d4acea`. A [auditoria atual](AUDITORIA-ACESSORIOS-BARBAS.md) examina os 34 personagens e prioriza os acessórios de rosto da Nana, Nico, Artífice e Vigilante, as barbas do Rei, Anão, Orc, Arqueiro e Guarda veterano, a barba curta do Masculino e os bigodes/cavanhaques do Artífice e Rei pimentão. O contorno facial aprovado é preservado.
+A [rodada atual](REFERENCIAS-NANA-NICO-VIGILANTE.md) aproxima a identidade dos três às pranchas anexadas pelo usuário: Nana com rosto mais oval e rabo alto com mechas clara/violeta; Nico com rosto infantil próprio, armação escura e cabelo mais volumoso; Vigilante com rosto de jovem adulto, capuz pontudo e máscara curva. O Padeiro mantém o rosto compartilhado com o Vigilante. Os outros 30 visuais permanecem iguais à base `5c8c2a3`.
 
-Os 17 penteados recebem afilamento progressivo e cobertura menos espessa. Os acessórios ganham correções de encaixe e construção; as barbas recebem guias de caimento e pontas livres. A [comparação pública](https://aruanmf446-hub.github.io/quemsoueu/revisao/) usa `8d4acea` como antes. Luz, exposição e figurinos permanecem iguais. Validação técnica não equivale a aprovação estética.
+A [comparação pública](https://aruanmf446-hub.github.io/quemsoueu/revisao/) abre com esses personagens e mantém o catálogo completo. Corpos, figurinos, iluminação e exposição foram preservados. A avaliação técnica não equivale à aprovação estética ou à reprodução fiel das referências. O refinamento anterior de barbas e acessórios está registrado na [auditoria](AUDITORIA-ACESSORIOS-BARBAS.md).
 
 ### Escultura facial e identidade
 

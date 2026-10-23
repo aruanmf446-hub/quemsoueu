@@ -1,5 +1,9 @@
 {
   "ids": [
+    "nana_explorer",
+    "nico_inventor",
+    "bread_vigilante",
+    "bread_baker",
     "feminine_soft",
     "masculine_soft",
     "old_king",
@@ -8,9 +12,7 @@
     "alchemist_villain",
     "dwarf_bard",
     "sad_clown",
-    "nana_explorer",
     "moon_guardian",
-    "nico_inventor",
     "ruby_sorceress",
     "flame_guardian",
     "paysandu_wolf",
@@ -28,8 +30,6 @@
     "forest_artificer",
     "forest_princess",
     "frontier_cowboy",
-    "bread_baker",
-    "bread_vigilante",
     "cactus_soldier",
     "cactus_soldier_large",
     "desert_fennec",
@@ -37,6 +37,12 @@
   ],
   "images": 136,
   "profiles": false,
-  "before": "Antes · 8d4acea",
-  "after": "Acessórios e pelos refinados"
+  "priority": [
+    "nana_explorer",
+    "nico_inventor",
+    "bread_vigilante",
+    "bread_baker"
+  ],
+  "before": "Antes · 5c8c2a3",
+  "after": "Revisão das referências"
 }
