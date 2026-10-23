@@ -110,56 +110,82 @@ export function buildHeroHair(fit,style,color){
    lock([a,b,c,d],(pixie?.095:short?.115:.10)*(1+.18*Math.sin(j*2.7)),neat?.023:pixie?.026:.034,{tip:.53,phase:j});
   }
  }
- // Cachos desenhados por grupos de fluxo: elevação no topo, retorno da ponta e
- // comprimentos diferentes. A franja não é uma repetição de lâminas radiais.
- function referenceCurls(mature=false){
-  const covered=P.id==='bread_vigilante',n=covered?0:34;
-  for(let j=0;j<n;j++){
-   const phi=j*2.399963,front=Math.cos(phi)>.35,theta=.22+Math.sqrt((j+.5)/n)*(front?.70:1.25);
-   const lift=(front?.19:.15)+.065*Math.sin(j*1.47),turn=.30+.18*Math.sin(j*.87);
-   const pts=[scalp(Math.max(.12,theta-.27),phi-.30,.018),
-    scalp(theta-.10,phi-.12,lift),scalp(theta+.12,phi+.12,lift+.04),
-    scalp(theta+.23,phi+turn,.075),scalp(theta+.28,phi+turn+.19,.035)];
-   coherentClump(pts,(mature?.10:.115)+.018*Math.sin(j*1.31),.031,j*.73,{amp:.028,cycles:.85,sub:j%3===0,tip:.86});
+ // As referências usam massas de mechas afuniladas. Cada grupo recebe uma
+ // seção abaulada, largura variável e fios subordinados ao fluxo principal.
+ function tress(points,width=.14,depth=.065,{accent=null,tone=1,phase=0,fibers=5}={}){
+  const curve=new THREE.CatmullRomCurve3(points,false,'centripetal');
+  const shape=t=>{const root=.04+.96*smooth(0,.16,t),tip=Math.pow(1-smooth(.52,1,t),.80),belly=.80+.20*Math.sin(PI*t);return[Math.max(.0004,width*root*tip*belly),Math.max(.0003,depth*root*Math.pow(tip,.8))]};
+  const emit=(pts,w,d,extra={})=>groomedLock(pts,w,d,{rows:64,segments:24,sculpted:true,grooveStrength:.035,grooves:3,phase,tone,normal:(t,p)=>gradient(p),profile:shape,...extra});
+  const target=accent?(accents[accent]||(accents[accent]=[])):parts;
+  target.push(emit(points,width,depth));
+  // Estrias finas variam de comprimento; seguem a superfície da mecha e acabam
+  // antes da ponta. Não formam tubos grossos paralelos nem anéis completos.
+  for(let j=0;j<fibers;j++){
+   const across=(j+.5)/fibers*1.6-.8,pts=[];
+   for(let k=0;k<=36;k++){
+    const t=.09+k/36*.79,p=curve.getPoint(t),n=gradient(p),side=curve.getTangent(t).cross(n).normalize(),[w,d]=shape(t);
+    p.addScaledVector(side,across*w).addScaledVector(n,d*Math.pow(1-across*across,.36)+.001);pts.push(p);
+   }
+   target.push(groomedLock(pts,.002,.001,{rows:40,segments:6,grooveStrength:0,tone:tone*(.97+j%2*.04),normal:(t,p)=>gradient(p),profile:t=>{const r=Math.max(.0003,.002*Math.sin(PI*t)**.45);return[r,r*.55]}}));
   }
-  const fringeCount=covered?5:7;
-  for(let j=0;j<fringeCount;j++){
-   const x=-.62+j*1.24/(fringeCount-1),endY=brow+.18+.085*Math.sin(j*1.7);
-   const pts=[scalp(.35,.12+j*.04,.015),
-    outside(V(x*.55,top+.10+.035*Math.sin(j),cz+.40),.08),
-    outside(V(x-.08,brow+.43+.07*Math.sin(j),cz+.76),.07),
-    V(x+.06,endY,fit.surfZ(x+.06,endY)+.065),
-    V(x+.12,endY+.035,fit.surfZ(x+.12,endY+.035)+.035)];
-   coherentClump(pts,covered?.061:.087,covered?.025:.028,j*.9,{amp:.020,cycles:1.1,sub:!covered&&j%3===0,tip:.82});
+ }
+ function referenceCurls(mature=false){
+  const covered=P.id==='bread_vigilante';
+  if(!covered){
+   // Camadas laterais e nuca. Raízes alternadas evitam a distribuição radial
+   // repetitiva e deixam a silhueta do topo assimétrica.
+   for(let j=0;j<26;j++){
+    const phi=.86+j*(2*PI-1.72)/25,theta=.48+(j%3)*.23;
+    tress([scalp(theta,phi-.26,.012),scalp(theta+.21,phi-.04,.15+.035*Math.sin(j)),scalp(theta+.57,phi+.23,.17),scalp(theta+.80,phi+.39,.035)],.115+(j%3)*.012,.055,{phase:j,tone:.96+(j%4)*.018,fibers:3});
+   }
+   for(let j=0;j<10;j++){
+    const phi=-1.0+j*.23;
+    tress([scalp(.22,phi+.8,.01),scalp(.38,phi+.40,.26+.07*Math.sin(j)),scalp(.66,phi+.12,.24),scalp(.88,phi-.08,.065)],.15,.075,{phase:j*.7,fibers:5});
+   }
+  }
+  const tips=[[-.65,.12],[-.42,.20],[-.20,.065],[.08,.18],[.33,.06],[.53,.17],[.69,.24]];
+  for(let j=0;j<tips.length;j++){
+   const [tx,dy]=tips[j],x=covered?tx*.68:tx,endY=brow+dy;
+   const root=covered?scalp(.70,(j-3)*.09,.01):scalp(.32,.45+(j-3)*.07,.01);
+   const crest=outside(V(x*.48+(j<3?.12:-.10),covered?brow+.59:top+.13+.045*Math.sin(j),cz+.43),.055);
+   const mid=outside(V(x-(covered?.025:.10),brow+.40+dy*.25,cz+.76),covered?.025:.055),end=V(x+.06,endY,fit.surfZ(x+.06,endY)+.025);
+   tress([root,crest,mid,end],covered?.075:(j%2?.13:.15),covered?.034:.065,{phase:j,fibers:covered?2:5});
   }
  }
  function nanaPonytail(){
-  // A massa sustenta os cachos; as pontas não são fios finos soltos até o peito.
-  const anchor=V(-.18,top+.10,cz-.25);
-  for(let j=0;j<22;j++){
-   const phi=j*2.399963,theta=.35+Math.sqrt((j+.5)/22)*1.30;
-   coherentClump([scalp(theta,phi,.015),scalp(theta*.77,phi-.18,.10),scalp(theta*.48,phi-.36,.15),anchor.clone()],.067,.035,j,{amp:.025,sub:j%4===0,tip:.93});
+  // Raízes puxadas para trás com ondulação larga, em vez de uma franja rígida.
+  const anchor=V(-.29,top+.06,cz-.32);
+  for(let j=0;j<24;j++){
+   const phi=j*2.399963,theta=.75+(j%4)*.22;
+   tress([scalp(theta,phi,.012),scalp(theta*.76,phi-.15,.10),scalp(theta*.44,phi-.30,.15),anchor.clone()],.10,.045,{phase:j,fibers:3});
   }
-  curlMass(V(-.82,top+.24,cz-.24),V(.56,.57,.44),38,.15);
-  curlMass(V(-1.06,top-.25,cz-.30),V(.49,.54,.40),32,.14);
-  curlMass(V(-1.10,top-.72,cz-.30),V(.39,.43,.34),26,.12);
-  for(let j=0;j<22;j++){
-   const phi=j*2.399963,spread=.28+(j%3)*.055,phase=j*.9;
-   const guide=new THREE.CatmullRomCurve3([anchor.clone(),
-    V(-.82+Math.cos(phi)*spread,top+.54,cz-.24+Math.sin(phi)*spread),
-    V(-1.13+Math.cos(phi)*spread,top-.15,cz-.29+Math.sin(phi)*spread),
-    V(-1.12+Math.cos(phi)*spread,top-1.16-.20*Math.sin(j),cz-.28+Math.sin(phi)*spread)],false,'centripetal'),pts=[];
-   for(let k=0;k<=56;k++){
-    const t=k/56,q=guide.getPoint(t),r=.075*smooth(0,.18,t),a=phase+t*PI*8;
-    q.x+=r*Math.cos(a);q.z+=r*Math.sin(a);pts.push(q);
+  const center=V(-.88,top+.04,cz-.30),radii=V(.65,.65,.48);
+  ellipsoid(center,radii.clone().multiplyScalar(.82),.94,.025);
+  // Cachos de seção redonda, enrolados em eixos tangentes à massa. A raiz e
+  // a ponta entram no volume: cada curva não vira uma escama solta na superfície.
+  for(let j=0;j<150;j++){
+   const yy=clamp(1-2*(j+.5)/150+(rand()-.5)*.08,-.995,.995),a=j*2.399963+(rand()-.5)*.25,n=V(Math.cos(a)*Math.sqrt(1-yy*yy),yy,Math.sin(a)*Math.sqrt(1-yy*yy));
+   const c=center.clone().add(V(n.x*radii.x,n.y*radii.y,n.z*radii.z)),normal=V(n.x/radii.x,n.y/radii.y,n.z/radii.z).normalize();
+   const down=V(.20*Math.sin(j),-1,.13*Math.cos(j)).addScaledVector(normal,normal.y).normalize(),roll=(rand()-.5)*2.0,axis=down.clone().multiplyScalar(Math.cos(roll)).addScaledVector(down.clone().cross(normal),Math.sin(roll)).normalize(),side=axis.clone().cross(normal).normalize(),pts=[],radius=.055+rand()*.045;
+   for(let k=0;k<=64;k++){
+    const t=k/64,ph=j*.7+t*PI*(3.1+(j%4)*.39),env=smooth(0,.12,t)*(1-smooth(.88,1,t)),coil=radius*env;
+    const q=c.clone().addScaledVector(axis,(t-.5)*.35).sub(center),len=Math.hypot(q.x/radii.x,q.y/radii.y,q.z/radii.z);q.multiplyScalar((.80+.14*env)/len);
+    pts.push(q.add(center).addScaledVector(side,coil*Math.cos(ph)).addScaledVector(normal,coil*Math.sin(ph)));
    }
-   lock(pts,.045+(j%3)*.005,.033,{rope:true,tip:.91,phase,accent:j%9===0?'purple':null});
+   const accent=j%21===0?'purple':null,target=accent?(accents[accent]||(accents[accent]=[])):parts;
+   target.push(groomedLock(pts,.022,.019,{rows:80,segments:16,grooveStrength:.035,tone:.97+(j%3)*.01,normal:(t,p)=>normal,profile:t=>{const r=.023*Math.sin(PI*t)**.32+.0004;return[r,r*.82]}}));
   }
-  for(const [j,accent]of [[0,'white'],[1,'purple'],[2,null],[3,null],[4,null]]){
-   const pts=[];
-   const guide=new THREE.CatmullRomCurve3([scalp(.32,.15+j*.08,.04),scalp(.69,-.40+j*.20,.20),scalp(1.03,-.73+j*.28,.15),scalp(1.24,-.93+j*.38,.08),scalp(1.30,-1.0+j*.40,.035)]);
-   for(let k=0;k<=40;k++){const t=k/40,q=guide.getPoint(t);q.x+=.055*Math.sin(t*PI*5+j)*Math.sin(PI*t);q.z+=.038*Math.cos(t*PI*5+j)*Math.sin(PI*t);pts.push(outside(q,.035))}
-   lock(pts,j===0?.053:.061,.027,{rope:true,tip:.90,phase:j,accent});
+  for(let j=0;j<18;j++){
+   const phi=j*2.399963,pts=[],radius=.065+(j%3)*.01;
+   for(let k=0;k<=64;k++){
+    const t=k/64,ph=phi+t*PI*5.3;
+    pts.push(V(-1.08+Math.cos(phi)*.25+radius*Math.cos(ph),top-.23-t*(1.10+.12*Math.sin(j)),cz-.30+Math.sin(phi)*.27+radius*Math.sin(ph)));
+   }
+   lock(pts,.025,.022,{rope:true,tip:.91,phase:j,accent:j%8===0?'purple':null});
+  }
+  for(const [j,accent]of [[0,null],[1,'white'],[2,'purple'],[3,null],[4,null]]){
+   const x=-.58+j*.22,pts=[scalp(.38,.20,.012),scalp(.65,-.28+j*.18,.17),outside(V(x-.07,brow+.38,cz+.76),.06),V(x+.04,brow+.18+.05*Math.sin(j),fit.surfZ(x+.04,brow+.18)+.07),V(x-.03,brow+.10,fit.surfZ(x-.03,brow+.10)+.03)];
+   for(let strand=0;strand<3;strand++)lock(pts.map((p,k)=>p.clone().add(V((strand-1)*.025*Math.sin(k/4*PI),0,(strand-1)*.008))),.028,.021,{rope:true,tip:.80,phase:j,accent});
   }
  }
  function inventorCurls(){
@@ -286,7 +312,7 @@ export function buildHeroHair(fit,style,color){
   for(const sg of [-1,1])curlMass(V(sg*.79,brow+.01,cz-.05),V(.235,.30,.23),28,.065);
  }
  const material=groomMaterial(color),baseMaterial=material.clone();baseMaterial.name='Hair_Base';baseMaterial.normalScale.set(.22,.22);baseMaterial.anisotropy=.40;baseMaterial.roughness=.52;
- if(P.id==='nana_explorer'&&style.id==='lunar_curls'){material.roughness=.59;material.normalScale.set(.38,.38)}else if(['nico_inventor','bread_baker','bread_vigilante'].includes(P.id)&&style.id==='short_curls'){material.roughness=.56;material.normalScale.set(.38,.38)}
+ if(P.id==='nana_explorer'&&style.id==='lunar_curls'){material.roughness=.50;material.normalScale.set(.30,.30);material.sheen=.35;material.anisotropy=.72}else if(['nico_inventor','bread_baker','bread_vigilante'].includes(P.id)&&style.id==='short_curls'){material.roughness=.48;material.normalScale.set(.30,.30);material.sheen=.35;material.anisotropy=.72}
  const group=new THREE.Group();group.name='Hair_'+style.id;
  if(cp.length){const capMesh=new THREE.Mesh(cap,baseMaterial);capMesh.name='Hair_Cap';group.add(capMesh)}else cap.dispose();
  if(masses.length){const geo=mergeGeometries(masses,false);masses.forEach(g=>g.dispose());const m=new THREE.Mesh(geo,material);m.name='Hair_Mass';group.add(m)}

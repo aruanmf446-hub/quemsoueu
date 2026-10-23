@@ -18,6 +18,16 @@ const root=path.resolve(__dirname,'..'),out=process.env.ATELIE_RENDERS||path.joi
     if(!m.normalTexture||!m.pbrMetallicRoughness.baseColorTexture||!m.pbrMetallicRoughness.metallicRoughnessTexture||!m.extensions?.KHR_materials_anisotropy)throw Error('Fibra incompleta no GLB: '+id+'/'+m.name+' '+JSON.stringify(m));groom.add(i);
    }
    for(const name of expected)if(![...groom].some(i=>json.materials[i].name===name))throw Error('Material de pelos ausente: '+name);
+   if(['nana_explorer','nico_inventor','bread_baker','bread_vigilante'].includes(id)){
+    const fabrics=new Set();
+    for(let i=0;i<(json.materials?.length||0);i++){
+     const mat=json.materials[i];if(!/^Roupa_(fabric|secondary|pants|leather)$/.test(mat.name))continue;
+     for(const texture of [mat.normalTexture,mat.pbrMetallicRoughness?.baseColorTexture,mat.pbrMetallicRoughness?.metallicRoughnessTexture])if(!texture||texture.texCoord!==1)throw Error('Tecido perdeu mapa ou UV de detalhe: '+id+'/'+mat.name);
+     fabrics.add(i);
+    }
+    if(!fabrics.size)throw Error('Figurino sem materiais de tecido: '+id);
+    for(const mesh of json.meshes||[])for(const p of mesh.primitives)if(fabrics.has(p.material)&&p.attributes.TEXCOORD_1===undefined)throw Error('Tecido exportado sem UV1: '+id+'/'+mesh.name);
+   }
    let primitives=0;for(const mesh of json.meshes||[])for(const p of mesh.primitives)if(groom.has(p.material)){
     if(p.attributes.TEXCOORD_0===undefined||p.attributes.TANGENT===undefined)throw Error('Fluxo sem UV/tangente: '+mesh.name);
     if(json.accessors[p.attributes.TANGENT].count!==json.accessors[p.attributes.POSITION].count)throw Error('Tangentes incompletas');primitives++;

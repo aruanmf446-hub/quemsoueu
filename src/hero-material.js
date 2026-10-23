@@ -10,13 +10,19 @@ function noise(x,y,cells,rows=cells){
 }
 function maps(kind){
   if(textures.has(kind))return textures.get(kind);
-  const height=new Float32Array(SIZE*SIZE),normal=new Uint8Array(SIZE*SIZE*4),rough=new Uint8Array(SIZE*SIZE*4);
+  const key=kind,detail=kind.endsWith('_detail');kind=kind.replace('_detail','');
+  const height=new Float32Array(SIZE*SIZE),normal=new Uint8Array(SIZE*SIZE*4),rough=new Uint8Array(SIZE*SIZE*4),albedo=detail?new Uint8Array(SIZE*SIZE*4):null;
   for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++){
     const u=x/SIZE,v=y/SIZE,grain=noise(u*32,v*32,32),fine=noise(u*128,v*128,128);
     // Todas as frequências fecham no tile; o grão é contínuo, sem degraus aleatórios por pixel.
     height[y*SIZE+x]=kind==='denim'?.23*Math.sin((u*96+v*48)*Math.PI*2)+.06*(grain-.5):kind==='fabric'?.32*Math.sin(u*Math.PI*64)*Math.sin(v*Math.PI*64)+.055*(grain-.5):kind==='metal'?.07*noise(u*8,v*128,8,128)+.025*(grain-.5):kind==='polymer'?.025*(fine-.5):kind==='fur'?.12*noise(u*64,v*8,64,8):.24*(grain-.5)+.065*(fine-.5);
     const r=kind==='fabric'?.94+.06*grain:kind==='metal'?.87+.13*grain:.89+.11*grain,k=(y*SIZE+x)*4;
     rough.set([255,Math.round(r*255),255,255],k);
+    if(detail){
+      const broad=noise(u*8,v*8,8),twill=.5+.5*Math.sin((u*96+v*48)*Math.PI*2);
+      const tone=kind==='denim'?.84+.10*broad+.06*twill:kind==='leather'?.86+.10*grain+.04*broad:.91+.06*broad+.03*fine;
+      const c=Math.round(tone*255);albedo.set([c,c,c,255],k);
+    }
   }
   for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++){
     const dx=height[y*SIZE+wrap(x+1,SIZE)]-height[y*SIZE+wrap(x-1,SIZE)],dy=height[wrap(y+1,SIZE)*SIZE+x]-height[wrap(y-1,SIZE)*SIZE+x],len=Math.hypot(dx,dy,1),k=(y*SIZE+x)*4;
@@ -30,7 +36,9 @@ function maps(kind){
     }else t=new THREE.DataTexture(data,SIZE,SIZE);
     t.name=name;t.channel=1;t.wrapS=t.wrapT=THREE.RepeatWrapping;t.magFilter=THREE.LinearFilter;t.minFilter=THREE.LinearMipmapLinearFilter;t.generateMipmaps=true;t.anisotropy=8;t.needsUpdate=true;return t;
   };
-  const result={normal:make(normal,kind+'_normal'),roughness:make(rough,kind+'_roughness')};textures.set(kind,result);return result;
+  const result={normal:make(normal,key+'_normal'),roughness:make(rough,key+'_roughness')};
+  if(albedo){result.color=make(albedo,key+'_albedo');result.color.colorSpace=THREE.SRGBColorSpace}
+  textures.set(key,result);return result;
 }
 
 // Projeção por face com vértices separados só nas mudanças de eixo. Não altera a superfície:
@@ -56,10 +64,11 @@ export function surfaceUV(geo,W=1){
   }
   geo.setIndex(indices);geo.setAttribute('uv1',new THREE.Float32BufferAttribute(uv,2));prepared.add(geo);return geo;
 }
-export function heroSurface(geo,mat,ch,W=1){
+export function heroSurface(geo,mat,ch,W=1,{detail=false}={}){
   if(!mat.isMeshStandardMaterial||mat.transparent||['gem','pearl','tail','fin'].includes(ch))return;
   const kind=ch==='denim'?'denim':['trim','enamel','metal'].includes(ch)?'metal':['leather','sole'].includes(ch)?'leather':ch==='polymer'?'polymer':ch==='fur'?'fur':'fabric';
   surfaceUV(geo,W);if(!geo.attributes.uv1)return;
-  const texture=maps(kind);mat.normalMap=texture.normal;mat.roughnessMap=texture.roughness;
+  const texture=maps(kind+(detail?'_detail':''));mat.normalMap=texture.normal;mat.roughnessMap=texture.roughness;
+  if(texture.color&&!mat.map)mat.map=texture.color;
   mat.normalScale.setScalar(kind==='metal'?.11:kind==='leather'?.20:kind==='polymer'?.08:.23);
 }

@@ -402,6 +402,12 @@ export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot 
       const a = capR(ax, y, z, H2, K, rH, rK), b = capR(ax, y, z, K, A2, rK, rA2);
       let d = Math.min(a.d - (o.puff || 0) * Math.sin(PI * a.t), b.d - (o.puff || 0) * Math.sin(PI * b.t) * .6);
       d = smin(d, bf(x, y, z) - (o.t ?? .045 * W), .12 * W);
+      if(o.folds){
+        const f=(yN-y)/Lb,legX=lerp(H.x,A.x,clamp((f-.43)/.55,0,1)),ph=Math.atan2(z-z0,ax-legX);
+        const knee=Math.exp(-(((f-.68)/.055)**2)),cuff=Math.exp(-(((f-.90)/.040)**2));
+        const crease=o.folds*(Math.sin((f-.68)*105+ph*2.4)*knee+Math.sin((f-.90)*155-ph*3.2)*cuff);
+        d=Math.min(d+crease,bf(x,y,z)-.025*W);
+      }
       if (o.under && y > o.under.y) d = Math.max(d, o.under.fn(x, y, z) + .02 * W); // por dentro da túnica: não atravessa
       return Math.max(d, y - yTop, yBot - y);
     };

@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import {RoundedBoxGeometry} from 'three/addons/geometries/RoundedBoxGeometry.js';
 import {badge, buckleGeo, panel, ribbon, gear, tuft} from './detail.js';
 import {crescent} from './lunar.js';
-import {handPatch} from './fabric.js';
+import {handPatch,shellCloth} from './fabric.js';
 import {buildHeroBread} from './hero-bread.js';
 
 export function buildHeroLunar(c) {
@@ -141,7 +141,7 @@ export function buildHeroLunar(c) {
   }
   if (!magic) {
     const shirt=garment(nico?'Camisa_inventor_manga_dobrada':'Top_curto_lunar',nico?'secondary':'fabric','upper',{
-      top:nico?yN+.035:Y(.065),bottom:Y(nico?.345:.24),t:.045*W,sleeve:nico?'short':null,short:.86,sleeveEase:.085*W,puff:nico?.12*W:0,vneck:nico?.13*W:0,cell:.020*clamp(W,1,1.3),
+      top:nico?yN+.035:Y(.065),bottom:Y(nico?.345:.24),t:.045*W,sleeve:nico?'short':null,short:.86,sleeveEase:.075*W,puff:nico?.09*W:0,vneck:nico?.13*W:0,cell:.020*clamp(W,1,1.3),
       env:{ease:.055*W,hang:.5,cinch:Y(.30),cinchK:.9,folds:.012*W,foldN:10}
     });
     let coat=shirt;
@@ -170,6 +170,12 @@ export function buildHeroLunar(c) {
       }
     } else {
       sleeveCuffs(shirt,'upper','secondary',.12*W);
+      if(!onlySlot||onlySlot==='extras'){
+        const source=handPatch(body,0,.026*W),dir=Wr.clone().sub(E).normalize(),length=.095*Lb*B.hand*(.85+.15*W);
+        // O corte termina na base dos dedos: a luva cobre a palma, sem esconder as pontas.
+        const glove=shellCloth(source,(x,y,z)=>(Math.abs(x)-Wr.x)*dir.x+(y-Wr.y)*dir.y+(z-Wr.z)*dir.z-length*.55,.012*W);
+        source.dispose();put('extras','leather',glove);
+      }
       // O peitoral é uma superfície contínua curvada e não uma placa plana sobre a camisa.
       const bib=(t,u)=>{const yy=Y(lerp(.085,.35,t)),xx=(u-.5)*W*(.90+.18*t),p=frontPanel(shirt.env,xx,yy,.065*W);p.y-=.025*W*Math.sin(PI*u)*(1-t);return p;};
       put('upper','fabric',clothSurface(48,40,bib,{thickness:.032*W}));edgeLines('upper',bib,'fabric',.012*W);stitch('upper',bib,.045,23,'trim');
@@ -184,7 +190,7 @@ export function buildHeroLunar(c) {
       }
     }
     const legs=trousers(nico?'Jardineira_calcas_com_folga':'Cargo_bombacha_com_pregas','pants',{
-      top:nico?.33:.32,ease:(nico?.10:.145)*W,cuff:nico?.065:.045,puff:(nico?.13:.27)*W,t:.05*W,cell:.023*clamp(W,1,1.3),
+      top:nico?.33:.32,ease:(nico?.11:.16)*W,cuff:nico?.065:.045,puff:(nico?.13:.18)*W,flareLeg:(nico?.025:.055)*W,folds:.040*W,t:.05*W,cell:.023*clamp(W,1,1.3),
       under:nico?{fn:shirt.solid,y:Y(.345)+.03*W}:undefined
     });
     cargoPockets(legs,nico);expeditionShoes();

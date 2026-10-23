@@ -1,6 +1,12 @@
 # Continuidade
 
-## Revisão em andamento — personagens completos após reprovação de c2baedb
+## Rodada atual — nova reprovação de c4673ef
+
+O usuário disse que `c4673ef` ainda não está aceitável. A comparação anterior não é aprovação. Esta rodada refaz as seções e o afunilamento das mechas do Nico/Padeiro/Vigilante, usa cachos de seção redonda na Nana, reduz a armação do Nico e encurta seu rosto, redesenha o capuz com seções próprias e apoio na face, amplia a ligação do cachecol aos ombros, adiciona pregas à malha das calças e mapas de cor/relevo/rugosidade aos quatro figurinos. Os olhos desses quatro recebem córnea menos opaca e acabamento de pele menos envernizado. Nana/Nico/Vigilante continuam sendo os alvos; Padeiro compartilha anatomia com Vigilante.
+
+Base imutável: `/workspace/outputs/reprovado-c4673ef`. Capturas: `renders/segunda-revisao/{before,after}`. Os ensaios `piloto*` incluem falhas descartadas de cachos flutuantes e não são entregas. A galeria `revisao/personagens/` agora compara com c4673ef; `tests/galeria-personagens.py` aceita `--renders` e `--base`. Cache: `menu-v22-cachos-tecido-capuz`. Nenhuma alteração de iluminação/exposição. O resultado continua sujeito a avaliação artística e não equivale às pranchas cinematográficas.
+
+## Rodada anterior — personagens completos após reprovação de c2baedb
 
 O usuário reprovou explicitamente roupas, rosto e aparência de `c2baedb`. A rodada anterior, documentada em `REFERENCIAS-NANA-NICO-VIGILANTE.md`, não foi aprovada. O escopo agora inclui figurinos e proporções de Nana, Nico e Vigilante, além do Padeiro por compartilhar a identidade com o Vigilante. Não interpretar testes técnicos como aprovação estética.
 

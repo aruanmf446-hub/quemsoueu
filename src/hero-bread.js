@@ -78,7 +78,7 @@ export function buildHeroBread(c){
   }
   // Bombacha: pernas largas apoiadas no quadril, reunidas no cano da bota; cada vinco tem largura e sombra próprias.
   const legField=trousers(baker?'Bombacha_do_forno':'Calca_de_vigia','pants',{
-    top:.33,ease:.10*W,puff:(baker?.21:.14)*W,cuff:.13,knee:.04*W,t:.05*W,cell:.025*clamp(W,1,1.25),under:{fn:shirt.solid,y:Y(.395)+.025*W}
+    top:.33,ease:.10*W,puff:(baker?.21:.14)*W,cuff:.13,knee:.04*W,folds:.038*W,t:.05*W,cell:.025*clamp(W,1,1.25),under:{fn:shirt.solid,y:Y(.395)+.025*W}
   });
   for(const side of [-1,1]){
     // Bainhas/pregas pequenas são projetadas na própria superfície da perna, acima da bota.
@@ -176,13 +176,16 @@ export function buildHeroBread(c){
       const p=surfAt(coat.solid,Y(.13),side*.77,.08*W);emit('upper','trim',orient(buckleGeo(.12*W,.15*W,.016*W),p,V(Math.sin(side*.77),0,Math.cos(side*.77))));
     }
     // Cachecol em camadas liga a máscara ao capuz e cobre a costura da gola.
+    const shawl=(t,u)=>{const ph=-PI+u*2*PI,y=lerp(yN+.29*W,Y(.12),t)-.10*W*Math.cos(ph)*t,p=surfAt(shirt.env,y,ph,(.12+.025*Math.sin(t*PI*3+ph*.4))*W);return p};
+    emit('upper','fabric',clothSurface(32,96,shawl,{closed:true,thickness:.026*W}));
+    line('upper','fabric',Array.from({length:97},(_,i)=>shawl(.99,i/96)),.012*W);
     for(let layer=0;layer<3;layer++){
       const scarf=(t,u)=>{const ph=-PI+u*2*PI,y=yN+(.61-layer*.15)*W-t*.22*W-.07*W*Math.cos(ph),p=surfAt(shirt.env,y,ph,(.10+layer*.018)*W);p.z+=.025*W*Math.sin(ph*3+t*PI);return p};
       emit('upper','fabric',clothSurface(12,96,scarf,{closed:true,thickness:.025*W}));
     }
     // Painel central com ponta e dois recortes; o laranja aparece nas camadas de baixo.
     placard('lower','accent',skirtSupport,.34,.66,-.16,.33,.10*W,.085*W);
-    const mantle=cape('Capa_manto_vigilante_desfiado','fabric',{top:.075,yBottom:Y(.89),span:3.85,flare:.24,pleats:13,ragged:.14*W,over:(x,y,z)=>Math.min(coat.env(x,y,z),shirt.env(x,y,z)-.15*W),trim:'trim',refined:true});
+    const mantle=cape('Capa_manto_vigilante_desfiado','fabric',{top:.075,yBottom:Y(.80),span:3.35,flare:.29,pleats:11,ragged:.25*W,sway:.06*W,over:(x,y,z)=>Math.min(coat.env(x,y,z),shirt.env(x,y,z)-.15*W),trim:'trim',refined:true});
     if(mantle){
       for(const side of [-1,1]){
         const edge=[];for(let i=0;i<=40;i++){const p=mantle.at(i/40,side<0?.035:.965),n=V(p.x,0,p.z-z0).normalize();edge.push(p.addScaledVector(n,.04*W))}line('cape','accent',edge,.025*W);

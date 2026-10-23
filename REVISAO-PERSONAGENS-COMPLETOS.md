@@ -1,5 +1,20 @@
 # Revisão de personagem completo
 
+## Rodada após a reprovação de c4673ef
+
+`c4673ef` também foi reprovado pelo usuário. A rodada atual usa essa versão como antes da comparação. As mudanças desta vez são:
+
+- Mechas do Nico/Padeiro/Vigilante com seção abaulada, afunilamento gradual e fibras que seguem a curva principal; cachos redondos na massa lateral da Nana. Ensaios com escamas e mechas flutuantes foram descartados.
+- Nico com terço inferior mais curto, menor projeção do apoio do queixo, sobrancelhas mais próximas dos olhos e armação menor. Nana e o par Padeiro/Vigilante receberam revisão de pálpebras e boca. A córnea menos opaca evita lavar a cor da íris; o material da pele tem menos verniz.
+- Capuz construído por seções de largura e profundidade próprias, abertura apoiada na face e cachecol descendo sobre os ombros. Manto mais curto e irregular.
+- Pregas modeladas no campo das calças, maior continuidade do volume da cargo, mapas de albedo/relevo/rugosidade nos tecidos e couro, luvas com pontas dos dedos livres no Nico.
+
+Comparação: [revisao/personagens/](revisao/personagens/). Base: `/workspace/outputs/reprovado-c4673ef`. Capturas finais: `renders/segunda-revisao/after`. A luz e a exposição são as mesmas. Os testes de exportação verificam também os mapas de roupa e suas coordenadas UV no GLB. O teste dos óculos usa as dimensões medidas da armação e confere o aro completo contra o rosto, respeitando o novo tamanho.
+
+A avaliação estética continua aberta. Os testes abaixo verificam integridade e regressões, não a qualidade cinematográfica das referências.
+
+## Histórico: tentativa c4673ef, reprovada
+
 A versão `c2baedb` foi reprovada: roupas, rosto e aparência não correspondiam às referências. Esta rodada inclui corpo e figurino, que tinham ficado fora da tentativa anterior. Nana, Nico e Vigilante são os alvos; o Padeiro recebe a mesma anatomia do Vigilante e revisão do figurino da prancha compartilhada.
 
 - **Nana:** proporção de cabeça maior no conjunto, tronco mais curto, jaqueta preta mais curta e aberta, barriga exposta, mangas mais volumosas, calça cargo mais ampla e comprida, bolsos maiores e tênis mais baixos. O cabelo lateral recebe massa contínua, cachos mais espessos e mechas branca/violeta. Nariz mais cheio, olhos e boca revistos.
