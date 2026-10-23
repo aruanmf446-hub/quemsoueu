@@ -4,7 +4,17 @@
 
 O usuário determinou: **sempre subir o trabalho para a `main`**. Ao concluir uma rodada, validar, registrar as alterações e enviar à `main`, preservando alterações remotas e sem force push. Distinguir o envio do código da conclusão do deploy do site.
 
-## Rodada atual — reconstrução após reprovação visual (23/10/2026)
+## Rodada atual — correção das proporções faciais (23/10/2026)
+
+O usuário reprovou também `b119a58` e enviou o antes/depois de `feminine_soft`. A correção reconhece a regressão: aumentar olhos/íris e encurtar o terço médio infantilizou os adultos e criou um olhar arregalado. Não apresentar a reconstrução anterior como aprovada.
+
+Os 23 perfis humanos têm proporções próprias corrigidas (olhos, pálpebras, íris/pupilas, nariz/boca/queixo e projeção das maçãs), preservando as diferenças entre crianças, adultos e idosos. A textura compartilhada da íris perde o anel claro exagerado; isso alcança também os seis vegetais e o cavaleiro. A oclusão da pele em `head.js` ignora vizinhos recuados das cavidades e limita a sombra de mandíbula a abaixo da boca: antes ela também pintava bolsas sob os olhos. Sem mudança de luz, exposição, cabelo, roupa, corpo ou topologia do rig.
+
+Base imutável: `/workspace/outputs/rosto-rejeitado-b119a58`. Comparação em `renders/correcao-rosto/{antes-rosto,depois-rosto,antes-visual,depois-visual}`; os antes são as capturas finais de b119a58. A comparação pública em `revisao/` identifica explicitamente a versão reprovada. Os geradores próprios de criaturas/robô conservam as formas; não afirmar nova escultura dos 34 nesta correção. Escopo e validação: [CORRECAO-PROPORCOES-FACIAIS.md](CORRECAO-PROPORCOES-FACIAIS.md). Cache de prévias `menu-v15-proporcoes-faciais`. A avaliação estética continua aberta e o resultado não equivale às referências de produção.
+
+A validação desta correção terminou antes da solicitação de interrupção: 34 GLBs, seis Workers e a galeria passaram; os testes de escopo confirmaram 23 malhas humanas alteradas e as outras formas preservadas. O usuário pediu enviar tudo à main e, em seguida, continuar ajustando personagens sem queixo. A pergunta sobre quais nomes está pendente; revisar mandíbula/queixo em todo o catálogo enquanto isso.
+
+## Rodada anterior, reprovada — reconstrução após reprovação visual (23/10/2026)
 
 O usuário reprovou `acf8bc2`: rostos genéricos/bugados no jogo e distância grande das referências; reiterou **todos os personagens**. Não repetir a conclusão de que testes de UV/normais resolvem qualidade estética. O rosto voltou explicitamente ao escopo. A direção desta revisão está em [REVISAO-ESCULTURA-CATALOGO.md](REVISAO-ESCULTURA-CATALOGO.md), com alterações por personagem. Não declarar equivalência às referências cinematográficas.
 

@@ -22,7 +22,10 @@ fs.mkdirSync(out,{recursive:true});
    const onlyPoses=process.env.ATELIE_SOMENTE_POSES==='1';
    if(onlyPoses)assert(fixed[id]?.three,'Captura de expressões requer câmera de referência');
    cameras[id]=onlyPoses?fixed[id]:{};
-   for(const view of onlyPoses?[]:['front','three','side']){
+   const views=process.env.ATELIE_VIEWS?.split(',')||['front','three','side'];
+   assert(views.includes('three'),'A comparação da escultura requer a vista three');
+   assert(views.every(view=>['front','three','side'].includes(view)),'Vista de rosto desconhecida');
+   for(const view of onlyPoses?[]:views){
     cameras[id][view]=await page.evaluate(async({id,view,saved})=>{
      const a=window.__atelie,THREE=await import('three'),{PRESETS}=await import('/src/presets.js'),p=PRESETS[id],head=a.group();head.updateWorldMatrix(true,true);
      let center,height;

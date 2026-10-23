@@ -29,7 +29,7 @@ O acabamento dos 17 penteados usa volumes fechados, pontas afinadas, sulcos e fi
 
 ### Revisão visual após a reprovação
 
-A revisão de escultura dos 34 personagens está em [REVISAO-ESCULTURA-CATALOGO.md](REVISAO-ESCULTURA-CATALOGO.md). Ela reabre os rostos e reconstrói os cabelos, além de corrigir a união cabeça/pescoço, os encaixes dos óculos e as raízes da pelagem. Luz, exposição e figurinos permanecem preservados. A [comparação pública](https://aruanmf446-hub.github.io/quemsoueu/revisao/) mostra os mesmos personagens/câmeras nas duas versões, com abas com cabelo e de escultura facial. Testes técnicos não representam aprovação estética.
+A rodada `b119a58` foi reprovada pelo usuário: olhos e íris exagerados e rostos adultos encurtados. A [correção de proporções faciais](CORRECAO-PROPORCOES-FACIAIS.md) ajusta os 23 perfis humanos e corrige a oclusão pintada nas pálpebras inferiores; o catálogo preserva as diferenças de idade e identidade. A [comparação pública](https://aruanmf446-hub.github.io/quemsoueu/revisao/) passa a comparar essa versão reprovada com a correção, com câmera e iluminação iguais. Luz, exposição, cabelo e figurinos permanecem iguais nesta rodada. Testes técnicos não representam aprovação estética. A reconstrução anterior está documentada em [REVISAO-ESCULTURA-CATALOGO.md](REVISAO-ESCULTURA-CATALOGO.md).
 
 ### Escultura facial e identidade
 

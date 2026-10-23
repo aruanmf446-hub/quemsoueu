@@ -441,17 +441,19 @@ function irisTexture(cols, pupil) {
   // eixo y: do centro da pupila (topo) até a borda da íris (base). eixo x: ângulo (u≈.25 = parte de baixo do olho)
   const p = clamp(pupil,.20,.62),g = c.createLinearGradient(0, 0, 0, H);
   const irisLight=col(cols[0]).lerp(col('#f0dcc0'),.20).convertLinearToSRGB(),lightRGB=[irisLight.r,irisLight.g,irisLight.b].map(v=>Math.round(v*255)).join(',');
-  g.addColorStop(0, '#040202'); g.addColorStop(p - .02, '#070404'); g.addColorStop(p + .03, cols[0]);
-  g.addColorStop(p + .2, cols[1]); g.addColorStop(.8, cols[2]); g.addColorStop(.9, '#1c0e06'); g.addColorStop(1, '#0d0603');
+  // Colarete discreto: o tom mais claro não forma um anel luminoso junto à pupila.
+  const collarette=col(cols[1]).lerp(col(cols[0]),.28).getStyle();
+  g.addColorStop(0, '#040303'); g.addColorStop(p - .012, '#070505'); g.addColorStop(p + .022, cols[1]);
+  g.addColorStop(p + .13, collarette); g.addColorStop(.79, cols[1]); g.addColorStop(.94, cols[2]); g.addColorStop(1, '#17100c');
   c.fillStyle = g; c.fillRect(0, 0, W, H);
   let seed = 11; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
   for (let i = 0; i < 900; i++) { // fibras radiais
     const x = rnd() * W, y0 = H * (p + .02 + rnd() * .08), y1 = H * (.55 + rnd() * .35);
-    c.strokeStyle = rnd() > .45 ? 'rgba('+lightRGB+',' + (.04 + rnd() * .09) + ')' : 'rgba(35,15,4,' + (.08 + rnd() * .16) + ')';
+    c.strokeStyle = rnd() > .45 ? 'rgba('+lightRGB+',' + (.025 + rnd() * .055) + ')' : 'rgba(35,15,4,' + (.06 + rnd() * .10) + ')';
     c.lineWidth = .8 + rnd() * 2.2; c.beginPath(); c.moveTo(x, y0); c.quadraticCurveTo(x + (rnd() - .5) * 8, (y0 + y1) / 2, x + (rnd() - .5) * 4, y1); c.stroke();
   }
   const ring = c.createLinearGradient(0, H * (p - .01), 0, H * (p + .14)); // colarete claro
-  ring.addColorStop(0, 'rgba('+lightRGB+',0)'); ring.addColorStop(.45, 'rgba('+lightRGB+',.15)'); ring.addColorStop(1, 'rgba('+lightRGB+',0)');
+  ring.addColorStop(0, 'rgba('+lightRGB+',0)'); ring.addColorStop(.45, 'rgba('+lightRGB+',.06)'); ring.addColorStop(1, 'rgba('+lightRGB+',0)');
   c.fillStyle = ring; c.fillRect(0, H * (p - .01), W, H * .15);
   // luz entrando por baixo (cáustica) e sombra da pálpebra em cima
   const lg = c.createLinearGradient(0, 0, W, 0);
@@ -776,6 +778,9 @@ export function buildHead(presetId, adj, opts = {}) {
       const cc = new THREE.Color(), cav = (i, j, k) => {
         const jl = (j - k + LON) % LON, jr = (j + k) % LON, iu = Math.max(i - k, 0), id = Math.min(i + k, LAT);
         const p = i * W + j, A = [i * W + jl, i * W + jr, iu * W + j, id * W + j];
+        // O fundo recuado da abertura ocular não é vizinhança da pele externa.
+        // Medir curvatura através dele grava uma faixa de oclusão na pálpebra.
+        if (A.some(q => state[q] === 1 || state[q] === 3)) return 0;
         let ax = 0, ay = 0, az = 0; for (const q of A) { ax += pos[q * 3]; ay += pos[q * 3 + 1]; az += pos[q * 3 + 2] }
         return (ax / 4 - pos[p * 3]) * nr.getX(p) + (ay / 4 - pos[p * 3 + 1]) * nr.getY(p) + (az / 4 - pos[p * 3 + 2]) * nr.getZ(p);
       };
@@ -784,7 +789,11 @@ export function buildHead(presetId, adj, opts = {}) {
         const p = i * W + j; if (state[p] === 1 || state[p] === 3) continue;
         if(!P.lathe&&pos[p*3+1]<P.loft.y[0]-.055)continue;
         const c1 = cav(i, j % LON, s1), c2 = cav(i, j % LON, s2);
-        const dark = .3 * sstep(.0005, .005, c1) + .4 * sstep(.002, .016, c2), dn = sstep(-.3, -.85, nr.getY(p)) * .35;
+        const dark = .3 * sstep(.0005, .005, c1) + .4 * sstep(.002, .016, c2);
+        // A sombra sob a mandíbula começa abaixo da boca. Aplicá-la a toda
+        // normal voltada para baixo pintava olheiras e laterais do nariz.
+        const jawMask=sstep(P.mouthY-.025,(P.loft?.y?.[0]??P.mouthY-.4),pos[p*3+1]);
+        const dn = jawMask * sstep(-.3, -.85, nr.getY(p)) * .35;
         const lite = .1 * sstep(-.002, -.008, c1);
         if (dark + dn + lite > .003) {
           cc.fromArray(colors, p * 3).lerp(shade, clamp(dark + dn, 0, .7)).lerp(skinHi, lite); cc.toArray(colors, p * 3);
@@ -903,7 +912,7 @@ export function buildHead(presetId, adj, opts = {}) {
       const g = new THREE.CircleGeometry(r, 28); g.scale(1, sq, 1);
       const m = new THREE.Mesh(track(g), catchMat); m.position.copy(p); m.lookAt(p.clone().multiplyScalar(2)); m.renderOrder = 4; m.name = 'Catchlight'; grp.add(m);
     };
-    spark(-s * .2 - .12, .24, .03 * Re / .25, .85); spark(s * .17 - .04, -.24, .012 * Re / .25, .8);
+    spark(-s * .2 - .12, .24, .023 * Re / .25, .85); spark(s * .17 - .04, -.24, .008 * Re / .25, .8);
     root.add(grp);
 
     // carúncula (canto interno)

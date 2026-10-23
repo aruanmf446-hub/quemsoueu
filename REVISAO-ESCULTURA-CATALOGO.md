@@ -1,5 +1,7 @@
 # Revisão da escultura dos 34 personagens
 
+> Histórico da rodada `b119a58`, reprovada pelo usuário. A correção seguinte está em [CORRECAO-PROPORCOES-FACIAIS.md](CORRECAO-PROPORCOES-FACIAIS.md).
+
 A versão `acf8bc2` foi reprovada pelo usuário. Melhorar normais, UVs e exportação não resolveu os rostos genéricos nem os defeitos visíveis no jogo. Esta rodada muda a construção das formas, usando as referências como parâmetro de qualidade; não declara equivalência ao acabamento cinematográfico.
 
 A iluminação, a exposição, os figurinos e as cores de cabelo escolhidas permanecem preservados. O rosto voltou ao escopo por solicitação explícita. Os testes antigos de igualdade da anatomia contra `37fadc2` pertencem à rodada anterior e não devem impedir esta revisão.

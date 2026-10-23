@@ -1,5 +1,6 @@
 // A comparação publicada precisa abrir, alternar a escultura e funcionar no celular.
 const {chromium}=require('playwright'),assert=require('node:assert/strict'),fs=require('node:fs');
+const out=process.env.ATELIE_RENDERS||'renders/reconstrucao';fs.mkdirSync(out,{recursive:true});
 (async()=>{const browser=await chromium.launch({executablePath:'/usr/bin/chromium',headless:true,args:['--no-sandbox']});try{
  const context=await browser.newContext({viewport:{width:1366,height:900}}),page=await context.newPage(),errors=[];
  page.on('pageerror',e=>errors.push(e.message));await page.goto('http://localhost:8000/revisao/');assert.equal(await page.locator('section').count(),34);
@@ -11,5 +12,5 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict'),fs=r
  await page.locator('#search').fill('guardia da lua');assert.equal(await page.locator('section:visible').count(),1);
  await page.setViewportSize({width:390,height:844});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'Galeria transborda no celular');
  await page.locator('#search').fill('');assert.equal(await page.locator('section:visible').count(),34);assert.deepEqual(errors,[]);
- fs.writeFileSync('renders/reconstrucao/galeria-verificacao.json',JSON.stringify({personagens:34,imagens:136,abas:true,busca:true,celular:true,errors},null,2));console.log('Galeria: 34 personagens, 136 imagens, abas, busca e celular válidos.');
+ fs.writeFileSync(out+'/galeria-verificacao.json',JSON.stringify({personagens:34,imagens:136,abas:true,busca:true,celular:true,errors},null,2));console.log('Galeria: 34 personagens, 136 imagens, abas, busca e celular válidos.');
 }finally{await browser.close()}})().catch(e=>{console.error(e);process.exitCode=1});
