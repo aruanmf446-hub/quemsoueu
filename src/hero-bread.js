@@ -61,12 +61,12 @@ export function buildHeroBread(c){
   // No vigilante, a gola interna sobe até o ombro e fecha a fresta sob a sobrecasaca aberta,
   // inclusive no corpo magro; acompanha a mesma subida no acabamento, sem mudar o padeiro.
   const shirt=garment(baker?'Camisa_padeiro_pregueada':'Camisa_vigilante','fabric','upper',{
-    top:yN+(watch?.11*W:.045),bottom:Y(.395),t:.045*W,cell:.039*clamp(W,1,1.25),sleeve:'forearm',sleeveEase:.048*W,puff:(baker?.105:.045)*W,bell:.006*W,vneck:baker?.065:.10,
+    top:yN+(watch?.11*W:.045),bottom:Y(.395),t:.045*W,cell:.022*clamp(W,1,1.25),sleeve:'short',short:1,sleeveEase:.07*W,puff:(baker?.14:.08)*W,bell:.006*W,vneck:baker?.065:.10,
     env:{ease:.045*W,hang:.42,cinch:Y(.33),cinchK:.92,flareFrom:Y(.34),flare:.055,folds:.018*W,foldN:17}
   });
   sleeveCuffs(shirt,'upper',baker?'secondary':'accent',.095*W);
   // Três voltas irregulares deixam a dobra da manga ter leitura de tecido enrolado.
-  if(baker)for(let i=0;i<3;i++)ring('upper',i%2?'fabric':'secondary',E,Wr,.60+i*.042,.040*W,.075*W+i*.004*W);
+  if(baker)for(let i=0;i<3;i++)ring('upper',i%2?'fabric':'secondary',S,E,.92+i*.028,.040*W,.075*W+i*.004*W);
   rim('upper',baker?'secondary':'trim',shirt.outer,a=>yN+(watch?.09*W:.025)-.065*Math.max(0,Math.cos(a))**6,.018*W);
   if(baker){
     for(const side of [-1,1]){
@@ -78,7 +78,7 @@ export function buildHeroBread(c){
   }
   // Bombacha: pernas largas apoiadas no quadril, reunidas no cano da bota; cada vinco tem largura e sombra próprias.
   const legField=trousers(baker?'Bombacha_do_forno':'Calca_de_vigia','pants',{
-    top:.33,ease:.075*W,puff:(baker?.14:.075)*W,cuff:.13,knee:.025*W,t:.05*W,cell:.039*clamp(W,1,1.25),under:{fn:shirt.solid,y:Y(.395)+.025*W}
+    top:.33,ease:.10*W,puff:(baker?.21:.14)*W,cuff:.13,knee:.04*W,t:.05*W,cell:.025*clamp(W,1,1.25),under:{fn:shirt.solid,y:Y(.395)+.025*W}
   });
   for(const side of [-1,1]){
     // Bainhas/pregas pequenas são projetadas na própria superfície da perna, acima da bota.
@@ -123,10 +123,7 @@ export function buildHeroBread(c){
     for(let i=0;i<9;i++){const p=point(1,(i+.5)/9);line('belt','trim',[p,p.clone().add(V(.006*W,-.055*W,0))],.004*W)}
   }
   if(baker){
-    // O avental tem peitoral, saia e pano lateral separados, apoiados no corpo e nos quadris.
-    const bibPoint=(t,u)=>{const width=lerp(.65,.84,t)*W,x=(u-.5)*width,y=lerp(Y(.125),Y(.34),t);return column(shirt.outer,x,y,.115*W+.010*W*Math.sin(u*PI*7)*t)};
-    emit('cape','secondary',clothSurface(36,28,bibPoint,{thickness:.025*W}));
-    for(const u of [0,1])line('cape','accent',Array.from({length:33},(_,i)=>bibPoint(i/32,u)),.011*W);
+    // A referência tem avental preso à cintura; o peito deixa a camisa de botões visível.
     const front=placard('cape','secondary',apronSupport,.34,.71,0,1.40,.018*W,.19*W);
     const side=placard('cape','fabric',apronSupport,.345,.76,-.81,.43,.02*W,.12*W);
     wheat('cape',front,.24*W);wheat('cape',side,.13*W);
@@ -164,19 +161,24 @@ export function buildHeroBread(c){
   }else{
     // Sobrecasaca com frente aberta e cavas próprias sobre a camisa escura.
     const coat=garment('Sobrecasaca_assimetrica_vigilante','secondary','upper',{
-      top:yN+.10,bottom:Y(.57),t:.07*W,cell:.04*clamp(W,1,1.25),sleeve:null,open:.22,openTaper:1.8,hollow:true,over:shirt.outer,overGap:.09*W,shoulderPad:.11,
+      top:yN+.10,bottom:Y(.57),t:.07*W,cell:.023*clamp(W,1,1.25),sleeve:'short',short:.46,sleeveEase:.105*W,puff:.035*W,open:.22,openTaper:1.8,hollow:true,over:shirt.outer,overGap:.09*W,shoulderPad:.11,
       env:{ease:.075*W,hang:.35,cinch:Y(.33),cinchK:.92,flareFrom:Y(.37),flare:.20,folds:.025*W,foldN:13},hemCurve:.10*W
     });
-    edgeTube(coat,'open','trim','upper',.018*W);edgeTube(coat,'arm','leather','upper',.026*W);
+    edgeTube(coat,'open','leather','upper',.014*W);sleeveCuffs(coat,'upper','leather',.06*W);
     const skirtSupport=(x,y,z)=>Math.min(waistEnv(x,y,z),legField(x,y,z)-.035*W,y>=Y(.57)-.03*W?coat.outer(x,y,z)-.035*W:1000);
     for(const side of [-1,1]){
-      stitchedPanel('upper','leather',coat.outer,.10,.32,side*.76,.24,.12*W);
+      // As correias largas têm ferragens localizadas; não contornam o peito com tubos dourados.
       const tail=placard('lower','fabric',skirtSupport,.345,.68,side*.63,.57,.13*W,.14*W);stitchedPanel('lower','lining',skirtSupport,.35,.60,side*.88,.18,.21*W);
       for(let i=0;i<7;i++){
         const u=.10+i*.13,p=tail(.81,u),q=tail(.9,u+.05),r=tail(.96,u);line('lower','trim',[p,q,r],.006*W);
       }
       leatherPouch(waistBase,.40,side*.88,.22*W,.28*W);
       const p=surfAt(coat.solid,Y(.13),side*.77,.08*W);emit('upper','trim',orient(buckleGeo(.12*W,.15*W,.016*W),p,V(Math.sin(side*.77),0,Math.cos(side*.77))));
+    }
+    // Cachecol em camadas liga a máscara ao capuz e cobre a costura da gola.
+    for(let layer=0;layer<3;layer++){
+      const scarf=(t,u)=>{const ph=-PI+u*2*PI,y=yN+(.61-layer*.15)*W-t*.22*W-.07*W*Math.cos(ph),p=surfAt(shirt.env,y,ph,(.10+layer*.018)*W);p.z+=.025*W*Math.sin(ph*3+t*PI);return p};
+      emit('upper','fabric',clothSurface(12,96,scarf,{closed:true,thickness:.025*W}));
     }
     // Painel central com ponta e dois recortes; o laranja aparece nas camadas de baixo.
     placard('lower','accent',skirtSupport,.34,.66,-.16,.33,.10*W,.085*W);
@@ -191,7 +193,7 @@ export function buildHeroBread(c){
     emit('extras','leather',handPatch(body,0,.035*W));
     // Correias cruzadas planas e fivelas, assentadas na camada externa.
     for(const side of [-1,1]){
-      const pts=[];for(let i=0;i<=36;i++){const t=i/36,y=lerp(Y(.075),Y(.335),t),phi=side*lerp(.9,-.35,t);pts.push(surfAt(coat.solid,y,phi,.21*W))}emit('upper','leather',strap(pts,.062*W));
+      const pts=[];for(let i=0;i<=36;i++){const t=i/36,y=lerp(Y(.075),Y(.335),t),phi=side*lerp(.73,.48,t);pts.push(surfAt(coat.solid,y,phi,.21*W))}emit('upper','leather',strap(pts,.105*W));
       const g=buckleGeo(.13*W,.15*W,.017*W);g.rotateZ(side*.55);g.translate(...pts[12].clone().add(V(0,0,.025*W)).toArray());emit('upper','trim',g);
     }
     const crest=badge('flame',.12*W,.022*W),p=surfAt(shirt.solid,Y(.15),0,.11*W);crest.translate(...p.toArray());emit('extras','trim',crest);

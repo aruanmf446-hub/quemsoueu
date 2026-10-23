@@ -95,10 +95,12 @@ for(const c of FOREST_CHARACTERS)BODIES[c.id]={...BODIES[c.body]};
 // Silhuetas próprias das novas referências; as treze bases anteriores permanecem imutáveis.
 for(const id of ['forest_archer_f','forest_guard_f'])BODIES[id]={...BODIES[id],head:.95,heads:5.55,W:.88,sh:.91,chest:.94,waist:.91,hip:1,arm:1.03,leg:.96};
 for(const id of ['moon_guardian','ruby_sorceress','forest_princess'])BODIES[id]={...BODIES[id],head:.95,heads:5.65,W:.87,sh:.91,chest:.95,waist:.90,hip:1,leg:.97};
-BODIES.nana_explorer={...BODIES.nana_explorer,head:.95,heads:5.55,W:.90,sh:.94,chest:.95,waist:.91,hip:1,leg:.98};
-BODIES.nico_inventor={...BODIES.nico_inventor,head:.90,heads:4.05,W:.82,sh:1.02,waist:1,hip:.94,arm:1.06,hand:1.17,foot:1.18,leg:.98};
+BODIES.nana_explorer={...BODIES.nana_explorer,head:1,heads:5.1,neckUp:.27,neckBase:1.05,W:.96,sh:1,chest:.98,waist:.88,hip:1.04,hand:1.08,foot:1.15,leg:.97};
+BODIES.nico_inventor={...BODIES.nico_inventor,head:1,heads:3.65,neckUp:.52,W:.93,sh:1.03,waist:1,hip:.98,arm:1.02,hand:1.13,foot:1.25,leg:.96};
 
 for(const c of FRONTIER_CHARACTERS)BODIES[c.id]={...BODIES[c.body],...(c.large?{W:1.95,heads:6.1,sh:1.02,arm:1.18,hand:1.08}: {})};
+// Duas roupas do mesmo jovem: escala e anatomia permanecem idênticas entre as skins.
+for(const id of ['bread_baker','bread_vigilante'])BODIES[id]={...BODIES.masculine_soft,head:1,heads:5.7,neckUp:.24,W:1.04,sh:1.14,chest:1.04,muscle:.32,hand:1.12,foot:1.18};
 // Silhueta própria somente das novas skins: coluna compacta, ombros largos e extremidades robustas.
 const DESERT_CACTUS = {head:1,heads:2.35,W:1.08,sh:.92,chest:1,waist:.97,hip:.88,depth:1.15,belly:.2,muscle:.18,glute:.15,cactus:true,fingers:4,arm:.92,hand:1.65,foot:1.8,leg:.85,aPose:48};
 BODIES.flame_guardian={...BODIES.masculine_soft,heads:5.8,head:1,W:1.12,sh:1.25,chest:1.12};
@@ -148,7 +150,7 @@ function makeBodySDF(fit, presetId, hs = 1, mermaid = false, build = normalizeBu
   joints.ySole = ySole; joints.Lb = Lb; joints.yNeck = yN; joints.zCenter = z0;
 
   // ---- pescoço: continua o da cabeça (mesma seção oval), alargando para dentro do trapézio ----
-  { const a = V(0, nby + .26 * hs, nbz - .02 * hs), b = V(0, nby - .1, nbz - .06), r1 = nr * hs * (desertCactus?1.02:1.14), r2 = nr * (.3 + .7 * hs) * (desertCactus?1.1:(1.24 + .22 * fat + .16 * build.muscle));
+  { const a = V(0, nby + .26 * hs, nbz - .02 * hs), b = V(0, nby - .1, nbz - .06), r1 = nr * hs * (desertCactus?1.02:1.14), r2 = nr * (.3 + .7 * hs) * (B.neckBase||1) * (desertCactus?1.1:(1.24 + .22 * fat + .16 * build.muscle));
     const neckField=coneField(a,r1,b,r2);
     // Nas colunas novas, a tampa fica dentro da cabeça: uma esfera de pescoço não pode aflorar pelo rosto.
     add((x, y, z) => desertCactus?Math.max(neckField(x*1.03,y,nbz+(z-nbz)/.88)*.92,y-(nby+.08*hs)):neckField(x * 1.14, y, z) * .92, bs(V(0, nby, nbz), .8), .1);

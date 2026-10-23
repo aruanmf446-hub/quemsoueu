@@ -1,4 +1,6 @@
-# Identidades de Nana, Nico e Vigilante
+# Identidades de Nana, Nico e Vigilante — rodada reprovada
+
+**Situação:** `c2baedb` foi reprovado pelo usuário: roupas, rosto e aparência distantes das referências. As descrições abaixo registram a tentativa anterior e não representam aprovação visual. A revisão posterior inclui corpo e figurino; veja `REVISAO-PERSONAGENS-COMPLETOS.md`.
 
 ## Pedido e escopo
 

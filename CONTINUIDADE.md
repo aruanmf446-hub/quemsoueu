@@ -1,3 +1,15 @@
+# Continuidade
+
+## Revisão em andamento — personagens completos após reprovação de c2baedb
+
+O usuário reprovou explicitamente roupas, rosto e aparência de `c2baedb`. A rodada anterior, documentada em `REFERENCIAS-NANA-NICO-VIGILANTE.md`, não foi aprovada. O escopo agora inclui figurinos e proporções de Nana, Nico e Vigilante, além do Padeiro por compartilhar a identidade com o Vigilante. Não interpretar testes técnicos como aprovação estética.
+
+Esta revisão modifica as quatro silhuetas e roupas: jaqueta mais curta e cargo ampla da Nana; corpo infantil mais compacto, peitoral e alças maiores na jardineira do Nico; mangas dobradas, sobreposição de túnica e cachecol do Vigilante; camisa aparente e avental de cintura do Padeiro. Cachos, olhos, nariz e acessórios são revisados nesses modelos. Os demais 30 perfis e proporções ficam fora da intervenção. Iluminação/exposição não foram alteradas.
+
+Comparação específica: `revisao/personagens/`, com corpo inteiro de frente, em 3/4, costas e close. Base imutável: `/workspace/outputs/reprovado-c2baedb`. Capturas em `renders/ref-personagem/{before,after}`, com câmeras fixadas na base. O cache de miniaturas passa a `menu-v21-personagens-completos`. A avaliação de semelhança continua aberta: a modelagem procedural ainda não equivale ao acabamento das pranchas fornecidas.
+
+## Histórico da rodada anterior (reprovada)
+
 # Continuidade — Ateliê Quem Sou Eu
 
 ## Orientação de entrega

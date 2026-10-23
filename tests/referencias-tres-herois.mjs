@@ -4,6 +4,9 @@ import {writeFileSync,mkdirSync} from 'node:fs';
 import {buildHead} from '../src/head.js';
 import {PRESETS} from '../src/presets.js';
 import {defaultLook,headOpts,buildLook,attachLook} from '../src/look.js';
+import {buildBody,headScale} from '../src/body.js';
+import {buildClothes} from '../src/clothes.js';
+import * as THREE from 'three';
 globalThis.document={createElement:()=>({getContext:()=>new Proxy({},{get:(_,k)=>k==='createLinearGradient'?()=>({addColorStop(){}}):()=>{}})})};
 const reports=[];
 for(const id of ['nana_explorer','nico_inventor','bread_vigilante','bread_baker']){
@@ -30,6 +33,26 @@ for(const id of ['nana_explorer','nico_inventor','bread_vigilante','bread_baker'
    visual.rebuildAcc({...look,acc:{...look.acc,head:null}});assert(ears.every(m=>m.visible),'Orelhas não retornaram ao retirar o capuz');
    visual.rebuildAcc(look);assert(ears.every(m=>!m.visible),'Capuz recolocado sem cobrir as orelhas');
   }
+  // Verifica o personagem vestido, incluindo peças SDF e painéis sobrepostos.
+  const body=buildBody(head.fit,id,{cell:.06,headScale:headScale(id)}),clothes=buildClothes(body,look);
+  try{
+   const skin=body.geo.attributes.position.array.slice(),bounds=new THREE.Box3();clothes.group.updateMatrixWorld(true);
+   clothes.group.traverse(m=>{
+    if(!m.isMesh)return;const g=m.geometry,p=g.attributes.position;
+    for(const [name,a]of Object.entries(g.attributes))assert(a.array.every(Number.isFinite),id+'/'+m.name+'/'+name);
+    assert(p.count>0,id+': peça vazia');if(g.index)assert(g.index.array.every(i=>i<p.count),id+': índice da roupa inválido');
+    if(m.material.normalMap)assert(g.attributes[m.material.normalMap.channel?'uv1':'uv'],id+': tecido sem UV');
+    g.computeBoundingBox();bounds.union(g.boundingBox);
+   });
+   assert(bounds.max.y<body.joints.yNeck+body.joints.W*1.1,id+': roupa ultrapassou a cabeça');
+   assert(bounds.min.y>body.joints.ySole-.30*body.joints.W,id+': roupa abaixo dos pés');
+   // O centro do peito tem tecido à frente da pele nas três roupas. A barriga
+   // descoberta da Nana fica fora desta seção; o avental não é usado como cobertura.
+   const ray=new THREE.Raycaster(new THREE.Vector3(0,body.joints.Y(.17),body.joints.bounds.z1+2),new THREE.Vector3(0,0,-1));
+   const hit=ray.intersectObject(clothes.group,true)[0];assert(hit,id+': peito sem roupa');
+   assert(body.sdf(...hit.point.toArray())>.005,id+': tecido entrou na pele do peito');
+   assert.deepEqual(body.geo.attributes.position.array,skin,id+': roupa alterou a pele');
+  }finally{clothes.dispose();body.geo.dispose()}
   reports.push({id,meshes,vertices,clips:12});console.log(JSON.stringify(reports.at(-1)));
  }finally{visual.dispose();head.dispose()}
 }

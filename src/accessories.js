@@ -315,7 +315,7 @@ export function buildAccessories(fit, sel = {}, cols = {}, hairMeshes = []) {
   // ---------------- rosto ----------------
   if (sel.face === 'glasses' && fit.eyes && fit.eyes.length === 2) {
     const frameKey=P.id==='nico_inventor'?'optical':'metal';
-    const separation=Math.abs(fit.eyes[1].x-fit.eyes[0].x),R=Math.min(fit.eyes[0].R*1.22,separation*.47);
+    const separation=Math.abs(fit.eyes[1].x-fit.eyes[0].x),R=Math.min(fit.eyes[0].R*(P.id==='nico_inventor'?1.08:1.22),separation*.47);
     // Aros medidos contra o rosto completo: a ponte do nariz pode avançar além do globo.
     // O antigo raio cruzava os dois aros e deixava os trechos internos enterrados na face.
     let zF=Math.max(...fit.eyes.map(e=>e.z+e.R))+.05;
@@ -397,13 +397,15 @@ export function buildAccessories(fit, sel = {}, cols = {}, hairMeshes = []) {
   // Chapéus do deserto: somente modelos novos, sem alterar os encaixes anteriores.
   if(sel.head==='chef_hat'){
     const y=top-.20,R=ring(y,-.04,.025),profile=t=>{const pts=[[0,1],[.18,1.10],[.47,1.18],[.72,1.0],[.9,.64],[1,.035]];let i=1;while(t>pts[i][0])i++;const a=pts[i-1],b=pts[i],u=sstep(a[0],b[0],t);return a[1]+(b[1]-a[1])*u};
-    add('fabric',clothSurface(48,120,(t,u)=>{const ph=u*Math.PI*2,p=R.at(ph),r=Math.hypot(p.x,p.z-zc)*profile(t)+.014*Math.sin(ph*24)*Math.sin(Math.PI*t);return V(Math.sin(ph)*r,y+1.0*t,zc+Math.cos(ph)*r)},{closed:true,thickness:.025}));
-    for(const dy of [0,.12])add('fabric',tube(Array.from({length:97},(_,i)=>R.at(i/96*Math.PI*2).add(V(0,dy,0))),.018));
+    add('fabric',clothSurface(48,120,(t,u)=>{const ph=u*Math.PI*2,p=R.at(ph),r=Math.hypot(p.x,p.z-zc)*profile(t)+.055*Math.sin(ph*13+.3)*Math.sin(Math.PI*t);return V(Math.sin(ph)*r-.12*Math.sin(Math.PI*t),y+.64*t+.07*Math.sin(ph)*Math.sin(Math.PI*t),zc+Math.cos(ph)*r)},{closed:true,thickness:.025}));
+    add('lining',clothSurface(8,96,(t,u)=>R.at(u*Math.PI*2).add(V(0,-.025+t*.115,.012)),{closed:true,thickness:.018}));
+    const knot=R.at(-1.7).add(V(-.025,.04,0));add('lining',sphere(knot,.075,1,.7,1));
+    for(let j=0;j<2;j++)add('lining',clothSurface(24,8,(t,u)=>knot.clone().add(V(-.12*t-(u-.5)*(.13-.045*t),-.25*t+j*.06,(-.32+j*.12)*t+.04*Math.sin(t*Math.PI*2))),{thickness:.016}));
   }
   if(head==='frontier_hat'||head==='guard_helmet')cactusHeadgear({head,fit,ring,add,tube,sphere,place,gemGeo,mats});
   if(sel.head==='vigilante_hood'){
     // Capuz alto e afunilado, aberto em diagonal ao redor da testa e das maçãs.
-    const point=(t,u)=>{const ph=Math.PI*.23+u*Math.PI*1.54,y=-1.03+(top+1.25)*t,atY=Math.min(y,top-.075),taper=1-.985*sstep(.78,1,t),r=(traceR(sdf,atY,ph,zc)+.08)*taper;return V(Math.sin(ph)*r,y,zc+Math.cos(ph)*r+.60*sstep(.65,1,t))};
+    const point=(t,u)=>{const opening=THREE.MathUtils.lerp(.27,.17,sstep(.22,.76,t))*Math.PI,ph=opening+u*(2*Math.PI-2*opening),y=-1.03+(top+1.19)*t,atY=Math.min(y,top-.075),taper=1-.985*sstep(.77,1,t),back=1-.12*Math.max(0,-Math.cos(ph)),fold=.018*Math.sin(ph*9+t*4)*Math.sin(Math.PI*t),r=(traceR(sdf,atY,ph,zc)+.10+fold)*taper*back;return V(Math.sin(ph)*r,y,zc+Math.cos(ph)*r+.44*sstep(.67,1,t))};
     add('fabric',clothSurface(64,96,point,{thickness:.032}));
     for(const u of [0,1]){
       const direction=u===0?1:-1;
@@ -411,7 +413,7 @@ export function buildAccessories(fit, sel = {}, cols = {}, hairMeshes = []) {
       add('band',tube(Array.from({length:65},(_,i)=>point(i/64,u)),.012));
       const stitch=[];for(let i=0;i<=46;i++){const t=.18+i/46*.77,q=point(t,u+direction*(i%2?.005:.016));q.z+=.042;stitch.push(q)}add('metal',tube(stitch,.0028));
     }
-    const cap=V(0,top+.22,zc+.60);add('fabric',sphere(cap,.012,1,.7,1));
+    const cap=V(0,top+.16,zc+.44);add('fabric',sphere(cap,.012,1,.7,1));
     // O tecido cobre o nariz e atravessa a região da boca sem imprimir os lábios.
     const topY=P.noseTipY+.13,bottom=P.loft.y[0]-.025,frontTop=Math.max(fit.surfZ(0,topY),fit.surfZ(0,P.noseTipY))+.055,frontBottom=fit.surfZ(0,bottom+.13)+.045;
     const maskPoint=(t,u)=>{const halfW=.70-.36*Math.pow(t,1.1),x=(u-.5)*2*halfW,upper=topY+.08*(1-(x/halfW)**2),yy=THREE.MathUtils.lerp(upper,bottom+.10*(x/halfW)**2,t),drape=THREE.MathUtils.lerp(frontTop,frontBottom,t)-(.38-.10*t)*(x/halfW)**2+.016*Math.sin(t*Math.PI*3)*Math.sin(u*Math.PI);return V(x,yy,Math.max(drape,fit.surfZ(x,yy)+.027))};

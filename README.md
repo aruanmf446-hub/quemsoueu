@@ -2,6 +2,10 @@
 
 Protótipo separado do jogo principal para aprovar a anatomia facial de personagens cartoon 3D. A V2 reúne cabeça, rig facial, corpo, cabelo, acessórios e figurinos procedurais personalizáveis, sem assets externos.
 
+## Revisão de Nana, Nico e Vigilante
+
+A tentativa `c2baedb` foi reprovada. A revisão seguinte inclui rosto, cabelo, proporções e figurinos dos três personagens e a skin Padeiro, que compartilha a identidade do Vigilante. Compare as malhas reais de corpo inteiro e em close em [revisao/personagens/](revisao/personagens/). O acabamento das referências continua sendo o objetivo visual; testes técnicos não equivalem a aprovação estética. Detalhes em [REVISAO-PERSONAGENS-COMPLETOS.md](REVISAO-PERSONAGENS-COMPLETOS.md).
+
 ## Tipos físicos
 
 `buildBody(fit, id, { build: { weight, muscle } })` aplica deltas sobre o corpo original de cada personagem. `weight` vai de **-1 (magro)** a **1 (gordo)**; `muscle` vai de **0 (musculatura original)** a **1 (musculoso)**. `{weight:0,muscle:0}` mantém a forma original. Peso e músculo podem ser combinados.

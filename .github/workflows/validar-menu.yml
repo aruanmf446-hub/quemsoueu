@@ -84,6 +84,7 @@ jobs:
           done
           timeout 25m node tests/pelos-exportacao.cjs
           node tests/galeria-reconstrucao.cjs
+          node tests/galeria-personagens.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

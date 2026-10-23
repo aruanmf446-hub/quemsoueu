@@ -29,7 +29,7 @@ export function buildHeroHair(fit,style,color){
   const curve=new THREE.CatmullRomCurve3(points,false,'centripetal');
   const geometry=groomedLock(points,width,depth,{rows:clamp(Math.ceil(curve.getLength()*36),28,100),segments:24,detailFibers:false,sculpted:false,grooveStrength:rope?.13:.065,grooves:3,phase,twist:rope?8:0,tone:tone*(.98+rand()*.04),
    normal:normal||((t,p)=>V(p.x,Math.max(.18,p.y-cy)*.65,p.z-cz)),
-   profile:t=>{const taper=Math.pow(1-smooth(tip,1,t),.80)*(1-.28*smooth(.28,.86,t)),rise=root+(1-root)*smooth(0,.20,t);return[Math.max(.0004,width*rise*taper),Math.max(.0003,(rope?depth:Math.max(depth,width*.38))*rise*Math.pow(taper,.86))]}});
+   profile:t=>{const taper=Math.pow(1-smooth(tip,1,t),.80)*(1-.28*smooth(.28,.86,t)),rise=root+(1-root)*smooth(0,.20,t);return[Math.max(.0004,width*rise*taper),Math.max(.0003,(rope?depth:Math.max(depth,width*(['nana_explorer','nico_inventor','bread_baker','bread_vigilante'].includes(P.id)?.24:.38)))*rise*Math.pow(taper,.86))]}});
   (accent?(accents[accent]||(accents[accent]=[])):parts).push(geometry);return curve;
  }
  function ellipsoid(center,radii,tone=.92,rumple=0){
@@ -99,7 +99,7 @@ export function buildHeroHair(fit,style,color){
   lock(pts,width,depth,{phase,tip,normal:(t,p)=>gradient(p),root:.025,accent});
   // Submechas seguem a curva-mãe; compartilham início e ponta e não são fios aleatórios.
   if(sub)for(const sign of [-1,1]){
-   const child=pts.map((p,k)=>{const env=Math.sin(k/32*PI)**.65;return p.clone().addScaledVector(frames[k].side,sign*width*.38*env).addScaledVector(frames[k].n,Math.max(depth,width*.38)*.78*env)});
+   const child=pts.map((p,k)=>{const env=Math.sin(k/32*PI)**.65;return p.clone().addScaledVector(frames[k].side,sign*width*.38*env).addScaledVector(frames[k].n,Math.max(depth,width*(['nana_explorer','nico_inventor','bread_baker','bread_vigilante'].includes(P.id)?.24:.38))*.78*env)});
    lock(child,width*.26,depth*.44,{phase:phase+sign*.3,tip:tip+.08,normal:(t,p)=>gradient(p),root:.025,accent});
   }
  }
@@ -110,39 +110,57 @@ export function buildHeroHair(fit,style,color){
    lock([a,b,c,d],(pixie?.095:short?.115:.10)*(1+.18*Math.sin(j*2.7)),neat?.023:pixie?.026:.034,{tip:.53,phase:j});
   }
  }
+ // Cachos desenhados por grupos de fluxo: elevação no topo, retorno da ponta e
+ // comprimentos diferentes. A franja não é uma repetição de lâminas radiais.
  function referenceCurls(mature=false){
-  const covered=P.id==='bread_vigilante',count=mature?48:62;
-  if(!covered)for(let j=0;j<count;j++){
-   const phi=j*2.399963,front=Math.cos(phi)>.25,theta=.25+Math.sqrt((j+.5)/count)*(front?1.00:1.30),lift=.10+.055*(.5+.5*Math.sin(j*1.7));
-   const pts=[scalp(Math.max(.10,theta-.24),phi-.20,.014),scalp(theta-.05,phi-.06,lift),scalp(theta+.13,phi+.16,lift*.90),scalp(theta+.27,phi+.30,.045)];
-   coherentClump(pts,(mature?.067:.078)+.012*Math.sin(j*.9),.043,j*.73,{amp:.023,cycles:.85,sub:j%6===0,tip:.73});
-  }
-  const n=covered?6:7;
+  const covered=P.id==='bread_vigilante',n=covered?0:34;
   for(let j=0;j<n;j++){
-   const phi=-.85+j*(1.7/(n-1)),start=covered?.50:.40,pts=[scalp(start,phi*.5,.016),scalp(.77,phi*.73,covered?.06:.18),scalp(1.02,phi+.03,covered?.045:.11),scalp(1.20+.08*Math.sin(j),phi+.15,.03)];
-   coherentClump(pts,covered?.057:.082,covered?.032:.047,j*.9,{amp:covered?.023:.040,cycles:1.05,sub:!covered&&j%3===0,tip:.68});
+   const phi=j*2.399963,front=Math.cos(phi)>.35,theta=.22+Math.sqrt((j+.5)/n)*(front?.70:1.25);
+   const lift=(front?.19:.15)+.065*Math.sin(j*1.47),turn=.30+.18*Math.sin(j*.87);
+   const pts=[scalp(Math.max(.12,theta-.27),phi-.30,.018),
+    scalp(theta-.10,phi-.12,lift),scalp(theta+.12,phi+.12,lift+.04),
+    scalp(theta+.23,phi+turn,.075),scalp(theta+.28,phi+turn+.19,.035)];
+   coherentClump(pts,(mature?.10:.115)+.018*Math.sin(j*1.31),.031,j*.73,{amp:.028,cycles:.85,sub:j%3===0,tip:.86});
+  }
+  const fringeCount=covered?5:7;
+  for(let j=0;j<fringeCount;j++){
+   const x=-.62+j*1.24/(fringeCount-1),endY=brow+.18+.085*Math.sin(j*1.7);
+   const pts=[scalp(.35,.12+j*.04,.015),
+    outside(V(x*.55,top+.10+.035*Math.sin(j),cz+.40),.08),
+    outside(V(x-.08,brow+.43+.07*Math.sin(j),cz+.76),.07),
+    V(x+.06,endY,fit.surfZ(x+.06,endY)+.065),
+    V(x+.12,endY+.035,fit.surfZ(x+.12,endY+.035)+.035)];
+   coherentClump(pts,covered?.061:.087,covered?.025:.028,j*.9,{amp:.020,cycles:1.1,sub:!covered&&j%3===0,tip:.82});
   }
  }
  function nanaPonytail(){
-  const anchor=V(-.10,top+.11,cz-.28);
-  referenceCurls(false);
-  curlMass(V(-.95,top+.10,cz-.27),V(.39,.48,.30),40,.095);
-  curlMass(V(-1.12,top-.40,cz-.30),V(.35,.43,.29),28,.085);
-  curlMass(V(-1.08,-.55,cz-.30),V(.30,.55,.27),26,.080);
-  // Rabo alto aberto em cachos, com silhueta lateral e pontas caindo atrás da orelha.
-  for(let j=0;j<44;j++){
-   const phi=j*2.399963,layer=j%3,spread=.22+layer*.10,guide=new THREE.CatmullRomCurve3([anchor.clone().add(V(Math.cos(phi)*.08,.02,Math.sin(phi)*.07)),V(-.96+Math.cos(phi)*spread,top+.41+.08*Math.sin(j),cz-.27+Math.sin(phi)*spread*.7),V(-1.13+Math.cos(phi)*spread,top-.12,cz-.34+Math.sin(phi)*spread),V(-1.11+Math.cos(phi)*spread,-.95-.55*(.5+.5*Math.sin(j*1.7)),cz-.33+Math.sin(phi)*spread)],false,'centripetal'),pts=[];
-   const coil=.058+.018*(.5+.5*Math.sin(j)),phase=j*.9;
-   for(let k=0;k<=56;k++){const t=k/56,q=guide.getPoint(t),tangent=guide.getTangent(t),axis=V(0,0,1).addScaledVector(tangent,-tangent.z).normalize(),side=tangent.clone().cross(axis).normalize(),a=phase+t*PI*(7+layer),r=coil*smooth(0,.14,t);q.addScaledVector(axis,r*Math.cos(a)).addScaledVector(side,r*Math.sin(a));pts.push(q)}
-   lock(pts,.026+(j%4)*.003,.023,{rope:true,tip:.89,phase,accent:j%15===0?'purple':null});
+  // A massa sustenta os cachos; as pontas não são fios finos soltos até o peito.
+  const anchor=V(-.18,top+.10,cz-.25);
+  for(let j=0;j<22;j++){
+   const phi=j*2.399963,theta=.35+Math.sqrt((j+.5)/22)*1.30;
+   coherentClump([scalp(theta,phi,.015),scalp(theta*.77,phi-.18,.10),scalp(theta*.48,phi-.36,.15),anchor.clone()],.067,.035,j,{amp:.025,sub:j%4===0,tip:.93});
   }
-  // Mecha clara e mechas violetas acompanham o mesmo fluxo do cabelo frontal.
-  for(let j=0;j<4;j++){
-   const side=j<3?-1:1,shift=(j%3)*.060,guide=new THREE.CatmullRomCurve3([scalp(.30,side*(.12+shift),.04),scalp(.65,side*(.37+shift),.16),scalp(1.00,side*(.73+shift),.12),outside(V(side*(.72+shift*.30),brow-.10,cz+.48),.045),outside(V(side*(.72+shift*.40),-.36-(j%3)*.05,cz+.39),.05)],false,'centripetal'),pts=[];
-   for(let k=0;k<=40;k++){const t=k/40,q=guide.getPoint(t);q.x+=.047*Math.sin(t*PI*5+j*.6)*smooth(.10,.35,t);q.z+=.024*Math.cos(t*PI*5+j*.6)*Math.sin(t*PI);if(j===1)q.z+=.04;pts.push(q)}
-   lock(pts,j===1?.034:.027,.025,{rope:true,tip:.84,phase:j,accent:j===0?'purple':null});
+  curlMass(V(-.82,top+.24,cz-.24),V(.56,.57,.44),38,.15);
+  curlMass(V(-1.06,top-.25,cz-.30),V(.49,.54,.40),32,.14);
+  curlMass(V(-1.10,top-.72,cz-.30),V(.39,.43,.34),26,.12);
+  for(let j=0;j<22;j++){
+   const phi=j*2.399963,spread=.28+(j%3)*.055,phase=j*.9;
+   const guide=new THREE.CatmullRomCurve3([anchor.clone(),
+    V(-.82+Math.cos(phi)*spread,top+.54,cz-.24+Math.sin(phi)*spread),
+    V(-1.13+Math.cos(phi)*spread,top-.15,cz-.29+Math.sin(phi)*spread),
+    V(-1.12+Math.cos(phi)*spread,top-1.16-.20*Math.sin(j),cz-.28+Math.sin(phi)*spread)],false,'centripetal'),pts=[];
+   for(let k=0;k<=56;k++){
+    const t=k/56,q=guide.getPoint(t),r=.075*smooth(0,.18,t),a=phase+t*PI*8;
+    q.x+=r*Math.cos(a);q.z+=r*Math.sin(a);pts.push(q);
+   }
+   lock(pts,.045+(j%3)*.005,.033,{rope:true,tip:.91,phase,accent:j%9===0?'purple':null});
   }
-  coherentClump([scalp(.35,.10,.06),scalp(.62,-.15,.20),scalp(.90,-.35,.16),scalp(1.14,-.62,.09),scalp(1.34,-.85,.06)],.048,.031,.8,{amp:.045,cycles:1.2,sub:true,tip:.77,accent:'white'});
+  for(const [j,accent]of [[0,'white'],[1,'purple'],[2,null],[3,null],[4,null]]){
+   const pts=[];
+   const guide=new THREE.CatmullRomCurve3([scalp(.32,.15+j*.08,.04),scalp(.69,-.40+j*.20,.20),scalp(1.03,-.73+j*.28,.15),scalp(1.24,-.93+j*.38,.08),scalp(1.30,-1.0+j*.40,.035)]);
+   for(let k=0;k<=40;k++){const t=k/40,q=guide.getPoint(t);q.x+=.055*Math.sin(t*PI*5+j)*Math.sin(PI*t);q.z+=.038*Math.cos(t*PI*5+j)*Math.sin(PI*t);pts.push(outside(q,.035))}
+   lock(pts,j===0?.053:.061,.027,{rope:true,tip:.90,phase:j,accent});
+  }
  }
  function inventorCurls(){
   // Curto cacheado do Nico: curvas em S e grupos secundários, sem franja em lâminas.

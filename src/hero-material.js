@@ -14,7 +14,7 @@ function maps(kind){
   for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++){
     const u=x/SIZE,v=y/SIZE,grain=noise(u*32,v*32,32),fine=noise(u*128,v*128,128);
     // Todas as frequências fecham no tile; o grão é contínuo, sem degraus aleatórios por pixel.
-    height[y*SIZE+x]=kind==='fabric'?.32*Math.sin(u*Math.PI*64)*Math.sin(v*Math.PI*64)+.055*(grain-.5):kind==='metal'?.07*noise(u*8,v*128,8,128)+.025*(grain-.5):kind==='polymer'?.025*(fine-.5):kind==='fur'?.12*noise(u*64,v*8,64,8):.24*(grain-.5)+.065*(fine-.5);
+    height[y*SIZE+x]=kind==='denim'?.23*Math.sin((u*96+v*48)*Math.PI*2)+.06*(grain-.5):kind==='fabric'?.32*Math.sin(u*Math.PI*64)*Math.sin(v*Math.PI*64)+.055*(grain-.5):kind==='metal'?.07*noise(u*8,v*128,8,128)+.025*(grain-.5):kind==='polymer'?.025*(fine-.5):kind==='fur'?.12*noise(u*64,v*8,64,8):.24*(grain-.5)+.065*(fine-.5);
     const r=kind==='fabric'?.94+.06*grain:kind==='metal'?.87+.13*grain:.89+.11*grain,k=(y*SIZE+x)*4;
     rough.set([255,Math.round(r*255),255,255],k);
   }
@@ -58,7 +58,7 @@ export function surfaceUV(geo,W=1){
 }
 export function heroSurface(geo,mat,ch,W=1){
   if(!mat.isMeshStandardMaterial||mat.transparent||['gem','pearl','tail','fin'].includes(ch))return;
-  const kind=['trim','enamel','metal'].includes(ch)?'metal':['leather','sole'].includes(ch)?'leather':ch==='polymer'?'polymer':ch==='fur'?'fur':'fabric';
+  const kind=ch==='denim'?'denim':['trim','enamel','metal'].includes(ch)?'metal':['leather','sole'].includes(ch)?'leather':ch==='polymer'?'polymer':ch==='fur'?'fur':'fabric';
   surfaceUV(geo,W);if(!geo.attributes.uv1)return;
   const texture=maps(kind);mat.normalMap=texture.normal;mat.roughnessMap=texture.roughness;
   mat.normalScale.setScalar(kind==='metal'?.11:kind==='leather'?.20:kind==='polymer'?.08:.23);

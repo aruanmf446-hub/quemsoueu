@@ -52,7 +52,7 @@ export const SDF_OUTFITS = {
 export const SDF_DEFAULT_COLORS = {
   flame_guardian:{fabric:'#9f252a',secondary:'#242126',pants:'#242126',accent:'#b0252c',leather:'#38291f',trim:'#cc9c42'},
   ...FOREST_COLORS, ...FRONTIER_COLORS,
-  lunar_explorer: {fabric:'#242133',secondary:'#4d3c64',pants:'#282737',accent:'#4ea9e8',leather:'#393346',trim:'#c89d52'},
+  lunar_explorer: {fabric:'#201d26',secondary:'#302a36',pants:'#25212b',accent:'#419ee3',leather:'#211e27',trim:'#b99351'},
   lunar_guardian: {fabric:'#191d30',secondary:'#252e56',accent:'#254982',leather:'#252233',trim:'#d7b15c'},
   lunar_inventor: {fabric:'#486b9b',secondary:'#e5dac4',pants:'#486b9b',accent:'#64b8e7',leather:'#71513b',trim:'#c5a158'},
   lunar_ruby: {fabric:'#231827',secondary:'#401d30',accent:'#93283e',leather:'#2b1b27',trim:'#c9a251'},

@@ -123,7 +123,17 @@ function template(body, style, slot) {
   }
   for (const d of descriptors) {
     const g = d.geo, colors = new Float32Array(g.attributes.position.count * 3), shade = g.attributes.shade;
-    for (let i = 0; i < colors.length / 3; i++) colors.fill(shade ? shade.getX(i) : 1, i * 3, i * 3 + 3);
+    for (let i = 0; i < colors.length / 3; i++) {
+      let tone=shade ? shade.getX(i) : 1;
+      // Lavagem localizada do denim: variação ampla acompanha a peça e continua
+      // multiplicando qualquer cor escolhida no editor, sem pintar manchas na pele.
+      if(style==='lunar_inventor'&&['fabric','pants'].includes(d.channel)){
+        const p=g.attributes.position,x=p.getX(i)/body.proportions.W,y=p.getY(i)/body.proportions.W,z=p.getZ(i)/body.proportions.W;
+        const wash=.5+.5*Math.sin(x*5.3+Math.sin(y*3.1)) * Math.sin(y*4.7+z*2.3);
+        tone*=.80+.20*wash;
+      }
+      colors.fill(tone,i*3,i*3+3);
+    }
     g.setAttribute('color', new THREE.BufferAttribute(colors, 3));
   }
   const item = { descriptors, coverage, refs: 0 }; templates.set(key, item);
@@ -196,7 +206,7 @@ export function buildClothes(body, look) {
     for (const d of source.descriptors.filter(d => d.slot === slot)) {
       const own = patterned.has(d.channel), geo = own ? d.geo.clone() : d.geo, mat = pieceMaterial(d.channel, cc), mesh = new THREE.Mesh(geo, mat);
       if((FOREST_OUTFITS[style]||FRONTIER_OUTFITS[style]||style.startsWith('lunar_'))&&['fabric','secondary','pants','accent','leather','trim','sole','lining'].includes(d.channel))finishMaterial(mat,['trim'].includes(d.channel)?'metal':['leather','sole'].includes(d.channel)?'leather':'fabric');
-      heroSurface(geo,mat,d.channel,body.proportions.W);
+      heroSurface(geo,mat,style==='lunar_inventor'&&['fabric','pants'].includes(d.channel)?'denim':d.channel,body.proportions.W);
       if(!SDF_OUTFITS[style]){mat.roughness=d.channel==='trim'?.38:d.channel==='leather'?.78:.88;mat.sheen=.15;mat.clearcoat=0}
       mesh.name = 'Roupa_' + d.name; mesh.castShadow = !mat.transparent; mesh.receiveShadow = true; mesh.userData = { ownGeometry: own, channel: d.channel, slot, style }; paint(mesh, d.channel, cc, body.proportions.W); part.add(mesh);
     }
