@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import {RoundedBoxGeometry} from 'three/addons/geometries/RoundedBoxGeometry.js';
 import {clothSurface} from './fabric.js';
+import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 const V=(x=0,y=0,z=0)=>new THREE.Vector3(x,y,z),PI=Math.PI;
 export function tuft(a,b,width=.14,thickness=.055,bend=.12){
   const d=b.clone().sub(a),axis=d.clone().normalize(),u=V(0,0,1).cross(axis).normalize();if(u.lengthSq()<.1)u.set(1,0,0);const v=axis.clone().cross(u),p=[],ix=[],nr=18,nc=12;
@@ -23,7 +24,11 @@ export function badge(kind,r=.15,depth=.025){
 export function panel(w,h,depth=.04){return new RoundedBoxGeometry(w,h,depth,4,Math.min(w,h,depth)*.28)}
 export function buckleGeo(w=.2,h=.14,t=.022){
   const shape=new THREE.Shape(),rr=(s,x,y,a,b)=>{s.moveTo(x+a*.15,y);s.lineTo(x+a*.85,y);s.quadraticCurveTo(x+a,y,x+a,y+b*.15);s.lineTo(x+a,y+b*.85);s.quadraticCurveTo(x+a,y+b,x+a*.85,y+b);s.lineTo(x+a*.15,y+b);s.quadraticCurveTo(x,y+b,x,y+b*.85);s.lineTo(x,y+b*.15);s.quadraticCurveTo(x,y,x+a*.15,y)};
-  rr(shape,-w/2,-h/2,w,h);const hole=new THREE.Path();rr(hole,-w/2+t,-h/2+t,w-2*t,h-2*t);shape.holes.push(hole);return new THREE.ExtrudeGeometry(shape,{depth:t*.65,bevelEnabled:true,bevelSize:t*.2,bevelThickness:t*.2,bevelSegments:3,curveSegments:8});
+  rr(shape,-w/2,-h/2,w,h);const hole=new THREE.Path();rr(hole,-w/2+t,-h/2+t,w-2*t,h-2*t);shape.holes.push(hole);const frame=new THREE.ExtrudeGeometry(shape,{depth:t*.65,bevelEnabled:true,bevelSize:t*.2,bevelThickness:t*.2,bevelSegments:4,curveSegments:12});
+  // O rolete e a lingueta pertencem à ferragem, com espaço real para a correia.
+  const roller=new THREE.CylinderGeometry(t*.44,t*.44,Math.max(t,h-t*2.2),16);roller.translate(-w*.34,0,t*.78);
+  const pin=new RoundedBoxGeometry(w*.67,t*.46,t*.48,3,t*.12);pin.translate(w*.005,0,t*.98);
+  const pieces=[frame,roller.toNonIndexed(),pin],g=mergeGeometries(pieces,false);pieces.forEach(p=>p.dispose());roller.dispose();return g;
 }
 export function gear(r=.13,depth=.035){
   const shape=new THREE.Shape();for(let i=0;i<48;i++){const a=i/48*2*PI,q=i%4<2?r:r*.82;if(!i)shape.moveTo(Math.cos(a)*q,Math.sin(a)*q);else shape.lineTo(Math.cos(a)*q,Math.sin(a)*q)}shape.closePath();const hole=new THREE.Path();hole.absarc(0,0,r*.42,0,2*PI,false);shape.holes.push(hole);return new THREE.ExtrudeGeometry(shape,{depth,bevelEnabled:true,bevelSize:.006,bevelThickness:.006,bevelSegments:2});

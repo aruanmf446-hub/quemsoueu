@@ -39,7 +39,7 @@ function material(name,color,metal=0){const m=new THREE.MeshPhysicalMaterial({na
 function mesh(parent,name,geo,mat){
  if(/eye|iris|pupil|cornea|olho|palpebra/i.test(name+' '+mat.name)){mat=mat.clone();mat.normalMap=null;mat.roughnessMap=null}
  else if(geo.userData.groom&&/pelagem|plum|pena|mecha|pelage|fourrure|criniere/i.test(mat.name+' '+name)){let groom=groomMaterials.get(mat);if(!groom){groom=groomSurface(mat.clone(),{roughness:mat.roughness,anisotropy:.35});groomMaterials.set(mat,groom)}mat=groom;if(geo.index&&!geo.attributes.tangent)geo.computeTangents()}
- else heroSurface(geo,mat,mat.userData.surfaceKind||'fur');
+ else heroSurface(geo,mat,mat.userData.surfaceKind||'fur',1,{detail:['fabric','leather'].includes(mat.userData.surfaceKind)});
  const m=new THREE.Mesh(geo,mat);m.name=name;m.castShadow=true;m.receiveShadow=true;parent.add(m);return m;
 }
 function ear(parent,side,mat,inner,fennec,pale){

@@ -206,7 +206,7 @@ export function buildClothes(body, look) {
     for (const d of source.descriptors.filter(d => d.slot === slot)) {
       const own = patterned.has(d.channel), geo = own ? d.geo.clone() : d.geo, mat = pieceMaterial(d.channel, cc), mesh = new THREE.Mesh(geo, mat);
       if((FOREST_OUTFITS[style]||FRONTIER_OUTFITS[style]||style.startsWith('lunar_'))&&['fabric','secondary','pants','accent','leather','trim','sole','lining'].includes(d.channel))finishMaterial(mat,['trim'].includes(d.channel)?'metal':['leather','sole'].includes(d.channel)?'leather':'fabric');
-      heroSurface(geo,mat,style==='lunar_explorer'&&['pearl','sole'].includes(d.channel)?'polymer':style==='lunar_inventor'&&['fabric','pants'].includes(d.channel)?'denim':d.channel,body.proportions.W,{detail:['lunar_explorer','lunar_inventor','bread_baker','bread_vigilante'].includes(style)&&['fabric','secondary','pants','leather','lining'].includes(d.channel)});
+      heroSurface(geo,mat,style==='lunar_explorer'&&['pearl','sole'].includes(d.channel)?'polymer':style==='lunar_inventor'&&['fabric','pants'].includes(d.channel)?'denim':d.channel,body.proportions.W,{detail:['fabric','secondary','pants','leather','lining','accent'].includes(d.channel)});
       if(style==='lunar_explorer'&&['pearl','sole'].includes(d.channel)){mat.roughness=.86;mat.clearcoat=0;mat.sheen=0;mat.metalness=0}
       if(!SDF_OUTFITS[style]){mat.roughness=d.channel==='trim'?.38:d.channel==='leather'?.78:.88;mat.sheen=.15;mat.clearcoat=0}
       mesh.name = 'Roupa_' + d.name; mesh.castShadow = !mat.transparent; mesh.receiveShadow = true; mesh.userData = { ownGeometry: own, channel: d.channel, slot, style }; paint(mesh, d.channel, cc, body.proportions.W); part.add(mesh);

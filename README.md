@@ -2,9 +2,13 @@
 
 Protótipo separado do jogo principal para aprovar a anatomia facial de personagens cartoon 3D. A V2 reúne cabeça, rig facial, corpo, cabelo, acessórios e figurinos procedurais personalizáveis, sem assets externos.
 
+## Acessórios e roupas do catálogo
+
+A revisão atual refina joias, argolas, dobradiças, fivelas, costuras dos cintos e superfícies dos figurinos/equipamentos. Rostos, proporções e pelos aprovados foram preservados. [Comparação do catálogo](revisao/acabamentos/) · [Detalhes](ACESSORIOS-ROUPAS-CATALOGO.md).
+
 ## Cabelos e barbas do catálogo
 
-Após a aprovação de `a2a9445`, a revisão atual melhora a construção das mechas e barbas, preservando os rostos, corpos e figurinos aprovados. [Comparação dos 34 personagens](revisao/pelos/) · [Detalhes](CABELOS-BARBAS-CATALOGO.md).
+A revisão `4b9b16f`, enviada após a aprovação de `a2a9445`, melhora a construção das mechas e barbas, preservando os rostos, corpos e figurinos aprovados. [Comparação dos 34 personagens](revisao/pelos/) · [Detalhes](CABELOS-BARBAS-CATALOGO.md).
 
 ## Revisão aprovada de Nana, Nico e Vigilante
 

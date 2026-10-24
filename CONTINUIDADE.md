@@ -1,6 +1,14 @@
 # Continuidade
 
-## Rodada atual — cabelos e barbas de todo o catálogo
+## Rodada atual — acessórios e roupas do catálogo
+
+O usuário elogiou a revisão de cabelos/barbas e pediu para continuar após a recomendação de refinar acessórios e roupas. A revisão de pelos foi enviada para main em `4b9b16f`. O trabalho atual preserva rostos, corpos, penteados e barbas aprovados, e altera somente ferragens, joias, costuras e superfícies dos figurinos/equipamentos.
+
+Fivelas compartilhadas agora têm rolete e lingueta reais. Joias têm cintura lapidada, assento com parede e borda, em vez de apenas um aro. Argolas, brincos e dobradiças dos óculos receberam acabamento de malha. Cintos de couro recebem debrum e pontos medidos na superfície do próprio cinto. O piloto projetava costuras nos braços; foi descartado, a projeção foi corrigida e há teste de regressão para a Nana. Mapas de albedo/relevo/rugosidade foram estendidos aos figurinos e aos tecidos/couros do equipamento das criaturas, preservando seleção de cores e desenhos.
+
+Base imutável `/workspace/outputs/aprovado-4b9b16f`. Capturas em `renders/acabamentos-catalogo/`. As vistas faciais de antes vêm das capturas finais verificadas de 4b9b16f; oito corpos foram recapturados na base. Galeria pública `revisao/acabamentos/`, com 34 personagens e oito figurinos de corpo inteiro. Não usar `piloto/` como resultado final. Cache `menu-v25-ferragens-costuras-catalogo`. Detalhes em [ACESSORIOS-ROUPAS-CATALOGO.md](ACESSORIOS-ROUPAS-CATALOGO.md).
+
+## Rodada anterior — cabelos e barbas, 4b9b16f
 
 O usuário aprovou a2a9445 ("Ficou incrível") e autorizou melhorar cabelos e barbas de todos. Preservar rostos, proporções, roupas, acessórios e iluminação aprovados. A revisão atua em `hero-hair.js` e `beard.js`; os penteados e cores do catálogo permanecem os mesmos. Personagens sem cabelo/barba permanecem como controles.
 

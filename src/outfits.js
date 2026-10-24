@@ -355,6 +355,19 @@ export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot 
     t = Math.max(t, .045 * W);
     const f = (x, y, z) => { const b0 = base(x, y, z); let d = Math.max(b0 - t, .003 - b0, Math.abs(y - yc - (o.tilt || 0) * Math.abs(x)) - h / 2); if (armSide(Math.abs(x), y) > -.03 * W) d = Math.max(d, .05); return d };
     piece(name, ch, f, bodyBounds(yc - h - .4, yc + h + .4, .8), o.cell ?? cellBase * .6);
+    if(ch==='leather')for(const edge of [-1,1]){
+      const points=[];
+      for(let j=0;j<=96;j++){
+        const ph=-PI+j/96*PI*2,y=yc+edge*h*.32;
+        // O campo do cinto elimina as mãos; o contorno sem braços mede a inclinação.
+        const core=(x,y,z)=>armSide(Math.abs(x),y)>-.03*W?Math.max(base(x,y,z),.05):base(x,y,z);
+        const first=o.tilt?surfAt(core,y,ph,t):null;
+        points.push(surfAt(f,y+(o.tilt?o.tilt*Math.abs(first.x):0),ph,.005*W));
+      }
+      addGeoS('belt','leather',tubeG(points,.006*W,8));
+      const curve=new THREE.CatmullRomCurve3(points),n=Math.min(180,Math.max(24,Math.ceil(curve.getLength()/(.055*W))));
+      for(let j=0;j<n;j++)addGeoS('belt','secondary',tubeG([curve.getPoint(j/n),curve.getPoint((j+.48)/n)],.0028*W,5));
+    }
   }
   const addGeoS = (slot, ch, g) => { const prev = detailSlot; detailSlot = slot; addGeo(ch, g); detailSlot = prev };
   function sleeveCuffs(gm, slot, ch, w = .06 * W) {

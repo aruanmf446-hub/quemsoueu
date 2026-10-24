@@ -74,10 +74,10 @@ function lensGeometry(radius,sag=.018,thickness=.004){
 const sphere = (p, r, sx = 1, sy = 1, sz = 1, ws = 24, hs = 16) => { const g = new THREE.SphereGeometry(r, ws, hs); g.scale(sx, sy, sz); g.translate(p.x, p.y, p.z); return g };
 function gemGeo(p, r, dir = V(0, 0, 1), stretch = 1) { // pedra lapidada (octaedro alongado), virada para dir
   // Lapidação com mesa, cintura e pavilhão: facetas menores que o antigo octaedro.
-  const N = 10, tiers = [[.42, .43], [.92, .12], [1, 0], [.45, -.38]], pos = [], ix = [];
+  const N = 12, tiers = [[.43, .43], [.94, .10], [1, .035], [1, -.025], [.45, -.38]], pos = [], ix = [];
   for (const [rad, z] of tiers) for (let i = 0; i < N; i++) { const a = i / N * Math.PI * 2; pos.push(Math.sin(a) * r * rad, Math.cos(a) * r * rad * stretch, z * r) }
   for (let j = 0; j < tiers.length - 1; j++) for (let i = 0; i < N; i++) { const a = j * N + i, b = j * N + (i + 1) % N, c = a + N, d = b + N; ix.push(a, b, c, b, d, c) }
-  for (let i = 1; i < N - 1; i++) { ix.push(0, i + 1, i); ix.push(N * 3, N * 3 + i, N * 3 + i + 1) }
+  for (let i = 1; i < N - 1; i++) { ix.push(0, i + 1, i); ix.push(N * (tiers.length-1), N * (tiers.length-1) + i, N * (tiers.length-1) + i + 1) }
   const g = new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setIndex(ix);g.computeVertexNormals();
   g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(V(0,0,1),dir.clone().normalize()));g.translate(p.x,p.y,p.z);g.userData.setting={p:p.clone(),r,dir:dir.clone().normalize(),stretch};return g;
 }
@@ -273,11 +273,16 @@ export function buildAccessories(fit, sel = {}, cols = {}, hairMeshes = []) {
     if (sel.ears === 'drop') {
       add('metal', sphere(lobe, .018));
       add('metal', tube([lobe, lobe.clone().add(V(0, -.05, 0))], .006, 6));
-      const c = lobe.clone().add(V(0, -.12, 0)), fr = new THREE.TorusGeometry(1, .16, 6, 24); fr.scale(.05, .072, .05); add('metal', place(fr, c, V(s, 0, .25)));
+      const c = lobe.clone().add(V(0, -.12, 0)), fr = new THREE.TorusGeometry(1, .16, 16, 64); fr.scale(.05, .072, .05); add('metal', place(fr, c, V(s, 0, .25)));
       add('gem2', gemGeo(c, .042, V(s, 0, .25), 1.45));
       for (let k = -1; k <= 1; k++) { const q = c.clone().add(V(0, -.085 - (k ? 0 : .025), k * .03)); add('metal', tube([c.clone().add(V(0, -.07, k * .022)), q], .004, 5)); add('pearl', sphere(q.add(V(0, -.012, 0)), .014)) }
     }
-    if (sel.ears === 'hoops') { const g = new THREE.TorusGeometry(.075, .01, 8, 40); add('metal', place(g, lobe.clone().add(V(0, -.07, 0)), V(s, 0, .5))) }
+    if (sel.ears === 'hoops') {
+      const dir=V(s,0,.5).normalize(),c=lobe.clone().add(V(0,-.07,0));
+      add('metal',place(new THREE.TorusGeometry(.075,.009,16,80),c,dir));
+      add('metal',place(panel(.025,.035,.012),lobe.clone().addScaledVector(dir,.009),dir));
+      add('band',place(tube([V(-.007,0,.008),V(.007,0,.008)],.0015),lobe.clone().addScaledVector(dir,.009),dir));
+    }
     if (sel.ears === 'studs') { add('metal', sphere(lobe, .02, 1, 1, .5)); add('gem2', gemGeo(lobe.clone().add(V(s * .012, 0, 0)), .022, V(s, 0, .3), 1)) }
   }
   // ---------------- testa ----------------
@@ -328,7 +333,9 @@ export function buildAccessories(fit, sel = {}, cols = {}, hairMeshes = []) {
       const s = Math.sign(e.x), hinge = V(e.x + s * R, e.y, zF - .01), back = V(s * (traceR(sdf, e.y, s * 80 * DEG, zc) * Math.sin(80 * DEG) + .04), e.y + .02, (fit.ears[0] ? fit.ears[0].center.z : zc - .1) + .05);
       add(frameKey, tube([hinge, hinge.clone().lerp(back, .5).add(V(s * .03, .012, 0)), back], .012, 12));
       add('pad',tube([back.clone().lerp(hinge,.18),back,back.clone().add(V(-s*.015,-.075,-.02))],.018,12));
-      add(frameKey,sphere(hinge,.023,1,1,.55));
+      add(frameKey,panel(.039,.030,.018).translate(...hinge.toArray()));
+      const screw=new THREE.CylinderGeometry(.0065,.0065,.003,16);screw.rotateX(Math.PI/2);screw.translate(hinge.x,hinge.y,hinge.z+.011);add(frameKey,screw);
+      add('band',tube([hinge.clone().add(V(-.004,-.002,.014)),hinge.clone().add(V(.004,.002,.014))],.0014));
       const pad=V(e.x-s*R*.76,e.y-.025,0);pad.z=fit.surfZ(pad.x,pad.y)+.018;add('nosePad',sphere(pad,.016,.65,1.5,.55));add(frameKey,tube([V(e.x-s*R*.84,e.y+.025,zF),pad.clone().add(V(0,.015,.008)),pad],.004,10));
     }
     const a = fit.eyes[0], b = fit.eyes[1], mid = V(0, a.y + .04, zF + .01), pts = [];
@@ -452,7 +459,11 @@ export function buildAccessories(fit, sel = {}, cols = {}, hairMeshes = []) {
 
   // Assentos e garras acompanham a lapidação de cada pedra, sem mudar seu desenho.
   for(const key of ['gem','gem2'])for(const stone of geos[key]||[]){
-    const S=stone.userData.setting;if(!S)continue;const seat=new THREE.TorusGeometry(S.r*1.015,S.r*.085,12,40);seat.scale(1,S.stretch,1);add('metal',place(seat,S.p.clone().addScaledVector(S.dir,-S.r*.04),S.dir));
+    const S=stone.userData.setting;if(!S)continue;
+    // Assento com parede, chanfro e abertura posterior: a gema não flutua num aro.
+    const seat=new THREE.LatheGeometry([[.89,-.12],[1.05,-.12],[1.08,-.04],[1.05,.055],[.94,.055],[.89,-.12]].map(([r,z])=>new THREE.Vector2(r*S.r,z*S.r)),64);
+    seat.rotateX(Math.PI/2);seat.scale(1,S.stretch,1);add('metal',place(seat,S.p,S.dir));
+    const lip=new THREE.TorusGeometry(S.r*.96,S.r*.032,12,64);lip.scale(1,S.stretch,1);add('metal',place(lip,S.p.clone().addScaledVector(S.dir,S.r*.055),S.dir));
     for(let j=0;j<4;j++){
       const a=Math.PI*.25+j*Math.PI/2,c=Math.cos(a),s=Math.sin(a),pts=[V(c*S.r*1.05,s*S.r*S.stretch*1.05,-S.r*.17),V(c*S.r*1.05,s*S.r*S.stretch*1.05,S.r*.12),V(c*S.r*.87,s*S.r*S.stretch*.87,S.r*.21)];
       add('metal',place(tube(pts,Math.max(.0015,S.r*.052)),S.p,S.dir));
@@ -470,7 +481,7 @@ export function buildAccessories(fit, sel = {}, cols = {}, hairMeshes = []) {
       merged.setAttribute('color',new THREE.BufferAttribute(colors,3));matOf(k).vertexColors=true;
     }
     if(k==='plume'&&merged.attributes.uv){groomSurface(matOf(k),{roughness:matOf(k).roughness,anisotropy:.3});merged.setIndex(Array.from({length:merged.attributes.position.count},(_,i)=>i));merged.computeTangents()}
-    else if(['metal','metalD','fabric','band','lining','mask'].includes(k))heroSurface(merged,matOf(k),k.startsWith('metal')||matOf(k).metalness>.5?'metal':k==='band'||['cowboy','frontier_hat'].includes(head)?'leather':'fabric',1,{detail:['nana_explorer','nico_inventor','bread_baker','bread_vigilante'].includes(P.id)&&['fabric','lining','band','mask'].includes(k)});
+    else if(['metal','metalD','fabric','band','lining','mask'].includes(k))heroSurface(merged,matOf(k),k.startsWith('metal')||matOf(k).metalness>.5?'metal':k==='band'||['cowboy','frontier_hat'].includes(head)?'leather':'fabric',1,{detail:['fabric','lining','band','mask'].includes(k)});
     const m = new THREE.Mesh(merged, matOf(k)); m.name = 'Acc_' + (sel.head && ['metal', 'metalD', 'fabric', 'band', 'glass', 'liquid'].includes(k) ? '' : '') + k; m.castShadow = !matOf(k).transparent; m.receiveShadow = true;
     if (k === 'glass') m.renderOrder = 2;
     group.add(m);
