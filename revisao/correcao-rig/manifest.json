@@ -1,0 +1,18 @@
+{
+  "base": "857cbdb",
+  "time": 2.22,
+  "motion": "victory",
+  "characters": [
+    "nico_inventor",
+    "nana_explorer",
+    "sad_clown"
+  ],
+  "assets": [
+    "antes-nico_inventor.webp",
+    "depois-nico_inventor.webp",
+    "antes-nana_explorer.webp",
+    "depois-nana_explorer.webp",
+    "antes-sad_clown.webp",
+    "depois-sad_clown.webp"
+  ]
+}

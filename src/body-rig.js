@@ -1,6 +1,7 @@
 // Rig corporal comum: mesmas articulações e coreografias, medidas de cada personagem.
 import * as THREE from 'three';
 import {MOTIONS,motionPose} from './motions.js';
+import {componentBindings} from './skin-components.js';
 const V=(x=0,y=0,z=0)=>new THREE.Vector3(x,y,z),clamp=THREE.MathUtils.clamp;
 export const BODY_BONES=['Root','Hips','Spine','Chest','Neck','Head','Tail','TailTip',...['L','R'].flatMap(s=>['UpperArm','LowerArm','Hand','UpperLeg','LowerLeg','Foot','Toe'].map(n=>n+'_'+s))];
 const prefix='Rig_',world=new THREE.Vector3(),euler=new THREE.Euler();
@@ -30,25 +31,53 @@ export function buildBodyRig(character,clothing=null){
  root.updateMatrixWorld(true);const skeleton=new THREE.Skeleton(BODY_BONES.map(n=>bones[n]));skeleton.calculateInverses();
  const indices=Object.fromEntries(BODY_BONES.map((n,i)=>[n,i])),replacements=[],attachments=[];
  const toRoot=root.matrixWorld.clone().invert();
- function weights(p){
-  if(companion&&p.y>-.75&&(quad||Math.abs(p.x)<.45||p.y>0)){const t=THREE.MathUtils.smoothstep(p.y,-.75,-.15);return [indices.Chest,indices.Head,1-t,t]}
-  if(mermaid&&p.y<L.center.y&&(Math.abs(p.x)<Math.abs(L.hip.x)+height*.04||p.y<L.knee.y)){const t=THREE.MathUtils.smoothstep((L.center.y-p.y)/Math.max(.1,L.center.y-floor),.25,.85);return [indices.Tail,indices.TailTip,1-t,t]}
-  // Pontos da roupa e da pele consultam os mesmos envelopes, sem depender da tesselação.
-  let best=null;const d=V();
-  for(const seg of segments){d.subVectors(seg.b,seg.a);const t=clamp(p.clone().sub(seg.a).dot(d)/(d.lengthSq()||1),0,1),q=seg.a.clone().addScaledVector(d,t);let distance=p.distanceToSquared(q);
-   if(!quad&&seg.type==='arm'&&Math.abs(p.x)<Math.abs(L.shoulder.x)*.72)distance+=height*height;
-   if(!quad&&seg.type==='leg'&&p.y>L.hip.y+height*.04)distance+=height*height;
-   if(!quad&&seg.type==='torso'&&p.y<L.hip.y-height*.07)distance+=height*height;
-   if(!best||distance<best.distance)best={seg,t,distance};
+ // Envelopes contínuos: a transição entre tronco e membros não escolhe
+ // um único segmento vencedor. Essa escolha rasgava as axilas ao erguer braços.
+ const width=J?.W??Math.max(.6,Math.abs(L.shoulder.x)*1.8),acc=new Float64Array(BODY_BONES.length);
+ segments.push({a:positions.Neck,b:positions.Head,name:'Neck',next:'Head',type:'torso'});
+ const envelopes=segments.map(seg=>{const d=seg.b.clone().sub(seg.a);return {...seg,dx:d.x,dy:d.y,dz:d.z,lengthSq:d.lengthSq()||1,sigma2:(width*(seg.type==='arm'?.32:seg.type==='leg'?.36:.52))**2,side:Math.sign(seg.a.x)}});
+ const scores=new Float64Array(envelopes.length),parameters=new Float64Array(envelopes.length);
+ function weights(p,mode=null){
+  let lowest=Infinity;const torso=J?.torsoAt?.(p.y);
+  for(let i=0;i<envelopes.length;i++){
+   const e=envelopes[i],t=clamp(((p.x-e.a.x)*e.dx+(p.y-e.a.y)*e.dy+(p.z-e.a.z)*e.dz)/e.lengthSq,0,1),dx=p.x-e.a.x-e.dx*t,dy=p.y-e.a.y-e.dy*t,dz=p.z-e.a.z-e.dz*t;
+   let mask=1;
+   if(e.type==='arm'){const start=Math.max(Math.abs(L.shoulder.x)*(companion?.10:.50),(torso?.rx||0)*.90),end=Math.max(Math.abs(L.shoulder.x)*(companion?.75:1.05),start+width*(companion?.30:.65));mask=THREE.MathUtils.smoothstep(Math.abs(p.x),start,end)*THREE.MathUtils.smoothstep(p.x*e.side,-width*.18,width*.18)}
+   if(e.type==='arm'&&['lower','skirt','belt','feet','torso'].includes(mode))mask=0;
+   if(e.type==='leg'){const band=width*(.22+.22*THREE.MathUtils.smoothstep(p.y,L.knee.y-width*.30,L.knee.y+width*.30));mask=(1-THREE.MathUtils.smoothstep(p.y,L.hip.y-width*.45,L.hip.y+width*.25))*THREE.MathUtils.smoothstep(p.x*e.side,-band,band)}
+   if(e.type==='leg'&&mode==='torso')mask=0;
+   if(e.type==='torso')mask=THREE.MathUtils.smoothstep(p.y,L.hip.y-width*.80,L.hip.y+width*.15);
+   const distance=e.type==='torso'&&torso?1.4*((p.x/torso.rx)**2+((p.z-torso.z)/torso.rz)**2)+dy*dy/e.sigma2:(dx*dx+dy*dy+dz*dz)/e.sigma2;
+   const score=mask>1e-12?distance-2*Math.log(mask):Infinity;scores[i]=score;parameters[i]=t;lowest=Math.min(lowest,score);
   }
-  const {seg,t}=best,u=THREE.MathUtils.smoothstep(t,.32,.90);
-  return [indices[seg.name],indices[seg.next],1-u,u];
+  acc.fill(0);
+  for(let i=0;i<envelopes.length;i++){
+   if(scores[i]-lowest>24)continue;
+   const e=envelopes[i],w=Math.exp(-(scores[i]-lowest)),t=parameters[i];
+   if(e.type==='leg'&&(mode==='cape'||mode==='skirt'))acc[indices.Hips]+=w;
+   else if(mermaid&&e.type==='leg'){const u=THREE.MathUtils.smoothstep((L.center.y-p.y)/Math.max(.1,L.center.y-floor),.25,.85);acc[indices.Tail]+=w*(1-u);acc[indices.TailTip]+=w*u}
+   else{const u=THREE.MathUtils.smoothstep(t,e.type==='torso'?0:.62,1);acc[indices[e.name]]+=w*(1-u);acc[indices[e.next]]+=w*u}
+  }
+  const ids=[0,0,0,0,0],values=[0,0,0,0,0];
+  for(let i=0;i<acc.length;i++)for(let j=0;j<5;j++)if(acc[i]>values[j]){for(let k=4;k>j;k--){values[k]=values[k-1];ids[k]=ids[k-1]}values[j]=acc[i];ids[j]=i;break}
+  // Remover simplesmente a quinta influência criava outra descontinuidade.
+  // O limiar zera a quarta/quinta na troca de ordem, mantendo quatro pesos contínuos.
+  const trimmed=values.slice(0,4).map(v=>Math.max(0,v-values[4])),sum=trimmed.reduce((a,b)=>a+b,0);if(!sum)return {ids:[indices.Hips,0,0,0],values:[1,0,0,0]};
+  return {ids:ids.slice(0,4),values:trimmed.map(v=>v/sum)};
  }
+
  function skin(mesh){
   const geometry=mesh.geometry.clone(),p=geometry.attributes.position,skinIndex=new Uint16Array(p.count*4),skinWeight=new Float32Array(p.count*4),matrix=toRoot.clone().multiply(mesh.matrixWorld);
-  geometry.computeBoundingBox();const bounds=geometry.boundingBox,smallMetal=mesh.material.metalness>.5&&bounds.getSize(V()).length()<height*.18,rigid=smallMetal?weights(bounds.getCenter(V()).applyMatrix4(matrix)):null;
-  if(rigid){const bone=rigid[2]>=rigid[3]?rigid[0]:rigid[1];rigid.splice(0,4,bone,bone,1,0)}
-  for(let i=0;i<p.count;i++){world.fromBufferAttribute(p,i).applyMatrix4(matrix);const [a,b,wa,wb]=rigid||weights(world);skinIndex.set([a,b,0,0],i*4);skinWeight.set([wa,wb,0,0],i*4)}
+  const {slot,style}=mesh.userData,collar=/^Roupa_(Gola\d*|Colar|Echarpe|Lenco|Lenço)(_|$)/.test(mesh.name),torsoOnly=slot==='upper'&&/(Macacao|Corpete|Colete|Jardineira|_Abas)/.test(mesh.name),mode=torsoOnly?'torso':slot==='lower'&&/^(dress|royal|lunar_guardian|lunar_ruby|forest_princess)$/.test(style)?'skirt':slot||null;
+  const metal=mesh.material.metalness>.5,parts=metal||slot==='extras'||slot==='feet'?componentBindings(geometry,matrix,g=>{
+   const {center:c,size}=g;let anchor=null;
+   if(slot==='feet'&&!mermaid)anchor='Foot_'+(c.x>=0?'L':'R');
+   else if(slot==='extras'&&Math.abs(c.x)>Math.abs(L.wrist.x)*.85)anchor='Hand_'+(c.x>=0?'L':'R');
+   else if(slot==='extras'&&c.z<z-width*.35&&Math.abs(c.x)<Math.abs(L.shoulder.x)*.85&&c.y>L.hip.y-width*.05)anchor='Chest';
+   else if(metal)anchor=BODY_BONES[weights(c,mode).ids[0]];
+   return anchor?{ids:[indices[anchor],0,0,0],values:[1,0,0,0]}:null;
+  }):null;
+  for(let i=0;i<p.count;i++){world.fromBufferAttribute(p,i).applyMatrix4(matrix);const w=collar?{ids:[indices.Neck,0,0,0],values:[1,0,0,0]}:parts?.(i)||weights(world,mode);skinIndex.set(w.ids,i*4);skinWeight.set(w.values,i*4)}
   geometry.setAttribute('skinIndex',new THREE.Uint16BufferAttribute(skinIndex,4));geometry.setAttribute('skinWeight',new THREE.Float32BufferAttribute(skinWeight,4));
   const skinned=new THREE.SkinnedMesh(geometry,mesh.material);skinned.name=mesh.name;skinned.position.copy(mesh.position);skinned.quaternion.copy(mesh.quaternion);skinned.scale.copy(mesh.scale);skinned.visible=mesh.visible;skinned.castShadow=mesh.castShadow;skinned.receiveShadow=mesh.receiveShadow;skinned.userData={...mesh.userData,bodyRig:true};skinned.frustumCulled=false;
   const parent=mesh.parent,order=parent.children.indexOf(mesh);parent.remove(mesh);parent.add(skinned);parent.children.splice(parent.children.indexOf(skinned),1);parent.children.splice(order,0,skinned);root.updateMatrixWorld(true);skinned.bind(skeleton,mesh.matrixWorld);replacements.push({original:mesh,skinned,parent,order});
@@ -62,23 +91,33 @@ export function buildBodyRig(character,clothing=null){
  if(quad)for(const side of ['L','R']){const b=bones['Hand_'+side],p=positions['Hand_'+side];footSamples.push({bone:b,local:V(p.x,floor,p.z+height*.025).applyMatrix4(b.matrixWorld.clone().invert().multiply(root.matrixWorld))})}
  if(mermaid){footSamples.length=0;footSamples.push({bone:bones.TailTip,local:V(0,floor,L.center.z).applyMatrix4(bones.TailTip.matrixWorld.clone().invert().multiply(root.matrixWorld))})}
  const inverseRoot=V(),motionScale=quad?.40:companion?.55:robot?.6:1;
- let active=null,time=0,playing=false,speed=1,helper=null;
- function rest(){for(const name of BODY_BONES){bones[name].quaternion.identity();bones[name].position.copy(positions[name]).sub(name==='Root'?V():positions[parentName(name)])}root.updateMatrixWorld(true);skeleton.update()}
+ let active=null,time=0,playing=false,speed=1,helper=null,transition=null,lastLift=0;
+ function rest(){lastLift=0;for(const name of BODY_BONES){bones[name].quaternion.identity();bones[name].position.copy(positions[name]).sub(name==='Root'?V():positions[parentName(name)])}root.updateMatrixWorld(true);skeleton.update()}
  function parentName(name){return bones[name].parent.isBone?bones[name].parent.name.slice(prefix.length):null}
+ function support(lift=0){
+  lastLift=Math.max(0,lift);
+  root.updateMatrixWorld(true);
+  if(!robot){let low=Infinity;for(const p of footSamples)low=Math.min(low,inverseRoot.copy(p.local).applyMatrix4(p.bone.matrixWorld).applyMatrix4(toRoot).y);bones.Root.position.y+=floor-low+Math.max(0,lift)}
+  root.updateMatrixWorld(true);skeleton.update();
+ }
  function sample(id,t){
   const pose=motionPose(id,t);for(const name of BODY_BONES)bones[name].quaternion.identity();
   for(const [name,value]of Object.entries(pose))if(bones[name])bones[name].quaternion.setFromEuler(euler.set(...value.map(v=>v*motionScale)));
   if(mermaid){bones.Tail.quaternion.setFromEuler(euler.set(((pose.UpperLeg_L?.[0]||0)+(pose.UpperLeg_R?.[0]||0))*.3,0,(pose.Hips?.[2]||0)*.6));bones.TailTip.quaternion.setFromEuler(euler.set(((pose.LowerLeg_L?.[0]||0)+(pose.LowerLeg_R?.[0]||0))*.25,0,0))}
   bones.Root.position.set(pose.offset[0]*height,pose.offset[1]*height,pose.offset[2]*height);root.updateMatrixWorld(true);
-  // Ajuste vertical por proporção: pés não atravessam o plano de apoio.
-  if(!robot){let low=Infinity;for(const p of footSamples)low=Math.min(low,inverseRoot.copy(p.local).applyMatrix4(p.bone.matrixWorld).applyMatrix4(toRoot).y);bones.Root.position.y+=floor-low+Math.max(0,pose.offset[1]*height)}
-  root.updateMatrixWorld(true);skeleton.update();return pose.face;
+  support(pose.offset[1]*height);return pose.face;
  }
- function makeClips(){const saved={active,time,playing},clips=[];for(const [id,def]of Object.entries(MOTIONS)){const times=[],q=BODY_BONES.map(()=>[]),pos=[];const steps=Math.ceil(def.duration*30);for(let i=0;i<=steps;i++){const t=i/steps*def.duration;times.push(t);sample(id,t);BODY_BONES.forEach((n,k)=>q[k].push(...bones[n].quaternion.toArray()));pos.push(...bones.Root.position.toArray())}clips.push(new THREE.AnimationClip('Body_'+id,def.duration,[...BODY_BONES.map((n,k)=>new THREE.QuaternionKeyframeTrack(prefix+n+'.quaternion',times,q[k])),new THREE.VectorKeyframeTrack(prefix+'Root.position',times,pos)]))}if(saved.active)sample(saved.active,saved.time);else rest();return clips}
- function play(id){if(!Object.hasOwn(MOTIONS,id))return false;active=id;time=0;playing=true;sample(active,0);return true}
- function update(dt){if(!active)return null;if(playing){time+=Math.max(0,dt)*speed;if(MOTIONS[active].loop)time%=MOTIONS[active].duration;if(!MOTIONS[active].loop&&time>=MOTIONS[active].duration){time=MOTIONS[active].duration;playing=false}}return sample(active,time)}
- function seek(t){if(!active)return false;time=clamp(t,0,MOTIONS[active].duration);return sample(active,time)}
- function stop(){active=null;playing=false;time=0;rest()}
+ function blend(alpha){
+  for(let i=0;i<BODY_BONES.length;i++){const q=bones[BODY_BONES[i]].quaternion;q.slerpQuaternions(transition.q[i],q.clone(),alpha)}
+  bones.Root.position.lerpVectors(transition.position,bones.Root.position.clone(),alpha);
+  support(THREE.MathUtils.lerp(transition.lift,motionPose(active,time).offset[1]*height,alpha));
+ }
+
+ function makeClips(){const saved={q:BODY_BONES.map(n=>bones[n].quaternion.clone()),position:bones.Root.position.clone(),lift:lastLift},clips=[];for(const [id,def]of Object.entries(MOTIONS)){const times=[],q=BODY_BONES.map(()=>[]),pos=[];const steps=Math.ceil(def.duration*30);for(let i=0;i<=steps;i++){const t=i/steps*def.duration;times.push(t);sample(id,t);BODY_BONES.forEach((n,k)=>q[k].push(...bones[n].quaternion.toArray()));pos.push(...bones.Root.position.toArray())}clips.push(new THREE.AnimationClip('Body_'+id,def.duration,[...BODY_BONES.map((n,k)=>new THREE.QuaternionKeyframeTrack(prefix+n+'.quaternion',times,q[k])),new THREE.VectorKeyframeTrack(prefix+'Root.position',times,pos)]))}BODY_BONES.forEach((n,i)=>bones[n].quaternion.copy(saved.q[i]));bones.Root.position.copy(saved.position);lastLift=saved.lift;root.updateMatrixWorld(true);skeleton.update();return clips}
+ function play(id){if(!Object.hasOwn(MOTIONS,id))return false;transition={q:BODY_BONES.map(n=>bones[n].quaternion.clone()),position:bones.Root.position.clone(),lift:lastLift,elapsed:0};active=id;time=0;playing=true;sample(active,0);blend(0);return true}
+ function update(dt){if(!active)return null;const advancing=playing;if(playing){time+=Math.max(0,dt)*speed;if(MOTIONS[active].loop)time%=MOTIONS[active].duration;if(!MOTIONS[active].loop&&time>=MOTIONS[active].duration){time=MOTIONS[active].duration;playing=false}}const face=sample(active,time);if(transition){if(advancing)transition.elapsed+=Math.max(0,dt);const alpha=THREE.MathUtils.smoothstep(transition.elapsed,0,.22);blend(alpha);if(alpha===1)transition=null}return face}
+ function seek(t){if(!active)return false;transition=null;time=clamp(t,0,MOTIONS[active].duration);return sample(active,time)}
+ function stop(){transition=null;active=null;playing=false;time=0;rest()}
  function dispose(){stop();helper?.removeFromParent();helper?.dispose();for(const a of attachments){a.parent.add(a.object);a.object.position.copy(a.position);a.object.quaternion.copy(a.quaternion);a.object.scale.copy(a.scale)}for(const r of replacements){r.skinned.removeFromParent();r.parent.add(r.original);r.skinned.geometry.dispose()}armature.removeFromParent();skeleton.dispose()}
  function showSkeleton(on){if(!helper){helper=new THREE.SkeletonHelper(bones.Root);helper.material.depthTest=false;helper.renderOrder=1000;root.add(helper)}helper.visible=on}
  rest();

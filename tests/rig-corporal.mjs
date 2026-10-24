@@ -9,8 +9,15 @@ import {buildClothes,OUTFITS} from '../src/clothes.js';
 import {defaultLook,headOpts,buildLook,attachLook} from '../src/look.js';
 import {PRESETS,PRESET_ORDER} from '../src/presets.js';
 globalThis.document={createElement:()=>({getContext:()=>new Proxy({},{get:(_,k)=>k==='createLinearGradient'?()=>({addColorStop(){}}):()=>{}})})};
-const reference=new Map(),reports=[];
-for(const id of PRESET_ORDER){
+const strainCache=new WeakMap();
+function bodyStrain(mesh){
+ const g=mesh.geometry,p=g.attributes.position;let cache=strainCache.get(g);
+ if(!cache){const edges=[],ix=g.index;for(let i=0;i<ix.count;i+=3)for(let j=0;j<3;j++){const a=ix.getX(i+j),b=ix.getX(i+(j+1)%3),d=Math.hypot(p.getX(a)-p.getX(b),p.getY(a)-p.getY(b),p.getZ(a)-p.getZ(b));if(d>=.002)edges.push(a,b,d)}cache={edges,posed:new Float32Array(p.count*3)};strainCache.set(g,cache)}
+ const v=new THREE.Vector3(),posed=cache.posed;for(let i=0;i<p.count;i++)mesh.getVertexPosition(i,v).toArray(posed,i*3);let max=0;
+ for(let i=0;i<cache.edges.length;i+=3){const a=cache.edges[i]*3,b=cache.edges[i+1]*3;max=Math.max(max,Math.hypot(posed[a]-posed[b],posed[a+1]-posed[b+1],posed[a+2]-posed[b+2])/cache.edges[i+2])}return max;
+}
+const reference=new Map(),reports=[],strainFailures=[];
+for(const id of process.env.RIG_IDS?.split(',')||PRESET_ORDER){
  const look=defaultLook(id),h=buildHead(id,{}, {quality:.35,...headOpts(look,PRESETS[id])});h.root=new THREE.Group();h.root.add(h.group);
  let visual,clothes,rig;
  try{
@@ -22,14 +29,20 @@ for(const id of PRESET_ORDER){
   const headMatrix=h.group.matrixWorld.clone();rig=buildBodyRig(h,clothes);assert.equal(rig.skeleton.bones.length,BODY_BONES.length);h.root.updateMatrixWorld(true);rig.skeleton.update();
   for(let k=0;k<rig.meshes.length;k++){
    const m=rig.meshes[k],g=m.geometry,w=g.attributes.skinWeight,ix=g.attributes.skinIndex;
-   assert.equal(w.count,g.attributes.position.count);for(let i=0;i<w.count;i++){assert(Math.abs(w.getX(i)+w.getY(i)+w.getZ(i)+w.getW(i)-1)<1e-5);assert(ix.getX(i)<BODY_BONES.length&&ix.getY(i)<BODY_BONES.length)}
+   assert.equal(w.count,g.attributes.position.count);for(let i=0;i<w.count;i++){assert(Math.abs(w.getX(i)+w.getY(i)+w.getZ(i)+w.getW(i)-1)<1e-5);assert(ix.getX(i)<BODY_BONES.length&&ix.getY(i)<BODY_BONES.length);if(['lower','belt','feet'].includes(m.userData.slot))for(let k=0;k<4;k++)if(w.array[i*4+k]>1e-6)assert(!/Arm|Hand/.test(BODY_BONES[ix.array[i*4+k]]),id+'/'+m.name+': roupa inferior seguindo braço')}
    for(const {i,p}of originals[k].points)assert(m.getVertexPosition(i,new THREE.Vector3()).applyMatrix4(m.matrixWorld).distanceTo(p)<2e-5,id+'/'+m.name+': mudou a pose A');
   }
+  if(id==='sad_clown')for(const m of rig.meshes){const collar=/^Roupa_Gola/.test(m.name),bib=m.name==='Roupa_Macacao'&&m.userData.slot==='upper';if(collar||bib){const g=m.geometry;for(let i=0;i<g.attributes.skinWeight.count;i++)for(let k=0;k<4;k++)if(g.attributes.skinWeight.array[i*4+k]>1e-6){const name=BODY_BONES[g.attributes.skinIndex.array[i*4+k]];if(collar)assert.equal(name,'Neck','Gola puxada por membro');else assert(!/Arm|Hand/.test(name),'Macacão puxado por braço')}}}
   if(h.body?.joints.wrist){const m=rig.meshes[0],p=m.geometry.attributes.position,target=h.body.joints.wrist;let best=Infinity,index=0;for(let i=0;i<p.count;i++){const d=(p.getX(i)-target.x)**2+(p.getY(i)-target.y)**2+(p.getZ(i)-target.z)**2;if(d<best){best=d;index=i}}const w=m.geometry.attributes.skinWeight,ix=m.geometry.attributes.skinIndex,bone=rig.skeleton.bones[w.getX(index)>=w.getY(index)?ix.getX(index):ix.getY(index)].name;assert(bone.includes('Arm_L')||bone==='Rig_Hand_L',id+': punho vinculado fora do braço: '+bone)}
   assert(h.group.matrixWorld.elements.every((v,i)=>Math.abs(v-headMatrix.elements[i])<1e-7),id+': cabeça se deslocou na vinculação');
-  let moved=0;
+  if(id==='nico_inventor'){
+   const before=rig.bones.UpperArm_L.quaternion.clone();rig.play('victory');assert(rig.bones.UpperArm_L.quaternion.angleTo(before)<1e-8,'Início da animação saltou');rig.update(.01);assert(rig.bones.UpperArm_L.quaternion.angleTo(before)<.05,'Transição brusca');rig.pause();const paused=rig.bones.UpperArm_L.quaternion.clone(),position=rig.bones.Root.position.clone();rig.update(.1);assert(rig.bones.UpperArm_L.quaternion.angleTo(paused)<1e-8,'Pausa não congelou a transição');rig.makeClips();assert(rig.bones.UpperArm_L.quaternion.angleTo(paused)<1e-8&&rig.bones.Root.position.distanceTo(position)<1e-7,'Gerar clipes alterou o player');rig.stop();
+  }
+  let moved=0,maxBodyStrain=0;
   for(const motion of Object.keys(MOTIONS)){
    rig.play(motion);rig.seek(MOTIONS[motion].duration*.37);h.root.updateMatrixWorld(true);rig.skeleton.update();
+   if(h.body||h.fit?.companion)for(const time of [MOTIONS[motion].duration*.37,.25,.75]){rig.seek(time);const strain=bodyStrain(rig.meshes[0]);maxBodyStrain=Math.max(maxBodyStrain,strain);if(strain>=6)strainFailures.push({id,motion,time,strain})}
+
    for(let k=0;k<rig.meshes.length;k++){const m=rig.meshes[k];for(const {i,p}of originals[k].points){const v=m.getVertexPosition(i,new THREE.Vector3()).applyMatrix4(m.matrixWorld);assert(v.toArray().every(Number.isFinite),id+': vértice inválido');assert(v.distanceTo(p)<rig.height*2,id+': deformação explodiu');if(v.distanceTo(p)>.005)moved++}}
   }
   if(rig.meshes.length)assert(moved>0,id+': corpo não se move');
@@ -37,7 +50,9 @@ for(const id of PRESET_ORDER){
   const clips=rig.makeClips();assert.equal(clips.length,5);
   for(const clip of clips){assert(clip.tracks.length>=BODY_BONES.length);assert(clip.tracks.every(t=>Array.from(t.values).every(Number.isFinite)));const signature=JSON.stringify(clip.tracks.filter(t=>t.name.endsWith('.quaternion')).map(t=>[t.name,Array.from(t.values)]));const key=rig.profile+clip.name;if(reference.has(key))assert.equal(signature,reference.get(key),id+': coreografia divergente');else reference.set(key,signature)}
   rig.stop();h.root.updateMatrixWorld(true);rig.skeleton.update();for(let k=0;k<rig.meshes.length;k++)for(const {i,p}of originals[k].points)assert(rig.meshes[k].getVertexPosition(i,new THREE.Vector3()).applyMatrix4(rig.meshes[k].matrixWorld).distanceTo(p)<2e-5,id+': parar não restaurou');
-  const profile=rig.profile,meshes=rig.meshes.length;rig.dispose();rig=null;assert.equal(h.root.getObjectByName('Esqueleto_Corporal'),undefined);for(const {mesh}of originals)assert(mesh.parent,id+': malha não restaurada');reports.push({id,profile,meshes,moved});console.log('OK',id,profile,meshes);
+  const profile=rig.profile,meshes=rig.meshes.length;rig.dispose();rig=null;assert.equal(h.root.getObjectByName('Esqueleto_Corporal'),undefined);for(const {mesh}of originals)assert(mesh.parent,id+': malha não restaurada');reports.push({id,profile,meshes,moved,maxBodyStrain});console.log('OK',id,profile,meshes,'estiramento',maxBodyStrain.toFixed(3));
  }finally{rig?.dispose();clothes?.dispose();visual?.dispose();h.body?.geo.dispose();h.dispose()}
 }
 console.log(JSON.stringify({personagens:reports.length,ossos:BODY_BONES.length,clipes:Object.keys(MOTIONS),perfis:[...new Set(reports.map(r=>r.profile))]}));
+
+assert.deepEqual(strainFailures,[],'Estiramento excessivo no catálogo: '+JSON.stringify(strainFailures));

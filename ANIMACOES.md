@@ -1,5 +1,7 @@
 # Esqueleto corporal e animações compartilhadas
 
+A vinculação inicial de 857cbdb foi reprovada por deformações. A correção vigente está em [CORRECAO-RIG.md](CORRECAO-RIG.md), com pesos contínuos, equipamentos rígidos e testes de estiramento.
+
 Abra a produção e escolha **Animações → Reações e danças**. Selecione um movimento, troque de personagem para comparar e use Pausar, velocidade e a barra de tempo. **Mostrar esqueleto** exibe os ossos; **Parar / pose A** restaura a pose de edição. A exportação GLB inclui o rig corporal e os clipes, além do rig facial existente.
 
 Links diretos:

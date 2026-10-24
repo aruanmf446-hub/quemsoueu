@@ -178,6 +178,8 @@ function makeBodySDF(fit, presetId, hs = 1, mermaid = false, build = normalizeBu
   ];
   const fA = curve(rows.map(r => r[0]), rows.map(r => r[1] * W)), fF = curve(rows.map(r => r[0]), rows.map(r => r[2] * W * B.depth)), fB = curve(rows.map(r => r[0]), rows.map(r => r[3] * W * B.depth));
   const hunchZ = f => -B.hunch * sstep(.0, .2, f) * (1 - sstep(.2, .45, f)) * .9;
+  // Medidas do tronco para a vinculação: barrigas largas não pertencem aos braços.
+  joints.torsoAt=y=>{const f=(yN-y)/Lb,t=clamp(f,0,.505),front=fF(t),back=fB(t);return {rx:Math.max(.05,fA(t)),rz:Math.max(.05,(front-back)/2),z:z0+(front+back)/2+hunchZ(t)}};
   const tTop = 0, tBot = .505, torsoB = bs(V(0, Y(.25), z0), Lb * .3 + 1.2 * W);
   const cactus = !!B.cactus, PT = cactus && P.pattern;
   let sectionY=NaN,sectionA,sectionZ,sectionH,sectionRib=0;

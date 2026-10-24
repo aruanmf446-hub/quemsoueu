@@ -1,6 +1,10 @@
 # Continuidade
 
-## Rodada atual — rig corporal e movimentos compartilhados
+## Rodada atual — corrigir animações bugadas
+
+O usuário reprovou as animações de 857cbdb como “todo bugado”. Não tratar o rig anterior como aprovado. Foram reproduzidos rasgos/pontas nas axilas: mudanças bruscas de pesos entre ossos vizinhos esticavam o corpo e as roupas. A correção usa envelopes contínuos de quatro influências, medidas reais do tronco (metadados sem alterar a malha), transições anatômicas nas coxas/patas/asas e classificação de componentes rígidos para equipamentos/calçados. Há transição de 0,22 s entre movimentos. Peças inferiores/cintos/calçados excluem braços; as duas golas do palhaço seguem o pescoço e o macacão sem mangas segue o tronco. O teste agora mede 15 poses por corpo, com limite de estiramento e verificações semânticas das roupas. Os 34 personagens passaram. As curvas compartilhadas, nomes de clipes, 22 ossos, rostos e geometrias de autoria são preservados. Detalhes/testes/galeria em [CORRECAO-RIG.md](CORRECAO-RIG.md). Não confundir verificações técnicas com aprovação artística. A galeria atual é `revisao/correcao-rig/`; importações de rig/corpo são versionadas para evitar cache antigo.
+
+## Histórico — rig corporal e movimentos compartilhados
 
 O usuário quer testar se vale continuar o projeto com personagens animados. Foi autorizada a criação dos esqueletos e depois danças/reação de lobby, derrota e vitória compartilhadas. Não alterar as skins para isso. Implementação: `src/body-rig.js` com 22 ossos comuns e skinning de corpo/roupas, preservando o rig facial; `src/motions.js` com cinco coreografias. A UI oferece Animações → Reações e danças, pausa/tempo/velocidade/esqueleto/retorno à pose A. GLBs têm 17 clipes (12 faciais + cinco corporais); robô tem cinco corporais. Bípedes, sereias, aves, quadrúpedes e robô usam perfis adaptados. Acessórios dos companheiros também recebem pesos; cowboy montado acompanha a sela. Testes e limitações em [ANIMACOES.md](ANIMACOES.md). Capturas e relatórios locais em `renders/animacoes`. Não confundir testes técnicos com aprovação artística. Links diretos aceitam `personagem` e `animacao` na URL.
 
