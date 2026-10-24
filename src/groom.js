@@ -50,7 +50,7 @@ export function groomedLock(points,width,depth,options={}){
   const size=options.profile?options.profile(t):[width*Math.pow(taper,.65),depth*.72*Math.pow(taper,.88)],w=Math.max(.0003,size[0]),h=Math.max(.00025,size[1]);
   for(let j=0;j<=cols;j++){
    const a=2*PI*j/cols,cs=Math.cos(a),sn=Math.sin(a),groove=1-(options.grooveStrength??.20)*(.5+.5*Math.cos((cs*.5+.5)*2*PI*Math.min(4,options.grooves||3)+(options.phase||0)+(options.twist||0)*t+.35*Math.sin(PI*t)))*Math.max(0,sn);
-   const q=c.clone().addScaledVector(bin,cs*w).addScaledVector(n,(options.sculpted?(sn>=0?Math.pow(sn,.62)*h*groove:sn*h*.38):sn*h*groove));
+   const q=c.clone().addScaledVector(bin,cs*w).addScaledVector(n,(options.sculpted?(sn>=0?Math.pow(sn,options.archPower??.62)*h*groove:sn*h*(options.backDepth??.38)):sn*h*groove));
    pos.push(q.x,q.y,q.z);const tone=(options.tone||1)*(.83+.14*smooth(0,.20,t))*(.985+.015*Math.cos(a*7+(options.phase||0)));colors.push(tone,tone,tone);uv.push(j/cols,t);
    if(i<rows&&j<cols){const k=i*(cols+1)+j;ix.push(k,k+cols+1,k+1,k+1,k+cols+1,k+cols+2)}
   }

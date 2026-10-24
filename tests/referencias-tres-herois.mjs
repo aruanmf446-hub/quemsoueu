@@ -23,6 +23,9 @@ for(const id of ['nana_explorer','nico_inventor','bread_vigilante','bread_baker'
   assert.equal(head.rig.makeClips().length,12);
   if(id==='nana_explorer'){
    for(const name of ['white','purple'])assert(visual.group.getObjectByName('Hair_Streak_'+name),'Mecha da Nana ausente: '+name);
+   head.group.updateMatrixWorld(true);
+   const mass=visual.group.getObjectByName('Hair_Mass');assert(mass,'Rabo cacheado sem preenchimento');
+   for(const y of [head.fit.top-.10,head.fit.top-.60])assert(new THREE.Raycaster(new THREE.Vector3(-.84,y,3),new THREE.Vector3(0,0,-1)).intersectObject(mass,false).length,'Cachos sem volume de apoio na queda do rabo');
    const white=visual.group.getObjectByName('Hair_Streak_white').material.color.getHex();visual.setHairColor('#633719');
    assert.equal(visual.group.getObjectByName('Hair_Streak_white').material.color.getHex(),white,'A mecha clara perdeu sua identidade ao tingir o cabelo');
    head.group.updateMatrixWorld(true);
@@ -33,7 +36,14 @@ for(const id of ['nana_explorer','nico_inventor','bread_vigilante','bread_baker'
     assert(hit,'Lente da Nana com falha diante do olho');assert(hit.point.z>head.fit.surfZ(eye.x+dx,eye.y+dy)+.025,'Lente atravessando a face da Nana');
    }
   }
-  if(id==='nico_inventor')assert(visual.group.getObjectByName('Acc_optical'),'Armação própria do Nico ausente');
+  if(id==='nico_inventor'){
+   assert(visual.group.getObjectByName('Acc_optical'),'Armação própria do Nico ausente');head.group.updateMatrixWorld(true);
+   const locks=visual.group.getObjectByName('Hair_Locks'),cap=visual.group.getObjectByName('Hair_Cap');
+   for(const y of [head.fit.cy+.20,head.fit.cy+.40]){
+    const ray=new THREE.Raycaster(new THREE.Vector3(0,y,-4),new THREE.Vector3(0,0,1)),a=ray.intersectObject(locks,false)[0],b=ray.intersectObject(cap,false)[0];
+    assert(a&&b&&a.distance<=b.distance+.015,'Nuca/coroa do Nico ficou só com a touca, sem mechas externas');
+   }
+  }
   if(id==='bread_vigilante'){
    head.group.updateMatrixWorld(true);
    const mask=visual.group.getObjectByName('Acc_mask'),hood=visual.group.getObjectByName('Acc_fabric');

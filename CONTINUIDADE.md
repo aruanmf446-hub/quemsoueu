@@ -1,6 +1,16 @@
 # Continuidade
 
-## Rodada atual — acessórios e roupas do catálogo
+## Rodada atual — cabelo reprovado após 341259b
+
+O usuário disse que o cabelo continua sem boa qualidade. Não considerar os elogios anteriores como aprovação desta parte. O escopo agora é reconstruir a malha dos cabelos de todo o catálogo, preservando rostos, proporções, barbas, roupas, acessórios e iluminação.
+
+O defeito central encontrado foi a spline entrar no crânio entre os controles: projetar só os pontos deixava trechos das mechas enterrados, expondo grandes áreas da touca. As guias completas agora são amostradas e projetadas sobre a base externa do cabelo; as raízes entram por baixo da superfície. Cortes curtos ganham cobertura até a linha real da nuca, coques/rabos partem dessa linha, e as mechas usam seção arqueada com espessura inferior própria. Nico/Padeiro receberam guias novas; Nana ganhou massa de apoio alongada e cachos de guia contínua em queda, mantendo as mechas branca/roxa. O material das fibras foi revisto somente nos cabelos. O capuz mantém a folga da versão anterior.
+
+Base imutável `/workspace/outputs/cabelo-reprovado-341259b`. Capturas finais em `renders/cabelos-reconstruidos/depois`; os diretórios `piloto*` incluem falhas descartadas (tubos, pontas rígidas e áreas de touca sem cobertura) e não são a entrega. As capturas de `nuca-final` substituem as primeiras vistas dos seis cortes curtos corrigidos. Galeria `revisao/cabelos/`: 34 personagens, 14 comparações de costas e 96 imagens em câmeras iguais. Onze controles sem cabelo ficaram idênticos pixel a pixel. Cache `menu-v26-volume-cabelos-catalogo`.
+
+Verificações: 34 personagens/121 superfícies de rosto e barba preservadas, 17 penteados, 21 acessórios, cinco modalidades de barba; 11 GLBs representativos e sete Workers. Os testes novos verificam volume de apoio na queda do cabelo da Nana e mechas externas na nuca/coroa do Nico. O teste de escala admite somente a nova extensão inferior dos cortes curtos (.18); demais eixos, topo e comprimentos longos conservam o limite anterior (.12). Não alterar rostos/queixos para resolver cabelo. Avaliação artística continua com o usuário. Detalhes em [RECONSTRUCAO-CABELOS.md](RECONSTRUCAO-CABELOS.md).
+
+## Rodada anterior — acessórios e roupas, 341259b
 
 O usuário elogiou a revisão de cabelos/barbas e pediu para continuar após a recomendação de refinar acessórios e roupas. A revisão de pelos foi enviada para main em `4b9b16f`. O trabalho atual preserva rostos, corpos, penteados e barbas aprovados, e altera somente ferragens, joias, costuras e superfícies dos figurinos/equipamentos.
 

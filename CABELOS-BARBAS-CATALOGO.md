@@ -1,5 +1,7 @@
 # Cabelos e barbas de todo o catálogo
 
+Esta é a rodada anterior. O usuário voltou a reprovar a qualidade do cabelo após `341259b`; veja a [reconstrução atual](RECONSTRUCAO-CABELOS.md). As barbas foram preservadas na reconstrução.
+
 Revisão autorizada após a aprovação de `a2a9445`. Os rostos, proporções corporais, figurinos, acessórios e iluminação dessa versão foram preservados.
 
 ## Alterações

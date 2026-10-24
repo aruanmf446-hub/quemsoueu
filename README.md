@@ -2,9 +2,13 @@
 
 Protótipo separado do jogo principal para aprovar a anatomia facial de personagens cartoon 3D. A V2 reúne cabeça, rig facial, corpo, cabelo, acessórios e figurinos procedurais personalizáveis, sem assets externos.
 
+## Reconstrução dos cabelos
+
+Após a reprovação da qualidade do cabelo em `341259b`, as guias, raízes, cobertura da nuca e cachos receberam uma nova construção. Rostos, proporções, barbas, figurinos e iluminação foram preservados. [Comparação com vistas de costas](revisao/cabelos/) · [Detalhes](RECONSTRUCAO-CABELOS.md).
+
 ## Acessórios e roupas do catálogo
 
-A revisão atual refina joias, argolas, dobradiças, fivelas, costuras dos cintos e superfícies dos figurinos/equipamentos. Rostos, proporções e pelos aprovados foram preservados. [Comparação do catálogo](revisao/acabamentos/) · [Detalhes](ACESSORIOS-ROUPAS-CATALOGO.md).
+A revisão `341259b` refina joias, argolas, dobradiças, fivelas, costuras dos cintos e superfícies dos figurinos/equipamentos. Rostos, proporções e pelos aprovados foram preservados. [Comparação do catálogo](revisao/acabamentos/) · [Detalhes](ACESSORIOS-ROUPAS-CATALOGO.md).
 
 ## Cabelos e barbas do catálogo
 

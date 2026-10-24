@@ -38,7 +38,7 @@ let faces=0,styles=0,accessories=0,beards=0;
 for(const id of PRESET_ORDER){
  const look=defaultLook(id),opts={quality:.35,export:true,...headOpts(look,PRESETS[id])},head=buildHead(id,{},opts),before=old?.head.buildHead(id,{},opts);
  try{
-  const protectedNames=PRESETS[id].kind==='companion'?['Malha_rosto','Cranio','Bico_superior','Nariz','Olho_L','Olho_R','Mandibula']:PRESETS[id].kind==='robot'?['Head_Shell','Screen']:['Head_Skin','Eye_L','Eye_R'];
+  const protectedNames=PRESETS[id].kind==='companion'?['Malha_rosto','Cranio','Bico_superior','Nariz','Olho_L','Olho_R','Mandibula']:PRESETS[id].kind==='robot'?['Head_Shell','Screen']:['Head_Skin','Eye_L','Eye_R','Beard_Locks','Mustache_L','Mustache_R','Goatee'];
   let checked=0;for(const name of protectedNames){const m=head.group.getObjectByName(name);if(!m)continue;checked++;if(before){const floor=name==='Head_Skin'&&head.params.beardVol?head.params.loft.y[0]+.025:null;assert.equal(fingerprint(m,PRESETS[id].kind==='companion',floor),fingerprint(before.group.getObjectByName(name),PRESETS[id].kind==='companion',floor),id+'/'+name+': rosto alterado');faces++}}
   assert(checked>0,id+': rosto não exercitado');if(old)assert.deepEqual(look,old.look.defaultLook(id),id+': identidade do visual alterada');
   head.group.traverse(m=>{if(m.isMesh)valid(m.geometry,id+'/'+m.name)});
@@ -54,7 +54,12 @@ try{
   try{
    hair.group.traverse(m=>{if(m.isMesh)valid(m.geometry,'Cabelo/'+id+'/'+m.name)});
    const locks=hair.group.getObjectByName('Hair_Locks');assert(locks.geometry.attributes.uv&&locks.geometry.attributes.tangent,id+': fluxo de fibras ausente');assert(locks.material.normalMap&&locks.material.roughnessMap&&locks.material.map,id+': texturas ausentes');
-   if(before){const a=new THREE.Box3().setFromObject(hair.group),b=new THREE.Box3().setFromObject(before.group);for(const axis of ['x','y','z']){assert(Math.abs(a.min[axis]-b.min[axis])<.12,id+': contorno mínimo mudou');assert(Math.abs(a.max[axis]-b.max[axis])<.12,id+': contorno máximo mudou')}}
+   if(before){const a=new THREE.Box3().setFromObject(hair.group),b=new THREE.Box3().setFromObject(before.group);for(const axis of ['x','y','z']){
+    // A cobertura nova desce até a nuca dos cortes curtos; os demais eixos e
+    // os comprimentos dos estilos longos conservam a tolerância anterior.
+    const nape=axis==='y'&&['short','forest_pixie','hero_tousled','hero_veteran'].includes(id),limit=nape?.18:.12;
+    assert(Math.abs(a.min[axis]-b.min[axis])<limit,id+': contorno mínimo mudou');assert(Math.abs(a.max[axis]-b.max[axis])<.12,id+': contorno máximo mudou')
+   }}
    hair.setColor('#8e3b1e');assert.equal(hair.material.color.getHexString(),'8e3b1e');styles++;
   }finally{hair.dispose();before?.dispose()}
  }
