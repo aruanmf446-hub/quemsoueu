@@ -2,6 +2,10 @@
 
 Protótipo separado do jogo principal para aprovar a anatomia facial de personagens cartoon 3D. A V2 reúne cabeça, rig facial, corpo, cabelo, acessórios e figurinos procedurais personalizáveis, sem assets externos.
 
+## Cabelos estilizados para jogo
+
+Adaptação das bases existentes seguindo o acabamento estilizado indicado pelo usuário: menos fios sobrepostos, sulcos suaves, cachos menos apertados e mechas mais limpas. [Comparação de nove exemplos](revisao/cabelos-jogo/). As mudanças compartilhadas atendem aos 17 penteados; rostos e proporções preservados.
+
 ## Reconstrução dos cabelos
 
 Após a reprovação da qualidade do cabelo em `341259b`, as guias, raízes, cobertura da nuca e cachos receberam uma nova construção. Rostos, proporções, barbas, figurinos e iluminação foram preservados. [Comparação com vistas de costas](revisao/cabelos/) · [Detalhes](RECONSTRUCAO-CABELOS.md).

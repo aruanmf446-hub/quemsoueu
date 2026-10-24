@@ -1,5 +1,7 @@
 # Reconstrução dos cabelos
 
+Histórico da rodada e24a297, posteriormente considerada inconsistente pelo usuário. A adaptação atual está em [CABELOS-JOGO.md](CABELOS-JOGO.md).
+
 O usuário reprovou a qualidade do cabelo após `341259b`. Esta rodada altera a construção do cabelo e preserva os rostos, proporções corporais, barbas, roupas e iluminação. O resultado continua sujeito à avaliação visual do usuário.
 
 ## O que mudou
