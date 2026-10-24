@@ -1,0 +1,568 @@
+{
+  "base": "a2a9445",
+  "characters": [
+    {
+      "id": "feminine_soft",
+      "label": "Feminino suave",
+      "hair": "long_wavy",
+      "hairLabel": "Longo ondulado",
+      "beard": "default",
+      "accessories": [
+        "Tiara",
+        "Brinco gota",
+        "Joia de testa",
+        "Flores"
+      ]
+    },
+    {
+      "id": "masculine_soft",
+      "label": "Masculino suave",
+      "hair": "short",
+      "hairLabel": "Curto",
+      "beard": "default",
+      "accessories": []
+    },
+    {
+      "id": "old_king",
+      "label": "Rei",
+      "hair": "royal",
+      "hairLabel": "Real",
+      "beard": "full",
+      "accessories": [
+        "Coroa",
+        "Brinco gota"
+      ]
+    },
+    {
+      "id": "cute_round",
+      "label": "Cute arredondado",
+      "hair": "bun",
+      "hairLabel": "Coque",
+      "beard": "default",
+      "accessories": [
+        "Ponto de luz"
+      ]
+    },
+    {
+      "id": "feminine_bold",
+      "label": "Feminino intenso",
+      "hair": "long_curly",
+      "hairLabel": "Cachos volumosos",
+      "beard": "default",
+      "accessories": [
+        "Brinco gota",
+        "Joia de testa",
+        "Coral"
+      ]
+    },
+    {
+      "id": "alchemist_villain",
+      "label": "Alquimista vilão",
+      "hair": "swept",
+      "hairLabel": "Para trás",
+      "beard": "default",
+      "accessories": [
+        "Coroa de bolhas"
+      ]
+    },
+    {
+      "id": "dwarf_bard",
+      "label": "Anão aventureiro",
+      "hair": "long_braids",
+      "hairLabel": "Longo com tranças",
+      "beard": "default",
+      "accessories": []
+    },
+    {
+      "id": "sad_clown",
+      "label": "Palhaço triste",
+      "hair": "clown",
+      "hairLabel": "Cachinhos de palhaço",
+      "beard": "default",
+      "accessories": [
+        "Cartola"
+      ]
+    },
+    {
+      "id": "nana_explorer",
+      "label": "Nana exploradora",
+      "hair": "lunar_curls",
+      "hairLabel": "Cachos presos",
+      "beard": "default",
+      "accessories": [
+        "Visor azul",
+        "Argola"
+      ]
+    },
+    {
+      "id": "moon_guardian",
+      "label": "Guardiã da Lua",
+      "hair": "court_waves",
+      "hairLabel": "Ondas de corte",
+      "beard": "default",
+      "accessories": [
+        "Coroa lunar",
+        "Brinco gota"
+      ]
+    },
+    {
+      "id": "nico_inventor",
+      "label": "Nico inventor",
+      "hair": "short_curls",
+      "hairLabel": "Curto cacheado",
+      "beard": "none",
+      "accessories": [
+        "Óculos redondos",
+        "Óculos de inventor"
+      ]
+    },
+    {
+      "id": "ruby_sorceress",
+      "label": "Feiticeira rubi",
+      "hair": "hero_halfup",
+      "hairLabel": "Ondas com coque",
+      "beard": "default",
+      "accessories": [
+        "Coroa lunar",
+        "Brinco gota",
+        "Joia de testa"
+      ]
+    },
+    {
+      "id": "flame_guardian",
+      "label": "Guardião da chama",
+      "hair": "hero_tousled",
+      "hairLabel": "Topete de herói",
+      "beard": "none",
+      "accessories": []
+    },
+    {
+      "id": "paysandu_wolf",
+      "label": "Paysandu",
+      "hair": "none",
+      "hairLabel": "Careca",
+      "beard": "default",
+      "accessories": [
+        "Equipamento de Paysandu"
+      ]
+    },
+    {
+      "id": "ruby_raven",
+      "label": "Corvo rubi",
+      "hair": "none",
+      "hairLabel": "Careca",
+      "beard": "default",
+      "accessories": [
+        "Equipamento do corvo"
+      ]
+    },
+    {
+      "id": "orc_warrior",
+      "label": "Orc guerreiro",
+      "hair": "topknot",
+      "hairLabel": "Coque guerreiro",
+      "beard": "default",
+      "accessories": []
+    },
+    {
+      "id": "cactus_cowboy",
+      "label": "Cacto pistoleiro",
+      "hair": "none",
+      "hairLabel": "Careca",
+      "beard": "default",
+      "accessories": [
+        "Chapéu de cowboy"
+      ]
+    },
+    {
+      "id": "pepper_king",
+      "label": "Rei pimentão",
+      "hair": "none",
+      "hairLabel": "Careca",
+      "beard": "default",
+      "accessories": [
+        "Coroa"
+      ]
+    },
+    {
+      "id": "chili_bandit",
+      "label": "Pimenta bandida",
+      "hair": "none",
+      "hairLabel": "Careca",
+      "beard": "default",
+      "accessories": []
+    },
+    {
+      "id": "robot_ball",
+      "label": "Robô bolinha",
+      "hair": "none",
+      "hairLabel": "Careca",
+      "beard": "default",
+      "accessories": []
+    },
+    {
+      "id": "forest_archer_f",
+      "label": "Arqueira da floresta",
+      "hair": "forest_pixie",
+      "hairLabel": "Curto em camadas",
+      "beard": "none",
+      "accessories": [
+        "Ponto de luz"
+      ]
+    },
+    {
+      "id": "forest_archer_m",
+      "label": "Arqueiro da floresta",
+      "hair": "forest_locks",
+      "hairLabel": "Mechas torcidas",
+      "beard": "default",
+      "accessories": []
+    },
+    {
+      "id": "forest_guard_f",
+      "label": "Guarda feminina",
+      "hair": "forest_pixie",
+      "hairLabel": "Curto em camadas",
+      "beard": "none",
+      "accessories": []
+    },
+    {
+      "id": "forest_guard_m",
+      "label": "Guarda jovem",
+      "hair": "hero_tousled",
+      "hairLabel": "Topete de herói",
+      "beard": "none",
+      "accessories": []
+    },
+    {
+      "id": "forest_guard_veteran",
+      "label": "Guarda veterano",
+      "hair": "hero_veteran",
+      "hairLabel": "Corte de veterano",
+      "beard": "default",
+      "accessories": []
+    },
+    {
+      "id": "forest_artificer",
+      "label": "Artífice da floresta",
+      "hair": "forest_locks",
+      "hairLabel": "Mechas torcidas",
+      "beard": "default",
+      "accessories": [
+        "Monóculo esmeralda"
+      ]
+    },
+    {
+      "id": "forest_princess",
+      "label": "Princesa da floresta",
+      "hair": "court_waves",
+      "hairLabel": "Ondas de corte",
+      "beard": "none",
+      "accessories": [
+        "Coroa de folhas",
+        "Brinco gota",
+        "Flores"
+      ]
+    },
+    {
+      "id": "frontier_cowboy",
+      "label": "Cowboy do deserto",
+      "hair": "none",
+      "hairLabel": "Careca",
+      "beard": "none",
+      "accessories": [
+        "Chapéu de viajante do deserto"
+      ]
+    },
+    {
+      "id": "bread_baker",
+      "label": "Padeiro",
+      "hair": "short_curls",
+      "hairLabel": "Curto cacheado",
+      "beard": "none",
+      "accessories": [
+        "Chapéu de padeiro"
+      ]
+    },
+    {
+      "id": "bread_vigilante",
+      "label": "Vigilante",
+      "hair": "short_curls",
+      "hairLabel": "Curto cacheado",
+      "beard": "none",
+      "accessories": [
+        "Capuz e máscara do vigilante"
+      ]
+    },
+    {
+      "id": "cactus_soldier",
+      "label": "Soldado cacto",
+      "hair": "none",
+      "hairLabel": "Careca",
+      "beard": "none",
+      "accessories": [
+        "Elmo do soldado"
+      ]
+    },
+    {
+      "id": "cactus_soldier_large",
+      "label": "Soldado cacto grande",
+      "hair": "none",
+      "hairLabel": "Careca",
+      "beard": "none",
+      "accessories": [
+        "Elmo do soldado"
+      ]
+    },
+    {
+      "id": "desert_fennec",
+      "label": "Feneco do deserto",
+      "hair": "none",
+      "hairLabel": "Careca",
+      "beard": "default",
+      "accessories": [
+        "Sela e bolsas do feneco"
+      ]
+    },
+    {
+      "id": "cowboy_on_fennec",
+      "label": "Cowboy no feneco",
+      "hair": "none",
+      "hairLabel": "Careca",
+      "beard": "default",
+      "accessories": [
+        "Cowboy montado no feneco"
+      ]
+    }
+  ],
+  "assets": [
+    "antes/feminine_soft-front.webp",
+    "antes/feminine_soft-three.webp",
+    "antes/feminine_soft-back.webp",
+    "antes/masculine_soft-front.webp",
+    "antes/masculine_soft-three.webp",
+    "antes/masculine_soft-back.webp",
+    "antes/old_king-front.webp",
+    "antes/old_king-three.webp",
+    "antes/old_king-back.webp",
+    "antes/cute_round-front.webp",
+    "antes/cute_round-three.webp",
+    "antes/cute_round-back.webp",
+    "antes/feminine_bold-front.webp",
+    "antes/feminine_bold-three.webp",
+    "antes/feminine_bold-back.webp",
+    "antes/alchemist_villain-front.webp",
+    "antes/alchemist_villain-three.webp",
+    "antes/alchemist_villain-back.webp",
+    "antes/dwarf_bard-front.webp",
+    "antes/dwarf_bard-three.webp",
+    "antes/dwarf_bard-back.webp",
+    "antes/sad_clown-front.webp",
+    "antes/sad_clown-three.webp",
+    "antes/sad_clown-back.webp",
+    "antes/nana_explorer-front.webp",
+    "antes/nana_explorer-three.webp",
+    "antes/nana_explorer-back.webp",
+    "antes/moon_guardian-front.webp",
+    "antes/moon_guardian-three.webp",
+    "antes/moon_guardian-back.webp",
+    "antes/nico_inventor-front.webp",
+    "antes/nico_inventor-three.webp",
+    "antes/nico_inventor-back.webp",
+    "antes/ruby_sorceress-front.webp",
+    "antes/ruby_sorceress-three.webp",
+    "antes/ruby_sorceress-back.webp",
+    "antes/flame_guardian-front.webp",
+    "antes/flame_guardian-three.webp",
+    "antes/flame_guardian-back.webp",
+    "antes/paysandu_wolf-front.webp",
+    "antes/paysandu_wolf-three.webp",
+    "antes/paysandu_wolf-back.webp",
+    "antes/ruby_raven-front.webp",
+    "antes/ruby_raven-three.webp",
+    "antes/ruby_raven-back.webp",
+    "antes/orc_warrior-front.webp",
+    "antes/orc_warrior-three.webp",
+    "antes/orc_warrior-back.webp",
+    "antes/cactus_cowboy-front.webp",
+    "antes/cactus_cowboy-three.webp",
+    "antes/cactus_cowboy-back.webp",
+    "antes/pepper_king-front.webp",
+    "antes/pepper_king-three.webp",
+    "antes/pepper_king-back.webp",
+    "antes/chili_bandit-front.webp",
+    "antes/chili_bandit-three.webp",
+    "antes/chili_bandit-back.webp",
+    "antes/robot_ball-front.webp",
+    "antes/robot_ball-three.webp",
+    "antes/robot_ball-back.webp",
+    "antes/forest_archer_f-front.webp",
+    "antes/forest_archer_f-three.webp",
+    "antes/forest_archer_f-back.webp",
+    "antes/forest_archer_m-front.webp",
+    "antes/forest_archer_m-three.webp",
+    "antes/forest_archer_m-back.webp",
+    "antes/forest_guard_f-front.webp",
+    "antes/forest_guard_f-three.webp",
+    "antes/forest_guard_f-back.webp",
+    "antes/forest_guard_m-front.webp",
+    "antes/forest_guard_m-three.webp",
+    "antes/forest_guard_m-back.webp",
+    "antes/forest_guard_veteran-front.webp",
+    "antes/forest_guard_veteran-three.webp",
+    "antes/forest_guard_veteran-back.webp",
+    "antes/forest_artificer-front.webp",
+    "antes/forest_artificer-three.webp",
+    "antes/forest_artificer-back.webp",
+    "antes/forest_princess-front.webp",
+    "antes/forest_princess-three.webp",
+    "antes/forest_princess-back.webp",
+    "antes/frontier_cowboy-front.webp",
+    "antes/frontier_cowboy-three.webp",
+    "antes/frontier_cowboy-back.webp",
+    "antes/bread_baker-front.webp",
+    "antes/bread_baker-three.webp",
+    "antes/bread_baker-back.webp",
+    "antes/bread_vigilante-front.webp",
+    "antes/bread_vigilante-three.webp",
+    "antes/bread_vigilante-back.webp",
+    "antes/cactus_soldier-front.webp",
+    "antes/cactus_soldier-three.webp",
+    "antes/cactus_soldier-back.webp",
+    "antes/cactus_soldier_large-front.webp",
+    "antes/cactus_soldier_large-three.webp",
+    "antes/cactus_soldier_large-back.webp",
+    "antes/desert_fennec-front.webp",
+    "antes/desert_fennec-three.webp",
+    "antes/desert_fennec-back.webp",
+    "antes/cowboy_on_fennec-front.webp",
+    "antes/cowboy_on_fennec-three.webp",
+    "antes/cowboy_on_fennec-back.webp",
+    "depois/feminine_soft-front.webp",
+    "depois/feminine_soft-three.webp",
+    "depois/feminine_soft-back.webp",
+    "depois/masculine_soft-front.webp",
+    "depois/masculine_soft-three.webp",
+    "depois/masculine_soft-back.webp",
+    "depois/old_king-front.webp",
+    "depois/old_king-three.webp",
+    "depois/old_king-back.webp",
+    "depois/cute_round-front.webp",
+    "depois/cute_round-three.webp",
+    "depois/cute_round-back.webp",
+    "depois/feminine_bold-front.webp",
+    "depois/feminine_bold-three.webp",
+    "depois/feminine_bold-back.webp",
+    "depois/alchemist_villain-front.webp",
+    "depois/alchemist_villain-three.webp",
+    "depois/alchemist_villain-back.webp",
+    "depois/dwarf_bard-front.webp",
+    "depois/dwarf_bard-three.webp",
+    "depois/dwarf_bard-back.webp",
+    "depois/sad_clown-front.webp",
+    "depois/sad_clown-three.webp",
+    "depois/sad_clown-back.webp",
+    "depois/nana_explorer-front.webp",
+    "depois/nana_explorer-three.webp",
+    "depois/nana_explorer-back.webp",
+    "depois/moon_guardian-front.webp",
+    "depois/moon_guardian-three.webp",
+    "depois/moon_guardian-back.webp",
+    "depois/nico_inventor-front.webp",
+    "depois/nico_inventor-three.webp",
+    "depois/nico_inventor-back.webp",
+    "depois/ruby_sorceress-front.webp",
+    "depois/ruby_sorceress-three.webp",
+    "depois/ruby_sorceress-back.webp",
+    "depois/flame_guardian-front.webp",
+    "depois/flame_guardian-three.webp",
+    "depois/flame_guardian-back.webp",
+    "depois/paysandu_wolf-front.webp",
+    "depois/paysandu_wolf-three.webp",
+    "depois/paysandu_wolf-back.webp",
+    "depois/ruby_raven-front.webp",
+    "depois/ruby_raven-three.webp",
+    "depois/ruby_raven-back.webp",
+    "depois/orc_warrior-front.webp",
+    "depois/orc_warrior-three.webp",
+    "depois/orc_warrior-back.webp",
+    "depois/cactus_cowboy-front.webp",
+    "depois/cactus_cowboy-three.webp",
+    "depois/cactus_cowboy-back.webp",
+    "depois/pepper_king-front.webp",
+    "depois/pepper_king-three.webp",
+    "depois/pepper_king-back.webp",
+    "depois/chili_bandit-front.webp",
+    "depois/chili_bandit-three.webp",
+    "depois/chili_bandit-back.webp",
+    "depois/robot_ball-front.webp",
+    "depois/robot_ball-three.webp",
+    "depois/robot_ball-back.webp",
+    "depois/forest_archer_f-front.webp",
+    "depois/forest_archer_f-three.webp",
+    "depois/forest_archer_f-back.webp",
+    "depois/forest_archer_m-front.webp",
+    "depois/forest_archer_m-three.webp",
+    "depois/forest_archer_m-back.webp",
+    "depois/forest_guard_f-front.webp",
+    "depois/forest_guard_f-three.webp",
+    "depois/forest_guard_f-back.webp",
+    "depois/forest_guard_m-front.webp",
+    "depois/forest_guard_m-three.webp",
+    "depois/forest_guard_m-back.webp",
+    "depois/forest_guard_veteran-front.webp",
+    "depois/forest_guard_veteran-three.webp",
+    "depois/forest_guard_veteran-back.webp",
+    "depois/forest_artificer-front.webp",
+    "depois/forest_artificer-three.webp",
+    "depois/forest_artificer-back.webp",
+    "depois/forest_princess-front.webp",
+    "depois/forest_princess-three.webp",
+    "depois/forest_princess-back.webp",
+    "depois/frontier_cowboy-front.webp",
+    "depois/frontier_cowboy-three.webp",
+    "depois/frontier_cowboy-back.webp",
+    "depois/bread_baker-front.webp",
+    "depois/bread_baker-three.webp",
+    "depois/bread_baker-back.webp",
+    "depois/bread_vigilante-front.webp",
+    "depois/bread_vigilante-three.webp",
+    "depois/bread_vigilante-back.webp",
+    "depois/cactus_soldier-front.webp",
+    "depois/cactus_soldier-three.webp",
+    "depois/cactus_soldier-back.webp",
+    "depois/cactus_soldier_large-front.webp",
+    "depois/cactus_soldier_large-three.webp",
+    "depois/cactus_soldier_large-back.webp",
+    "depois/desert_fennec-front.webp",
+    "depois/desert_fennec-three.webp",
+    "depois/desert_fennec-back.webp",
+    "depois/cowboy_on_fennec-front.webp",
+    "depois/cowboy_on_fennec-three.webp",
+    "depois/cowboy_on_fennec-back.webp",
+    "depois/dwarf_bard-pose-beijo.webp",
+    "depois/dwarf_bard-pose-feliz.webp",
+    "depois/dwarf_bard-pose-surpreso.webp",
+    "depois/forest_archer_m-pose-beijo.webp",
+    "depois/forest_archer_m-pose-feliz.webp",
+    "depois/forest_archer_m-pose-surpreso.webp",
+    "depois/forest_artificer-pose-beijo.webp",
+    "depois/forest_artificer-pose-feliz.webp",
+    "depois/forest_artificer-pose-surpreso.webp",
+    "depois/forest_guard_veteran-pose-beijo.webp",
+    "depois/forest_guard_veteran-pose-feliz.webp",
+    "depois/forest_guard_veteran-pose-surpreso.webp",
+    "depois/masculine_soft-pose-beijo.webp",
+    "depois/masculine_soft-pose-feliz.webp",
+    "depois/masculine_soft-pose-surpreso.webp",
+    "depois/old_king-pose-beijo.webp",
+    "depois/old_king-pose-feliz.webp",
+    "depois/old_king-pose-surpreso.webp",
+    "depois/orc_warrior-pose-beijo.webp",
+    "depois/orc_warrior-pose-feliz.webp",
+    "depois/orc_warrior-pose-surpreso.webp",
+    "depois/pepper_king-pose-beijo.webp",
+    "depois/pepper_king-pose-feliz.webp",
+    "depois/pepper_king-pose-surpreso.webp"
+  ]
+}

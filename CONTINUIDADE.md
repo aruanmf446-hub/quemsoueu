@@ -1,6 +1,14 @@
 # Continuidade
 
-## Rodada atual — prioridades explícitas após reprovação de f9b83df
+## Rodada atual — cabelos e barbas de todo o catálogo
+
+O usuário aprovou a2a9445 ("Ficou incrível") e autorizou melhorar cabelos e barbas de todos. Preservar rostos, proporções, roupas, acessórios e iluminação aprovados. A revisão atua em `hero-hair.js` e `beard.js`; os penteados e cores do catálogo permanecem os mesmos. Personagens sem cabelo/barba permanecem como controles.
+
+Mechas recebem curvatura intermediária suave, seção abaulada, afunilamento menos abrupto e fibras secundárias nas mechas de detalhe. Nico/Padeiro/Vigilante recebem perfil de mechas revisto; Nana tem espessuras e voltas menos uniformes nos cachos. Barbas cheias têm três camadas com comprimentos e direções variados; bigodes/cavanhaques têm fibras secundárias mais finas; barba por fazer tem distribuição mais densa e direção variável. O vínculo dos pelos com a pele animada é mantido.
+
+Base imutável `/workspace/outputs/aprovado-a2a9445`. Comparações em `renders/pelos-catalogo/{antes,depois}` e galeria pública `revisao/pelos/`. Cache `menu-v24-cabelos-barbas-catalogo`. Não interpretar esta autorização como aprovação antecipada da nova rodada. Detalhes em [CABELOS-BARBAS-CATALOGO.md](CABELOS-BARBAS-CATALOGO.md).
+
+## Rodada aprovada a2a9445 — prioridades após reprovação de f9b83df
 
 O usuário pediu Nico baixo, mais magro, menos cabeçudo e com rosto revisto; visor, roupa e tênis melhores na Nana; capuz e máscara cobrindo a boca no Vigilante. Esta rodada altera apenas esses três. Padeiro é controle preservado. Não considerar testes ou envio para main como aprovação visual.
 

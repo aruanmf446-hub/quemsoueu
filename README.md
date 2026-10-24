@@ -2,9 +2,13 @@
 
 Protótipo separado do jogo principal para aprovar a anatomia facial de personagens cartoon 3D. A V2 reúne cabeça, rig facial, corpo, cabelo, acessórios e figurinos procedurais personalizáveis, sem assets externos.
 
-## Revisão de Nana, Nico e Vigilante
+## Cabelos e barbas do catálogo
 
-As tentativas `c2baedb`, `c4673ef` e `f9b83df` foram reprovadas. A revisão atual reduz e afina Nico, reconstrói visor e tênis da Nana e corrige a cobertura do capuz e da máscara do Vigilante. Compare as malhas reais, incluindo o close dos tênis, em [revisao/personagens/](revisao/personagens/). Testes técnicos não equivalem a aprovação estética. Detalhes em [AJUSTES-PRIORITARIOS.md](AJUSTES-PRIORITARIOS.md).
+Após a aprovação de `a2a9445`, a revisão atual melhora a construção das mechas e barbas, preservando os rostos, corpos e figurinos aprovados. [Comparação dos 34 personagens](revisao/pelos/) · [Detalhes](CABELOS-BARBAS-CATALOGO.md).
+
+## Revisão aprovada de Nana, Nico e Vigilante
+
+As tentativas `c2baedb`, `c4673ef` e `f9b83df` foram reprovadas. A revisão `a2a9445`, aprovada pelo usuário, reduz e afina Nico, reconstrói visor e tênis da Nana e corrige a cobertura do capuz e da máscara do Vigilante. Compare as malhas reais, incluindo o close dos tênis, em [revisao/personagens/](revisao/personagens/). Testes técnicos não equivalem a aprovação estética. Detalhes em [AJUSTES-PRIORITARIOS.md](AJUSTES-PRIORITARIOS.md).
 
 ## Tipos físicos
 
