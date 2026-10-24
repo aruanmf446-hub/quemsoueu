@@ -1,5 +1,7 @@
 # Cabelos estilizados para jogo
 
+Histórico da rodada 4920be1, reprovada por aspecto plástico. A correção atual está em [ACABAMENTO-CABELO.md](ACABAMENTO-CABELO.md).
+
 O usuário enviou exemplos de cabelos do Fortnite e pediu adaptar as bases existentes. A rodada e24a297 foi considerada inconsistente: excesso de detalhe e aspecto rígido em alguns cortes. Esta adaptação prioriza volumes legíveis no jogo, mantendo penteados, cores, rostos e proporções.
 
 - Removidas as fibras geométricas finíssimas sobrepostas às mechas. Os sulcos agora são mais largos e rasos, com menos repetição.

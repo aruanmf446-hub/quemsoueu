@@ -4,15 +4,16 @@ import {smoothHairNormals} from './hair-normals.js';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 const V=(x=0,y=0,z=0)=>new THREE.Vector3(x,y,z),PI=Math.PI,clamp=THREE.MathUtils.clamp;
 const smooth=(a,b,x)=>{const t=clamp((x-a)/(b-a),0,1);return t*t*(3-2*t)};
-let textures;
-function fiberMaps(){
- if(textures)return textures;
+let textures,gameTextures;
+function fiberMaps(stylized=false){
+ const cached=stylized?gameTextures:textures;if(cached)return cached;
  const N=512,height=new Float32Array(N*N),normal=new Uint8Array(N*N*4),rough=new Uint8Array(N*N*4),albedo=new Uint8Array(N*N*4);
  for(let y=0;y<N;y++)for(let x=0;x<N;x++){
   const u=x/N,v=y/N,flow=.18*Math.sin(2*PI*v)+.08*Math.sin(4*PI*v),grain=.5+.5*Math.sin(2*PI*(13*u+v));
-  height[y*N+x]=.12*Math.sin(2*PI*32*u+flow)+.044*Math.sin(2*PI*77*u+flow*.7);
+  // Cabelo de jogo: variação larga acompanhando a mecha, sem fios modelados.
+  height[y*N+x]=stylized?.10*Math.sin(2*PI*10*u+flow)+.018*Math.sin(2*PI*23*u+flow*.7):.12*Math.sin(2*PI*32*u+flow)+.044*Math.sin(2*PI*77*u+flow*.7);
   const r=Math.round(255*(.87+.10*grain));rough.set([255,r,255,255],(y*N+x)*4);
-  const c=Math.round(255*(.965+.033*Math.sin(2*PI*32*u+flow)*(.65+.35*grain)));albedo.set([c,c,c,255],(y*N+x)*4);
+  const c=Math.round(255*(stylized?.94+.045*Math.sin(2*PI*10*u+flow)*(.8+.2*grain):.965+.033*Math.sin(2*PI*32*u+flow)*(.65+.35*grain)));albedo.set([c,c,c,255],(y*N+x)*4);
  }
  const at=(x,y)=>height[((y+N)%N)*N+(x+N)%N];
  for(let y=0;y<N;y++)for(let x=0;x<N;x++){
@@ -26,10 +27,10 @@ function fiberMaps(){
   }else t=new THREE.DataTexture(data,N,N);
   t.name=name;t.wrapS=t.wrapT=THREE.RepeatWrapping;t.minFilter=THREE.LinearMipmapLinearFilter;t.magFilter=THREE.LinearFilter;t.generateMipmaps=true;t.anisotropy=8;t.needsUpdate=true;return t;
  };
- textures={normal:texture(normal,'Hair_Fiber_Normal'),roughness:texture(rough,'Hair_Fiber_Roughness'),color:texture(albedo,'Hair_Fiber_Color')};textures.color.colorSpace=THREE.SRGBColorSpace;return textures;
+ const maps={normal:texture(normal,'Hair_Fiber_Normal'),roughness:texture(rough,'Hair_Fiber_Roughness'),color:texture(albedo,'Hair_Fiber_Color')};maps.color.colorSpace=THREE.SRGBColorSpace;if(stylized)gameTextures=maps;else textures=maps;return maps;
 }
-export function groomSurface(material,{roughness=.48,anisotropy=.6}={}){
- const maps=fiberMaps();material.map=maps.color;material.normalMap=maps.normal;material.roughnessMap=maps.roughness;material.normalScale.set(.60,.60);
+export function groomSurface(material,{roughness=.48,anisotropy=.6,stylized=false}={}){
+ const maps=fiberMaps(stylized);material.map=maps.color;material.normalMap=maps.normal;material.roughnessMap=maps.roughness;material.normalScale.set(.60,.60);
  material.roughness=roughness;material.metalness=0;material.clearcoat=.035;material.clearcoatRoughness=.65;material.anisotropy=anisotropy;material.anisotropyRotation=PI/2;material.sheen=.65;material.sheenRoughness=.5;return material;
 }
 export function groomColor(material,color){material.color.set(color);material.sheenColor.set(color).lerp(new THREE.Color('#fff0da'),.22)}

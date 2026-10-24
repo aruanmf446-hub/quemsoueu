@@ -3,7 +3,7 @@
 import * as THREE from 'three';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 import {smoothHairNormals} from './hair-normals.js';
-import {groomedLock,groomMaterial,groomColor,groomCuff} from './groom.js';
+import {groomedLock,groomMaterial,groomColor,groomCuff,groomSurface} from './groom.js';
 import {heroSurface} from './hero-material.js';
 const PI=Math.PI,V=(x=0,y=0,z=0)=>new THREE.Vector3(x,y,z),clamp=THREE.MathUtils.clamp;
 const smooth=(a,b,x)=>{const t=clamp((x-a)/(b-a),0,1);return t*t*(3-2*t)};
@@ -37,9 +37,9 @@ export function buildHeroHair(fit,style,color){
   // As raízes entram na cobertura: a tampa da mecha não aparece como um corte.
   if(!rope&&scalpRoot){const p=points[0],d=sdf(p.x,p.y,p.z);if(Math.abs(d)<.25)p.addScaledVector(gradient(p),-.010-d)}
   const curve=new THREE.CatmullRomCurve3(points,false,'centripetal');
-  const geometry=groomedLock(points,width,depth,{rows:clamp(Math.ceil(curve.getLength()*28),24,72),segments:16,detailFibers:false,sculpted:!rope,archPower:.90,backDepth:.68,grooveStrength:rope?.025:.035,grooves:2,phase,twist:rope?8:0,tone:tone*(.98+rand()*.04),
+  const geometry=groomedLock(points,width,depth,{rows:clamp(Math.ceil(curve.getLength()*28),24,72),segments:16,detailFibers:false,sculpted:!rope,archPower:1.15,backDepth:.48,grooveStrength:.018,grooves:2,phase,twist:rope?8:0,tone:tone*(.98+rand()*.04),
    normal:normal||((t,p)=>V(p.x,Math.max(.18,p.y-cy)*.65,p.z-cz)),
-   profile:t=>{const taper=Math.pow(1-smooth(Math.max(.74,tip),1,t),1.05)*(1-.28*smooth(.28,.86,t)),rise=root+(1-root)*smooth(0,.11,t);return[Math.max(.0004,width*rise*taper*(.93+.07*Math.sin(PI*t*2+phase))),Math.max(.0003,(rope?depth:Math.max(depth,width*.25))*rise*Math.pow(taper,.86))]}});
+   profile:t=>{const taper=Math.pow(1-smooth(Math.max(.74,tip),1,t),1.05)*(1-.28*smooth(.28,.86,t)),rise=root+(1-root)*smooth(0,.11,t);return[Math.max(.0004,width*rise*taper*(.93+.07*Math.sin(PI*t*2+phase))),Math.max(.0003,(rope?depth*.80:Math.max(depth*.72,width*.18))*rise*Math.pow(taper,.86))]}});
   (accent?(accents[accent]||(accents[accent]=[])):parts).push(geometry);return curve;
  }
  function ellipsoid(center,radii,tone=.92,rumple=0){
@@ -133,8 +133,8 @@ export function buildHeroHair(fit,style,color){
    p.addScaledVector(side,width*(['nico_inventor','bread_baker'].includes(P.id)?.36:.18)*Math.sin(t*PI*2.1+phase)*env).addScaledVector(n,depth*.14*Math.cos(t*PI*2+phase)*env);
    return onHairBed(p,t);
   });
-  const shape=t=>{const root=.28+.72*smooth(0,.11,t),tip=Math.pow(1-smooth(.68+.035*Math.sin(phase),1,t),.85),belly=.79+.21*Math.sin(PI*t)+.025*Math.sin(t*PI*3+phase);return[Math.max(.0004,width*root*tip*belly),Math.max(.0003,depth*root*Math.pow(tip,.8))]};
-  const emit=(pts,w,d,extra={})=>groomedLock(pts,w,d,{rows:40,segments:16,sculpted:true,archPower:.90,backDepth:.68,grooveStrength:.035,grooves:2,phase,tone,normal:(t,p)=>gradient(p),profile:shape,...extra});
+  const shape=t=>{const root=.28+.72*smooth(0,.11,t),tip=Math.pow(1-smooth(.68+.035*Math.sin(phase),1,t),.85),belly=.79+.21*Math.sin(PI*t)+.025*Math.sin(t*PI*3+phase);return[Math.max(.0004,width*root*tip*belly),Math.max(.0003,depth*.72*root*Math.pow(tip,.8))]};
+  const emit=(pts,w,d,extra={})=>groomedLock(pts,w,d,{rows:40,segments:16,sculpted:true,archPower:1.15,backDepth:.48,grooveStrength:.018,grooves:2,phase,tone,normal:(t,p)=>gradient(p),profile:shape,...extra});
   const target=accent?(accents[accent]||(accents[accent]=[])):parts;
   target.push(emit(points,width,depth));
   // O sulco largo da própria seção descreve o fluxo. Fios adicionais davam
@@ -324,8 +324,8 @@ export function buildHeroHair(fit,style,color){
  }else if(kind==='clown'){
   for(const sg of [-1,1])curlMass(V(sg*.79,brow+.01,cz-.05),V(.235,.30,.23),28,.065);
  }
- const finishHair=m=>{m.roughness=.65;m.normalScale.set(.10,.10);m.anisotropy=.35;m.clearcoat=0;m.sheen=.18;return m};
- const material=finishHair(groomMaterial(color)),baseMaterial=material.clone();baseMaterial.name='Hair_Base';baseMaterial.normalScale.set(.06,.06);baseMaterial.anisotropy=.25;baseMaterial.roughness=.67;
+ const finishHair=m=>{groomSurface(m,{stylized:true,roughness:.76,anisotropy:.25});m.normalScale.set(.28,.28);m.specularIntensity=.35;m.clearcoat=0;m.sheen=.22;m.sheenRoughness=.85;return m};
+ const material=finishHair(groomMaterial(color)),baseMaterial=material.clone();baseMaterial.name='Hair_Base';baseMaterial.normalScale.set(.12,.12);baseMaterial.anisotropy=.18;baseMaterial.roughness=.78;
  const group=new THREE.Group();group.name='Hair_'+style.id;
  if(cp.length){const capMesh=new THREE.Mesh(cap,baseMaterial);capMesh.name='Hair_Cap';group.add(capMesh)}else cap.dispose();
  if(masses.length){const geo=mergeGeometries(masses,false);masses.forEach(g=>g.dispose());const m=new THREE.Mesh(geo,material);m.name='Hair_Mass';group.add(m)}
@@ -335,7 +335,7 @@ export function buildHeroHair(fit,style,color){
   const geo=mergeGeometries(geos,false);geos.forEach(g=>g.dispose());const mat=finishHair(groomMaterial(name==='white'?'#e7dfed':'#7d3bc1','Hair_Streak_'+name));accentMaterials.push(mat);const mesh=new THREE.Mesh(geo,mat);mesh.name='Hair_Streak_'+name;group.add(mesh);
  }
  let metal=null;if(ornaments.length){metal=new THREE.MeshPhysicalMaterial({name:'Hair_Ring',color:'#b98d3f',metalness:.85,roughness:.32});const geo=mergeGeometries(ornaments,false);ornaments.forEach(g=>g.dispose());heroSurface(geo,metal,'metal');const m=new THREE.Mesh(geo,metal);m.name='Hair_Rings';group.add(m)}
- group.traverse(m=>{if(m.isMesh){m.castShadow=true;m.receiveShadow=true}});group.userData.timing=Math.round(performance.now()-started);group.userData.sculpture={version:7,style:style.id,locks:parts.length,filledMasses:masses.length};
+ group.traverse(m=>{if(m.isMesh){m.castShadow=true;m.receiveShadow=true}});group.userData.timing=Math.round(performance.now()-started);group.userData.sculpture={version:8,style:style.id,locks:parts.length,filledMasses:masses.length};
  return {group,material,meshes:group.children.filter(m=>m.isMesh),setColor(c){for(const m of [material,baseMaterial])groomColor(m,c)},dispose(){group.traverse(m=>{if(m.isMesh)m.geometry.dispose()});material.dispose();baseMaterial.dispose();accentMaterials.forEach(m=>m.dispose());metal?.dispose()}};
 }
 

@@ -1,0 +1,31 @@
+{
+  "base": "4920be1",
+  "characters": [
+    "nana_explorer",
+    "nico_inventor",
+    "forest_archer_f",
+    "moon_guardian",
+    "feminine_bold",
+    "old_king"
+  ],
+  "assets": [
+    "antes-nana_explorer.webp",
+    "depois-nana_explorer.webp",
+    "jogo-nana_explorer.webp",
+    "antes-nico_inventor.webp",
+    "depois-nico_inventor.webp",
+    "jogo-nico_inventor.webp",
+    "antes-forest_archer_f.webp",
+    "depois-forest_archer_f.webp",
+    "jogo-forest_archer_f.webp",
+    "antes-moon_guardian.webp",
+    "depois-moon_guardian.webp",
+    "jogo-moon_guardian.webp",
+    "antes-feminine_bold.webp",
+    "depois-feminine_bold.webp",
+    "jogo-feminine_bold.webp",
+    "antes-old_king.webp",
+    "depois-old_king.webp",
+    "jogo-old_king.webp"
+  ]
+}

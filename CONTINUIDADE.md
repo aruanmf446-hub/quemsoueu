@@ -1,6 +1,10 @@
 # Continuidade
 
-## Rodada atual — adaptação para jogo
+## Rodada atual — acabamento sem aspecto plástico
+
+O usuário reprovou o acabamento de 4920be1: não quer redesenhar cabelos individualmente, e sim qualidade aceitável para jogo, preservando as skins. Ajuste compartilhado: seções das mechas menos infladas, sulcos rasos, textura direcional própria com frequência mais baixa e reflexão especular reduzida. Guias, quantidade de mechas, penteados e cores base preservados. `groomSurface` recebe a opção `stylized`, usada somente nos cabelos de `hero-hair.js`; a configuração padrão das barbas permanece idêntica. Cache `menu-v28-acabamento-cabelo`. Base imutável `/workspace/outputs/cabelo-base-4920be1`. Galeria atual `revisao/acabamento-cabelo/`, seis exemplos com close antes/depois e corpo inteiro atual. Validação técnica não significa aprovação artística. Detalhes e verificações em [ACABAMENTO-CABELO.md](ACABAMENTO-CABELO.md).
+
+## Histórico — adaptação para jogo
 
 O usuário esclareceu que quer qualidade estilizada adequada a jogos e enviou referências de cabelos do Fortnite. Adaptar as bases existentes; não perseguir fios realistas. `e24a297` foi considerado inconsistente, não aprovado. Esta rodada remove fibras geométricas sobrepostas, suaviza os sulcos e o material somente do cabelo, reduz subdivisões e agrupamentos de cachos, alarga as mechas puxadas da Nana e abre suas espirais. Os 17 penteados usam o acabamento compartilhado. Rostos, barbas, corpos, cores, roupas e acessórios preservados. Galeria atual: `revisao/cabelos-jogo/`, com nove exemplos e duas vistas, antes em e24a297. Cache `menu-v27-cabelos-estilizados`. Testes técnicos não significam aprovação artística. Verificações: 34 personagens/121 superfícies preservadas, 17 penteados, cinco GLBs e três Workers. Geometria somada dos 17 cabelos 54,4% menor, sem medir FPS. Detalhes em [CABELOS-JOGO.md](CABELOS-JOGO.md).
 
