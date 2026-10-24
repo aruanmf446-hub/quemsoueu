@@ -12,7 +12,7 @@ const root=path.resolve(__dirname,'..'),out=process.env.ATELIE_RENDERS||path.joi
   const report=await page.evaluate(async id=>{
    const a=window.__atelie,expected=new Set();a.group().traverse(m=>{if(m.isMesh&&m.material.normalMap?.name==='Hair_Fiber_Normal')expected.add(m.material.name)});
    const data=await a.exportGLB(),v=new DataView(data);if(v.getUint32(0,true)!==0x46546c67)throw Error('GLB inválido');const json=JSON.parse(new TextDecoder().decode(new Uint8Array(data,20,v.getUint32(12,true))));
-   if((json.animations?.length||0)!==(id==='robot_ball'?0:12))throw Error('Clipes perdidos: '+id);
+   if((json.animations?.length||0)!==(id==='robot_ball'?5:17))throw Error('Clipes perdidos: '+id);
    const groom=new Set();for(let i=0;i<(json.materials?.length||0);i++){
     const m=json.materials[i];if(!expected.has(m.name)||!m.normalTexture||(m.normalTexture.texCoord||0)!==0)continue;
     if(!m.normalTexture||!m.pbrMetallicRoughness.baseColorTexture||!m.pbrMetallicRoughness.metallicRoughnessTexture||!m.extensions?.KHR_materials_anisotropy)throw Error('Fibra incompleta no GLB: '+id+'/'+m.name+' '+JSON.stringify(m));groom.add(i);

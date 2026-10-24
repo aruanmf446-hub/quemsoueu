@@ -62,9 +62,10 @@ button:hover{background:#f6eaee}.preset.active:hover{background:#4a3642}
   <section class="group"><h3>Expressões (rig)</h3><div class="exprs" id="exprs"></div>
     <div class="toggles"><label><input type="checkbox" id="autoBlink" checked/> Piscar automático</label><label><input type="checkbox" id="talk"/> Falando</label></div>
     <div id="poseCtrls"></div></section>
+  <section class="group" id="gMotions"><h3>Movimentos compartilhados</h3><p class="muted">Escolha uma reação ou dança. Troque de personagem para comparar o mesmo movimento.</p><div id="motionButtons" class="chips"></div><div class="buttons" style="margin-top:16px"><button id="motionPause">Pausar</button><button id="motionStop">Parar / pose A</button></div><label class="ctrl" for="motionTime">Posição da animação<input id="motionTime" type="range" min="0" max="6" step="0.01" value="0"></label><label for="motionSpeed">Velocidade <select id="motionSpeed"><option value="0.5">0,5×</option><option value="1" selected>1×</option><option value="1.5">1,5×</option></select></label><div class="toggles"><label><input id="motionSkeleton" type="checkbox"> Mostrar esqueleto</label></div><p id="motionStatus" class="muted" role="status">Pose A</p></section>
   <div class="group"><h3>Câmera e exportação</h3><div class="buttons"><button id="bodyView">Corpo inteiro</button><button id="faceView">Rosto</button><button id="front">Frente</button><button id="side">Perfil</button><button id="threequarters">3/4</button><button id="reset">Visual padrão</button><button class="primary" id="download">Exportar GLB do personagem</button></div>
     <div class="toggles" style="margin-top:12px"><label><input type="checkbox" id="showBody" checked/> Mostrar corpo</label></div></div>
-  <p class="note">Head V2 é uma base de rosto com rig facial híbrido (ossos + blendshapes, exportados no GLB com animações prontas), cabelos e acessórios por catálogo presos no osso da cabeça. Corpo inteiro em pose A, sem genitais, com figurinos procedurais por catálogo. As roupas acompanham o corpo e são exportadas no GLB; o corpo ainda não tem esqueleto. A forma é procedural (volumes anatômicos fundidos + relevo do rosto, pele e pescoço numa malha só) e serve para aprovar identidade visual antes da produção do personagem.</p>
+  <p class="note">Head V2 é uma base de rosto com rig facial híbrido (ossos + blendshapes, exportados no GLB com animações prontas), cabelos e acessórios por catálogo presos no osso da cabeça. Corpo inteiro em pose A, sem genitais, com figurinos procedurais por catálogo. As roupas acompanham o corpo e são exportadas no GLB; corpo e roupas compartilham um esqueleto corporal com reações e danças exportáveis. A forma é procedural (volumes anatômicos fundidos + relevo do rosto, pele e pescoço numa malha só) e serve para aprovar identidade visual antes da produção do personagem.</p>
 </aside>
 </div>
 <script type="module">
@@ -76,6 +77,8 @@ import {RoomEnvironment} from 'three/addons/environments/RoomEnvironment.js';
 import {buildHead,BEARD_STYLES} from './src/head.js';
 import {PRESETS,PRESET_ORDER,FAMILY_ORDER} from './src/presets.js';
 import {EXPRESSIONS,NEUTRAL,talkPose} from './src/rig.js';
+import {buildBodyRig} from './src/body-rig.js';
+import {MOTIONS} from './src/motions.js';
 import {buildBody,headScale,bodyViewHeight,normalizeBuild,BODIES} from './src/body.js';
 import {buildClothes,OUTFITS,CLOTH_COLORS,CLOTH_CHANNELS,outfitColors,CLOTH_SLOTS,pieceOptions,pieceSelection} from './src/clothes.js';
 import {heroStudio} from './src/hero-studio.js';
@@ -91,7 +94,7 @@ const TARGET=new THREE.Vector3(0,-.2,0);
 let frame={ty:-.2,dist:7.4};
 function aim(x,y,z){const k=frame.dist/7.4;camera.position.set(x*k,frame.ty+(y+.2)*k,z*k);TARGET.set(0,frame.ty,0);orbit.target.copy(TARGET);orbit.update()}
 const VIEWS={front:[0,-.05,7.4],side:[7.4,-.05,.02],three:[3.4,.8,6.5]};
-function frameBody(){if(current?.fit?.companion){const box=new THREE.Box3().setFromObject(current.group),size=box.getSize(new THREE.Vector3());frame={ty:box.getCenter(new THREE.Vector3()).y,dist:Math.max(7.4,Math.max(size.y,size.x/camera.aspect,size.z)*2.15)};return}const b=current&&current.body;if(b){const box=clothesObj?new THREE.Box3().setFromObject(clothesObj.group):null,top=Math.max(new THREE.Box3().setFromObject(current.group).max.y+.15,b.pivot.y+b.hs*(current.fit.top-b.pivot.y)+.1,box&&!box.isEmpty()?box.max.y:-Infinity),bottom=Math.min(b.ySole,box&&!box.isEmpty()?box.min.y:Infinity);const height=bodyViewHeight(presetId,top-bottom);frame={ty:bottom+height/2,dist:Math.max(9,height*2.05)}}else frame={ty:-.2,dist:7.4}}
+function frameBody(){if(current?.fit?.companion){const box=new THREE.Box3().setFromObject(current.root||current.group),size=box.getSize(new THREE.Vector3());frame={ty:box.getCenter(new THREE.Vector3()).y,dist:Math.max(7.4,Math.max(size.y,size.x/camera.aspect,size.z)*2.15)};return}const b=current&&current.body;if(b){const box=clothesObj?new THREE.Box3().setFromObject(clothesObj.group):null,top=Math.max(new THREE.Box3().setFromObject(current.group).max.y+.15,b.pivot.y+b.hs*(current.fit.top-b.pivot.y)+.1,box&&!box.isEmpty()?box.max.y:-Infinity),bottom=Math.min(b.ySole,box&&!box.isEmpty()?box.min.y:Infinity);const height=bodyViewHeight(presetId,top-bottom);frame={ty:bottom+height/2,dist:Math.max(9,height*2.05)}}else frame={ty:-.2,dist:7.4}}
 aim(...VIEWS.three);
 
 renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFShadowMap;
@@ -110,6 +113,7 @@ light(0xffffff,.9,-3.5,2.5,-4);
 let presetId='feminine_soft',current=null,lookObj=null,clothesObj=null;const looks={};
 const getLook=()=>looks[presetId]||(looks[presetId]=defaultLook(presetId));
 let activeClothSlot='upper',editor=null;
+const el=id=>document.getElementById(id);
 const statusEl=document.getElementById('status');
 let presetRevision=0,updateSerial=0,pendingUpdates=0;
 function busy(msg,fn){
@@ -130,6 +134,7 @@ function busy(msg,fn){
   },0)));
 }
 function disposeCharacter(head,visual,clothes){
+  dropBodyRig(head);
   head?.root?.removeFromParent();clothes?.dispose();visual?.dispose();
   if(head?.body){head.body.geo.dispose();if(head.body.vegSkin)head.body.mesh.material.dispose()}
   head?.dispose();
@@ -140,7 +145,7 @@ function rebuildHead(){
   try{
     heroStudio(scene,renderer,presetId);el('bodyFeedback').textContent='';
     const look=getLook();current=buildHead(presetId,{},{quality:1,...headOpts(look,PRESETS[presetId])});wrap(current);scene.add(current.root);
-    addBody(current);rebuildClothes();syncBody();rebuildLook();applyPose();refreshUI();
+    addBody(current);rebuildClothes();syncBody();rebuildLook();ensureBodyRig(current);applyPose();refreshUI();
   }catch(error){
     // Mantém o personagem anterior utilizável se uma montagem falhar.
     disposeCharacter(current,lookObj,clothesObj);
@@ -151,8 +156,11 @@ function rebuildHead(){
   disposeCharacter(previous.head,previous.visual,previous.clothes);
 }
 function rebuildClothes(){
+  dropBodyRig(current);
   if(clothesObj){clothesObj.group.removeFromParent();clothesObj.dispose()}
-  clothesObj=buildClothes(current.body,getLook());current.root.add(clothesObj.group);syncBody();
+  clothesObj=buildClothes(current.body,getLook());current.root.add(clothesObj.group);
+  for(const name of ['setPiece','setPieceColors','setColors']){const fn=clothesObj[name];clothesObj[name]=function(...args){return editBodyRig(()=>fn.apply(this,args))}}
+  syncBody();if(lookObj)ensureBodyRig(current);
 }
 // Somente corpo e roupas são substituídos; o grupo da cabeça, o rig e o visual permanecem vivos.
 let buildRevision=0,bodyTiming=0;
@@ -166,6 +174,7 @@ function setBuild(value,preview=false){
     if(revision!==buildRevision||id!==presetId){resolve(false);return}
     const start=performance.now();
     try{
+      dropBodyRig(current);
       if(current.body){const b=current.body;b.mesh.removeFromParent();b.geo.dispose();if(b.vegSkin)b.mesh.material.dispose();current.body=null}
       addBody(current);rebuildClothes();if(preview)frameBodyPreview();refreshUI();bodyTiming=performance.now()-start;
       const applied=current.body?.build;el('bodyFeedback').textContent=applied?'Aplicado: '+buildLabel(applied)+'.':'';resolve(bodyTiming);
@@ -237,9 +246,11 @@ function choosePiece(slot,id){
 }
 function setPieceColors(slot,colors){const look=getLook();Object.assign((look.pieceColors||={})[slot]||=( {}),colors);clothesObj.setPieceColors(slot,colors)}
 function rebuildLook(){
+  dropBodyRig(current);
   if(lookObj){if(lookObj.group.parent)lookObj.group.parent.remove(lookObj.group);lookObj.dispose()}
   lookObj=buildLook(current.fit,getLook(),current.body?current.body.sdfHead:null);attachLook(current,lookObj);
   lookObj.group.traverse(o=>{if(o.isMesh){o.castShadow=!o.material.transparent;o.receiveShadow=true}});
+  ensureBodyRig(current);
   frameBody(); // Inclui chapéus altos e o cavaleiro no enquadramento, sem alterar a malha.
 }
 // corpo inteiro (só malha): mesma pele da cabeça; chão discreto que recebe a sombra
@@ -257,6 +268,21 @@ function addBody(h,cell){
 }
 function syncBody(){if(current?.fit?.companion){ground.visible=el('showBody').checked;ground.position.y=(current.fit.ySole??-2.28);frameBody();return}const b=current&&current.body;ground.visible=!!b;if(b){const box=new THREE.Box3().setFromObject(clothesObj.group);ground.position.y=Math.min(b.ySole,box.isEmpty()?b.ySole:box.min.y)-.002}frameBody()}
 const hasFacialHair=()=>{const P=current&&current.params;return !!(P&&(P.beardVol||P.stache||P.goatee||P.beard))};
+
+// ---------- esqueleto e movimentos compartilhados ----------
+let selectedMotion=null,motionTime=0,motionPlaying=false,rigEditDepth=0;
+function dropBodyRig(h){if(!h?.bodyRig)return;if(h===current){const state=h.bodyRig.state();motionTime=state.time;motionPlaying=state.playing}h.bodyRig.dispose();h.bodyRig=null}
+function ensureBodyRig(h){if(!h||h.bodyRig)return;h.bodyRig=buildBodyRig(h,clothesObj);h.bodyRig.setSpeed(Number(el('motionSpeed').value));if(selectedMotion){h.bodyRig.play(selectedMotion);h.bodyRig.seek(motionTime);if(!motionPlaying)h.bodyRig.pause()}if(el('motionSkeleton').checked)h.bodyRig.showSkeleton(true)}
+function editBodyRig(fn){if(!rigEditDepth++)dropBodyRig(current);try{return fn()}finally{if(!--rigEditDepth)ensureBodyRig(current)}}
+function refreshMotionUI(){for(const b of el('motionButtons').children){const on=b.dataset.motion===selectedMotion;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on)}el('motionPause').textContent=motionPlaying?'Pausar':'Continuar';el('motionTime').max=selectedMotion?MOTIONS[selectedMotion].duration:6;el('motionTime').value=motionTime;el('motionStatus').textContent=selectedMotion?MOTIONS[selectedMotion].label+' · '+MOTIONS[selectedMotion].description:'Pose A';}
+async function playMotion(id){if(!Object.hasOwn(MOTIONS,id))return false;if(!el('showBody').checked){el('showBody').checked=true;await busy('Montando corpo…',rebuildHead)}ensureBodyRig(current);selectedMotion=id;motionTime=0;motionPlaying=true;current.bodyRig.play(id);frameBody();aim(...VIEWS.three);refreshMotionUI();return true}
+function stopMotion(){selectedMotion=null;motionTime=0;motionPlaying=false;current?.bodyRig?.stop();refreshMotionUI();applyPose()}
+for(const [id,def]of Object.entries(MOTIONS)){const b=document.createElement('button');b.dataset.motion=id;b.textContent=def.label;b.title=def.description;b.onclick=()=>playMotion(id);el('motionButtons').append(b)}
+el('motionPause').onclick=()=>{if(!selectedMotion)return;motionPlaying=!current.bodyRig.state().playing;if(motionPlaying)current.bodyRig.resume();else current.bodyRig.pause();refreshMotionUI()};
+el('motionStop').onclick=stopMotion;
+el('motionTime').oninput=e=>{motionTime=Number(e.target.value);motionPlaying=false;current.bodyRig?.pause();current.bodyRig?.seek(motionTime);applyPose();refreshMotionUI()};
+el('motionSpeed').onchange=e=>current.bodyRig?.setSpeed(Number(e.target.value));
+el('motionSkeleton').onchange=e=>{ensureBodyRig(current);current.bodyRig.showSkeleton(e.target.checked)};
 
 // ---------- expressões (rig) ----------
 // pose final = sliders/expressão escolhida + piscar automático + fala
@@ -277,7 +303,7 @@ function livePose(dt){
   if(document.getElementById('talk').checked){talkT+=dt;const tp=talkPose(talkT);for(const k in tp)p[k]=(p[k]||0)+tp[k]} // fala com formas de boca (A, E, O, U, M)
   return p;
 }
-function applyPose(dt=0){if(current&&current.rig)current.rig.apply(livePose(dt))}
+function applyPose(dt=0){if(current&&current.rig){const face=current.bodyRig?.update(dt);current.rig.apply({...livePose(dt),...face});const state=current.bodyRig?.state();if(state?.active){el('motionTime').value=state.time;motionTime=state.time;if(motionPlaying!==state.playing){motionPlaying=state.playing;refreshMotionUI()}}}}
 syncPoseUI();
 
 // ---------- UI ----------
@@ -300,7 +326,6 @@ document.getElementById('threequarters').onclick=()=>aim(...VIEWS.three);
 document.getElementById('reset').onclick=()=>{looks[presetId]=defaultLook(presetId);busy('Restaurando…',rebuildHead)};
 
 // ---------- catálogo: clica e troca ----------
-const el=id=>document.getElementById(id);
 function swatch(hex,name,on,click){const b=document.createElement('button');b.className='sw'+(on?' on':'');b.style.background=hex;b.title=name;b.setAttribute('aria-label',name);b.onclick=click;return b}
 function previewData(b,spec){if(spec)b.dataset.preview=JSON.stringify({...spec,label:spec.label||b.textContent});b.setAttribute('aria-pressed',b.classList.contains('on'));return b}
 function card(label,sub,on,click,spec){const b=document.createElement('button');b.className=on?'on':'';b.innerHTML='<b>'+label+'</b>'+(sub?'<span>'+sub+'</span>':'');b.onclick=click;return previewData(b,spec)}
@@ -364,19 +389,23 @@ function refreshUI(){
 function exportGLB(){const look=getLook(),h=wrap(buildHead(presetId,{},{quality:.6,export:true,...headOpts(look,PRESETS[presetId])}));const withBody=addBody(h,.036);const L=buildLook(h.fit,look,withBody?h.body.sdfHead:null);attachLook(h,L);
   const clothes=buildClothes(h.body,look);h.root.add(clothes.group);
   const animations=h.rig&&h.rig.makeClips?h.rig.makeClips():[];if(h.rig)h.rig.apply({});
-  return new GLTFExporter().parseAsync(h.root,{binary:true,onlyVisible:true,animations}).finally(()=>{if(h.body)h.body.geo.dispose();h.dispose();L.dispose();clothes.dispose()})}
+  const bodyRig=buildBodyRig(h,clothes);animations.push(...bodyRig.makeClips());bodyRig.stop();
+  return new GLTFExporter().parseAsync(h.root,{binary:true,onlyVisible:true,animations}).finally(()=>{bodyRig.dispose();if(h.body)h.body.geo.dispose();h.dispose();L.dispose();clothes.dispose()})}
 document.getElementById('download').onclick=async e=>{
   const btn=e.currentTarget,label=btn.textContent;btn.disabled=true;btn.textContent='Exportando…';
   try{const result=await exportGLB();const blob=new Blob([result],{type:'model/gltf-binary'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='personagem-'+presetId+'.glb';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
   catch(err){alert('Falha na exportação: '+(err&&err.message||err))}
   finally{btn.disabled=false;btn.textContent=label}
 };
-window.__atelie={savedLook:id=>structuredClone(looks[id]||defaultLook(id)),clothes:()=>clothesObj,setPiece:choosePiece,setPieceColors,pieceOptions:slot=>pieceOptions(current.body,slot),setOutfit:chooseOutfit,setClothColors:colors=>{Object.assign(getLook().clothColors,colors);for(const piece of Object.values(getLook().pieceColors||{}))Object.assign(piece,colors);clothesObj.setColors(getLook().clothColors);refreshUI()},frame:()=>frame,body:()=>current.body,getLook,setBuild,bodyTiming:()=>bodyTiming,setLook,rebuildLook,lookObj:()=>lookObj,setExpression,setPose:p=>{pose={...NEUTRAL,...p};exprName=null;syncPoseUI();applyPose()},stopAuto:()=>{document.getElementById('autoBlink').checked=false;document.getElementById('talk').checked=false},group:()=>current.group,timings:()=>current.group.userData.timings,setPreset,aim,VIEWS,camera,orbit,clay:on=>current.group.traverse(o=>{if(o.isMesh&&o.material.vertexColors!==undefined&&o.material.name==='Skin'){o.material.vertexColors=!on;o.material.sheen=on?0:.6;if(on)o.material.color.set('#d8d4cf');else o.material.color.set('#ffffff');o.material.needsUpdate=true}}),exportGLB};
+window.__atelie={bodyRig:()=>current?.bodyRig,motions:MOTIONS,playMotion,pauseMotion:()=>{current.bodyRig?.pause();motionPlaying=false;refreshMotionUI()},stopMotion,seekMotion:t=>current.bodyRig?.seek(t),root:()=>current.root,savedLook:id=>structuredClone(looks[id]||defaultLook(id)),clothes:()=>clothesObj,setPiece:choosePiece,setPieceColors,pieceOptions:slot=>pieceOptions(current.body,slot),setOutfit:chooseOutfit,setClothColors:colors=>{Object.assign(getLook().clothColors,colors);for(const piece of Object.values(getLook().pieceColors||{}))Object.assign(piece,colors);clothesObj.setColors(getLook().clothColors);refreshUI()},frame:()=>frame,body:()=>current.body,getLook,setBuild,bodyTiming:()=>bodyTiming,setLook,rebuildLook,lookObj:()=>lookObj,setExpression,setPose:p=>{pose={...NEUTRAL,...p};exprName=null;syncPoseUI();applyPose()},stopAuto:()=>{document.getElementById('autoBlink').checked=false;document.getElementById('talk').checked=false},group:()=>current.group,timings:()=>current.group.userData.timings,setPreset,aim,VIEWS,camera,orbit,clay:on=>current.group.traverse(o=>{if(o.isMesh&&o.material.vertexColors!==undefined&&o.material.name==='Skin'){o.material.vertexColors=!on;o.material.sheen=on?0:.6;if(on)o.material.color.set('#d8d4cf');else o.material.color.set('#ffffff');o.material.needsUpdate=true}}),exportGLB};
 
 rebuildHead();aim(...VIEWS.three);statusEl.textContent=PRESETS[presetId].label;
 editor=mountEditor({families:FAMILY_ORDER,slots:CLOTH_SLOTS,accessories:ACC_SLOTS,getContext:()=>({id:presetId,look:structuredClone(getLook())}),selectSlot:slot=>{activeClothSlot=slot},refresh:refreshUI,previewBody,onLayout:()=>resize()});
 refreshUI();
 window.__atelie.editor=editor;
+// Links de teste abrem a mesma produção já no personagem e movimento escolhidos.
+async function openMotionLink(){const query=new URLSearchParams(location.search),id=query.get('personagem'),motion=query.get('animacao');if(id&&Object.hasOwn(PRESETS,id))await setPreset(id);if(motion&&Object.hasOwn(MOTIONS,motion)){editor.select('motions','shared');await playMotion(motion)}}
+openMotionLink();
 function resize(){const w=host.clientWidth,h=Math.max(1,host.clientHeight-(host.querySelector('.stage-controls')?.offsetHeight||0));renderer.domElement.style.height=h+'px';renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}addEventListener('resize',resize);resize();
 let lastT=performance.now();
 (function frame(){requestAnimationFrame(frame);const t=performance.now(),dt=Math.min(.1,(t-lastT)/1000);lastT=t;applyPose(dt);orbit.update();renderer.render(scene,camera)})();

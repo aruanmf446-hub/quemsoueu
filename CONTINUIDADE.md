@@ -1,6 +1,10 @@
 # Continuidade
 
-## Rodada atual — acabamento sem aspecto plástico
+## Rodada atual — rig corporal e movimentos compartilhados
+
+O usuário quer testar se vale continuar o projeto com personagens animados. Foi autorizada a criação dos esqueletos e depois danças/reação de lobby, derrota e vitória compartilhadas. Não alterar as skins para isso. Implementação: `src/body-rig.js` com 22 ossos comuns e skinning de corpo/roupas, preservando o rig facial; `src/motions.js` com cinco coreografias. A UI oferece Animações → Reações e danças, pausa/tempo/velocidade/esqueleto/retorno à pose A. GLBs têm 17 clipes (12 faciais + cinco corporais); robô tem cinco corporais. Bípedes, sereias, aves, quadrúpedes e robô usam perfis adaptados. Acessórios dos companheiros também recebem pesos; cowboy montado acompanha a sela. Testes e limitações em [ANIMACOES.md](ANIMACOES.md). Capturas e relatórios locais em `renders/animacoes`. Não confundir testes técnicos com aprovação artística. Links diretos aceitam `personagem` e `animacao` na URL.
+
+## Histórico — acabamento sem aspecto plástico
 
 O usuário reprovou o acabamento de 4920be1: não quer redesenhar cabelos individualmente, e sim qualidade aceitável para jogo, preservando as skins. Ajuste compartilhado: seções das mechas menos infladas, sulcos rasos, textura direcional própria com frequência mais baixa e reflexão especular reduzida. Guias, quantidade de mechas, penteados e cores base preservados. `groomSurface` recebe a opção `stylized`, usada somente nos cabelos de `hero-hair.js`; a configuração padrão das barbas permanece idêntica. Cache `menu-v28-acabamento-cabelo`. Base imutável `/workspace/outputs/cabelo-base-4920be1`. Galeria atual `revisao/acabamento-cabelo/`, seis exemplos com close antes/depois e corpo inteiro atual. Validação técnica não significa aprovação artística. Detalhes e verificações em [ACABAMENTO-CABELO.md](ACABAMENTO-CABELO.md).
 

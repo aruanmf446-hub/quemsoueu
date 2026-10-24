@@ -327,6 +327,7 @@ function makeVegSDF(fit, B, prims, add, bs, joints) {
     { const a0 = at(Lh * .15, 0, Lh * .22), q = a0.clone().addScaledVector(w.clone().addScaledVector(u, .8).normalize(), Lh * .3); add(coneField(a0, Lh * .095, q, Lh * .08), bs(a0.clone().lerp(q, .5), Lh * .3), .02) }
   }
   joints.ySole = ySole; joints.Lb = yBot - ySole; joints.limb = true;
+  Object.assign(joints,{hip,knee,ankle,shoulder:sh,elbow:el,wrist:wr,zCenter:zc,W:rBot});
   joints.bounds = { x: wr.x + .7, y0: ySole - .1, y1: yA + .3, z0: zc - .8, z1: zc + .8 };
   return finish(prims, joints, B);
 }

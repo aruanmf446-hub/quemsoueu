@@ -17,7 +17,7 @@ export function mountEditor(api) {
   el('download').textContent='Exportar GLB';el('reset').textContent='Restaurar visual';el('reset').title='Restaurar o visual padrão deste personagem';
   document.querySelector('.brand').replaceChildren(make('div','eyebrow','PERSONAGEM ATUAL'),make('h1','','Seu personagem'));
   document.querySelector('.help').textContent='Arraste para girar · Role para aproximar';
-  const groups=[gPerson,el('gBody'),el('gSkin'),el('gHair'),el('gBeard'),el('gClothes'),el('gAcc'),gExpression];
+  const groups=[gPerson,el('gBody'),el('gSkin'),el('gHair'),el('gBeard'),el('gClothes'),el('gAcc'),gExpression,el('gMotions')];
   for(const child of [...sidebar.children])if(!groups.includes(child)&&child!==heading)child.hidden=true;
   const configs={
     character:{label:'Personagem',group:'gPerson',subs:api.families.map(f=>({id:f,label:f}))},
@@ -25,6 +25,7 @@ export function mountEditor(api) {
     appearance:{label:'Aparência',subs:[{id:'skin',label:'Pele',group:'gSkin'},{id:'hair',label:'Cabelo',group:'gHair'},{id:'beard',label:'Barba',group:'gBeard'}]},
     clothes:{label:'Roupas',group:'gClothes',subs:[{id:'sets',label:'Conjuntos completos'},...Object.entries(api.slots).map(([id,label])=>({id,label}))]},
     accessories:{label:'Acessórios',group:'gAcc',subs:api.accessories.map(s=>({id:s.id,label:s.label}))},
+    motions:{label:'Animações',group:'gMotions',subs:[{id:'shared',label:'Reações e danças'}]},
     expressions:{label:'Expressões',group:'gExpressions',subs:[{id:'ready',label:'Expressões prontas'},{id:'eyes',label:'Olhos e olhar'},{id:'mouth',label:'Boca e sorriso'},{id:'brows',label:'Sobrancelhas'},{id:'auto',label:'Piscar e falar'}]}
   };
   let category='character',sub=api.families[0];const remembered={};
@@ -59,7 +60,7 @@ export function mountEditor(api) {
   function refresh(){
     const conf=configs[category],section=conf.subs.find(s=>s.id===sub);
     title.textContent=section.label;trail.textContent=conf.label+' / '+section.label;
-    hint.textContent=sub==='fine'?'Arraste para ajustar. As mudanças aparecem no personagem.':sub==='skin'?'Escolha uma cor. Veja o resultado no personagem ao lado.':'Compare as prévias. Clique para aplicar.';
+    hint.textContent=category==='motions'?'Escolha o movimento e troque de personagem para comparar.':sub==='fine'?'Arraste para ajustar. As mudanças aparecem no personagem.':sub==='skin'?'Escolha uma cor. Veja o resultado no personagem ao lado.':'Compare as prévias. Clique para aplicar.';
     nav.replaceChildren(make('div','nav-caption',conf.label));
     for(const s of conf.subs){const b=make('button',s.id===sub?'selected':'',s.label);b.dataset.section=s.id;b.setAttribute('aria-current',s.id===sub?'page':'false');b.onclick=()=>select(category,s.id);nav.append(b)}
     tabs.querySelectorAll('button').forEach(b=>{const active=b.dataset.category===category;b.classList.toggle('selected',active);b.setAttribute('aria-pressed',active)});
@@ -78,7 +79,7 @@ export function mountEditor(api) {
     for(const n of el('poseCtrls').children){const id=n.querySelector('input').id.slice(2),section=id.startsWith('brow')?'brows':['lookX','lookY','blinkL','blinkR','wide','squint'].includes(id)?'eyes':'mouth';n.hidden=section!==sub}
     const context=api.getContext(),robot=context.id==='robot_ball',vegetal=PRESETS[context.id].family==='Vegetais';
     const companion=PRESETS[context.id].kind==='companion';
-    const unsupported=companion&&(['body','clothes'].includes(category)||category==='appearance'&&['hair','beard'].includes(sub))||robot&&!['character','expressions'].includes(category)||vegetal&&category==='appearance'&&sub==='beard';
+    const unsupported=companion&&(['body','clothes'].includes(category)||category==='appearance'&&['hair','beard'].includes(sub))||robot&&!['character','expressions','motions'].includes(category)||vegetal&&category==='appearance'&&sub==='beard';
     unavailable.hidden=!unsupported;unavailable.textContent=companion?'Este companheiro tem uma malha própria. Troque a pelagem em Aparência → Pele, o equipamento em Acessórios → Cabeça e as expressões em Expressões.':robot?'O robô usa o próprio casco. Personalize suas expressões ou escolha outro personagem.':'Este personagem mantém o bigode e os detalhes do seu modelo original.';
     if(unsupported)el(visible).hidden=true;
     document.querySelector('.brand h1').textContent=document.querySelector(`[data-preset="${context.id}"] b`)?.textContent||'Seu personagem';

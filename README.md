@@ -2,6 +2,10 @@
 
 Protótipo separado do jogo principal para aprovar a anatomia facial de personagens cartoon 3D. A V2 reúne cabeça, rig facial, corpo, cabelo, acessórios e figurinos procedurais personalizáveis, sem assets externos.
 
+## Animações e esqueleto corporal
+
+Os 34 personagens agora têm rig corporal com 22 ossos e uma biblioteca compartilhada de lobby, derrota, vitória, Floss e Shuffle. Abra **Animações → Reações e danças** para testar, pausar, mudar velocidade, consultar os ossos e comparar os personagens. O GLB inclui os clipes corporais e as expressões faciais. [Abrir Nico dançando na produção](https://aruanmf446-hub.github.io/quemsoueu/?personagem=nico_inventor&animacao=dance_floss) · [Detalhes e validação](ANIMACOES.md).
+
 ## Acabamento dos cabelos
 
 Correção compartilhada para reduzir o aspecto plástico: menor relevo das mechas, textura direcional discreta e reflexos suaves, preservando as bases dos penteados e as skins. [Comparação em close e corpo inteiro](revisao/acabamento-cabelo/).
@@ -124,7 +128,7 @@ Com o servidor na porta 8000, `tests/visuais.cjs` verifica também os mapas e UV
   - **Cores por peça**, sem remontar a geometria. Alterar o tecido da capa preserva as cores do top e do cinto. Trocar um slot mantém as instâncias dos outros cinco; o cinto recupera seu contorno original medido, sem a escala que o fazia flutuar. A escolha de um conjunto restaura as peças e cores desse conjunto.
   - **Cache por corpo e figurino**: geometria imutável compartilhada, materiais independentes, contagem de referências e limite de 24 moldes completos (cada molde fornece seus slots). A primeira construção compartilha os campos das camadas entre todas as peças, evitando repetir o figurino inteiro a cada slot. A identidade do campo inclui o tipo físico, então nenhum molde ou contorno de outro build é reutilizado. As medições dos contornos também são reutilizadas por corpo, com limite de 16 mil amostras. Os testes registram o p95 das trocas em cache; o tempo inicial depende do dispositivo e do detalhe da peça.
   - **Combinações compatíveis**: preserva-se o tipo de corpo original de cada personagem. As sereias usam a base sem pernas que já existia; caudas aparecem no catálogo inferior dessas personagens e calçados ficam indisponíveis. Nos personagens com pernas, o catálogo inferior oferece calças e saias. Trocar roupas não remonta a cabeça, não altera o corpo e não muda o cabelo.
-  - Roupas exportadas em `Personagem_*/Figurino/RoupaSlot_<slot>`, com malhas `Roupa_*`, materiais PBR, padrões e os 12 clipes faciais existentes. Corpo e roupas continuam estáticos na pose A. O cabelo não foi alterado; capas recebem afastamento conservador, sem simulação de colisão entre tecidos e cabelos.
+  - Roupas exportadas em `Personagem_*/Figurino/RoupaSlot_<slot>`, com malhas `Roupa_*`, materiais PBR, padrões e os 12 clipes faciais existentes. Corpo e roupas conservam a pose A de autoria e recebem o rig corporal descrito em ANIMACOES.md. O cabelo não foi alterado; capas recebem afastamento conservador, sem simulação de colisão entre tecidos e cabelos.
   - **Acessórios refinados**: gemas com mesa/cintura/pavilhão, biséis mais suaves, filigrana e milgrain na coroa, borda e pesponto do chapéu, fita da cartola e variação sutil no metal/tecido. O anel de encaixe conserva a folga sobre a superfície externa do cabelo.
 - **Câmera**: rotação livre, zoom e botões Frente / Perfil / 3/4.
 - **Exportação GLB** da cabeça (≈10 MB com o rig, 24 malhas nomeadas: `Head_Skin` com pescoço, `Eye_L/R` com `Sclera`/`Iris`/`Cornea`, `Lashes_L/R`, `Brow_L/R`, `Ear_L/R` (orelha em C com hélice, anti-hélice, concha, trago e lóbulo, no tamanho anatômico — da sobrancelha à ponta do nariz — apoiada numa raiz modelada na cabeça), `Mouth_Line`…), gerada com densidade um pouco menor que a do visualizador.
@@ -141,6 +145,8 @@ src/legacy-clothes.js modelo antigo do guerreiro básico (os demais básicos usa
 src/outfits.js    envoltória de tecido (garment/envelope), figurinos por peças, detalhes e referências (palhaço, orc, aventureiro, deserto, sereias), listras procedurais e escamas em relevo
 src/body.js       corpo inteiro (SDF do corpo por tipo de personagem + malha surface nets)
 src/accessories.js acessórios (tiara, coroa, chapéus, brincos, joia de testa, flores, coral, óculos) e cores
+src/body-rig.js   esqueleto corporal comum, pesos, adaptação por anatomia e exportação
+src/motions.js    lobby, derrota, vitória e danças compartilhadas
 src/rig.js        rig facial: esqueleto, pesos, poses de expressão e clipes de animação
 src/robot.js      gerador da cabeça de robô (casco, tela emissiva, orelhas de luz)
 src/head.js       geração procedural: SDF (crânio + casca facial por curvas), projeção da malha, relevo do rosto, olhos, cílios, shader de pele
@@ -148,7 +154,7 @@ src/head.js       geração procedural: SDF (crânio + casca facial por curvas),
 Para criar um personagem novo, o caminho mais curto é herdar de um existente e trocar só o que muda, por exemplo `PRESETS.meu_ogro = derive('orc_warrior', { id: 'meu_ogro', label: 'Ogro', family: 'Criaturas', sub: '…', skin: '#7a9a5a', tusks: null })`, e incluir o id em `PRESET_ORDER`. Para um preset do zero, copie uma entrada de `PRESETS` (`src/presets.js`), ajuste o crânio (`cran`, `occ`), as curvas da casca facial (`loft`: `a`, `zf`, `zb`), o pescoço (`neck`, `scm`) e os traços, e inclua o id em `PRESET_ORDER` (a família e a descrição do botão vêm de `family` e `sub`).
 
 ## Limites desta versão
-Personagem de corpo inteiro com figurino, ainda sem esqueleto no corpo (o rig é só do rosto); também não há nem topologia de produção (a malha é uma grade procedural densa, não *edge loops* de animação). Pele com cor por vértice, sem textura pintada; o shader de pele e as sombras ficam no visualizador (o GLB leva geometria, cores por vértice e materiais PBR padrão). Trocar de personagem, pele ou barba remonta a cabeça (~1,5 s); trocar cabelo leva ~0,3–0,6 s; cores de cabelo, acessórios e roupas são instantâneas. O tamanho do GLB varia conforme cabelo, corpo e figurino; o teste registra os tamanhos por personagem em `renders/reports.json`. O visual ainda NÃO foi aprovado. As referências são direção de arte; os renders desta etapa servem para revisão manual.
+Personagem de corpo inteiro com figurino e rigs corporal e facial. A vinculação corporal é procedural e ainda não há topologia de produção (a malha é uma grade procedural densa, não *edge loops* de animação). Pele com cor por vértice, sem textura pintada; o shader de pele e as sombras ficam no visualizador (o GLB leva geometria, cores por vértice e materiais PBR padrão). Trocar de personagem, pele ou barba remonta a cabeça (~1,5 s); trocar cabelo leva ~0,3–0,6 s; cores de cabelo, acessórios e roupas são instantâneas. O tamanho do GLB varia conforme cabelo, corpo e figurino; o teste registra os tamanhos por personagem em `renders/reports.json`. O visual ainda NÃO foi aprovado. As referências são direção de arte; os renders desta etapa servem para revisão manual.
 
 ## GitHub Pages
 Em **Settings → Pages → Build and deployment**, selecione **GitHub Actions** se ainda não estiver ativo. O workflow em `.github/workflows/pages.yml` publica a cada commit da main.
