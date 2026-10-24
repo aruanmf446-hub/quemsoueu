@@ -1,6 +1,7 @@
 // Rig corporal comum: mesmas articulações e coreografias, medidas de cada personagem.
 import * as THREE from 'three';
-import {MOTIONS,motionPose} from './motions.js';
+import {MOTIONS,motionPose} from './motions.js?v=batidas-ik-1';
+import {solveLeg} from './leg-ik.js';
 import {componentBindings} from './skin-components.js';
 const V=(x=0,y=0,z=0)=>new THREE.Vector3(x,y,z),clamp=THREE.MathUtils.clamp;
 export const BODY_BONES=['Root','Hips','Spine','Chest','Neck','Head','Tail','TailTip',...['L','R'].flatMap(s=>['UpperArm','LowerArm','Hand','UpperLeg','LowerLeg','Foot','Toe'].map(n=>n+'_'+s))];
@@ -97,14 +98,26 @@ export function buildBodyRig(character,clothing=null){
  function support(lift=0){
   lastLift=Math.max(0,lift);
   root.updateMatrixWorld(true);
-  if(!robot){let low=Infinity;for(const p of footSamples)low=Math.min(low,inverseRoot.copy(p.local).applyMatrix4(p.bone.matrixWorld).applyMatrix4(toRoot).y);bones.Root.position.y+=floor-low+Math.max(0,lift)}
+  const currentToRoot=root.matrixWorld.clone().invert();
+  if(!robot){let low=Infinity;for(const p of footSamples)low=Math.min(low,inverseRoot.copy(p.local).applyMatrix4(p.bone.matrixWorld).applyMatrix4(currentToRoot).y);bones.Root.position.y+=floor-low+Math.max(0,lift)}
   root.updateMatrixWorld(true);skeleton.update();
  }
  function sample(id,t){
   const pose=motionPose(id,t);for(const name of BODY_BONES)bones[name].quaternion.identity();
   for(const [name,value]of Object.entries(pose))if(bones[name])bones[name].quaternion.setFromEuler(euler.set(...value.map(v=>v*motionScale)));
   if(mermaid){bones.Tail.quaternion.setFromEuler(euler.set(((pose.UpperLeg_L?.[0]||0)+(pose.UpperLeg_R?.[0]||0))*.3,0,(pose.Hips?.[2]||0)*.6));bones.TailTip.quaternion.setFromEuler(euler.set(((pose.LowerLeg_L?.[0]||0)+(pose.LowerLeg_R?.[0]||0))*.25,0,0))}
-  bones.Root.position.set(pose.offset[0]*height,pose.offset[1]*height,pose.offset[2]*height);root.updateMatrixWorld(true);
+  if(pose.root)bones.Root.position.fromArray(pose.root).multiplyScalar(width*motionScale);else bones.Root.position.set(pose.offset[0]*height,pose.offset[1]*height,pose.offset[2]*height);
+  root.updateMatrixWorld(true);
+  if(body&&!mermaid&&!companion&&pose.feet){
+   const actorRotation=root.getWorldQuaternion(new THREE.Quaternion());
+   for(const side of ['L','R']){
+    const target=positions['Foot_'+side].clone().add(V(...pose.feet[side]).multiplyScalar(width));
+    solveLeg(bones['UpperLeg_'+side],bones['LowerLeg_'+side],bones['Foot_'+side],target,root);
+    const foot=bones['Foot_'+side],desired=actorRotation.clone().multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(...pose.footAngles[side])));
+    foot.quaternion.copy(foot.parent.getWorldQuaternion(new THREE.Quaternion()).invert().multiply(desired));
+    root.updateMatrixWorld(true);
+   }
+  }
   support(pose.offset[1]*height);return pose.face;
  }
  function blend(alpha){

@@ -4,6 +4,8 @@ Protótipo separado do jogo principal para aprovar a anatomia facial de personag
 
 ## Animações e esqueleto corporal
 
+Coreografias revistas após a reprovação dos movimentos: poses por batida, braços coordenados, preparação/recuperação e pés com apoio por cinemática inversa nos bípedes. [Vídeos completos para avaliar](revisao/coreografias/) · [Implementação e testes](ANIMACOES.md).
+
 Correção após a reprovação da primeira vinculação: pesos contínuos para remover pontas nas axilas, proteção de cinturas largas e equipamentos rígidos. [Comparação antes/depois](revisao/correcao-rig/) · [Detalhes da correção](CORRECAO-RIG.md).
 
 Os 34 personagens agora têm rig corporal com 22 ossos e uma biblioteca compartilhada de lobby, derrota, vitória, Floss e Shuffle. Abra **Animações → Reações e danças** para testar, pausar, mudar velocidade, consultar os ossos e comparar os personagens. O GLB inclui os clipes corporais e as expressões faciais. [Abrir Nico dançando na produção](https://aruanmf446-hub.github.io/quemsoueu/?personagem=nico_inventor&animacao=dance_floss) · [Detalhes e validação](ANIMACOES.md).

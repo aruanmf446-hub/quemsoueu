@@ -1,0 +1,102 @@
+{
+  "fps": 8,
+  "renderSize": 480,
+  "shadows": false,
+  "sourceHashes": {
+    "src/motions.js": "e19af045a8ffee28e6a2f68bc980f3beb2fb0cdb316df00d6ef13669da351dfc",
+    "src/body-rig.js": "8fe797ee6c715f2a6628a5fb056b4000484ac4c7e6f9ba92ae902421785f6955",
+    "src/leg-ik.js": "c280b1d536fca475c8e0253b2975847244c6db9171ce02e4088586e382b5870a"
+  },
+  "reports": [
+    {
+      "id": "nico_inventor",
+      "motion": "dance_floss",
+      "label": "Nico · Floss",
+      "times": [
+        0,
+        0.5,
+        1,
+        1.5,
+        2.5,
+        3.5
+      ],
+      "duration": 4,
+      "fps": 8,
+      "frames": 32,
+      "camera": {
+        "position": [
+          8.62080405405405,
+          -0.2962544582470046,
+          17.2416081081081
+        ],
+        "target": [
+          0,
+          -1.2105821609497074,
+          0
+        ]
+      },
+      "folder": "renders/coreografias/nico_inventor-dance_floss",
+      "video": "nico_inventor-dance_floss.mp4"
+    },
+    {
+      "id": "nana_explorer",
+      "motion": "dance_shuffle",
+      "label": "Nana · Shuffle",
+      "times": [
+        0,
+        0.125,
+        0.25,
+        0.5,
+        0.625,
+        0.75
+      ],
+      "duration": 4,
+      "fps": 8,
+      "frames": 32,
+      "camera": {
+        "position": [
+          10.977941504251524,
+          -2.530713650800533,
+          21.955883008503047
+        ],
+        "target": [
+          0,
+          -3.6950407800393315,
+          0
+        ]
+      },
+      "folder": "renders/coreografias/nana_explorer-dance_shuffle",
+      "video": "nana_explorer-dance_shuffle.mp4"
+    },
+    {
+      "id": "bread_vigilante",
+      "motion": "victory",
+      "label": "Vigilante · Vitória",
+      "times": [
+        0,
+        0.3,
+        0.85,
+        1.65,
+        3.15,
+        4.15
+      ],
+      "duration": 6,
+      "fps": 8,
+      "frames": 48,
+      "camera": {
+        "position": [
+          12.318013451356379,
+          -3.2319746137660945,
+          24.636026902712757
+        ],
+        "target": [
+          0,
+          -4.5384305858796505,
+          0
+        ]
+      },
+      "folder": "renders/coreografias/bread_vigilante-victory",
+      "video": "bread_vigilante-victory.mp4"
+    }
+  ]
+}
