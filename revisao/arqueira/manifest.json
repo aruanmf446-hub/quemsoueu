@@ -1,0 +1,82 @@
+{
+  "personagem": "forest_archer_f",
+  "base": "ffc9f80",
+  "aprovacao": "pendente",
+  "cameraPares": 4,
+  "cameras": {
+    "front": {
+      "position": [
+        0,
+        -3.764663058653335,
+        25.266398243385627
+      ],
+      "target": [
+        0,
+        -4.276819779803045,
+        0
+      ]
+    },
+    "three": {
+      "position": [
+        11.608885679393406,
+        -0.8624416388049827,
+        22.19345791648739
+      ],
+      "target": [
+        0,
+        -4.276819779803045,
+        0
+      ]
+    },
+    "back": {
+      "position": [
+        3.0942413734744516e-15,
+        -3.764663058653335,
+        -25.266398243385627
+      ],
+      "target": [
+        0,
+        -4.276819779803045,
+        0
+      ]
+    },
+    "face": {
+      "position": [
+        1.9040000000000001,
+        0.38000000000000067,
+        5.824000000000001
+      ],
+      "target": [
+        0,
+        0.1,
+        0
+      ]
+    }
+  },
+  "assets": [
+    "antes-front.webp",
+    "antes-three.webp",
+    "antes-back.webp",
+    "antes-face.webp",
+    "depois-front.webp",
+    "depois-three.webp",
+    "depois-back.webp",
+    "depois-face.webp",
+    "comparacao.jpg",
+    "index.html",
+    "validacao.json"
+  ],
+  "sha256": {
+    "antes-front.webp": "670ff8957d0c54e9f760a4d96e73c462d80326c2decc1367225e291084355e7c",
+    "antes-three.webp": "c93f3fc1fcf1c88ead4263758bbd879b884740f289e5098429841a45f699bf30",
+    "antes-back.webp": "36d193c7dbd984e72c979d90c043bc3dfbc784d7b29b3d8de128f834d2e08f73",
+    "antes-face.webp": "94c4632eff3be54c0517b958cdb1f8242c9c800219b9b7ef1b048406f932c6e3",
+    "depois-front.webp": "09d84f1aa241a4783b67e5d450022922d0fea3c02fdc5edfa0cb3afef2814fa0",
+    "depois-three.webp": "5d596a8ee794fcfb566d9422d2d7ea3810057e34a162f44724a3c1a91b52b3b9",
+    "depois-back.webp": "b2d3d2d76d993340fe660f041b05712f297d420a70abddfa2abc0842d150eba3",
+    "depois-face.webp": "bad84231c993413eeefa9c17a3c4a9e6447c7ad2974c1c6081071c65ac38fcf8",
+    "comparacao.jpg": "f9ca1f6dccd4aee3d28eccc03c328a899799fa53efacbbf2cb6468630814cac8",
+    "index.html": "8291e615dbf6e512584110717fbddb21cc20e52694d5a273807c60a6e8cfb057",
+    "validacao.json": "f7bd2c3fb44409db8aa275a9d568b7bd8c4df39043e06f57d337e1d9098ff98c"
+  }
+}

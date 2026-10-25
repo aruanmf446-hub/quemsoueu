@@ -1,5 +1,11 @@
 # Quem Sou Eu — Ateliê Facial · Head V2
 
+## Refinamento individual — Arqueira da floresta
+
+Rodada de 25/10/2026 sobre `ffc9f80`, usando a malha atual conforme escolha do usuário. [Comparação de frente, 3/4, costas e rosto](revisao/arqueira/) com câmeras iguais. Cabelo com trança lateral, blusa clara e mangas franzidas, corpete baixo, short sob abas assimétricas, capa curta, couro e botas. Ombros/pescoço e sardas foram ajustados só nela; os outros 33 visuais padrão continuam preservados. Os controles de peças, cores, tipos físicos, altura e animações permanecem disponíveis.
+
+Cobertura: 43.056 vértices em três builds, zero falhas. Rig com 26 ossos, GLB com 17 clipes, Worker e cache passaram; maior troca medida no navegador: 136,3 ms. Detalhes, comandos e limitações em [ARQUEIRA.md](ARQUEIRA.md). **A arqueira continua na lista pendente de aprovação visual.**
+
 Protótipo separado do jogo principal para aprovar a anatomia facial de personagens cartoon 3D. A V2 reúne cabeça, rig facial, corpo, cabelo, acessórios e figurinos procedurais personalizáveis, sem assets externos.
 
 ## Animações e esqueleto corporal

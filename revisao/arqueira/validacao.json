@@ -1,0 +1,16 @@
+{
+  "id": "forest_archer_f",
+  "vertices": 550214,
+  "swapMaxMs": 136.30000000004657,
+  "motions": [
+    "lobby",
+    "defeat",
+    "victory",
+    "dance_floss",
+    "dance_shuffle"
+  ],
+  "MB": 63.72,
+  "clips": 17,
+  "worker": true,
+  "errors": []
+}

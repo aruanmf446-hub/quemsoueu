@@ -1,6 +1,18 @@
 # Continuidade
 
-## Rodada atual — altura proporcional e figurinos em movimento
+## Rodada atual — arqueira, uma identidade por vez (25/10/2026)
+
+O usuário pediu refinamento individual, enviou uma referência em pose T e escolheu explicitamente **refinar a malha atual**, preservando o editor; o modelo do Tripo não foi importado nem houve geração externa. Base desta rodada: `ffc9f80`. Trabalhar só na arqueira até nova orientação, mantendo todos os itens pendentes de aprovação no README.
+
+Novo penteado `archer_braid` e figurino `forest_huntress`, em `src/archer-outfit.js`, evitam alterar os cortes compartilhados da guarda e do arqueiro masculino. Blusa clara e mangas franzidas ficam acima de um corpete baixo; short, abas assimétricas e correias deixam a perna visível. Lenço/capa foram encurtados. Apenas os dados corporais da arqueira ganharam ombros mais largos e pescoço mais curto; a escala da cabeça, a altura total configurada e os dados das coreografias foram mantidos. Sardas menores e blush reduzido somente nela.
+
+Foi reproduzida troca de peça acima de 500 ms devido à reconstrução dos vínculos do rig. `body-rig.js` conserva os cálculos e ativa cache apenas quando há peças `forest_huntress`: chave por geometria, corpo, espaço local e classificação; máscara de pele separada por seleção. O teste frio/quente exige pesos, índices e pose idênticos, inclusive após remover/repor a blusa. Não reutilizar máscaras entre combinações nem reduzir os limites de deformação.
+
+Passaram: cobertura dos builds magro/gordo/musculoso (43.056 vértices, zero falhas), tipos físicos, figurinos filtrados para a arqueira, rig da arqueira e guarda feminina, preservação de 33 presets/corpos/visuais e dois figurinos por hash, cabelo, cache frio/quente e recuperação da pele, navegador/cores/slots/Worker e GLB com 17 clipes. Troca máxima na repetição final: 136,3 ms. O GLB medido tem 63,72 MiB; ainda é uma exportação procedural detalhada, não um orçamento mobile já otimizado. O histórico de falhas de cobertura da Nana não foi alterado nem declarado resolvido.
+
+Comparação real em `revisao/arqueira/`, gerada por `tests/publicar-arqueira.py`; base local imutável `/tmp/arqueira-base-ffc9f80`, capturas e relatórios em `/workspace/outputs/arqueira/`. Cache `menu-v30-arqueira-individual`; import map versiona os módulos da rodada para evitar mistura com arquivos antigos do navegador. Não declarar igualdade com a referência ou aprovação estética. Próxima etapa: avaliar as quatro vistas e continuar os ajustes desta personagem indicados pelo usuário.
+
+## Rodada anterior — altura proporcional e figurinos em movimento
 
 Após `791ed88`, o usuário relatou animações quebradas em vários personagens e cactos achatados. Pediu um controle de altura que preserve as proporções. A autorização de publicar na main continua válida. Não interpretar os testes como aprovação artística e não reesculpir rostos/cabelos para corrigir animação.
 

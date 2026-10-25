@@ -37,7 +37,7 @@ button:hover{background:#f6eaee}.preset.active:hover{background:#4a3642}
 .group.off .body{opacity:.35;pointer-events:none}
 @media(max-width:760px){.shell{grid-template-columns:1fr;height:auto}.stage{height:68dvh;min-height:460px}.sidebar{border-left:0}.brand{left:16px;top:16px}.help{left:16px;bottom:12px}.status{right:12px;top:auto;bottom:34px}}
 </style>
-<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}</script></head><body>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/","./src/hair.js":"./src/hair.js?v=arqueira-individual-1","./src/hero-hair.js":"./src/hero-hair.js?v=arqueira-individual-1","./src/forest.js":"./src/forest.js?v=arqueira-individual-1","./src/outfits.js":"./src/outfits.js?v=arqueira-individual-1","./src/archer-outfit.js":"./src/archer-outfit.js?v=arqueira-individual-1","./src/body.js":"./src/body.js?v=arqueira-individual-1","./src/clothes.js":"./src/clothes.js?v=arqueira-individual-1","./src/look.js":"./src/look.js?v=arqueira-individual-1","./src/presets.js":"./src/presets.js?v=arqueira-individual-1"}}</script></head><body>
 <div class="shell">
 <main class="stage" id="stage">
   <div class="brand"><div class="eyebrow">Quem Sou Eu · Nova geração</div><h1>Ateliê facial</h1><p>Personagem cartoon 3D de corpo inteiro com rig facial. Monte o visual por catálogo: pele, cabelo, barba, roupas e acessórios, cada um com suas cores.</p></div>
@@ -81,11 +81,11 @@ import {PRESETS,PRESET_ORDER,FAMILY_ORDER} from './src/presets.js';
 import {EXPRESSIONS,NEUTRAL,talkPose} from './src/rig.js';
 import {buildBodyRig} from './src/body-rig.js?v=arqueira-individual-1';
 import {MOTIONS} from './src/motions.js?v=mocap-1';
-import {buildBody,headScale,bodyViewHeight,normalizeBuild,BODIES} from './src/body.js?v=altura-roupas-1';
-import {buildClothes,OUTFITS,CLOTH_COLORS,CLOTH_CHANNELS,outfitColors,CLOTH_SLOTS,pieceOptions,pieceSelection} from './src/clothes.js?v=altura-roupas-1';
+import {buildBody,headScale,bodyViewHeight,normalizeBuild,BODIES} from './src/body.js?v=arqueira-individual-1';
+import {buildClothes,OUTFITS,CLOTH_COLORS,CLOTH_CHANNELS,outfitColors,CLOTH_SLOTS,pieceOptions,pieceSelection} from './src/clothes.js?v=arqueira-individual-1';
 import {heroStudio} from './src/hero-studio.js';
 import {applyCharacterHeight,normalizeHeight,localCharacterBounds} from './src/character-height.js';
-import {defaultLook,buildLook,attachLook,headOpts,skinPalette,HAIR_STYLES,HAIR_COLORS,ACCESSORIES,ACC_SLOTS,ACC_COLORS} from './src/look.js?v=altura-roupas-1';
+import {defaultLook,buildLook,attachLook,headOpts,skinPalette,HAIR_STYLES,HAIR_COLORS,ACCESSORIES,ACC_SLOTS,ACC_COLORS} from './src/look.js?v=arqueira-individual-1';
 const host=document.getElementById('stage'),scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(30,1,.05,100);
 const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});
 renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.outputColorSpace=THREE.SRGBColorSpace;
