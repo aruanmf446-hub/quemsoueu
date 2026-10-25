@@ -102,17 +102,17 @@ for(const c of FRONTIER_CHARACTERS)BODIES[c.id]={...BODIES[c.body],...(c.large?{
 // Duas roupas do mesmo jovem: escala e anatomia permanecem idênticas entre as skins.
 for(const id of ['bread_baker','bread_vigilante'])BODIES[id]={...BODIES.masculine_soft,head:1,heads:5.7,neckUp:.24,W:1.04,sh:1.14,chest:1.04,muscle:.32,hand:1.12,foot:1.18};
 // Silhueta própria somente das novas skins: coluna compacta, ombros largos e extremidades robustas.
-const DESERT_CACTUS = {head:1,heads:2.35,W:1.08,sh:.92,chest:1,waist:.97,hip:.88,depth:1.15,belly:.2,muscle:.18,glute:.15,cactus:true,fingers:4,arm:.92,hand:1.65,foot:1.8,leg:.85,aPose:48};
+const DESERT_CACTUS = {head:1,heads:3.15,W:1.08,sh:.92,chest:1,waist:.97,hip:.88,depth:1.15,belly:.2,muscle:.18,glute:.15,cactus:true,fingers:4,arm:.92,hand:1.65,foot:1.8,leg:.85,aPose:48};
 BODIES.flame_guardian={...BODIES.masculine_soft,heads:5.8,head:1,W:1.12,sh:1.25,chest:1.12};
 BODIES.frontier_cowboy={...DESERT_CACTUS};
 BODIES.cactus_soldier={...DESERT_CACTUS,sh:1.03,chest:1.08,muscle:.35,hand:1.8};
-BODIES.cactus_soldier_large={...DESERT_CACTUS,head:1,heads:2.8,W:1.52,sh:1.12,chest:1.15,waist:1.1,hip:1.02,depth:1.16,belly:.32,muscle:.5,arm:.98,hand:1.8,foot:1.8};
+BODIES.cactus_soldier_large={...DESERT_CACTUS,head:1,heads:3.65,W:1.52,sh:1.12,chest:1.15,waist:1.1,hip:1.02,depth:1.16,belly:.32,muscle:.5,arm:.98,hand:1.8,foot:1.8};
 
 // escala da cabeça com corpo (a cabeça é desenhada grande para o close do rosto; no corpo inteiro ela diminui)
 export const headScale = id => (BODIES[id] && BODIES[id].head) || 1;
 // O quadro de corpo inteiro conserva espaço acima da criança. O zoom automático
 // não deve apresentar Nico com a mesma altura aparente das figuras adultas.
-export const bodyViewHeight = (id,height) => id==='nico_inventor'?Math.max(height,8.2):height;
+export const bodyViewHeight = (id,height) => ['nico_inventor','frontier_cowboy','cactus_soldier','cactus_soldier_large'].includes(id)?Math.max(height,8.2):height;
 
 // Valores normalizados também identificam os caches; NaN e valores fora da faixa não chegam à geometria.
 export function normalizeBuild(build = {}) {

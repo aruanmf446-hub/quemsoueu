@@ -9,6 +9,7 @@ import {PRESETS} from './presets.js';
 import {EXPRESSIONS} from './rig.js';
 import {previewChoice} from './preview-spec.js';
 import {heroStudio} from './hero-studio.js';
+import {applyCharacterHeight,normalizeHeight,localCharacterBounds} from './character-height.js';
 
 // Texturas procedurais de íris e tela usam canvas também fora da página.
 globalThis.document={createElement:tag=>{if(tag==='canvas')return new OffscreenCanvas(1,1);throw Error('Elemento não disponível nas prévias: '+tag)}};
@@ -36,16 +37,17 @@ function assemble(id,look){
   if(vk!==visualKey){if(visual){visual.group.removeFromParent();visual.dispose()}visual=buildLook(head.fit,look,body?.sdfHead);attachLook(head,visual);visualKey=vk}
   const ck=JSON.stringify([look.outfit,look.clothColors,look.pieces,look.pieceColors,bodyKey]);
   if(ck!==clothesKey){if(clothes){clothes.group.removeFromParent();clothes.dispose()}clothes=buildClothes(body,look);root.add(clothes.group);clothesKey=ck}
+  const sole=body?.ySole??head.fit?.ySole??(root.userData.heightFloor??=localCharacterBounds(root).min.y);applyCharacterHeight(root,id,look.height,sole);
 }
 function focusHead(ears=false){
   // O mesmo personagem, visto de lado e com mais margem apenas nas miniaturas de brincos.
   const hs=body?.hs||1,pv=body?.pivot||new THREE.Vector3();
-  const center=new THREE.Vector3(0,.18,0).multiplyScalar(hs).addScaledVector(pv,1-hs);
+  const center=new THREE.Vector3(0,.18,0).multiplyScalar(hs).addScaledVector(pv,1-hs).applyMatrix4(root.matrixWorld);
   if(ears)center.y-=.18*hs;
-  const height=Math.max(2.8,(head.fit?.top||1.2)+1.6)*hs,dist=height/(2*Math.tan(THREE.MathUtils.degToRad(15)))*(ears?1.33:1.15);
+  const height=Math.max(2.8,(head.fit?.top||1.2)+1.6)*hs*root.scale.x,dist=height/(2*Math.tan(THREE.MathUtils.degToRad(15)))*(ears?1.33:1.15);
   camera.position.copy(center).add(new THREE.Vector3(ears?1.25:.12,.04,1).normalize().multiplyScalar(dist));camera.lookAt(center);
 }
-function focusBody(){const box=new THREE.Box3().setFromObject(root),size=box.getSize(new THREE.Vector3()),center=box.getCenter(new THREE.Vector3());const height=bodyViewHeight(head.params.id,size.y);center.y=box.min.y+height/2;const dist=Math.max(height,size.x/camera.aspect)/(2*Math.tan(THREE.MathUtils.degToRad(15)))*1.12;camera.position.copy(center).add(new THREE.Vector3(.08,.015,1).normalize().multiplyScalar(dist));camera.lookAt(center)}
+function focusBody(){const box=new THREE.Box3().setFromObject(root),size=box.getSize(new THREE.Vector3()),center=box.getCenter(new THREE.Vector3());const height=Math.max(size.y,bodyViewHeight(head.params.id,size.y/normalizeHeight(root.userData.height)));center.y=box.min.y+height/2;const dist=Math.max(height,size.x/camera.aspect)/(2*Math.tan(THREE.MathUtils.degToRad(15)))*1.12;camera.position.copy(center).add(new THREE.Vector3(.08,.015,1).normalize().multiplyScalar(dist));camera.lookAt(center)}
 onmessage=async({data})=>{
   try{
     const {id,look,frame,expression}=previewChoice(data);

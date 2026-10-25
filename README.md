@@ -4,11 +4,17 @@ Protótipo separado do jogo principal para aprovar a anatomia facial de personag
 
 ## Animações e esqueleto corporal
 
-A biblioteca usa movimento humano capturado: lobby, derrota, vitória, Macarena e uma dança retrô solo. O rig adapta orientações dos braços, apoio dos pés e altura da pelve às proporções dos personagens. A revisão atual separa o tecido entre as pernas e corrige os pesos que faziam uma perna arrastar a outra. [Comparação das pernas](revisao/pernas/) · [Revisão dos movimentos](revisao/movimentos/) · [Implementação e testes](ANIMACOES.md) · [Fonte e créditos](assets/motions/PROVENANCE.md).
+A biblioteca usa movimento humano capturado: lobby, derrota, vitória, Macarena e uma dança retrô solo. O rig adapta braços, pés e pelve às proporções dos personagens. Esta revisão corrige mangas separadas como saias, articula barras e mantos e mantém escudos rígidos. A pele escondida sob roupas opacas deixa de atravessar o tecido; remover a peça recupera o corpo completo. [Catálogo dos 34 personagens, vídeos e comparação](revisao/altura-animacoes/) · [Implementação e testes](ANIMACOES.md) · [Fonte e créditos](assets/motions/PROVENANCE.md).
 
 Correção após a reprovação da primeira vinculação: pesos contínuos para remover pontas nas axilas, proteção de cinturas largas e equipamentos rígidos. [Comparação antes/depois](revisao/correcao-rig/) · [Detalhes da correção](CORRECAO-RIG.md).
 
-Os 34 personagens têm rig corporal com 22 ossos e uma biblioteca compartilhada, com adaptação às cinco anatomias. Abra **Animações → Reações e danças** para testar, pausar, mudar velocidade, consultar os ossos e comparar os personagens. O GLB inclui os clipes corporais e as expressões faciais. [Abrir Nico dançando na produção](https://aruanmf446-hub.github.io/quemsoueu/?v=pernas-livres-1&personagem=nico_inventor&animacao=dance_floss).
+Os 34 personagens têm rig corporal com 26 ossos (quatro para tecidos) e uma biblioteca compartilhada, com adaptação às cinco anatomias. Abra **Animações → Reações e danças** para testar, pausar, mudar velocidade, consultar os ossos e comparar os personagens. O GLB inclui os clipes corporais e as expressões faciais. [Abrir Nico dançando na produção](https://aruanmf446-hub.github.io/quemsoueu/?v=altura-roupas-1&personagem=nico_inventor&animacao=dance_floss).
+
+## Altura dos personagens
+
+Em **Corpo → Altura**, ajuste de 60% a 140%. A escala é uniforme nos três eixos, com apoio na sola: um personagem baixo mantém suas proporções. A escolha fica salva por personagem em `look.height`, funciona também em criaturas e robô e acompanha a exportação GLB. A alteração não reconstrói o rig nem reinicia a animação. API: `window.__atelie.setHeight(.8)` ou `setLook({height:.8})`.
+
+Soldados cactos e o corpo compacto usado pelo cowboy do deserto receberam mais comprimento de tronco e membros; uma escala uniforme própria mantém sua estatura curta. Os outros corpos conservam suas proporções anteriores. O enquadramento do controle de altura permite comparar os tamanhos sem compensar a alteração com zoom. As prévias usam a altura salva e uma nova versão do cache.
 
 ## Acabamento dos cabelos
 

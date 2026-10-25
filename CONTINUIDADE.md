@@ -1,6 +1,22 @@
 # Continuidade
 
-## Rodada atual — tecido e pernas independentes
+## Rodada atual — altura proporcional e figurinos em movimento
+
+Após `791ed88`, o usuário relatou animações quebradas em vários personagens e cactos achatados. Pediu um controle de altura que preserve as proporções. A autorização de publicar na main continua válida. Não interpretar os testes como aprovação artística e não reesculpir rostos/cabelos para corrigir animação.
+
+`src/character-height.js` aplica escala uniforme XYZ com pivô na sola. `look.height` vai de `.6` a `1.4`, fica salvo por personagem e acompanha o GLB. **Corpo → Altura** funciona também no robô e companheiros; alterar o controle mantém o rig, o tempo e a pose. As medidas do esqueleto são locais ao ator para que uma altura pequena não contamine os comprimentos dos ossos. O enquadramento desse controle mantém distância de comparação; o close facial considera a transformação real da cabeça.
+
+Os três corpos compactos do deserto compartilhavam uma base achatada. `DESERT_CACTUS.heads` passa de 2,35 a 3,15 e o cacto grande de 2,8 a 3,65. `CHARACTER_SCALES` aplica `.85` ao cowboy do deserto e soldado cacto e `.88` ao soldado grande. Os demais 31 corpos conservam sua escultura. Miniaturas usam a altura salva, cache `menu-v29-altura-roupas` e o mesmo versionamento em todo o grafo local do Worker.
+
+Falha reproduzida no Rei: o corte na cintura classificava os punhos baixos da manga como parte da saia. `src/outfits.js` conserva a região de manga na peça superior. O rig tem agora 26 ossos, com quatro `Drape_*` de tecido ligados à pelve e pivô na cintura. Contornos radiais medidos na roupa e cápsulas das pernas após IK controlam abertura moderada de saias/mantos; as faixas têm interpolação contínua para evitar saltos. Não voltar às primeiras tentativas que abriam a saia excessivamente ou usavam o pivô baixo na pelve. Mangas e calças conservam as influências anatômicas anteriores. Equipamentos metálicos grandes, especialmente os escudos dos cactos, mantêm componentes rígidos; debruns e cordões longos acompanham o tecido.
+
+`bodyMasks` dos figurinos opacos permitem omitir a pele coberta na cópia usada pelo rig. Somente triângulos com os três vértices cobertos são removidos, com margem nas bordas. A geometria original do corpo permanece intacta; retirar a roupa recupera o corpo inteiro. Peças vazadas/transparentes não usam essa máscara. Não usar a máscara para enfraquecer a verificação de deformação: `rig-corporal.mjs` mede as arestas com o índice original completo, mantendo o limite de 6×.
+
+Verificações concluídas: 34 personagens no rig; 27 bípedes/19 calças na independência; apoio dos pés e continuidade compartilhada; oito GLBs convencionais; seis anatomias no controle de altura; três GLBs com altura e posição de juntas comparada à cena (erro máximo inferior a 0,000013 unidade); cinco figurinos no teste de recuperação do corpo; quatro casos de punhos/escudos/continuidade de tecido; três prévias reais no Worker. As 170 combinações de personagem/movimento foram capturadas em três instantes (510 imagens). Três vídeos completos, 408 quadros a 24 fps, e comparação com `791ed88` na mesma pose/câmera ficam em `revisao/altura-animacoes/`. O publicador confere os hashes atuais; não apresentar vídeos antigos de outras galerias como se fossem desta implementação. Comandos e limites em `ANIMACOES.md`; saídas locais em `renders/altura-animacao/`.
+
+Os três vídeos foram decodificados e reproduzidos no navegador; as 170 imagens do seletor foram carregadas e a galeria passou em 390/1280 px. Os painéis de todos os personagens e os quadros dos três vídeos foram inspecionados visualmente. O acesso HTTPS à produção e à API do GitHub retorna 403 neste ambiente; distinguir envio confirmado à main de deploy confirmado. A pendência histórica dos 101 vértices de cobertura da Nana não foi declarada resolvida por esta rodada.
+
+## Rodada anterior — tecido e pernas independentes
 
 O usuário elogiou `6f016c4` e apontou que algo ainda fica grudado e é puxado pela perna. A falha foi reproduzida levantando apenas uma perna: as calças tinham uma superfície ligando as duas pernas até a canela, e os envelopes largos davam peso da perna oposta aos vértices internos. Preservar a captura de movimento aprovada, rostos, cabelos, medidas e materiais das skins.
 

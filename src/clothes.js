@@ -6,7 +6,7 @@ import {FRONTIER_OUTFITS} from './frontier.js';
 import {FOREST_OUTFITS} from './forest.js';
 import { buildLegacyClothes } from './legacy-clothes.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { buildSdfOutfit, SDF_OUTFITS, SDF_DEFAULT_COLORS, SDF_DEFAULT_OUTFIT } from './outfits.js?v=pernas-livres-1';
+import { buildSdfOutfit, SDF_OUTFITS, SDF_DEFAULT_COLORS, SDF_DEFAULT_OUTFIT } from './outfits.js?v=altura-roupas-1';
 
 export const OUTFITS = {
   none: { label: 'Sem roupa', sub: 'Somente a malha do corpo' },
@@ -98,7 +98,7 @@ function template(body, style, slot) {
   // Gera um conjunto uma única vez: os slots compartilham medidas e campos de camada.
   const key = bodyKeys.get(body.sdf) + ':' + style + ':' + (SDF_OUTFITS[style] ? '*' : slot);
   if (templates.has(key)) { const item = templates.get(key); templates.delete(key); templates.set(key, item); return item }
-  const descriptors = [], details = new Map(), coverage=[];
+  const descriptors = [], details = new Map(), coverage=[], bodyMasks=[];
   const add = (name, geo, channel) => descriptors.push({ name, geo, channel, slot: geo.userData.slot || 'extras' });
   if(!SDF_OUTFITS[style]){
     const legacy=buildLegacyClothes(body,{outfit:style},slot);legacy.group.updateMatrixWorld(true);
@@ -108,7 +108,7 @@ function template(body, style, slot) {
   }else buildSdfOutfit(body, style, {}, {}, add, (ch, geo) => {
     const key = (geo.userData.slot || 'extras') + ':' + ch;
     if (!details.has(key)) details.set(key, []); details.get(key).push(geo);
-  }, null, coverage);
+  }, null, coverage, bodyMasks);
   for (const [key, geos] of details) {
     const hero=!!FOREST_OUTFITS[style]||!!FRONTIER_OUTFITS[style]||style.startsWith('lunar_')||style==='flame_guardian';
     const [slot, channel] = key.split(':'), normalized = geos.map(g => {
@@ -136,7 +136,7 @@ function template(body, style, slot) {
     }
     g.setAttribute('color', new THREE.BufferAttribute(colors, 3));
   }
-  const item = { descriptors, coverage, refs: 0 }; templates.set(key, item);
+  const item = { descriptors, coverage, bodyMasks, refs: 0 }; templates.set(key, item);
   // Um corpo precisa reter ao menos uma versão de cada conjunto do catálogo. Com mais de
   // 24 estilos, o limite antigo expulsava a peça recém-aquecida e voltava a malhá-la na troca.
   const templateLimit=Math.max(32,Object.keys(OUTFITS).length+4);
@@ -218,6 +218,7 @@ export function buildClothes(body, look) {
     group, selection, timing: Math.round(performance.now() - start),
     get hasCoverageDesign(){return [...instances.values()].some(p=>p.template.coverage?.length)},
     coveredByDesign(x,y,z){return [...instances].some(([slot,p])=>p.template.coverage?.some(r=>r.slot===slot&&r.contains(x,y,z)))},
+    bodyCovered(x,y,z){return [...instances].some(([slot,p])=>p.template.bodyMasks?.some(r=>r.slot===slot&&r.contains(x,y,z)))},
     setPiece,
     setPieceColors(slot, colors) { const part = instances.get(slot); if (!part) return; Object.assign(part.colors, colors); part.group.traverse(m => { if (m.isMesh) paint(m, m.userData.channel, part.colors, body.proportions.W) }) },
     setColors(colors) { for (const slot of instances.keys()) this.setPieceColors(slot, colors) },

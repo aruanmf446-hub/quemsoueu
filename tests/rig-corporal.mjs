@@ -10,9 +10,9 @@ import {defaultLook,headOpts,buildLook,attachLook} from '../src/look.js';
 import {PRESETS,PRESET_ORDER} from '../src/presets.js';
 globalThis.document={createElement:()=>({getContext:()=>new Proxy({},{get:(_,k)=>k==='createLinearGradient'?()=>({addColorStop(){}}):()=>{}})})};
 const strainCache=new WeakMap();
-function bodyStrain(mesh){
+function bodyStrain(mesh,originalIndex=null){
  const g=mesh.geometry,p=g.attributes.position;let cache=strainCache.get(g);
- if(!cache){const edges=[],ix=g.index;for(let i=0;i<ix.count;i+=3)for(let j=0;j<3;j++){const a=ix.getX(i+j),b=ix.getX(i+(j+1)%3),d=Math.hypot(p.getX(a)-p.getX(b),p.getY(a)-p.getY(b),p.getZ(a)-p.getZ(b));if(d>=.002)edges.push(a,b,d)}cache={edges,posed:new Float32Array(p.count*3)};strainCache.set(g,cache)}
+ if(!cache){const edges=[],ix=originalIndex||g.index;for(let i=0;i<ix.count;i+=3)for(let j=0;j<3;j++){const a=ix.getX(i+j),b=ix.getX(i+(j+1)%3),d=Math.hypot(p.getX(a)-p.getX(b),p.getY(a)-p.getY(b),p.getZ(a)-p.getZ(b));if(d>=.002)edges.push(a,b,d)}cache={edges,posed:new Float32Array(p.count*3)};strainCache.set(g,cache)}
  const v=new THREE.Vector3(),posed=cache.posed;for(let i=0;i<p.count;i++)mesh.getVertexPosition(i,v).toArray(posed,i*3);let max=0;
  for(let i=0;i<cache.edges.length;i+=3){const a=cache.edges[i]*3,b=cache.edges[i+1]*3;max=Math.max(max,Math.hypot(posed[a]-posed[b],posed[a+1]-posed[b+1],posed[a+2]-posed[b+2])/cache.edges[i+2])}return max;
 }
@@ -63,14 +63,16 @@ for(const id of process.env.RIG_IDS?.split(',')||PRESET_ORDER){
   for(const motion of Object.keys(MOTIONS)){
    rig.play(motion);rig.seek(MOTIONS[motion].duration*.37);h.root.updateMatrixWorld(true);rig.skeleton.update();
    const strainTimes=process.env.RIG_DENSE==='1'?Array.from({length:Math.round(MOTIONS[motion].duration*8)+1},(_,i)=>i/8):[MOTIONS[motion].duration*.37,.25,.75,...(motion==='victory'?[.85,1.65,4.15]:[])];
-   if(h.body||h.fit?.companion)for(const time of strainTimes){rig.seek(time);const strain=bodyStrain(rig.meshes[0]);maxBodyStrain=Math.max(maxBodyStrain,strain);if(strain>=6)strainFailures.push({id,motion,time,strain})}
+   if(h.body||h.fit?.companion)for(const time of strainTimes){rig.seek(time);const strain=bodyStrain(rig.meshes[0],h.body?.geo.index);maxBodyStrain=Math.max(maxBodyStrain,strain);if(strain>=6)strainFailures.push({id,motion,time,strain})}
 
    for(let k=0;k<rig.meshes.length;k++){const m=rig.meshes[k];for(const {i,p}of originals[k].points){const v=m.getVertexPosition(i,new THREE.Vector3()).applyMatrix4(m.matrixWorld);assert(v.toArray().every(Number.isFinite),id+': vértice inválido');assert(v.distanceTo(p)<rig.height*2,id+': deformação explodiu');if(v.distanceTo(p)>.005)moved++}}
   }
   if(rig.meshes.length)assert(moved>0,id+': corpo não se move');
   rig.play('dance_floss');rig.update(MOTIONS.dance_floss.duration+.25);assert(Math.abs(rig.state().time-.25)<1e-8,id+': ciclo não reiniciou');rig.play('defeat');rig.update(10);assert.equal(rig.state().playing,false);assert.equal(rig.state().time,MOTIONS.defeat.duration);
   const clips=rig.makeClips();assert.equal(clips.length,5);
-  for(const clip of clips){assert(clip.tracks.length>=BODY_BONES.length);assert(clip.tracks.every(t=>Array.from(t.values).every(Number.isFinite)));const signature=JSON.stringify(clip.tracks.filter(t=>t.name.endsWith('.quaternion')&&!/Rig_(UpperArm|LowerArm|Hand|UpperLeg|LowerLeg|Foot|Toe)_/.test(t.name)).map(t=>[t.name,Array.from(t.values)]));const key=rig.profile+clip.name;if(reference.has(key))assert.equal(signature,reference.get(key),id+': coreografia divergente');else reference.set(key,signature)}
+  // Braços/pernas adaptam medidas, e barras resolvem contato com cada roupa.
+  // A captura compartilhada do tronco e da cabeça continua idêntica.
+  for(const clip of clips){assert(clip.tracks.length>=BODY_BONES.length);assert(clip.tracks.every(t=>Array.from(t.values).every(Number.isFinite)));const signature=JSON.stringify(clip.tracks.filter(t=>t.name.endsWith('.quaternion')&&!/Rig_(UpperArm|LowerArm|Hand|UpperLeg|LowerLeg|Foot|Toe|Drape)_/.test(t.name)).map(t=>[t.name,Array.from(t.values)]));const key=rig.profile+clip.name;if(reference.has(key))assert.equal(signature,reference.get(key),id+': coreografia divergente');else reference.set(key,signature)}
   rig.stop();h.root.updateMatrixWorld(true);rig.skeleton.update();for(let k=0;k<rig.meshes.length;k++)for(const {i,p}of originals[k].points)assert(rig.meshes[k].getVertexPosition(i,new THREE.Vector3()).applyMatrix4(rig.meshes[k].matrixWorld).distanceTo(p)<2e-5,id+': parar não restaurou');
   const profile=rig.profile,meshes=rig.meshes.length;rig.dispose();rig=null;assert.equal(h.root.getObjectByName('Esqueleto_Corporal'),undefined);for(const {mesh}of originals)assert(mesh.parent,id+': malha não restaurada');reports.push({id,profile,meshes,moved,maxBodyStrain});console.log('OK',id,profile,meshes,'estiramento',maxBodyStrain.toFixed(3));
  }finally{rig?.dispose();clothes?.dispose();visual?.dispose();h.body?.geo.dispose();h.dispose()}

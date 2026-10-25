@@ -1,6 +1,6 @@
 // Navegação do ateliê: uma categoria e uma decisão por vez.
 import {PRESETS} from './presets.js';
-import {PreviewCatalog} from './previews.js';
+import {PreviewCatalog} from './previews.js?v=altura-roupas-1';
 
 export function mountEditor(api) {
   const el=id=>document.getElementById(id),make=(tag,cls,text)=>{const n=document.createElement(tag);n.className=cls;if(text)n.textContent=text;return n};
@@ -21,7 +21,7 @@ export function mountEditor(api) {
   for(const child of [...sidebar.children])if(!groups.includes(child)&&child!==heading)child.hidden=true;
   const configs={
     character:{label:'Personagem',group:'gPerson',subs:api.families.map(f=>({id:f,label:f}))},
-    body:{label:'Corpo',group:'gBody',subs:[{id:'type',label:'Tipo físico'},{id:'fine',label:'Ajuste de peso e músculo'}]},
+    body:{label:'Corpo',group:'gBody',subs:[{id:'height',label:'Altura'},{id:'type',label:'Tipo físico'},{id:'fine',label:'Ajuste de peso e músculo'}]},
     appearance:{label:'Aparência',subs:[{id:'skin',label:'Pele',group:'gSkin'},{id:'hair',label:'Cabelo',group:'gHair'},{id:'beard',label:'Barba',group:'gBeard'}]},
     clothes:{label:'Roupas',group:'gClothes',subs:[{id:'sets',label:'Conjuntos completos'},...Object.entries(api.slots).map(([id,label])=>({id,label}))]},
     accessories:{label:'Acessórios',group:'gAcc',subs:api.accessories.map(s=>({id:s.id,label:s.label}))},
@@ -52,7 +52,7 @@ export function mountEditor(api) {
     const conf=configs[cat],next=section||remembered[cat]||conf.subs[0].id;if(!conf.subs.some(s=>s.id===next))return false;
     const enteringBody=cat==='body'&&category!=='body';
     category=cat;sub=next;remembered[cat]=sub;
-    if(enteringBody)api.previewBody();
+    if(cat==='body'&&sub==='height')api.previewHeight();else if(enteringBody)api.previewBody();
     if(cat==='clothes'&&sub!=='sets')api.selectSlot(sub);
     sidebar.scrollTop=0;previews.cancelView();api.refresh();api.onLayout();return true;
   }
@@ -60,14 +60,15 @@ export function mountEditor(api) {
   function refresh(){
     const conf=configs[category],section=conf.subs.find(s=>s.id===sub);
     title.textContent=section.label;trail.textContent=conf.label+' / '+section.label;
-    hint.textContent=category==='motions'?'Escolha o movimento e troque de personagem para comparar.':sub==='fine'?'Arraste para ajustar. As mudanças aparecem no personagem.':sub==='skin'?'Escolha uma cor. Veja o resultado no personagem ao lado.':'Compare as prévias. Clique para aplicar.';
+    hint.textContent=category==='motions'?'Escolha o movimento e troque de personagem para comparar.':['fine','height'].includes(sub)?'Arraste para ajustar. As mudanças aparecem no personagem.':sub==='skin'?'Escolha uma cor. Veja o resultado no personagem ao lado.':'Compare as prévias. Clique para aplicar.';
     nav.replaceChildren(make('div','nav-caption',conf.label));
     for(const s of conf.subs){const b=make('button',s.id===sub?'selected':'',s.label);b.dataset.section=s.id;b.setAttribute('aria-current',s.id===sub?'page':'false');b.onclick=()=>select(category,s.id);nav.append(b)}
     tabs.querySelectorAll('button').forEach(b=>{const active=b.dataset.category===category;b.classList.toggle('selected',active);b.setAttribute('aria-pressed',active)});
     const visible=section.group||conf.group;groups.forEach(g=>g.hidden=g.id!==visible);
     for(const b of el('presets').children){b.hidden=b.classList.contains('fam')||b.dataset.family!==sub;if(b.dataset.preset)b.setAttribute('aria-pressed',b.classList.contains('active'))}
     el('bodyBuilds').hidden=category!=='body'||sub!=='type';
-    el('gBody').querySelectorAll('.ctrl').forEach(n=>n.hidden=sub!=='fine');
+    el('gBody').querySelectorAll('.ctrl').forEach(n=>n.hidden=n.dataset.bodyControl==='height'?sub!=='height':sub!=='fine');
+    el('heightHint').hidden=sub!=='height';
     el('bodyHint').hidden=sub!=='fine';
     el('outfits').hidden=sub!=='sets';el('clothSlots').hidden=true;
     el('clothSlots').previousElementSibling.hidden=true;
@@ -79,7 +80,8 @@ export function mountEditor(api) {
     for(const n of el('poseCtrls').children){const id=n.querySelector('input').id.slice(2),section=id.startsWith('brow')?'brows':['lookX','lookY','blinkL','blinkR','wide','squint'].includes(id)?'eyes':'mouth';n.hidden=section!==sub}
     const context=api.getContext(),robot=context.id==='robot_ball',vegetal=PRESETS[context.id].family==='Vegetais';
     const companion=PRESETS[context.id].kind==='companion';
-    const unsupported=companion&&(['body','clothes'].includes(category)||category==='appearance'&&['hair','beard'].includes(sub))||robot&&!['character','expressions','motions'].includes(category)||vegetal&&category==='appearance'&&sub==='beard';
+    const heightAllowed=category==='body'&&sub==='height';
+    const unsupported=companion&&(!heightAllowed&&['body','clothes'].includes(category)||category==='appearance'&&['hair','beard'].includes(sub))||robot&&!heightAllowed&&!['character','expressions','motions'].includes(category)||vegetal&&category==='appearance'&&sub==='beard';
     unavailable.hidden=!unsupported;unavailable.textContent=companion?'Este companheiro tem uma malha própria. Troque a pelagem em Aparência → Pele, o equipamento em Acessórios → Cabeça e as expressões em Expressões.':robot?'O robô usa o próprio casco. Personalize suas expressões ou escolha outro personagem.':'Este personagem mantém o bigode e os detalhes do seu modelo original.';
     if(unsupported)el(visible).hidden=true;
     document.querySelector('.brand h1').textContent=document.querySelector(`[data-preset="${context.id}"] b`)?.textContent||'Seu personagem';

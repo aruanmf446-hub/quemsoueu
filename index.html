@@ -52,8 +52,10 @@ button:hover{background:#f6eaee}.preset.active:hover{background:#4a3642}
   <section class="group" id="gHair"><h3>Cabelo</h3><div class="body"><div class="cards" id="hairs"></div><div class="sub">Cor do cabelo</div><div class="sws" id="hairColors"></div></div></section>
   <section class="group" id="gBeard"><h3>Barba</h3><div class="body"><div class="chips" id="beards"></div></div></section>
   <section class="group" id="gBody"><h3>Corpo</h3><div class="body">
-    <div class="ctrl"><label for="bodyWeight">Peso <output id="bodyWeightValue">Padrão</output></label><input id="bodyWeight" type="range" min="-1" max="1" step=".05" value="0" aria-label="Peso: magro a gordo"/><div class="sub"><span>Magro</span><span>Gordo</span></div></div>
-    <div class="ctrl"><label for="bodyMuscle">Músculo <output id="bodyMuscleValue">0%</output></label><input id="bodyMuscle" type="range" min="0" max="1" step=".05" value="0"/></div>
+    <div class="ctrl" data-body-control="height"><label for="bodyHeight">Altura <output id="bodyHeightValue">100%</output></label><input id="bodyHeight" type="range" min=".6" max="1.4" step=".05" value="1" aria-label="Altura do personagem"/><div class="sub"><span>Mais baixo</span><span>Mais alto</span></div></div>
+    <p class="muted" id="heightHint">Ajuste a altura mantendo as proporções.</p>
+    <div class="ctrl" data-body-control="build"><label for="bodyWeight">Peso <output id="bodyWeightValue">Padrão</output></label><input id="bodyWeight" type="range" min="-1" max="1" step=".05" value="0" aria-label="Peso: magro a gordo"/><div class="sub"><span>Magro</span><span>Gordo</span></div></div>
+    <div class="ctrl" data-body-control="build"><label for="bodyMuscle">Músculo <output id="bodyMuscleValue">0%</output></label><input id="bodyMuscle" type="range" min="0" max="1" step=".05" value="0"/></div>
     <div class="chips" id="bodyBuilds"></div>
     <p class="muted" id="bodyFeedback" role="status" aria-live="polite"></p>
   </div><p class="muted" id="bodyHint">Ajuste peso e músculo ou escolha um tipo físico.</p></section>
@@ -70,19 +72,20 @@ button:hover{background:#f6eaee}.preset.active:hover{background:#4a3642}
 </div>
 <script type="module">
 import * as THREE from 'three';
-import {mountEditor} from './src/editor.js';
+import {mountEditor} from './src/editor.js?v=altura-roupas-1';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {GLTFExporter} from 'three/addons/exporters/GLTFExporter.js';
 import {RoomEnvironment} from 'three/addons/environments/RoomEnvironment.js';
 import {buildHead,BEARD_STYLES} from './src/head.js';
 import {PRESETS,PRESET_ORDER,FAMILY_ORDER} from './src/presets.js';
 import {EXPRESSIONS,NEUTRAL,talkPose} from './src/rig.js';
-import {buildBodyRig} from './src/body-rig.js?v=pernas-livres-1';
+import {buildBodyRig} from './src/body-rig.js?v=altura-roupas-1';
 import {MOTIONS} from './src/motions.js?v=mocap-1';
-import {buildBody,headScale,bodyViewHeight,normalizeBuild,BODIES} from './src/body.js?v=pesos-continuos-1';
-import {buildClothes,OUTFITS,CLOTH_COLORS,CLOTH_CHANNELS,outfitColors,CLOTH_SLOTS,pieceOptions,pieceSelection} from './src/clothes.js?v=pernas-livres-1';
+import {buildBody,headScale,bodyViewHeight,normalizeBuild,BODIES} from './src/body.js?v=altura-roupas-1';
+import {buildClothes,OUTFITS,CLOTH_COLORS,CLOTH_CHANNELS,outfitColors,CLOTH_SLOTS,pieceOptions,pieceSelection} from './src/clothes.js?v=altura-roupas-1';
 import {heroStudio} from './src/hero-studio.js';
-import {defaultLook,buildLook,attachLook,headOpts,skinPalette,HAIR_STYLES,HAIR_COLORS,ACCESSORIES,ACC_SLOTS,ACC_COLORS} from './src/look.js';
+import {applyCharacterHeight,normalizeHeight,localCharacterBounds} from './src/character-height.js';
+import {defaultLook,buildLook,attachLook,headOpts,skinPalette,HAIR_STYLES,HAIR_COLORS,ACCESSORIES,ACC_SLOTS,ACC_COLORS} from './src/look.js?v=altura-roupas-1';
 const host=document.getElementById('stage'),scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(30,1,.05,100);
 const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});
 renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.outputColorSpace=THREE.SRGBColorSpace;
@@ -94,7 +97,13 @@ const TARGET=new THREE.Vector3(0,-.2,0);
 let frame={ty:-.2,dist:7.4};
 function aim(x,y,z){const k=frame.dist/7.4;camera.position.set(x*k,frame.ty+(y+.2)*k,z*k);TARGET.set(0,frame.ty,0);orbit.target.copy(TARGET);orbit.update()}
 const VIEWS={front:[0,-.05,7.4],side:[7.4,-.05,.02],three:[3.4,.8,6.5]};
-function frameBody(){if(current?.fit?.companion){const box=new THREE.Box3().setFromObject(current.root||current.group),size=box.getSize(new THREE.Vector3());frame={ty:box.getCenter(new THREE.Vector3()).y,dist:Math.max(7.4,Math.max(size.y,size.x/camera.aspect,size.z)*2.15)};return}const b=current&&current.body;if(b){const box=clothesObj?new THREE.Box3().setFromObject(clothesObj.group):null,top=Math.max(new THREE.Box3().setFromObject(current.group).max.y+.15,b.pivot.y+b.hs*(current.fit.top-b.pivot.y)+.1,box&&!box.isEmpty()?box.max.y:-Infinity),bottom=Math.min(b.ySole,box&&!box.isEmpty()?box.min.y:Infinity);const height=bodyViewHeight(presetId,top-bottom);frame={ty:bottom+height/2,dist:Math.max(9,height*2.05)}}else frame={ty:-.2,dist:7.4}}
+function frameBody(){
+ if(!current?.root){frame={ty:-.2,dist:7.4};return}
+ const local=current.bodyRig?.bounds||localCharacterBounds(current.root),box=local.clone().applyMatrix4(current.root.matrixWorld),size=box.getSize(new THREE.Vector3()),scale=normalizeHeight(getLook().height),heightTab=editor?.state().category==='body'&&editor.state().sub==='height';
+ const reference=bodyViewHeight(presetId,size.y/scale),height=heightTab?reference*1.45:Math.max(reference,size.y),width=size.x/(heightTab?scale:1);
+ frame={ty:box.min.y+height/2,dist:Math.max(current.body?9:7.4,Math.max(height,width/camera.aspect,size.z)*2.05)};
+}
+function frameFace(){const scale=current?.group.getWorldScale(new THREE.Vector3()).x||1,center=current?.group.localToWorld(new THREE.Vector3(0,-.2,0));frame={ty:center?.y??-.2,dist:7.4*scale};aim(...VIEWS.three)}
 aim(...VIEWS.three);
 
 renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFShadowMap;
@@ -182,13 +191,14 @@ function setBuild(value,preview=false){
   },0)));
 }
 function setLook(value){
-  const look=getLook(),bodyKeys=new Set(['build','outfit','clothColors','pieces','pieceColors']);
+  const look=getLook(),bodyKeys=new Set(['height','build','outfit','clothColors','pieces','pieceColors']);
   const visualChanged=Object.keys(value).some(key=>!bodyKeys.has(key)&&JSON.stringify(value[key])!==JSON.stringify(look[key]));
   const build=normalizeBuild('build' in value?{...look.build,...value.build}:look.build);
-  Object.assign(look,value);look.build=build;
+  Object.assign(look,value);look.build=build;look.height=normalizeHeight(look.height);
   if(visualChanged)return rebuildHead();
   // Um visual completo obtido por getLook também pode trocar apenas o tipo físico.
   if('build' in value)return setBuild(look.build);
+  if('height' in value&&!['outfit','clothColors','pieces','pieceColors'].some(k=>k in value))return setHeight(value.height);
   rebuildClothes();refreshUI();
 }
 const BUILD_PRESETS={Magro:{weight:-1,muscle:0},Padrão:{weight:0,muscle:0},Gordo:{weight:1,muscle:0},Musculoso:{weight:0,muscle:1}};
@@ -198,7 +208,7 @@ function buildLabel(build){
 }
 // O resultado deve aparecer no corpo inteiro mesmo depois de editar o rosto ou ocultar o corpo.
 function frameBodyPreview(){
-  if(!current.body)return;
+  if(!current?.root)return;
   const direction=camera.position.clone().sub(orbit.target).normalize();frameBody();
   TARGET.set(0,frame.ty,0);orbit.target.copy(TARGET);camera.position.copy(TARGET).addScaledVector(direction,frame.dist);orbit.update();
 }
@@ -209,10 +219,11 @@ function previewBody(){
 }
 function refreshBuildUI(){
   const build=normalizeBuild(getLook().build),robot=['robot','companion'].includes(PRESETS[presetId].kind);
-  el('gBody').classList.toggle('off',robot);
+  el('gBody').classList.toggle('off',robot&&editor?.state().sub!=='height');
   for(const [id,key] of [['bodyWeight','weight'],['bodyMuscle','muscle']]){el(id).value=build[key];el(id).disabled=robot}
   el('bodyWeightValue').textContent=build.weight===0?'Padrão':(build.weight>0?'+':'')+Math.round(build.weight*100)+'%';
   el('bodyMuscleValue').textContent=Math.round(build.muscle*100)+'%';
+  el('bodyHeight').value=normalizeHeight(getLook().height);el('bodyHeightValue').textContent=Math.round(normalizeHeight(getLook().height)*100)+'%';
   el('bodyHint').textContent=robot?'Este personagem usa uma malha própria, sem ajuste de peso.':'Ajuste peso e músculo ou escolha um tipo físico.';
   // Preserva os cartões durante o toque e o arraste; só o estado de seleção muda.
   const cards=el('bodyBuilds');
@@ -235,6 +246,9 @@ for(const [id,key] of [['bodyWeight','weight'],['bodyMuscle','muscle']]){
   // Confirma o valor final também nos controles por toque, teclado ou acessibilidade.
   input.onchange=event=>update(event,true);
 }
+function setHeight(value){getLook().height=normalizeHeight(value);syncBody();frameBodyPreview();refreshBuildUI();return getLook().height}
+el('bodyHeight').oninput=e=>setHeight(e.target.value);el('bodyHeight').onchange=e=>setHeight(e.target.value);
+function previewHeight(){if(!el('showBody').checked&&PRESETS[presetId].kind!=='robot'){el('showBody').checked=true;return busy('Montando corpo…',()=>{rebuildHead();frameBodyPreview()})}frameBodyPreview()}
 function chooseOutfit(id){
   if(!OUTFITS[id])return;
   const look=getLook();look.outfit=id;look.clothColors=outfitColors(id);look.pieces={};look.pieceColors={};
@@ -266,7 +280,12 @@ function addBody(h,cell){
   const skin=h.group.getObjectByName('Head_Skin'),m=new THREE.Mesh(b.geo,b.vegSkin?new THREE.MeshPhysicalMaterial({name:'Skin_Body',vertexColors:true,roughness:.5,clearcoat:.25,clearcoatRoughness:.4,sheen:.3,sheenColor:new THREE.Color('#ffffff').multiplyScalar(.3)}):skin.material);m.name='Body';m.userData.build={...b.build};m.castShadow=true;m.receiveShadow=true;
   h.root.add(m);h.body={...b,mesh:m};return h.body;
 }
-function syncBody(){if(current?.fit?.companion){ground.visible=el('showBody').checked;ground.position.y=(current.fit.ySole??-2.28);frameBody();return}const b=current&&current.body;ground.visible=!!b;if(b){const box=new THREE.Box3().setFromObject(clothesObj.group);ground.position.y=Math.min(b.ySole,box.isEmpty()?b.ySole:box.min.y)-.002}frameBody()}
+function syncHeight(h=current,look=getLook()){
+ if(!h?.root)return;
+ const sole=h.body?.ySole??h.fit?.ySole??(h.heightFloor??=localCharacterBounds(h.root).min.y);
+ applyCharacterHeight(h.root,h.params.id||presetId,look.height,sole);
+}
+function syncBody(){syncHeight();if(current?.fit?.companion){ground.visible=el('showBody').checked;ground.position.y=(current.fit.ySole??-2.28);frameBody();return}const b=current&&current.body;ground.visible=!!b;if(b){const box=new THREE.Box3().setFromObject(clothesObj.group);ground.position.y=Math.min(b.ySole,box.isEmpty()?b.ySole:box.min.y)-.002}frameBody()}
 const hasFacialHair=()=>{const P=current&&current.params;return !!(P&&(P.beardVol||P.stache||P.goatee||P.beard))};
 
 // ---------- esqueleto e movimentos compartilhados ----------
@@ -319,7 +338,7 @@ function setPreset(id){
 }
 document.getElementById('front').onclick=()=>aim(...VIEWS.front);
 document.getElementById('bodyView').onclick=()=>{if(!el('showBody').checked){el('showBody').checked=true;busy('Montando…',()=>{rebuildHead();aim(...VIEWS.three)})}else{frameBody();aim(...VIEWS.three)}};
-document.getElementById('faceView').onclick=()=>{frame={ty:-.2,dist:7.4};aim(...VIEWS.three)};
+document.getElementById('faceView').onclick=frameFace;
 document.getElementById('showBody').onchange=()=>busy('Montando…',()=>{rebuildHead();aim(...VIEWS.three)});
 document.getElementById('side').onclick=()=>aim(...VIEWS.side);
 document.getElementById('threequarters').onclick=()=>aim(...VIEWS.three);
@@ -389,7 +408,7 @@ function refreshUI(){
 function exportGLB(){const look=getLook(),h=wrap(buildHead(presetId,{},{quality:.6,export:true,...headOpts(look,PRESETS[presetId])}));const withBody=addBody(h,.036);const L=buildLook(h.fit,look,withBody?h.body.sdfHead:null);attachLook(h,L);
   const clothes=buildClothes(h.body,look);h.root.add(clothes.group);
   const animations=h.rig&&h.rig.makeClips?h.rig.makeClips():[];if(h.rig)h.rig.apply({});
-  const bodyRig=buildBodyRig(h,clothes);animations.push(...bodyRig.makeClips());bodyRig.stop();
+  syncHeight(h,look);const bodyRig=buildBodyRig(h,clothes);animations.push(...bodyRig.makeClips());bodyRig.stop();
   return new GLTFExporter().parseAsync(h.root,{binary:true,onlyVisible:true,animations}).finally(()=>{bodyRig.dispose();if(h.body)h.body.geo.dispose();h.dispose();L.dispose();clothes.dispose()})}
 document.getElementById('download').onclick=async e=>{
   const btn=e.currentTarget,label=btn.textContent;btn.disabled=true;btn.textContent='Exportando…';
@@ -397,10 +416,10 @@ document.getElementById('download').onclick=async e=>{
   catch(err){alert('Falha na exportação: '+(err&&err.message||err))}
   finally{btn.disabled=false;btn.textContent=label}
 };
-window.__atelie={bodyRig:()=>current?.bodyRig,motions:MOTIONS,playMotion,pauseMotion:()=>{current.bodyRig?.pause();motionPlaying=false;refreshMotionUI()},stopMotion,seekMotion:t=>current.bodyRig?.seek(t),root:()=>current.root,savedLook:id=>structuredClone(looks[id]||defaultLook(id)),clothes:()=>clothesObj,setPiece:choosePiece,setPieceColors,pieceOptions:slot=>pieceOptions(current.body,slot),setOutfit:chooseOutfit,setClothColors:colors=>{Object.assign(getLook().clothColors,colors);for(const piece of Object.values(getLook().pieceColors||{}))Object.assign(piece,colors);clothesObj.setColors(getLook().clothColors);refreshUI()},frame:()=>frame,body:()=>current.body,getLook,setBuild,bodyTiming:()=>bodyTiming,setLook,rebuildLook,lookObj:()=>lookObj,setExpression,setPose:p=>{pose={...NEUTRAL,...p};exprName=null;syncPoseUI();applyPose()},stopAuto:()=>{document.getElementById('autoBlink').checked=false;document.getElementById('talk').checked=false},group:()=>current.group,timings:()=>current.group.userData.timings,setPreset,aim,VIEWS,camera,orbit,clay:on=>current.group.traverse(o=>{if(o.isMesh&&o.material.vertexColors!==undefined&&o.material.name==='Skin'){o.material.vertexColors=!on;o.material.sheen=on?0:.6;if(on)o.material.color.set('#d8d4cf');else o.material.color.set('#ffffff');o.material.needsUpdate=true}}),exportGLB};
+window.__atelie={bodyRig:()=>current?.bodyRig,motions:MOTIONS,playMotion,pauseMotion:()=>{current.bodyRig?.pause();motionPlaying=false;refreshMotionUI()},stopMotion,seekMotion:t=>current.bodyRig?.seek(t),root:()=>current.root,savedLook:id=>structuredClone(looks[id]||defaultLook(id)),clothes:()=>clothesObj,setPiece:choosePiece,setPieceColors,pieceOptions:slot=>pieceOptions(current.body,slot),setOutfit:chooseOutfit,setClothColors:colors=>{Object.assign(getLook().clothColors,colors);for(const piece of Object.values(getLook().pieceColors||{}))Object.assign(piece,colors);clothesObj.setColors(getLook().clothColors);refreshUI()},frame:()=>frame,body:()=>current.body,getLook,setBuild,setHeight,bodyTiming:()=>bodyTiming,setLook,rebuildLook,lookObj:()=>lookObj,setExpression,setPose:p=>{pose={...NEUTRAL,...p};exprName=null;syncPoseUI();applyPose()},stopAuto:()=>{document.getElementById('autoBlink').checked=false;document.getElementById('talk').checked=false},group:()=>current.group,timings:()=>current.group.userData.timings,setPreset,aim,VIEWS,camera,orbit,clay:on=>current.group.traverse(o=>{if(o.isMesh&&o.material.vertexColors!==undefined&&o.material.name==='Skin'){o.material.vertexColors=!on;o.material.sheen=on?0:.6;if(on)o.material.color.set('#d8d4cf');else o.material.color.set('#ffffff');o.material.needsUpdate=true}}),exportGLB};
 
 rebuildHead();aim(...VIEWS.three);statusEl.textContent=PRESETS[presetId].label;
-editor=mountEditor({families:FAMILY_ORDER,slots:CLOTH_SLOTS,accessories:ACC_SLOTS,getContext:()=>({id:presetId,look:structuredClone(getLook())}),selectSlot:slot=>{activeClothSlot=slot},refresh:refreshUI,previewBody,onLayout:()=>resize()});
+editor=mountEditor({families:FAMILY_ORDER,slots:CLOTH_SLOTS,accessories:ACC_SLOTS,getContext:()=>({id:presetId,look:structuredClone(getLook())}),selectSlot:slot=>{activeClothSlot=slot},refresh:refreshUI,previewBody,previewHeight,onLayout:()=>resize()});
 refreshUI();
 window.__atelie.editor=editor;
 // Links de teste abrem a mesma produção já no personagem e movimento escolhidos.

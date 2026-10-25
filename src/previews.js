@@ -2,7 +2,7 @@
 import {FRONTIER_CHARACTERS,FRONTIER_COMPANIONS} from './frontier.js';
 import {FOREST_CHARACTERS} from './forest.js';
 import {previewChoice,previewSize} from './preview-spec.js';
-const VERSION='menu-v28-acabamento-cabelo';
+const VERSION='menu-v29-altura-roupas';
 const FRONTIER=new Set([...FRONTIER_CHARACTERS.map(c=>c.id),...FRONTIER_COMPANIONS]);
 const FOREST=new Set(FOREST_CHARACTERS.map(c=>c.id));
 const LUNAR=new Set(['nana_explorer','moon_guardian','nico_inventor','ruby_sorceress','paysandu_wolf','ruby_raven']);
@@ -64,7 +64,7 @@ export class PreviewCatalog {
     // Não há compilação, arquivos gerados nem dependências além do Three.js já usado pelo site.
     const bootstrap=`onmessage=async({data})=>{
       const imports=data.imports,loaded=new Map(),urls=[];
-      function resolve(s,base){if(imports[s])return imports[s];for(const k of Object.keys(imports))if(k.endsWith('/')&&s.startsWith(k))return imports[k]+s.slice(k.length);return new URL(s,base).href}
+      function resolve(s,base){if(imports[s])return imports[s];for(const k of Object.keys(imports))if(k.endsWith('/')&&s.startsWith(k))return imports[k]+s.slice(k.length);const url=new URL(s,base);if(url.origin===new URL(data.entry).origin)url.searchParams.set('v',data.version);return url.href}
       async function load(url){
         if(url.includes('/build/three.'))return url;
         if(loaded.has(url))return loaded.get(url);
@@ -87,7 +87,7 @@ export class PreviewCatalog {
       this.pump();
     };
     const imports=JSON.parse(document.querySelector('script[type="importmap"]').textContent).imports;
-    this.worker.postMessage({entry:new URL('./preview-worker.js',import.meta.url).href,imports});
+    const entry=new URL('./preview-worker.js',import.meta.url);entry.searchParams.set('v',VERSION);this.worker.postMessage({entry:entry.href,imports,version:VERSION});
   }
   // Enquanto o jogador gira/aproxima o personagem, a fila espera; nenhum detalhe 3D é simplificado.
   hold(reason,enabled){

@@ -52,7 +52,7 @@ for(const c of FRONTIER_CHARACTERS)DEFAULT_LOOKS[c.id]={hair:c.hair,hairColor:'#
 for(const id of FRONTIER_COMPANIONS)DEFAULT_LOOKS[id]={hair:'none',acc:{head:id==='cowboy_on_fennec'?'fennec_rider':'fennec_saddle'},colors:{fabric:'#a83e2d',metal:'#c29b50',gem:'#d49432'}};
 export function defaultLook(presetId) {
   const P = PRESETS[presetId], d = DEFAULT_LOOKS[presetId] || { hair: 'none', acc: {} };
-  return { ...defaultClothes(presetId), build: { weight: 0, muscle: 0 }, skin: P.skin || null, hair: d.hair, hairColor: d.hairColor || '#2a1a12', beard: d.beard || 'default', acc: { ...d.acc }, colors: { ...C, ...(d.colors || {}) } };
+  return { ...defaultClothes(presetId), height:1, build: { weight: 0, muscle: 0 }, skin: P.skin || null, hair: d.hair, hairColor: d.hairColor || '#2a1a12', beard: d.beard || 'default', acc: { ...d.acc }, colors: { ...C, ...(d.colors || {}) } };
 }
 // barba acompanha o cabelo quando o personagem tem cabelo e barba de fios (anão, orc, rei…)
 export const headOpts = (look, P) => ({ skin: look.skin, beard: look.beard, hairColor: look.hairColor, beardFollowsHair: !P.fixedBeardColor && look.hair !== 'none' && P.family !== 'Vegetais' });

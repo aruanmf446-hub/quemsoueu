@@ -71,7 +71,7 @@ export const SDF_DEFAULT_COLORS = {
 };
 export const SDF_DEFAULT_OUTFIT = { flame_guardian:'flame_guardian', ...Object.fromEntries(FRONTIER_CHARACTERS.map(c=>[c.id,c.outfit])), ...Object.fromEntries(FOREST_CHARACTERS.map(c=>[c.id,c.outfit])), nana_explorer:'lunar_explorer', moon_guardian:'lunar_guardian', nico_inventor:'lunar_inventor', ruby_sorceress:'lunar_ruby', sad_clown: 'circus', orc_warrior: 'orc', dwarf_bard: 'adventurer', masculine_soft: 'desert', feminine_soft: 'mermaid_pearl', feminine_bold: 'mermaid_ruby' };
 
-export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot = null, coverage = []) {
+export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot = null, coverage = [], bodyMasks = []) {
   const J = body.joints, B = body.proportions, W = J.W, Y = J.Y, z0 = J.zCenter, Lb = J.Lb, bf = body.sdf, yN = J.yNeck;
   const legGap=J.mermaid?null:legClearance(body);
   const S = J.shoulder, E = J.elbow, Wr = J.wrist, H = J.hip, K = J.knee, A = J.ankle, ySole = J.ySole;
@@ -164,6 +164,7 @@ export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot 
     };
     const geo=piece(name, ch, f, { x: Math.max(W * Math.max(B.hip, B.waist) * 1.2 + .4 * W, Math.max(H.x, K.x) + .6 * W + (o.puff || 0) * 1.5), y0: yBot - .2, y1: yTop + .2, z0: zA - .3, z1: zB + .3 + (o.puff || 0) }, o.cell);
     if(geo)geo.userData.skinningMode='legs';
+    bodyMasks.push({slot:'lower',contains:(x,y,z)=>f(x,y,z)<-.018*W});
   }
   // bota/meia: pé + perna até a altura h (acima do tornozelo), cano largo no topo, sola
   function boots(name, ch, o) {
@@ -177,6 +178,7 @@ export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot 
       return d;
     };
     if(heroStyle)coverage.push({slot:'feet',contains:(x,y,z)=>Math.abs(x)<A.x+.9*W&&f(x,y,z)<-.02*W});
+    bodyMasks.push({slot:'feet',contains:(x,y,z)=>f(x,y,z)<-.025*W});
     piece(name, ch, f, { x: A.x + .9 * W, y0: ySole - .15, y1: yTop + .1, z0: A.z - .7 * W, z1: Math.max(A.z + 1.3 * W, zB) + .3 + (o.toe || 0) }, o.cell);
   }
   // faixa em volta do corpo (cinto, faixa, gola baixa)
@@ -338,14 +340,34 @@ export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot 
     const th = o.thick ?? .09 * W, hollow = !!o.hollow; // oco: só o vão entre (corpo + folga) e a parede interna do pano
     if(heroStyle&&o.mesh!==false){
       const region=(x,y,z)=>cut(x,y,z,-1e6)<-.02*W;
-      if(o.split!=null)for(const part of ['upper','lower'])coverage.push({slot:part,contains:(x,y,z)=>region(x,y,z)&&(part==='upper'?y>o.split+.02*W:y<o.split-.02*W)});
+      if(o.split!=null)for(const part of ['upper','lower'])coverage.push({slot:part,contains:(x,y,z)=>region(x,y,z)&&(part==='upper'?(y>o.split+.02*W||sl&&armSide(Math.abs(x),y)>.02*W&&y>sl.box.lo.y):(y<o.split-.02*W&&(!sl||armSide(Math.abs(x),y)<-.02*W||y<sl.box.lo.y)))});
       else coverage.push({slot,contains:region});
+    }
+    if(o.mesh!==false&&!['veil','glass','liquid'].includes(ch)){
+     const region=(x,y,z)=>cut(x,y,z,-1e6)<-.06*W&&solid(x,y,z)<-.008*W;
+     if(o.split!=null)for(const part of ['upper','lower'])bodyMasks.push({slot:part,contains:(x,y,z)=>region(x,y,z)&&(part==='upper'?(y>o.split+.04*W||sl&&armSide(Math.abs(x),y)>.04*W&&y>sl.box.lo.y):(y<o.split-.04*W&&(!sl||armSide(Math.abs(x),y)<-.04*W||y<sl.box.lo.y)))});
+     else bodyMasks.push({slot,contains:region});
     }
     const field = (x, y, z) => { const s = solid(x, y, z); let d = cut(x, y, z, s); if (hollow) d = Math.max(d, Math.min(-(s + th), bf(x, y, z) - t - .01)); if (o.over && armSide(Math.abs(x), y) < -.05 * W) d = Math.max(d, .012 - over(x, y, z)); return d };
     let geo = null;
     const pad = (o.env?.flare || 0) * (yTop - yBot) + (o.bell || 0) + .5;
     const bounds = { x: bx + pad, y0: heroStyle&&sl?Math.min(yBot-.1-(o.hemCurve||0),sl.box.lo.y-.05):yBot-.1-(o.hemCurve||0), y1:heroStyle&&sl?Math.max(yTop+.25,sl.box.hi.y+.05):yTop+.25, z0: zA - pad, z1: zB + pad };
-    if (o.split != null) { const sp = o.split; for (const part of ['upper', 'lower']) { const oo = o; activeSlot = part; const f2 = (x, y, z) => { const s = solid(x, y, z); let d = cut(x, y, z, s); d = Math.max(d, part === 'upper' ? sp - .012 - y : y - sp - .012); if (hollow) d = Math.max(d, Math.min(-(s + th), bf(x, y, z) - t - .01)); if (o.over && armSide(Math.abs(x), y) < -.05 * W) d = Math.max(d, .012 - over(x, y, z)); return d }; piece(name + (part === 'upper' ? '' : '_Saia'), ch, f2, part === 'upper' ? { ...bounds, y0: sp - .1 } : { ...bounds, y1: sp + .1 }, o.cell) } }
+    if (o.split != null) {
+     const sp=o.split;
+     for(const part of ['upper','lower']){
+      activeSlot=part;
+      const f2=(x,y,z)=>{
+       const s=solid(x,y,z);let d=cut(x,y,z,s);
+       // A divisão da cintura não pode separar o punho de uma manga longa
+       // e colocá-lo na saia: ele continua no mesmo slot do braço.
+       const sleeve=sl?Math.max(-armSide(Math.abs(x),y)-.02*W,sl.box.lo.y-.03*W-y):Infinity;
+       d=Math.max(d,part==='upper'?Math.min(sp-.012-y,sleeve):Math.max(y-sp-.012,-sleeve));
+       if(hollow)d=Math.max(d,Math.min(-(s+th),bf(x,y,z)-t-.01));
+       if(o.over&&armSide(Math.abs(x),y)<-.05*W)d=Math.max(d,.012-over(x,y,z));return d;
+      };
+      piece(name+(part==='upper'?'':'_Saia'),ch,f2,part==='upper'?{...bounds,y0:sl?Math.min(sp-.1,sl.box.lo.y-.05):sp-.1}:{...bounds,y1:sp+.1},o.cell);
+     }
+    }
     else { activeSlot = slot; if(o.mesh!==false)geo = piece(name, ch, field, bounds, o.cell, hollow?{solid,clip:(x,y,z)=>cut(x,y,z,-1e9),thickness:Math.min(.04*W,t*.6)}:null) }
     const outer = memoField((x, y, z) => cut(x, y, z, solid(x, y, z)));
     return { solid, outer, env, sl, geo, o };
@@ -429,6 +451,7 @@ export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot 
       return Math.max(d, y - yTop, yBot - y,legGap?legGap.field(x,y,z):-Infinity);
     };
     if(heroStyle)coverage.push({slot:'lower',contains:(x,y,z)=>f(x,y,z)<-.02*W});
+    bodyMasks.push({slot:'lower',contains:(x,y,z)=>f(x,y,z)<-.018*W});
     const geo=piece(name, ch, f, { x: Math.max(W*Math.max(B.hip,B.waist)*1.2+.4*W,H.x+rH+(o.puff||0)+.3*W), y0: yBot - .2, y1: yTop + .2, z0: zA - .3, z1: zB + .3 }, o.cell);
     if(geo)geo.userData.skinningMode='legs';
     return memoField(f);
@@ -760,6 +783,7 @@ export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot 
       return Math.max(bf(x, y, z) - t, y - yTop, yBot - y,legGap?legGap.field(x,y,z):-Infinity);
     };
     const bb = bodyBounds(A.y, Y(0) + .2, .7);
+    for(const slot of ['upper','lower'])bodyMasks.push({slot,contains:(x,y,z)=>suit(x,y,z)<-.04*W&&(slot==='upper'?y>Y(.405)+.04*W:y<Y(.395)-.04*W)});
     for(const slot of ['upper','lower']){activeSlot=slot;const geo=piece('Macacao','stripesV',(x,y,z)=>Math.max(suit(x,y,z),slot==='upper'?Y(.405)-y:y-Y(.395)),bb);if(geo&&slot==='lower')geo.userData.skinningMode='legs'} // listras verticais creme/vermelho/azul pelo material (bordas nítidas)
     // casaca aberta com abas até o joelho, mangas com punho franzido
     top('Casaca', 'fabric', { t: .1 * W, sleeve: 'wrist', bottom: .3, collar: -.05, open: .75, cell: cellBase, puff: .04 * W, loose: .12 * W });
