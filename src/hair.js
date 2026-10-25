@@ -45,6 +45,7 @@ HAIR_STYLES.forest_locks={...HAIR_STYLES.long_braids,label:'Mechas torcidas',sub
 HAIR_STYLES.court_waves={...HAIR_STYLES.long_wavy,label:'Ondas de corte',sub:'Cabelo longo em camadas onduladas',len:[5.0,5.6],endY:-2.7,wave:{a:.085,f:.85},layer:.075,faceFrame:3,w:.075,th:.032,maxStrip:.24};
 // Fluxo de escultura usado por cada penteado.
 HAIR_STYLES.forest_pixie.hero='pixie';
+HAIR_STYLES.archer_braid={label:'Trança da arqueira',sub:'Curto ondulado, franja solta e trança lateral',hero:'archer'};
 HAIR_STYLES.forest_locks.hero='locks';
 HAIR_STYLES.court_waves.hero='waves';
 HAIR_STYLES.lunar_curls.hero='curlup';

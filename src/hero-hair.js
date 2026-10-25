@@ -238,6 +238,41 @@ export function buildHeroHair(fit,style,color){
    lock(pts,.021,.018,{rope:true,tip:.92,root:.65});
   }
  }
+ function archerCrop(){
+  // Massas maiores na coroa e pontas livres na nuca: a touca fica coberta,
+  // sem transformar o corte curto em um capacete ou repetir o penteado da guarda.
+  for(let layer=0;layer<3;layer++)for(let j=0;j<19;j++){
+   const phi=.66+j*(2*PI-1.32)/18+layer*.10,edge=edgeTheta(phi),root=.27+layer*.28;
+   const a=scalp(root,phi-.36,.015),b=scalp(THREE.MathUtils.lerp(root,edge,.48),phi-.13,.22+.035*Math.sin(j*1.9+layer));
+   const c=scalp(edge-.11,phi+.06,.105),d=scalp(edge+.16+.065*Math.sin(j*2.2),phi+.19,.07);
+   d.addScaledVector(V(Math.sin(phi),-.28,Math.cos(phi)),.20+.045*Math.sin(j));
+   lock([a,b,c,d],(.105+.022*Math.sin(j*2.7+layer))*(layer===2?.82:1),.043,{phase:j*.9+layer,root:.18,tip:.66});
+  }
+  // Risca lateral alta, ondas em S e franja diagonal que termina acima dos olhos.
+  for(let j=0;j<11;j++){
+   const t=j/10,a=scalp(.30+.07*t,.49+.20*t,.012),b=scalp(.53,-.12-.52*t,.18+.035*Math.sin(j));
+   const c=outside(V(-.22-.37*t,brow+.49-.13*t,cz+.76),.11);
+   const d=outside(V(-.44-.27*t,brow+.27-.15*t,cz+.61),.045);
+   lock([a,b,c,d],.090+.018*Math.sin(j*1.4),.045,{phase:j*.7,root:.18,tip:.72});
+  }
+  for(let j=0;j<5;j++){
+   const a=scalp(.38,.52+j*.10,.01),b=scalp(.66,.75+j*.13,.20),c=scalp(1.08,1.05+j*.13,.15),d=scalp(1.58+j*.045,1.30+j*.12,.10);
+   lock([a,b,c,d],.078,.032,{phase:j+3,root:.2,tip:.70});
+  }
+  // Trança realmente entrelaçada; três cordões seguem a curva do crânio.
+  const guide=t=>scalp(.39+1.28*t,1.18+.48*t,.19);
+  for(let strand=0;strand<3;strand++){
+   const pts=[];for(let k=0;k<=84;k++){
+    const t=k/84,q=guide(t),n=gradient(q),tangent=guide(Math.min(1,t+.002)).sub(guide(Math.max(0,t-.002))).normalize(),side=tangent.cross(n).normalize(),a=t*PI*13+strand*2*PI/3;
+    q.addScaledVector(side,Math.sin(a)*.036).addScaledVector(n,Math.cos(a)*.028);pts.push(q);
+   }
+   lock(pts,.031,.025,{rope:true,phase:strand,root:.65,tip:.95,scalpRoot:false});
+  }
+  for(let j=0;j<7;j++){
+   const phi=-1.5+j*.45,a=scalp(.73,phi,.09),b=scalp(1.2,phi+.14,.17),d=scalp(edgeTheta(phi)+.25,phi+.27,.16);
+   lock([a,b,d],.036,.020,{phase:j,root:.22,tip:.65});
+  }
+ }
  function fringe({neat=false,pixie=false,curly=false,veteran=false}={}){
   // Une risca e franja por arcos longos: cada mecha tem ombro, torção e uma ponta livre.
   const n=neat?8:9;
@@ -279,6 +314,8 @@ export function buildHeroHair(fit,style,color){
   referenceCurls(P.id!=='nico_inventor');
  }else if(kind==='tousled'){
   if(style.id==='short_curls')inventorCurls();else heroForelock();
+ }else if(kind==='archer'){
+  archerCrop();
  }else if(kind==='pixie'){
   pixieSweep();
  }else if(kind==='veteran'||kind==='short'){
