@@ -1,0 +1,135 @@
+{
+  "fps": 24,
+  "size": 400,
+  "neutral": true,
+  "shadows": false,
+  "sourceHashes": {
+    "src/body-rig.js": "597a9c1d540a6e144566b4fc747f1142c7cf203d5dbf39bf77857ead728d59fb",
+    "src/motions.js": "1e6ce3b4620acc253bcd7fbe4c056cc5b27b337494bb7c2777aaca0b1cb2ff16",
+    "src/mocap-data.js": "df826a778d014a219fefbbeb7010caf522f529df4723632b6f334a96e9f859d7",
+    "src/mocap-player.js": "3b2a8c9a58e8d1ff8de10c936a6d363356739b7639d46f10501bd2b86aba1b04",
+    "src/direction-retarget.js": "6918739f8c24e2aa2fc70232bcd49eb505d60968081ed6a650e844859641ed1a"
+  },
+  "reports": [
+    {
+      "id": "nico_inventor",
+      "motion": "dance_floss",
+      "label": "Nico · Macarena",
+      "times": [
+        0.2,
+        1,
+        2,
+        3
+      ],
+      "duration": 4,
+      "fps": 24,
+      "frames": 96,
+      "camera": {
+        "position": [
+          5.96028675786544,
+          -1.7124777187422875,
+          12.886164100087488
+        ],
+        "target": [
+          0.027731977862421986,
+          -2.3481085880283263,
+          0.08879593179526324
+        ],
+        "bounds": {
+          "min": [
+            -1.4573434556838603,
+            -5.264421240316396,
+            -1.3777861372114542
+          ],
+          "max": [
+            1.5128074114087042,
+            0.5682040642597432,
+            1.5553780008019806
+          ]
+        }
+      },
+      "folder": "renders/mocap/nico_inventor-dance_floss",
+      "video": "nico_inventor-dance_floss.mp4"
+    },
+    {
+      "id": "nana_explorer",
+      "motion": "dance_shuffle",
+      "label": "Nana · Dança retrô",
+      "times": [
+        0,
+        1,
+        2,
+        4
+      ],
+      "duration": 5,
+      "fps": 24,
+      "frames": 120,
+      "camera": {
+        "position": [
+          10.538298432466515,
+          -2.726534591968444,
+          23.063484293879196
+        ],
+        "target": [
+          0.058934526136532384,
+          -3.8493235819323726,
+          0.4579992959388002
+        ],
+        "bounds": {
+          "min": [
+            -2.005355811690866,
+            -9.021311549590063,
+            -2.3070109387945132
+          ],
+          "max": [
+            2.1232248639639306,
+            1.3226643857253184,
+            3.2230095306721136
+          ]
+        }
+      },
+      "folder": "renders/mocap/nana_explorer-dance_shuffle",
+      "video": "nana_explorer-dance_shuffle.mp4"
+    },
+    {
+      "id": "bread_vigilante",
+      "motion": "victory",
+      "label": "Vigilante · Vitória",
+      "times": [
+        1,
+        2.5,
+        4,
+        5.5
+      ],
+      "duration": 6,
+      "fps": 24,
+      "frames": 144,
+      "camera": {
+        "position": [
+          12.97111049060982,
+          -3.1501742773015025,
+          27.201368556274367
+        ],
+        "target": [
+          0.2751765082174287,
+          -4.510452918272118,
+          -0.18557474860064538
+        ],
+        "bounds": {
+          "min": [
+            -4.507861270022309,
+            -10.481644796335612,
+            -3.6917042981983847
+          ],
+          "max": [
+            5.058214286457166,
+            1.4607389597913762,
+            3.320554800997094
+          ]
+        }
+      },
+      "folder": "renders/mocap/bread_vigilante-victory",
+      "video": "bread_vigilante-victory.mp4"
+    }
+  ]
+}

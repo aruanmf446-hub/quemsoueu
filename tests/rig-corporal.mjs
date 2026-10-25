@@ -30,6 +30,27 @@ for(const id of process.env.RIG_IDS?.split(',')||PRESET_ORDER){
   for(let k=0;k<rig.meshes.length;k++){
    const m=rig.meshes[k],g=m.geometry,w=g.attributes.skinWeight,ix=g.attributes.skinIndex;
    assert.equal(w.count,g.attributes.position.count);for(let i=0;i<w.count;i++){assert(Math.abs(w.getX(i)+w.getY(i)+w.getZ(i)+w.getW(i)-1)<1e-5);assert(ix.getX(i)<BODY_BONES.length&&ix.getY(i)<BODY_BONES.length);if(['lower','belt','feet'].includes(m.userData.slot))for(let k=0;k<4;k++)if(w.array[i*4+k]>1e-6)assert(!/Arm|Hand/.test(BODY_BONES[ix.array[i*4+k]]),id+'/'+m.name+': roupa inferior seguindo braço')}
+   if(m.userData.slot==='feet'&&h.body&&!h.body.joints.mermaid){
+    const p=g.attributes.position,j=h.body.joints,halfGap=Math.abs(j.ankle.x)*.5;
+    for(let i=0;i<p.count;i++){
+     const point=new THREE.Vector3().fromBufferAttribute(p,i).applyMatrix4(m.matrixWorld);if(Math.abs(point.x)<halfGap)continue;
+     const expected='Foot_'+(point.x>=0?'L':'R');let ownFoot=0;
+     for(let slot=0;slot<4;slot++){
+      const name=BODY_BONES[ix.array[i*4+slot]],weight=w.array[i*4+slot];if(name===expected)ownFoot+=weight;
+      if(weight>1e-6&&/_(L|R)$/.test(name))assert(name.endsWith(expected.slice(-2)),id+'/'+m.name+': calçado seguindo a perna oposta');
+     }
+     if(point.y<j.ankle.y-j.W*.02)assert(ownFoot>1-1e-5,id+'/'+m.name+': sola do calçado não acompanha o pé');
+    }
+   }
+   if(k===0&&h.body?.joints.shoulder){
+    const p=g.attributes.position,j=h.body.joints;let soleVertices=0;
+    for(let i=0;i<p.count;i++){
+     const sole=!j.mermaid&&p.getY(i)<j.ankle.y-j.W*.02,outer=Math.abs(p.getX(i))>Math.abs(j.shoulder.x)*.85,expected='Foot_'+(p.getX(i)>=0?'L':'R');
+     let footWeight=0;for(let slot=0;slot<4;slot++){const weight=w.array[i*4+slot],name=BODY_BONES[ix.array[i*4+slot]];if(outer&&weight>1e-6)assert(!['Head','Neck'].includes(name),id+': ombro seguindo cabeça/pescoço');if(name===expected)footWeight+=weight}
+     if(sole){assert(footWeight>1-1e-5,id+': sola da pele não acompanha o osso do calçado');soleVertices++}
+    }
+    if(!j.mermaid)assert(soleVertices>5,id+': sola não exercitada');
+   }
    for(const {i,p}of originals[k].points)assert(m.getVertexPosition(i,new THREE.Vector3()).applyMatrix4(m.matrixWorld).distanceTo(p)<2e-5,id+'/'+m.name+': mudou a pose A');
   }
   if(id==='sad_clown')for(const m of rig.meshes){const collar=/^Roupa_Gola/.test(m.name),bib=m.name==='Roupa_Macacao'&&m.userData.slot==='upper';if(collar||bib){const g=m.geometry;for(let i=0;i<g.attributes.skinWeight.count;i++)for(let k=0;k<4;k++)if(g.attributes.skinWeight.array[i*4+k]>1e-6){const name=BODY_BONES[g.attributes.skinIndex.array[i*4+k]];if(collar)assert.equal(name,'Neck','Gola puxada por membro');else assert(!/Arm|Hand/.test(name),'Macacão puxado por braço')}}}
@@ -47,9 +68,9 @@ for(const id of process.env.RIG_IDS?.split(',')||PRESET_ORDER){
    for(let k=0;k<rig.meshes.length;k++){const m=rig.meshes[k];for(const {i,p}of originals[k].points){const v=m.getVertexPosition(i,new THREE.Vector3()).applyMatrix4(m.matrixWorld);assert(v.toArray().every(Number.isFinite),id+': vértice inválido');assert(v.distanceTo(p)<rig.height*2,id+': deformação explodiu');if(v.distanceTo(p)>.005)moved++}}
   }
   if(rig.meshes.length)assert(moved>0,id+': corpo não se move');
-  rig.play('dance_floss');rig.update(4.25);assert.equal(rig.state().time,.25,id+': ciclo não reiniciou');rig.play('defeat');rig.update(10);assert.equal(rig.state().playing,false);assert.equal(rig.state().time,3.6);
+  rig.play('dance_floss');rig.update(MOTIONS.dance_floss.duration+.25);assert(Math.abs(rig.state().time-.25)<1e-8,id+': ciclo não reiniciou');rig.play('defeat');rig.update(10);assert.equal(rig.state().playing,false);assert.equal(rig.state().time,MOTIONS.defeat.duration);
   const clips=rig.makeClips();assert.equal(clips.length,5);
-  for(const clip of clips){assert(clip.tracks.length>=BODY_BONES.length);assert(clip.tracks.every(t=>Array.from(t.values).every(Number.isFinite)));const signature=JSON.stringify(clip.tracks.filter(t=>t.name.endsWith('.quaternion')&&!/Rig_(UpperLeg|LowerLeg|Foot|Toe)_/.test(t.name)).map(t=>[t.name,Array.from(t.values)]));const key=rig.profile+clip.name;if(reference.has(key))assert.equal(signature,reference.get(key),id+': coreografia divergente');else reference.set(key,signature)}
+  for(const clip of clips){assert(clip.tracks.length>=BODY_BONES.length);assert(clip.tracks.every(t=>Array.from(t.values).every(Number.isFinite)));const signature=JSON.stringify(clip.tracks.filter(t=>t.name.endsWith('.quaternion')&&!/Rig_(UpperArm|LowerArm|Hand|UpperLeg|LowerLeg|Foot|Toe)_/.test(t.name)).map(t=>[t.name,Array.from(t.values)]));const key=rig.profile+clip.name;if(reference.has(key))assert.equal(signature,reference.get(key),id+': coreografia divergente');else reference.set(key,signature)}
   rig.stop();h.root.updateMatrixWorld(true);rig.skeleton.update();for(let k=0;k<rig.meshes.length;k++)for(const {i,p}of originals[k].points)assert(rig.meshes[k].getVertexPosition(i,new THREE.Vector3()).applyMatrix4(rig.meshes[k].matrixWorld).distanceTo(p)<2e-5,id+': parar não restaurou');
   const profile=rig.profile,meshes=rig.meshes.length;rig.dispose();rig=null;assert.equal(h.root.getObjectByName('Esqueleto_Corporal'),undefined);for(const {mesh}of originals)assert(mesh.parent,id+': malha não restaurada');reports.push({id,profile,meshes,moved,maxBodyStrain});console.log('OK',id,profile,meshes,'estiramento',maxBodyStrain.toFixed(3));
  }finally{rig?.dispose();clothes?.dispose();visual?.dispose();h.body?.geo.dispose();h.dispose()}

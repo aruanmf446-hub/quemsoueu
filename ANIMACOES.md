@@ -1,64 +1,64 @@
-# Esqueleto corporal e animações compartilhadas
+# Movimentos compartilhados
 
-A vinculação inicial de 857cbdb foi reprovada por deformações. Os pesos contínuos e equipamentos rígidos de [CORRECAO-RIG.md](CORRECAO-RIG.md) foram mantidos. Após nova reprovação dos movimentos, as cinco coreografias passaram a usar poses por batida e apoio dos pés por cinemática inversa nos bípedes. [Vídeos completos de revisão](revisao/coreografias/).
+A coreografia procedural de `7444526` foi reprovada. A biblioteca atual usa captura de movimento humano do CMU/cgspeed, adaptada às medidas de cada personagem. As skins, rostos e geometrias de autoria permanecem iguais. [Fonte, licença e créditos](assets/motions/PROVENANCE.md).
 
-Abra a produção e escolha **Animações → Reações e danças**. Selecione um movimento, troque de personagem para comparar e use Pausar, velocidade e a barra de tempo. **Mostrar esqueleto** exibe os ossos; **Parar / pose A** restaura a pose de edição. A exportação GLB inclui o rig corporal e os clipes, além do rig facial existente.
-
-Links diretos:
-
-- [Nico — Floss](https://aruanmf446-hub.github.io/quemsoueu/?v=coreografia-ik-1&personagem=nico_inventor&animacao=dance_floss)
-- [Nana — Shuffle](https://aruanmf446-hub.github.io/quemsoueu/?v=coreografia-ik-1&personagem=nana_explorer&animacao=dance_shuffle)
-- [Vigilante — vitória](https://aruanmf446-hub.github.io/quemsoueu/?v=coreografia-ik-1&personagem=bread_vigilante&animacao=victory)
+Abra **Animações → Reações e danças** no editor. Há reprodução, pausa, velocidade, barra de tempo e visualização do esqueleto. **Parar / pose A** restaura a pose de edição. [Revisão dos movimentos](revisao/movimentos/).
 
 ## Biblioteca
 
-| Movimento | Clipe GLB | Duração | Reprodução |
+| Interface | ID existente / clipe GLB | Duração | Reprodução |
 | --- | --- | --- | --- |
-| Lobby | `Body_lobby` | 6 s | Contínua |
-| Derrota | `Body_defeat` | 3,6 s | Uma vez; mantém a pose final |
-| Vitória | `Body_victory` | 6 s | Uma vez |
-| Floss | `Body_dance_floss` | 4 s | Contínua |
-| Shuffle | `Body_dance_shuffle` | 4 s | Contínua |
+| Lobby | `lobby` / `Body_lobby` | 6 s | Contínua |
+| Derrota | `defeat` / `Body_defeat` | 4,5 s | Uma vez; mantém a pose final |
+| Vitória | `victory` / `Body_victory` | 6 s | Uma vez |
+| Macarena | `dance_floss` / `Body_dance_floss` | 4 s | Contínua |
+| Dança retrô | `dance_shuffle` / `Body_dance_shuffle` | 5 s | Contínua |
 
-São coreografias procedurais próprias com referências de movimentos sociais conhecidos, sem vídeo ou música embutidos. Todos usam a mesma fonte de movimento em `src/motions.js`; as medidas do corpo não são substituídas por um personagem padrão.
+Os dois IDs antigos foram preservados para links e integrações. Seus rótulos agora indicam os movimentos reais. A sequência retrô usa um trecho de dança solo do arquivo `15_04`; o índice não identifica a dança em cada instante, por isso não se atribui um nome mais específico. Os movimentos não incluem música.
 
-As poses têm interpolação Hermite com velocidade contínua nas emendas. No Floss, quadril e braços se contrapõem e alternam a passagem pela frente e por trás do quadril. O Shuffle alterna apoio e recolhimento do pé, com braços opostos. A vitória tem preparação, dois gestos de comemoração, passos e recuperação. Lobby e derrota usam movimentos menores, com atraso entre tronco e cabeça.
+Links diretos:
 
-## Rig
+- [Nico — Macarena](https://aruanmf446-hub.github.io/quemsoueu/?v=mocap-1&personagem=nico_inventor&animacao=dance_floss)
+- [Nana — dança retrô](https://aruanmf446-hub.github.io/quemsoueu/?v=mocap-1&personagem=nana_explorer&animacao=dance_shuffle)
+- [Vigilante — vitória](https://aruanmf446-hub.github.io/quemsoueu/?v=mocap-1&personagem=bread_vigilante&animacao=victory)
 
-`src/body-rig.js` monta 22 ossos comuns com prefixo `Rig_`: raiz, quadril, coluna, peito, pescoço, cabeça, braços/antebraços/mãos, coxas/pernas/pés/dedos dos pés e dois ossos de cauda. O rig facial continua independente, subordinado à cabeça corporal. Cabelos, barbas e acessórios do rosto acompanham esse conjunto.
+## Adaptação ao rig
 
-O corpo e os figurinos recebem pesos por envelopes anatômicos compartilhados, em cópias das geometrias para proteger o cache de roupas. Pequenas peças metálicas recebem uma influência rígida para não amassar as joias. Trocas de físico, roupa e cores desmontam e reconstroem o vínculo, conservando o movimento selecionado. Parar restaura as posições originais; descartar o rig devolve as malhas originais e libera as cópias.
+`src/mocap-data.js` contém somente dados de movimento, reamostrados a 30 Hz; o jogo não baixa BVHs nem modelos externos. `scripts/importar-mocap.mjs` reproduz a conversão dos cinco arquivos originais, cujas URLs imutáveis e hashes estão nos metadados. A pose T artificial foi descartada. Fontes que caminhavam pelo cenário e salsa com parceiro foram substituídas por espera, desânimo e dança solo que ficam perto do lugar inicial.
 
-Os 34 personagens usam cinco perfis: bípedes, sereias, quadrúpedes, aves e robô flutuante. As articulações e os tempos são comuns; as amplitudes dos companheiros e do robô são adaptadas à anatomia. A sereia usa a cauda, o quadrúpede usa as patas dianteiras no papel dos braços, e o robô movimenta o casco. O cowboy montado acompanha a sela e mantém seu rig facial. O apoio vertical é corrigido por pontos de contato dos pés/patas/cauda conforme as proporções.
+`src/mocap-player.js` interpola posições por curvas cúbicas e orientações por SQUAD. Os ciclos fecham com mistura entre o fim e o início; as reações desaceleram antes da pose final. A torção dos braços recebe um filtro simétrico, seguido de projeção sobre a direção capturada, para retirar ruído sem mudar a direção dos gestos.
 
-Nos bípedes, `src/leg-ik.js` calcula joelho e tornozelo a partir de alvos no espaço do personagem. O pé em apoio permanece no mesmo lugar enquanto o quadril se desloca; o pé livre segue uma trajetória suave. O deslocamento usa a largura corporal. As rotações das pernas são calculadas para os comprimentos reais de cada modelo; não se exige que um personagem baixo e um alto tenham os mesmos ângulos de joelho. Os outros perfis conservam sua adaptação por rotações e apoio vertical.
+`src/body-rig.js` mantém 22 ossos comuns. As orientações capturadas dos braços são calibradas pelas direções de repouso de cada corpo, em vez de aplicar os mesmos Euler globais a segmentos diagonais diferentes. Mãos recebem orientação anatômica própria. A raiz e os alvos dos pés usam o comprimento das pernas; a altura da pelve se adapta para que ambos os pés alcancem os alvos sem esticar os ossos. A IK conserva o plano de flexão dos joelhos. As trajetórias incluem passos e pivôs reais, não exigem que todo pé permaneça na âncora inicial.
 
-A pose A, as proporções, os rostos, os materiais e as geometrias de autoria foram preservados. Não foram adicionados ossos individuais de dedos das mãos, simulação de tecido ou locomoção com navegação; esta entrega fornece o rig corporal e cinco movimentos para avaliação no jogo. Dobras extremas e colisões de vestes longas ainda podem exigir refinamento artístico.
+Os pesos contínuos e os componentes rígidos de [CORRECAO-RIG.md](CORRECAO-RIG.md) foram mantidos e corrigidos onde a captura revelou falhas: a seção de quadril não afunila artificialmente nos glúteos, a união central das coxas acompanha a pelve e cabeça/pescoço deixam de influenciar os ombros externos. A sola e os dedos do pé acompanham o mesmo osso do calçado, com transição suave no tornozelo, para a pele não sair da bota. O cano flexível acompanha a perna; solas, placas e pequenos enfeites mantêm vínculos rígidos onde não atravessam uma articulação.
 
-## Exportação e uso
+Quando as duas botas fazem parte de uma única superfície conectada, cada lado recebe o seu osso Foot. Usar o centro do componente prendia as duas botas ao mesmo pé. Enfeites individuais conservam o vínculo rígido da própria bota. O teste do catálogo verifica também o lado real dos vértices do calçado, além do movimento da sola de pele.
 
-Os GLBs dos personagens com rosto animável levam 17 clipes: os 12 faciais anteriores e cinco corporais. O robô leva cinco clipes corporais e mantém o rosto de tela no visualizador. Os nomes de ossos, as durações e os nomes dos clipes são estáveis. As translações e a solução das pernas são adaptadas ao tamanho de cada modelo; as rotações do tronco e braços são compartilhadas dentro de cada perfil anatômico. Os resultados da cinemática inversa são gravados nos clipes a 30 quadros por segundo; o jogo que importa o GLB não precisa executar o solver.
+Os 34 personagens usam cinco perfis: bípedes, sereias, quadrúpedes, aves e robô flutuante. Bípedes executam os passos e gestos; sereias acompanham os gestos com a cauda. Aves, quadrúpedes e robô adaptam o ritmo à própria anatomia, com amplitudes menores. Não há simulação de tecido, navegação ou articulação individual dos dedos.
+
+## Exportação
+
+Os GLBs com rosto animável incluem 17 clipes: 12 faciais e cinco corporais; o robô inclui cinco corporais. A solução do rig e dos pés é gravada a 30 Hz. O jogo que importa o GLB não precisa executar o solver.
 
 ```js
 const mixer = new THREE.AnimationMixer(gltf.scene);
 const clip = gltf.animations.find(c => c.name === 'Body_dance_floss');
 mixer.clipAction(clip).play();
-// No loop de renderização: mixer.update(deltaSeconds).
+// A cada quadro: mixer.update(deltaSeconds).
 ```
 
 API do editor: `window.__atelie.bodyRig()`, `playMotion(id)`, `pauseMotion()`, `seekMotion(segundos)`, `stopMotion()` e `motions`. O rig expõe `bones`, `skeleton`, `makeClips()`, `showSkeleton(on)`, `setSpeed(valor)` e `state()`.
 
-## Validação
+## Verificação reproduzível
 
-- `node tests/rig-corporal.mjs`: 34 personagens, 22 ossos, cinco clipes e cinco perfis. Pesos normalizados, índices válidos, pose A preservada, limite de estiramento, movimentos finitos, retorno à pose original, descarte e identidade das rotações compartilhadas de tronco/braços por perfil.
-- `RIG_DENSE=1 RIG_IDS=nico_inventor,nana_explorer,bread_vigilante,dwarf_bard,cactus_soldier_large,sad_clown node tests/rig-corporal.mjs`: amostragem adicional a cada 0,125 s nos ciclos completos. A rodada desta revisão passou nos seis modelos, com máximo de 5,800× no limite existente de 6×. Os picos de vitória também fazem parte do teste padrão de todo o catálogo.
-- `node tests/leg-ik.mjs`: 27 casos de alvos alcançáveis, limites, proporções, transformação do ator e preservação dos comprimentos dos ossos.
-- `node tests/apoio-pes.mjs`: apoios e elevações dos pés de Nico, Nana e alquimista; inclui ator transladado, rotacionado e escalado.
-- `node tests/movimentos-compartilhados.mjs`: continuidade de pose/velocidade, emendas de loops, acomodação final e continuidade dos clipes exportáveis.
-- `node tests/animacoes-jogo.cjs`: controles de desktop/celular, pausa, tempo, esqueleto, mudança de físico/roupa/cor durante animação e GLBs reimportados com `GLTFLoader` e reproduzidos por `AnimationMixer`.
-- Oito exportações únicas foram exercitadas nas rodadas de navegador: Nico, Nana, Rei pimentão, Paysandu, Corvo rubi, robô, sereia e cowboy montado. Os companheiros foram repetidos depois dos ajustes de enquadramento e acessórios.
-- Artefatos locais em `renders/animacoes/`; relatórios de exportação originais e da rodada final em `exportacao.json` e `entrega/exportacao.json`. Testes técnicos verificam funcionamento; a qualidade artística dos movimentos permanece para avaliação do usuário.
-- `node tests/capturar-coreografias.cjs --full`: vídeos completos de Nico/Floss, Nana/Shuffle e Vigilante/vitória em `revisao/coreografias/`, com poses determinísticas do rig real e resolução de revisão. Capturas e relatórios desta rodada ficam em `renders/coreografias/`.
+- `node tests/rig-corporal.mjs`: catálogo completo, pesos, pose A, deformação, clipes, reprodução e descarte. Mantém o limite anterior de estiramento de 6×.
+- `RIG_DENSE=1 RIG_IDS=nico_inventor,nana_explorer,bread_vigilante,dwarf_bard,cactus_soldier_large,sad_clown node tests/rig-corporal.mjs`: ciclos completos amostrados a cada 0,125 s.
+- `node tests/apoio-pes.mjs`: alvos dos pés e direções dos braços, comprimentos dos ossos, sola e ator transformado antes/depois da vinculação. `FOOT_IDS` permite selecionar os corpos largos.
+- `node tests/movimentos-compartilhados.mjs`: continuidade espacial e angular, emendas, acomodação final e clipes exportáveis.
+- `node tests/direction-retarget.mjs` e `node tests/leg-ik.mjs`: direções anatômicas e IK, incluindo proporções e transformações distintas.
+- `node tests/animacoes-jogo.cjs`: controles em desktop/celular, edição durante animação e GLBs reimportados com `GLTFLoader` e reproduzidos por `AnimationMixer`.
+- `node tests/capturar-mocap.cjs --full --neutral`: grava os movimentos reais a 24 fps para avaliação visual; materiais simplificados de revisão não alteram a produção.
 
-Rodada de 24/10/2026: o teste atualizado do catálogo passou nos 34 personagens, incluindo os três picos da vitória. Solver, continuidade e apoio dos pés passaram. Cinco modelos foram exportados/reimportados e reproduzidos no navegador (Nana, Nico, Vigilante, Paysandu e sereia); Nana e Vigilante foram repetidos após ampliar os passos. Controles e edição durante animação passaram em desktop e celular de 390 px, sem erros de console. Os vídeos de revisão usam 480 px/8 fps e não representam a taxa de quadros do jogo.
+Relatórios locais ficam em `renders/mocap/`. Testes técnicos não representam aprovação da qualidade artística; a revisão visual dos ciclos completos e a avaliação do usuário continuam necessárias.
+
+Verificação de 25/10/2026: os 34 personagens passaram no teste do catálogo, incluindo o lado correto dos calçados e a preservação da pose A. A amostragem densa de sete corpos passou com máximo de 5,632×, mantendo o limite de 6×. Apoio, direções, continuidade e exportação de clipes passaram. Sete personagens tiveram GLBs reimportados durante esta etapa; após o ajuste final dos canos, Vigilante e cacto grande foram repetidos, com controles e edição funcionando em desktop e celular. Os três vídeos foram decodificados integralmente e reproduzidos no navegador, sem erros e sem transbordamento nas larguras de 390 e 1280 px. Os hashes do manifesto correspondem ao código usado nas capturas.
