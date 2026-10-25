@@ -1,6 +1,20 @@
 # Continuidade
 
-## Rodada atual — captura de movimento e correção anatômica
+## Rodada atual — tecido e pernas independentes
+
+O usuário elogiou `6f016c4` e apontou que algo ainda fica grudado e é puxado pela perna. A falha foi reproduzida levantando apenas uma perna: as calças tinham uma superfície ligando as duas pernas até a canela, e os envelopes largos davam peso da perna oposta aos vértices internos. Preservar a captura de movimento aprovada, rostos, cabelos, medidas e materiais das skins.
+
+`src/leg-clearance.js` mede a costura central e a folga medial na malha real do corpo. Os dois construtores de calças e o macacão inferior do palhaço preservam esse vão, sem cortar a pele quando as coxas se encostam. A tabela de folga usa mínimos por faixa e vizinhança para preservar espessura também entre amostras; não usar apenas o valor aproximado do SDF como distância física. O contorno externo e as pregas são mantidos. As calças têm metadado `skinningMode: 'legs'`.
+
+O rig estreita a mistura entre os lados abaixo da costura medida e entrega o peso da pelve à própria coxa gradualmente. Não restaurar o apoio global até 90% da coxa: ele prendia a região interna perto do joelho. Não retirar a transição contínua da virilha, que evita rasgos nos corpos de pernas longas. Solas, canos e componentes dos calçados mantêm os vínculos anatômicos anteriores.
+
+`tests/independencia-pernas.mjs` verifica seis poses de uma perna por corpo, corpo original intacto, ausência de arrasto na perna parada e de faces cruzando a parte aberta do vão. Coxas em contato e o arredondamento de uma célula da costura não são uma membrana no vão livre. `LEG_BUILD` permite repetir em corpos magros/largos. `tests/capturar-pernas.cjs` repete a comparação de diagnóstico com câmera fixa e materiais neutros; `LEG_BASE` aponta para a base imutável `/workspace/outputs/rig-pernas-base-6f016c4`. Capturas locais em `renders/pernas/`; comparação pública em `revisao/pernas/`. Vídeos completos atualizados em `revisao/movimentos/`. Importações principais usam `pernas-livres-1`.
+
+O teste histórico de cobertura foi comparado em oito modelos com a base: sete sem falhas; Nana mantém exatamente os mesmos 101 vértices apontados anteriormente. Não declarar esse teste inteiro aprovado nem interpretar os pontos anteriores como regressão desta correção. Os testes do rig e a aprovação visual são verificações distintas. A autorização de publicar na main continua válida.
+
+Validação: 34 no teste do rig; sete em amostragem densa, máximo 5,931× com o limite de 6× preservado; 27 bípedes/19 calças no teste de independência, sem deslocamento da perna parada. Nico, Nana e Palhaço também passaram com peso −1/+1. Quatro GLBs reimportados na rodada; três repetidos após a folga final, com controles e edição válidos em desktop/celular. Os três vídeos completos foram decodificados/reproduzidos a 24 fps, hashes atuais conferidos e ambas as galerias passaram em 390/1280 px. O acesso HTTPS à produção e à API do GitHub retorna 403 neste ambiente; envio à main deve ser distinguido da confirmação do deploy.
+
+## Rodada anterior — captura de movimento e correção anatômica
 
 O usuário reprovou também `7444526` e pediu correção. A biblioteca agora usa cinco capturas CMU/cgspeed com permissão comercial e créditos em `assets/motions/PROVENANCE.md`. Lobby usa StandingStill111_28; derrota Sad79_71; vitória Happy79_69; Macarena143_35; dança retrô solo15_04. IDs antigos `dance_floss`/`dance_shuffle` permanecem, mas rótulos mudam para Macarena/Dança retrô. Fontes que andavam para fora da cena e salsa de casal foram descartadas.
 

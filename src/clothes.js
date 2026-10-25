@@ -6,7 +6,7 @@ import {FRONTIER_OUTFITS} from './frontier.js';
 import {FOREST_OUTFITS} from './forest.js';
 import { buildLegacyClothes } from './legacy-clothes.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { buildSdfOutfit, SDF_OUTFITS, SDF_DEFAULT_COLORS, SDF_DEFAULT_OUTFIT } from './outfits.js';
+import { buildSdfOutfit, SDF_OUTFITS, SDF_DEFAULT_COLORS, SDF_DEFAULT_OUTFIT } from './outfits.js?v=pernas-livres-1';
 
 export const OUTFITS = {
   none: { label: 'Sem roupa', sub: 'Somente a malha do corpo' },
@@ -209,7 +209,7 @@ export function buildClothes(body, look) {
       heroSurface(geo,mat,style==='lunar_explorer'&&['pearl','sole'].includes(d.channel)?'polymer':style==='lunar_inventor'&&['fabric','pants'].includes(d.channel)?'denim':d.channel,body.proportions.W,{detail:['fabric','secondary','pants','leather','lining','accent'].includes(d.channel)});
       if(style==='lunar_explorer'&&['pearl','sole'].includes(d.channel)){mat.roughness=.86;mat.clearcoat=0;mat.sheen=0;mat.metalness=0}
       if(!SDF_OUTFITS[style]){mat.roughness=d.channel==='trim'?.38:d.channel==='leather'?.78:.88;mat.sheen=.15;mat.clearcoat=0}
-      mesh.name = 'Roupa_' + d.name; mesh.castShadow = !mat.transparent; mesh.receiveShadow = true; mesh.userData = { ownGeometry: own, channel: d.channel, slot, style }; paint(mesh, d.channel, cc, body.proportions.W); part.add(mesh);
+      mesh.name = 'Roupa_' + d.name; mesh.castShadow = !mat.transparent; mesh.receiveShadow = true; mesh.userData = { ownGeometry: own, channel: d.channel, slot, style, ...(geo.userData.skinningMode?{skinningMode:geo.userData.skinningMode}:{}) }; paint(mesh, d.channel, cc, body.proportions.W); part.add(mesh);
     }
     group.add(part); instances.set(slot, { group: part, template: source, colors: cc }); return true;
   }

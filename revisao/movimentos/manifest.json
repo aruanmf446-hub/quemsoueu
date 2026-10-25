@@ -4,11 +4,14 @@
   "neutral": true,
   "shadows": false,
   "sourceHashes": {
-    "src/body-rig.js": "597a9c1d540a6e144566b4fc747f1142c7cf203d5dbf39bf77857ead728d59fb",
+    "src/body-rig.js": "66f745b9043237930bbb08685e8ca17b134b226dad8444359ef93705079608e3",
     "src/motions.js": "1e6ce3b4620acc253bcd7fbe4c056cc5b27b337494bb7c2777aaca0b1cb2ff16",
     "src/mocap-data.js": "df826a778d014a219fefbbeb7010caf522f529df4723632b6f334a96e9f859d7",
     "src/mocap-player.js": "3b2a8c9a58e8d1ff8de10c936a6d363356739b7639d46f10501bd2b86aba1b04",
-    "src/direction-retarget.js": "6918739f8c24e2aa2fc70232bcd49eb505d60968081ed6a650e844859641ed1a"
+    "src/direction-retarget.js": "6918739f8c24e2aa2fc70232bcd49eb505d60968081ed6a650e844859641ed1a",
+    "src/leg-clearance.js": "62403c2e59ccb3cf8f58bf74118c65d5397f82dfd21b628722b908bee28536a6",
+    "src/clothes.js": "a59bab8008e50c02c8b569a7756dcacf86692fc56c5b5642a7be0fa0c6a87714",
+    "src/outfits.js": "50df377d2e959e8f12ace24db2ef1ea70ef1b1348c754ac7037a433e0b9c3cb5"
   },
   "reports": [
     {

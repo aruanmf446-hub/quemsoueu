@@ -4,6 +4,7 @@ import {MOTIONS,motionPose} from './motions.js?v=mocap-1';
 import {solveLeg} from './leg-ik.js';
 import {orientChain} from './direction-retarget.js';
 import {componentBindings} from './skin-components.js';
+import {legClearance} from './leg-clearance.js';
 const V=(x=0,y=0,z=0)=>new THREE.Vector3(x,y,z),clamp=THREE.MathUtils.clamp;
 export const BODY_BONES=['Root','Hips','Spine','Chest','Neck','Head','Tail','TailTip',...['L','R'].flatMap(s=>['UpperArm','LowerArm','Hand','UpperLeg','LowerLeg','Foot','Toe'].map(n=>n+'_'+s))];
 const prefix='Rig_',world=new THREE.Vector3(),euler=new THREE.Euler();
@@ -36,6 +37,7 @@ export function buildBodyRig(character,clothing=null){
  // Envelopes contínuos: a transição entre tronco e membros não escolhe
  // um único segmento vencedor. Essa escolha rasgava as axilas ao erguer braços.
  const width=J?.W??Math.max(.6,Math.abs(L.shoulder.x)*1.8),acc=new Float64Array(BODY_BONES.length);
+ const legGap=body&&!mermaid&&!companion?legClearance(body):null;
  segments.push({a:positions.Neck,b:positions.Head,name:'Neck',next:'Head',type:'torso'});
  const envelopes=segments.map(seg=>{const d=seg.b.clone().sub(seg.a);return {...seg,dx:d.x,dy:d.y,dz:d.z,lengthSq:d.lengthSq()||1,sigma2:(width*(seg.type==='arm'?.32:seg.type==='leg'?.36:.52))**2,side:Math.sign(seg.a.x)}});
  const scores=new Float64Array(envelopes.length),parameters=new Float64Array(envelopes.length);
@@ -48,7 +50,7 @@ export function buildBodyRig(character,clothing=null){
    let mask=1;
    if(e.type==='arm'){const start=Math.max(Math.abs(L.shoulder.x)*(companion?.10:.50),(torso?.rx||0)*.90),end=Math.max(Math.abs(L.shoulder.x)*(companion?.75:1.05),start+width*(companion?.30:.65));mask=THREE.MathUtils.smoothstep(Math.abs(p.x),start,end)*THREE.MathUtils.smoothstep(p.x*e.side,-width*.18,width*.18)}
    if(e.type==='arm'&&['lower','skirt','belt','feet','torso'].includes(mode))mask=0;
-   if(e.type==='leg'){const band=width*(.22+.22*THREE.MathUtils.smoothstep(p.y,L.knee.y-width*.30,L.knee.y+width*.30));mask=(1-THREE.MathUtils.smoothstep(p.y,L.hip.y-width*.45,L.hip.y+width*.25))*THREE.MathUtils.smoothstep(p.x*e.side,-band,band)}
+   if(e.type==='leg'){const band=legGap?width*(.025+.415*THREE.MathUtils.smoothstep(p.y,legGap.crotch-width*.25,legGap.crotch+width*.25)):width*(.22+.22*THREE.MathUtils.smoothstep(p.y,L.knee.y-width*.30,L.knee.y+width*.30));mask=(1-THREE.MathUtils.smoothstep(p.y,L.hip.y-width*.45,L.hip.y+width*.25))*THREE.MathUtils.smoothstep(p.x*e.side,-band,band)}
    if(e.type==='leg'&&mode==='torso')mask=0;
    if(e.type==='leg'&&mode==='feet'&&p.x*e.side<0)mask=0;
    if(e.type==='torso')mask=THREE.MathUtils.smoothstep(p.y,L.hip.y-width*.80,L.hip.y+width*.15);
@@ -68,9 +70,9 @@ export function buildBodyRig(character,clothing=null){
   const neckMask=1-THREE.MathUtils.smoothstep(Math.abs(p.x),width*.28,width*.60);
   for(const name of ['Neck','Head']){const transfer=acc[indices[name]]*(1-neckMask);acc[indices[name]]-=transfer;acc[indices.Chest]+=transfer}
   if(body&&!mermaid&&!companion){
-   // A união medial das coxas pertence à pelve, inclusive nos corpos de pernas
-   // longas. Vinculá-la só às duas coxas abria a virilha ao alternar os passos.
-   const medial=1-THREE.MathUtils.smoothstep(Math.abs(p.x),width*.03,Math.abs(L.hip.x)*1.3),u=(L.hip.y-p.y)/Math.max(.01,L.hip.y-L.knee.y),pelvic=medial*(1-THREE.MathUtils.smoothstep(u,.55,.90));
+   // A união central acompanha a pelve até a costura real do corpo. Abaixo
+   // dela, o peso passa gradualmente à própria coxa, sem prender o joelho.
+   const medial=1-THREE.MathUtils.smoothstep(Math.abs(p.x),width*.03,Math.abs(L.hip.x)*1.3),fade=Math.max(width*.40,(L.hip.y-L.knee.y)*.30),pelvic=medial*THREE.MathUtils.smoothstep(p.y,legGap.crotch-fade,legGap.crotch);
    for(const side of ['L','R']){const transfer=acc[indices['UpperLeg_'+side]]*pelvic;acc[indices['UpperLeg_'+side]]-=transfer;acc[indices.Hips]+=transfer}
    if(mode===null||mode==='feet'){
     // A sola e os dedos acompanham o mesmo osso rígido do calçado; a transição

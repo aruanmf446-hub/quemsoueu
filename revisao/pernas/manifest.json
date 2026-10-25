@@ -1,0 +1,51 @@
+{
+  "baseRevision": "6f016c4dd151bb8c8540ead22de486cc9c8bc2d2",
+  "character": "nana_explorer",
+  "pose": {
+    "UpperLeg_L.rotation.x": -0.9,
+    "LowerLeg_L.rotation.x": 0.9
+  },
+  "width": 600,
+  "height": 600,
+  "materials": "neutral review",
+  "shadows": false,
+  "before": {
+    "src/body-rig.js": "597a9c1d540a6e144566b4fc747f1142c7cf203d5dbf39bf77857ead728d59fb",
+    "src/body.js": "c66374f01607cbf0dc7d80d0d4e2e26cc79ed20e2da414e581564ac358cb7487",
+    "src/clothes.js": "129ef4fa6f9f61e6dd4eddf7a3eaf34a94155979452a6215f2ee6225cf3ad526",
+    "src/outfits.js": "74b86ffc88cefa7daa50f0a7290a00c1a71e7f88d21aa010010dba0458ad9089"
+  },
+  "after": {
+    "src/body-rig.js": "66f745b9043237930bbb08685e8ca17b134b226dad8444359ef93705079608e3",
+    "src/body.js": "c66374f01607cbf0dc7d80d0d4e2e26cc79ed20e2da414e581564ac358cb7487",
+    "src/clothes.js": "a59bab8008e50c02c8b569a7756dcacf86692fc56c5b5642a7be0fa0c6a87714",
+    "src/outfits.js": "50df377d2e959e8f12ace24db2ef1ea70ef1b1348c754ac7037a433e0b9c3cb5",
+    "src/leg-clearance.js": "62403c2e59ccb3cf8f58bf74118c65d5397f82dfd21b628722b908bee28536a6",
+    "tests/capturar-pernas.cjs": "ab7240292a872525010b8dfef4389fbadd392d7dbec180b64fb2317f0ef34019"
+  },
+  "measurements": {
+    "nana_explorer": {
+      "leg": 3.8064741410952116,
+      "hip": [
+        0.44928,
+        -4.836559999999999,
+        -0.16000000000000003
+      ],
+      "knee": [
+        0.385536,
+        -6.884239999999998,
+        -0.13
+      ],
+      "ankle": [
+        0.34559999999999996,
+        -8.63997392,
+        -0.2
+      ],
+      "width": 0.96
+    }
+  },
+  "assets": {
+    "antes.webp": "c7505359bd13586cd4ffa9740ab4ed5cc92e74579d3d510ceade8af777aac53a",
+    "depois.webp": "7958af6ef669f1fad39921de1a633538d05375206b4ca53dc4b1d8e26ba935d6"
+  }
+}

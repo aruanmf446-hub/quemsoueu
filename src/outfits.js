@@ -14,6 +14,7 @@ import {FOREST_CHARACTERS,FOREST_OUTFITS,FOREST_COLORS,treeGeo,leafGeo,shieldGeo
 import { crescent } from './lunar.js';
 import { sdfMesh, refinedSdfMesh } from './body.js';
 import { smoothCloth, shellCloth } from './fabric.js';
+import {legClearance} from './leg-clearance.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { clothSurface, handPatch } from './fabric.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
@@ -72,6 +73,7 @@ export const SDF_DEFAULT_OUTFIT = { flame_guardian:'flame_guardian', ...Object.f
 
 export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot = null, coverage = []) {
   const J = body.joints, B = body.proportions, W = J.W, Y = J.Y, z0 = J.zCenter, Lb = J.Lb, bf = body.sdf, yN = J.yNeck;
+  const legGap=J.mermaid?null:legClearance(body);
   const S = J.shoulder, E = J.elbow, Wr = J.wrist, H = J.hip, K = J.knee, A = J.ankle, ySole = J.ySole;
   const dU = E.clone().sub(S).normalize(), dF = Wr.clone().sub(E).normalize();
   const cellBase = .03 * clamp(W, 1, 1.25);
@@ -157,9 +159,11 @@ export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot 
       let d = bf(x, y, z) - t; d = Math.max(d, y - yTop, yBot - y);
       if (o.under && y > o.under.y) d = Math.max(d, o.under.fn(x, y, z) + .02 * W); // por dentro da peça de cima
       if (o.stripes) d = Math.max(d, o.stripes(x, y, z));
+      if(legGap)d=Math.max(d,legGap.field(x,y,z));
       return d;
     };
-    piece(name, ch, f, { x: Math.max(W * Math.max(B.hip, B.waist) * 1.2 + .4 * W, Math.max(H.x, K.x) + .6 * W + (o.puff || 0) * 1.5), y0: yBot - .2, y1: yTop + .2, z0: zA - .3, z1: zB + .3 + (o.puff || 0) }, o.cell);
+    const geo=piece(name, ch, f, { x: Math.max(W * Math.max(B.hip, B.waist) * 1.2 + .4 * W, Math.max(H.x, K.x) + .6 * W + (o.puff || 0) * 1.5), y0: yBot - .2, y1: yTop + .2, z0: zA - .3, z1: zB + .3 + (o.puff || 0) }, o.cell);
+    if(geo)geo.userData.skinningMode='legs';
   }
   // bota/meia: pé + perna até a altura h (acima do tornozelo), cano largo no topo, sola
   function boots(name, ch, o) {
@@ -422,10 +426,11 @@ export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot 
         d=Math.min(d+crease,bf(x,y,z)-.025*W);
       }
       if (o.under && y > o.under.y) d = Math.max(d, o.under.fn(x, y, z) + .02 * W); // por dentro da túnica: não atravessa
-      return Math.max(d, y - yTop, yBot - y);
+      return Math.max(d, y - yTop, yBot - y,legGap?legGap.field(x,y,z):-Infinity);
     };
     if(heroStyle)coverage.push({slot:'lower',contains:(x,y,z)=>f(x,y,z)<-.02*W});
-    piece(name, ch, f, { x: Math.max(W*Math.max(B.hip,B.waist)*1.2+.4*W,H.x+rH+(o.puff||0)+.3*W), y0: yBot - .2, y1: yTop + .2, z0: zA - .3, z1: zB + .3 }, o.cell);
+    const geo=piece(name, ch, f, { x: Math.max(W*Math.max(B.hip,B.waist)*1.2+.4*W,H.x+rH+(o.puff||0)+.3*W), y0: yBot - .2, y1: yTop + .2, z0: zA - .3, z1: zB + .3 }, o.cell);
+    if(geo)geo.userData.skinningMode='legs';
     return memoField(f);
   }
 
@@ -752,10 +757,10 @@ export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot 
       const ax = Math.abs(x); if (armSide(ax, y) > .02 * W) return .5;
       const yTop = Y(.03), yBot = A.y + .085 * Lb, u = clamp((Y(.45) - y) / (Y(.45) - yBot), 0, 1);
       const t = .07 + .2 * W * sstep(Y(.12), Y(.32), y) * (1 - sstep(Y(.36), Y(.48), y)) + .18 * W * Math.pow(Math.sin(PI * u), .8) * (1 - .7 * sstep(.82, 1, u)) * sstep(Y(.4), Y(.5), y);
-      return Math.max(bf(x, y, z) - t, y - yTop, yBot - y);
+      return Math.max(bf(x, y, z) - t, y - yTop, yBot - y,legGap?legGap.field(x,y,z):-Infinity);
     };
     const bb = bodyBounds(A.y, Y(0) + .2, .7);
-    for(const slot of ['upper','lower']){activeSlot=slot;piece('Macacao','stripesV',(x,y,z)=>Math.max(suit(x,y,z),slot==='upper'?Y(.405)-y:y-Y(.395)),bb)} // listras verticais creme/vermelho/azul pelo material (bordas nítidas)
+    for(const slot of ['upper','lower']){activeSlot=slot;const geo=piece('Macacao','stripesV',(x,y,z)=>Math.max(suit(x,y,z),slot==='upper'?Y(.405)-y:y-Y(.395)),bb);if(geo&&slot==='lower')geo.userData.skinningMode='legs'} // listras verticais creme/vermelho/azul pelo material (bordas nítidas)
     // casaca aberta com abas até o joelho, mangas com punho franzido
     top('Casaca', 'fabric', { t: .1 * W, sleeve: 'wrist', bottom: .3, collar: -.05, open: .75, cell: cellBase, puff: .04 * W, loose: .12 * W });
     cone('Casaca_Abas', 'fabric', { top: .29, bottom: .68, pad: .26 * W, flare: .1, open: 1.05, th: .035, ragged: .12, pleat: .035, pleatN: 9 });
