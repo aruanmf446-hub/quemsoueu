@@ -1,6 +1,6 @@
 // Navegação do ateliê: uma categoria e uma decisão por vez.
 import {PRESETS} from './presets.js';
-import {PreviewCatalog} from './previews.js?v=altura-roupas-1';
+import {PreviewCatalog} from './previews.js?v=arqueira-individual-1';
 
 export function mountEditor(api) {
   const el=id=>document.getElementById(id),make=(tag,cls,text)=>{const n=document.createElement(tag);n.className=cls;if(text)n.textContent=text;return n};

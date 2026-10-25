@@ -10,8 +10,12 @@ const V=(x=0,y=0,z=0)=>new THREE.Vector3(x,y,z),clamp=THREE.MathUtils.clamp;
 const DRAPE_BONES=['Drape_Front','Drape_Back','Drape_L','Drape_R'];
 export const BODY_BONES=['Root','Hips','Spine','Chest','Neck','Head','Tail','TailTip',...DRAPE_BONES,...['L','R'].flatMap(s=>['UpperArm','LowerArm','Hand','UpperLeg','LowerLeg','Foot','Toe'].map(n=>n+'_'+s))];
 const prefix='Rig_',world=new THREE.Vector3(),euler=new THREE.Euler();
+// Reutiliza somente vínculos já calculados para a mesma geometria e o mesmo corpo.
+// O cache é usado pelo novo figurino individual; não muda ossos ou pesos de autoria.
+const archerBindings=new WeakMap(),archerMasks=new WeakMap();
 export function buildBodyRig(character,clothing=null){
  const root=character.root,body=character.body,fit=character.fit,mermaid=!!body?.joints.mermaid,companion=!!fit?.companion,quad=companion&&fit.paws?.length>0,robot=!fit;
+ const cachedArcher=!!body&&Object.values(clothing?.selection||{}).some(id=>id.startsWith('forest_huntress:'));
  root.updateMatrixWorld(true);
  const box=localCharacterBounds(root),size=box.getSize(V()),J=body?.joints,
  floor=body?.ySole??fit?.ySole??box.min.y,height=Math.max(.5,size.y),z=J?.zCenter??0;
@@ -112,10 +116,15 @@ export function buildBodyRig(character,clothing=null){
   if(mesh===body?.mesh&&clothing?.bodyCovered&&geometry.index){
    // A pele que permanece dentro de roupa opaca é omitida como em uma skin
    // de jogo. A geometria original continua inteira para trocas de figurino.
-   const covered=new Uint8Array(p.count),visible=[];
-   for(let i=0;i<p.count;i++){world.fromBufferAttribute(p,i).applyMatrix4(matrix);covered[i]=clothing.bodyCovered(world.x,world.y,world.z)?1:0}
-   const original=geometry.index;for(let i=0;i<original.count;i+=3){const a=original.getX(i),b=original.getX(i+1),c=original.getX(i+2);if(!(covered[a]&&covered[b]&&covered[c]))visible.push(a,b,c)}
-   geometry.setIndex(visible);geometry.userData.coveredBodyTriangles=(original.count-visible.length)/3;
+   const maskKey=JSON.stringify([clothing.selection,matrix.elements]),saved=cachedArcher?archerMasks.get(mesh.geometry)?.get(maskKey):null,original=geometry.index;
+   let visible=saved;
+   if(!visible){const covered=new Uint8Array(p.count),indices=[];
+    for(let i=0;i<p.count;i++){world.fromBufferAttribute(p,i).applyMatrix4(matrix);covered[i]=clothing.bodyCovered(world.x,world.y,world.z)?1:0}
+    for(let i=0;i<original.count;i+=3){const a=original.getX(i),b=original.getX(i+1),c=original.getX(i+2);if(!(covered[a]&&covered[b]&&covered[c]))indices.push(a,b,c)}
+    visible=new original.array.constructor(indices);
+    if(cachedArcher){let variants=archerMasks.get(mesh.geometry);if(!variants)archerMasks.set(mesh.geometry,variants=new Map());variants.set(maskKey,visible);if(variants.size>16)variants.delete(variants.keys().next().value)}
+   }
+   geometry.setIndex(new THREE.BufferAttribute(visible,1));geometry.userData.coveredBodyTriangles=(original.count-visible.length)/3;
   }
   const {slot,style}=mesh.userData,collar=/^Roupa_(Gola\d*|Colar|Echarpe|Lenco|Lenço)(_|$)/.test(mesh.name),torsoOnly=slot==='upper'&&/(Macacao|Corpete|Colete|Jardineira)/.test(mesh.name),mode=torsoOnly?'torso':slot==='lower'&&/^(dress|royal|lunar_guardian|lunar_ruby|forest_princess|cactus_guard|orc)$/.test(style)?'skirt':slot||null;
   if(!mermaid&&!companion&&!metallic(mesh)&&['upper','skirt','cape'].includes(mode)&&!collar){
@@ -125,7 +134,9 @@ export function buildBodyRig(character,clothing=null){
     for(let k=0;k<4;k++)if(sectors[k]>.45)values[k]=Math.min(values[k],radius);clothRows.set(row,values);
    }
   }
-  const metal=mesh.material.metalness>.5,parts=metal||slot==='extras'||slot==='feet'?componentBindings(geometry,matrix,g=>{
+  const bindingKey=JSON.stringify([height,width,mode,collar,mesh.material.metalness>.5,slot,style,matrix.elements]);
+  const previous=cachedArcher?archerBindings.get(mesh.geometry):null,cached=previous?.body===body.joints?previous.entries.get(bindingKey):null;
+  const metal=mesh.material.metalness>.5,parts=!cached&&(metal||slot==='extras'||slot==='feet')?componentBindings(geometry,matrix,g=>{
    const {center:c,size}=g;let anchor=null;
    if(slot==='feet'&&!mermaid){
     // Algumas botas são uma única superfície SDF contendo os dois pés. O
@@ -155,7 +166,10 @@ export function buildBodyRig(character,clothing=null){
    }
    return anchor?{ids:[indices[anchor],0,0,0],values:[1,0,0,0]}:null;
   }):null;
-  for(let i=0;i<p.count;i++){world.fromBufferAttribute(p,i).applyMatrix4(matrix);const w=collar?{ids:[indices.Neck,0,0,0],values:[1,0,0,0]}:parts?.(i)||weights(world,mode);skinIndex.set(w.ids,i*4);skinWeight.set(w.values,i*4)}
+  if(cached){skinIndex.set(cached.indices);skinWeight.set(cached.weights)}
+  else{for(let i=0;i<p.count;i++){world.fromBufferAttribute(p,i).applyMatrix4(matrix);const w=collar?{ids:[indices.Neck,0,0,0],values:[1,0,0,0]}:parts?.(i)||weights(world,mode);skinIndex.set(w.ids,i*4);skinWeight.set(w.values,i*4)}
+   if(cachedArcher){const entry=previous?.body===body.joints?previous:{body:body.joints,entries:new Map()};entry.entries.set(bindingKey,{indices:skinIndex,weights:skinWeight});if(entry.entries.size>4)entry.entries.delete(entry.entries.keys().next().value);archerBindings.set(mesh.geometry,entry)}
+  }
   geometry.setAttribute('skinIndex',new THREE.Uint16BufferAttribute(skinIndex,4));geometry.setAttribute('skinWeight',new THREE.Float32BufferAttribute(skinWeight,4));
   const skinned=new THREE.SkinnedMesh(geometry,mesh.material);skinned.name=mesh.name;skinned.position.copy(mesh.position);skinned.quaternion.copy(mesh.quaternion);skinned.scale.copy(mesh.scale);skinned.visible=mesh.visible;skinned.castShadow=mesh.castShadow;skinned.receiveShadow=mesh.receiveShadow;skinned.userData={...mesh.userData,bodyRig:true};skinned.frustumCulled=false;
   const parent=mesh.parent,order=parent.children.indexOf(mesh);parent.remove(mesh);parent.add(skinned);parent.children.splice(parent.children.indexOf(skinned),1);parent.children.splice(order,0,skinned);root.updateMatrixWorld(true);skinned.bind(skeleton,mesh.matrixWorld);replacements.push({original:mesh,skinned,parent,order});
