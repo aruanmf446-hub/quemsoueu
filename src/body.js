@@ -94,6 +94,7 @@ for(const c of FOREST_CHARACTERS)BODIES[c.id]={...BODIES[c.body]};
 
 // Silhuetas próprias das novas referências; as treze bases anteriores permanecem imutáveis.
 for(const id of ['forest_archer_f','forest_guard_f'])BODIES[id]={...BODIES[id],head:.95,heads:5.55,W:.88,sh:.91,chest:.94,waist:.91,hip:1,arm:1.03,leg:.96};
+BODIES.forest_archer_f={...BODIES.forest_archer_f,W:.94,sh:.98,chest:.98,waist:.98,neckUp:.27};
 for(const id of ['moon_guardian','ruby_sorceress','forest_princess'])BODIES[id]={...BODIES[id],head:.95,heads:5.65,W:.87,sh:.91,chest:.95,waist:.90,hip:1,leg:.97};
 BODIES.nana_explorer={...BODIES.nana_explorer,head:1,heads:5.1,neckUp:.27,neckBase:1.05,W:.96,sh:1,chest:.98,waist:.88,hip:1.04,hand:1.08,foot:1.15,leg:.97};
 BODIES.nico_inventor={...BODIES.nico_inventor,head:.74,heads:3.50,neckUp:.44,W:.70,sh:.94,chest:.91,waist:.91,hip:.90,depth:.90,belly:.025,arm:1.02,hand:1.03,foot:1.15,leg:.97};

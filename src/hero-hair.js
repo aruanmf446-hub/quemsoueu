@@ -379,8 +379,9 @@ export function buildHeroHair(fit,style,color){
 // Sardas discretas, posicionadas na superfície do rosto dos novos personagens.
 export function buildHeroFreckles(fit){
   if(!fit.P.heroFreckles)return null;const rand=random(1939),geos=[];
-  for(const side of [-1,1])for(let i=0;i<19;i++){
-    const x=side*(.17+rand()*.43),y=-.20-rand()*.15,z=fit.surfZ(x,y),r=.006+rand()*.006,g=new THREE.SphereGeometry(r,7,5);g.scale(1,.72,.24);g.translate(x,y,z+.003);geos.push(g);
+  const archer=fit.P.id==='forest_archer_f';
+  for(const side of [-1,1])for(let i=0;i<(archer?36:19);i++){
+    const x=side*((archer?.06:.17)+rand()*(archer?.55:.43)),y=-.20-rand()*.15,z=fit.surfZ(x,y),r=archer?.003+rand()*.0035:.006+rand()*.006,g=new THREE.SphereGeometry(r,7,5);g.scale(1,.72,.24);g.translate(x,y,z+.003);geos.push(g);
   }
-  const geo=mergeGeometries(geos,false);geos.forEach(g=>g.dispose());const material=new THREE.MeshStandardMaterial({name:'Face_Freckles',color:'#87503b',roughness:.9}),mesh=new THREE.Mesh(geo,material);mesh.name='Face_Freckles';return {mesh,dispose(){geo.dispose();material.dispose()}};
+  const geo=mergeGeometries(geos,false);geos.forEach(g=>g.dispose());const material=new THREE.MeshStandardMaterial({name:'Face_Freckles',color:archer?'#a27352':'#87503b',roughness:.9}),mesh=new THREE.Mesh(geo,material);mesh.name='Face_Freckles';return {mesh,dispose(){geo.dispose();material.dispose()}};
 }

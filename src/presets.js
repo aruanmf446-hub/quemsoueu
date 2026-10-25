@@ -248,7 +248,7 @@ const heroMale={Re:.239,eyeX:.356,openU:deg(18),openL:deg(-20),openW:deg(63),iri
   browTh:.057,browGap:.165,browArch:.026,browRidge:.045,noseH:.093,noseW:.94,tipH:.058,tipR:.057,
   cheekH:.018,chinH:.041,mouthW:.238,lipU:.028,lipL:.043,lipH:.034,fold:.4,bagK:.16,skinGloss:.09};
 const sculpt=(id,o)=>{const b=PRESETS[id];PRESETS[id]={...b,...o,cran:(o.cran||b.cran).slice(),loft:{...b.loft,...o.loft,y:(o.loft?.y||b.loft.y).slice(),a:(o.loft?.a||b.loft.a).slice(),zf:(o.loft?.zf||b.loft.zf).slice(),zb:(o.loft?.zb||b.loft.zb).slice()}}};
-sculpt('forest_archer_f',{...heroFemale,heroFreckles:true,tilt:deg(6),smile:.9,smirk:.35,blushK:.83,lip:'#ac5b4d',brow:'#6a4627',
+sculpt('forest_archer_f',{...heroFemale,heroFreckles:true,tilt:deg(6),smile:.9,smirk:.35,blushK:.62,lip:'#ac5b4d',brow:'#6a4627',
   cran:[.20,-.08,.82,.80,.86,.84,2.3],loft:{a:[.10,.19,.34,.49,.62,.73,.78,.79,.76,.63,.44],n:2.15,cb:.13,k:.17}});
 sculpt('forest_guard_f',{...heroFemale,Re:.253,openU:deg(23),openL:deg(-23),tilt:deg(7),smile:.28,smirk:.16,browSlope:-.01,browArch:.025,brow:'#76512c',
   loft:{a:[.13,.25,.40,.56,.66,.735,.77,.775,.74,.6,.42],n:2.35,cb:.095}});
