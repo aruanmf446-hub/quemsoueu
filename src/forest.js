@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 import {tube,V} from './lunar.js';
 export const FOREST_CHARACTERS=[
-  {id:'forest_archer_f',label:'Arqueira da floresta',base:'feminine_bold',body:'feminine_bold',outfit:'forest_archer',hair:'forest_pixie',skin:'#dca582',beard:'none',acc:{ears:'studs'}},
+  {id:'forest_archer_f',label:'Arqueira da floresta',base:'feminine_bold',body:'feminine_bold',outfit:'forest_huntress',hair:'archer_braid',skin:'#dca582',beard:'none',acc:{ears:'studs'}},
   {id:'forest_archer_m',label:'Arqueiro da floresta',base:'masculine_soft',body:'masculine_soft',outfit:'forest_archer',hair:'forest_locks',skin:'#946044',beard:'default',acc:{}},
   {id:'forest_guard_f',label:'Guarda feminina',base:'feminine_bold',body:'feminine_bold',outfit:'forest_guard',hair:'forest_pixie',skin:'#dca582',beard:'none',acc:{}},
   {id:'forest_guard_m',label:'Guarda jovem',base:'masculine_soft',body:'masculine_soft',outfit:'forest_guard',hair:'hero_tousled',skin:'#cc9373',beard:'none',acc:{}},
@@ -12,6 +12,7 @@ export const FOREST_CHARACTERS=[
   {id:'forest_princess',label:'Princesa da floresta',base:'feminine_soft',body:'feminine_soft',outfit:'forest_princess',hair:'court_waves',skin:'#e9bc9c',beard:'none',acc:{head:'leaf_crown',ears:'drop',hairpin:'flowers'}}
 ];
 export const FOREST_OUTFITS={
+  forest_huntress:{label:'Arqueira da floresta',sub:'Linho franzido, corpete baixo, camadas assimétricas e couro costurado'},
   forest_archer:{label:'Arqueiro da floresta',sub:'Túnica clara, manto verde, botas, arco e aljava'},
   forest_guard:{label:'Guarda da floresta',sub:'Túnica verde, ombreiras, escudo e lança'},
   forest_artificer:{label:'Artífice da floresta',sub:'Casaca verde, mochila mecânica e frascos'},

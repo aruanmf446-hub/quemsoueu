@@ -8,6 +8,7 @@ import * as THREE from 'three';
 import {badge,panel,buckleGeo,gear} from './detail.js';
 import {buildHeroFrontier} from './hero-frontier.js';
 import {buildHeroForest} from './hero-forest.js';
+import {buildArcherOutfit} from './archer-outfit.js';
 import {buildHeroLunar} from './hero-lunar.js';
 import {FRONTIER_CHARACTERS,FRONTIER_OUTFITS,FRONTIER_COLORS} from './frontier.js';
 import {FOREST_CHARACTERS,FOREST_OUTFITS,FOREST_COLORS,treeGeo,leafGeo,shieldGeo} from './forest.js';
@@ -505,7 +506,7 @@ export function buildSdfOutfit(body, style, colors, mats, add, addGeo, onlySlot 
 
   // Deserto: peças iniciais compartilhadas entre as identidades e seus dois portes.
   const heroContext={THREE,style,body,B,J,W,Y,Lb,z0,yN,S,E,Wr,H,K,A,ySole,bf,onlySlot,garment,envelope,trousers,boots,beltOn,cape,rim,edgeTube,sleeveCuffs,surfAt,frontZ,backZ,radAt,limbR,limbWrap,button,buckle,addGeoS,add,clothSurface,tubeG,sph,orient,chainG,mirror,patchOn,seamOn,pocketOn,bootFinish,pauldrons,capeEmblem,gradN,memoField,clamp,sstep,lerp,V,PI};
-  if(buildHeroFrontier(heroContext)||buildHeroForest(heroContext)||buildHeroLunar(heroContext))return;
+  if(buildArcherOutfit(heroContext)||buildHeroFrontier(heroContext)||buildHeroForest(heroContext)||buildHeroLunar(heroContext))return;
   if(FRONTIER_OUTFITS[style]){
     const baker=style==='bread_baker',watch=style==='bread_vigilante',guard=style==='cactus_guard',cowboy=style==='frontier_cowboy';
     const hem=watch?.64:guard?.5:.46;

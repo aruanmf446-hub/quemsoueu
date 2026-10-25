@@ -46,6 +46,7 @@ for(const slot of Object.keys(SLOT_STYLES))SLOT_STYLES[slot].push(...(slot==='ca
 for(const slot of Object.keys(SLOT_STYLES))SLOT_STYLES[slot].push(...Object.keys(FOREST_OUTFITS));
 for(const slot of Object.keys(SLOT_STYLES))SLOT_STYLES[slot].push(...Object.keys(FRONTIER_OUTFITS),'flame_guardian');
 const PIECE_LABELS = {
+  forest_huntress:{upper:'Blusa e corpete baixo',lower:'Short e abas assimétricas',feet:'Botas altas de couro',cape:'Lenço e capa rasgada',belt:'Cintos e bolsas',extras:'Braçadeiras, arco e aljava'},
   bread_baker:{upper:'Camisa de padeiro',lower:'Calça de padeiro',feet:'Botas do padeiro',cape:'Avental',belt:'Faixa laranja',extras:'Pão e utensílios'},
   bread_vigilante:{upper:'Túnica do vigilante',lower:'Calça do vigilante',feet:'Botas do vigilante',cape:'Manto escuro',belt:'Cinturão do vigilante',extras:'Cristal de âmbar'},
   cactus_guard:{upper:'Túnica e armadura',lower:'Calça do soldado',feet:'Botas e grevas',cape:'Capa vermelha',belt:'Cinturão dourado',extras:'Escudo e lança'},
