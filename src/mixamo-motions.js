@@ -2,7 +2,7 @@
 // Não recalcula pesos nem modifica vértices, comprimentos ou escalas dos ossos.
 import * as THREE from 'three';
 import {MOTIONS,motionPose} from './motions.js?v=mocap-1';
-import {solveLeg} from './leg-ik.js';
+import {solveMixamoLeg} from './mixamo-leg-ik.js';
 const V=(x=0,y=0,z=0)=>new THREE.Vector3(x,y,z),Q=()=>new THREE.Quaternion();
 export function bakeMixamoMotions(actor,meshes,{fps=30}={}){
   const nodes={};actor.traverse(o=>{const name=o.name.replace(/^mixamorig[:_]?/i,'');if(name!==o.name)nodes[name]=o});
@@ -13,7 +13,7 @@ export function bakeMixamoMotions(actor,meshes,{fps=30}={}){
   const refresh=()=>{actor.updateWorldMatrix(true,true);for(const s of skeletons)s.update()};refresh();
   const intoActor=actor.matrixWorld.clone().invert(),actorRotation=actor.getWorldQuaternion(Q()),actorInverse=actorRotation.clone().invert();
   const position=o=>o.getWorldPosition(V()).applyMatrix4(actor.matrixWorld.clone().invert());
-  const rest=Object.fromEntries(required.map(n=>[n,{p:position(nodes[n]),q:actorInverse.clone().multiply(nodes[n].getWorldQuaternion(Q()))}]));
+  const rest=Object.fromEntries(required.map(n=>[n,{p:position(nodes[n]),localQ:nodes[n].quaternion.clone(),q:actorInverse.clone().multiply(nodes[n].getWorldQuaternion(Q()))}]));
   const legLength=['Left','Right'].reduce((sum,s)=>sum+rest[s+'UpLeg'].p.distanceTo(rest[s+'Leg'].p)+rest[s+'Leg'].p.distanceTo(rest[s+'Foot'].p),0)/2;
   const ankleY=(rest.LeftFoot.p.y+rest.RightFoot.p.y)/2,hipY=(rest.LeftUpLeg.p.y+rest.RightUpLeg.p.y)/2,hipOffset=rest.Hips.p.y-hipY;
   const floorSamples=[];let floor=Infinity;
@@ -50,7 +50,7 @@ export function bakeMixamoMotions(actor,meshes,{fps=30}={}){
     for(const [s,side]of [['L','Left'],['R','Right']]){
       const upper=V(...c.directions['UpperLeg_'+s]),lower=V(...c.directions['LowerLeg_'+s]),normal=upper.clone().cross(lower),bend=normal.length(),direction=targets[side].clone().sub(position(nodes[side+'UpLeg'])).normalize(),pole=V(...c.footForward[s]);pole.addScaledVector(direction,-pole.dot(direction)).normalize();
       if(bend>1e-6)pole.lerp(direction.clone().cross(normal).normalize(),THREE.MathUtils.smoothstep(bend,.035,.12));
-      solveLeg(nodes[side+'UpLeg'],nodes[side+'Leg'],nodes[side+'Foot'],targets[side],actor,pole.normalize());orient(side+'Foot',Q().fromArray(c.footFrames[s]).normalize().multiply(rest[side+'Foot'].q));
+      solveMixamoLeg(nodes[side+'UpLeg'],nodes[side+'Leg'],nodes[side+'Foot'],targets[side],actor,pole.normalize(),{upper:rest[side+'UpLeg'].localQ,lower:rest[side+'Leg'].localQ});orient(side+'Foot',Q().fromArray(c.footFrames[s]).normalize().multiply(rest[side+'Foot'].q));
     }
     refresh();let low=Infinity;
     for(const {m,i}of soles)low=Math.min(low,m.getVertexPosition(i,V()).applyMatrix4(m.matrixWorld).applyMatrix4(intoActor).y);

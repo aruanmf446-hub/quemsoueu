@@ -10,6 +10,7 @@ on:
       - tests/modelos-importados.cjs
       - tests/nana-importada.cjs
       - tests/nana-rig.mjs
+      - tests/nana-pernas.mjs
       - 'scripts/*nana*'
   workflow_dispatch:
 permissions:
@@ -39,6 +40,7 @@ jobs:
             sleep 1
           done
           node tests/nana-rig.mjs
+          node tests/nana-pernas.mjs
           node tests/modelos-importados.cjs
           node tests/nana-importada.cjs
       - uses: actions/upload-artifact@v4

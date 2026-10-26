@@ -4,6 +4,16 @@
 
 A fonte enviada tem 48 juntas e nenhum clipe, porém quase todos os 13.706 vértices estavam ponderados somente no quadril. O esqueleto tinha matrizes inversas mas os nós não tinham TRS, e seu referencial estava girado em relação à geometria. A simples importação não articulava braços/pernas. O original está preservado em `assets/characters/sources/nana-explorer.glb`.
 
+## Correção posterior — giro das pernas
+
+O usuário relatou pernas revirando em movimento. O IK compartilhado encontrava joelho/tornozelo, mas alinhava o eixo local do osso sem conservar sua rotação de vínculo. Na Nana, cujo repouso Mixamo tem meia-volta no osso, essa escolha introduzia um giro axial e mudanças bruscas perto da perna estendida. As amostras esparsas de geometria finita da primeira rodada não verificavam isso.
+
+`src/mixamo-leg-ik.js` conserva o resultado posicional da IK e aplica o alinhamento a partir das rotações de autoria da coxa/canela. O solver procedural compartilhado, as capturas CMU, o arquivo GLB e os pesos da Nana não mudaram. Perfil `mixamo-cmu-v3-roll`; import map e módulo de importação usam `nana-pernas-1` para evitar clipes antigos em cache.
+
+`node tests/nana-pernas.mjs` verifica um caso sintético em torno da perna estendida, alvos/roll, 3.065 amostras nos cinco clipes a 120 Hz, comprimentos e emendas dos loops. Maior mudança angular medida caiu de aproximadamente 43,34° para 3,914° por 1/120 s; erro relativo máximo dos comprimentos: 0,00000107. Não elevar os limites dos testes de estiramento ou esconder a pele para corrigir essa rotação.
+
+Os testes de rig, navegador/exportação e regressão da arqueira são repetidos após essa correção. O teste geométrico passou com maior estiramento de 3,220× e piso mínimo −0,0000253 unidade original. A validação técnica continua distinta de aprovação artística.
+
 ## Preparação feita localmente
 
 A cópia usada no jogo conserva exatamente posições, normais, UVs, índice de 19.610 triângulos e JPEG da fonte. O vínculo foi reconstruído na orientação da geometria, inclusive através dos nós intermediários dos dedos sem influência própria. Os 48 joints foram conservados.

@@ -1,0 +1,20 @@
+// Pernas Mixamo: manter roll de autoria e evitar rotações bruscas entre chaves.
+import fs from 'node:fs';import assert from 'node:assert/strict';import * as T from 'three';
+import{GLTFLoader}from'three/addons/loaders/GLTFLoader.js';
+import{restoreImportedBindPose}from'../src/imported-bind.js';import{bakeMixamoMotions}from'../src/mixamo-motions.js';import{solveMixamoLeg}from'../src/mixamo-leg-ik.js';
+if(!globalThis.ProgressEvent)globalThis.ProgressEvent=class{constructor(type,options){Object.assign(this,options)}};
+// Uma perna de autoria com +Y ao longo do osso e meia-volta no repouso.
+const synthetic=new T.Group(),upper=new T.Bone(),lower=new T.Bone(),foot=new T.Bone();synthetic.add(upper);upper.add(lower);lower.add(foot);upper.position.set(0,1,0);upper.quaternion.setFromAxisAngle(new T.Vector3(1,0,0),Math.PI);lower.position.y=.5;foot.position.y=.5;synthetic.updateMatrixWorld(true);const rest={upper:upper.quaternion.clone(),lower:lower.quaternion.clone()};let previous=null,maxRestAngle=0;
+for(const x of [-1e-5,-1e-7,0,1e-7,1e-5]){solveMixamoLeg(upper,lower,foot,new T.Vector3(x,.01,0),synthetic,new T.Vector3(0,0,1),rest);const angle=upper.quaternion.angleTo(rest.upper)*180/Math.PI;maxRestAngle=Math.max(maxRestAngle,angle);assert(angle<9,'IK perdeu a rotação de repouso');if(previous)assert(previous.angleTo(upper.quaternion)<.001,'Mudança de lado provocou meia-volta');previous=upper.quaternion.clone();assert(foot.getWorldPosition(new T.Vector3()).distanceTo(new T.Vector3(x,.01,0))<1e-6,'Roll mudou o alvo IK')}
+const b=fs.readFileSync(new URL('../assets/characters/nana-explorer.glb',import.meta.url)),n=b.readUInt32LE(12),g=JSON.parse(b.subarray(20,n+20));g.buffers[0].uri='data:application/octet-stream;base64,'+b.subarray(n+28).toString('base64');g.materials=[{}];delete g.images;delete g.textures;
+const gltf=await new GLTFLoader().parseAsync(JSON.stringify(g),'');restoreImportedBindPose(gltf.scene);const actor=new T.Group();actor.add(gltf.scene);actor.updateMatrixWorld(true);const meshes=[];actor.traverse(m=>{if(m.isSkinnedMesh)meshes.push(m)});const clips=bakeMixamoMotions(actor,meshes),mixer=new T.AnimationMixer(gltf.scene),names=['LeftUpLeg','LeftLeg','LeftFoot','RightUpLeg','RightLeg','RightFoot'],bones=Object.fromEntries(names.map(n=>[n,actor.getObjectByName('mixamorig'+n)])),rows=[];
+let samples=0,maximum=0,maxLengthError=0;const lengths={};for(const s of ['Left','Right'])for(const[a,b]of [['UpLeg','Leg'],['Leg','Foot']])lengths[s+a]=bones[s+a].getWorldPosition(new T.Vector3()).distanceTo(bones[s+b].getWorldPosition(new T.Vector3()));
+for(const clip of clips){mixer.stopAllAction();const action=mixer.clipAction(clip);action.setLoop(T.LoopOnce,1);action.clampWhenFinished=true;action.play();const previous={},maxima={};let first,last;
+ for(let i=0;i<=Math.ceil(clip.duration*120);i++){action.time=Math.min(i/120,clip.duration-1e-5);mixer.update(0);actor.updateMatrixWorld(true);const frame={};samples++;
+  for(const name of names){const q=bones[name].getWorldQuaternion(new T.Quaternion()).normalize();frame[name]=q;if(previous[name]){const degrees=previous[name].angleTo(q)*180/Math.PI;maximum=Math.max(maximum,degrees);maxima[name]=Math.max(maxima[name]||0,degrees);assert(degrees<6,clip.name+'/'+name+' girou '+degrees.toFixed(2)+'° em 1/120 s')}previous[name]=q}
+  for(const s of ['Left','Right'])for(const[a,b]of [['UpLeg','Leg'],['Leg','Foot']]){const length=bones[s+a].getWorldPosition(new T.Vector3()).distanceTo(bones[s+b].getWorldPosition(new T.Vector3())),error=Math.abs(length-lengths[s+a])/lengths[s+a];maxLengthError=Math.max(maxLengthError,error);assert(error<1e-4,'IK alterou comprimento: '+s+a)}
+  if(!first)first=frame;last=frame;
+ }
+ if(['Body_lobby','Body_dance_floss','Body_dance_shuffle'].includes(clip.name))for(const name of names)assert(first[name].angleTo(last[name])*180/Math.PI<.05,'Emenda do loop mudou a perna');rows.push({clip:clip.name,maxima});
+}
+console.log(JSON.stringify({samples,maxDegreesPer120Hz:maximum,maxLengthRelativeError:maxLengthError,syntheticRestAngleDegrees:maxRestAngle,rows}));
