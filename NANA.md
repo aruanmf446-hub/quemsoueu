@@ -4,7 +4,24 @@
 
 A fonte enviada tem 48 juntas e nenhum clipe, porém quase todos os 13.706 vértices estavam ponderados somente no quadril. O esqueleto tinha matrizes inversas mas os nós não tinham TRS, e seu referencial estava girado em relação à geometria. A simples importação não articulava braços/pernas. O original está preservado em `assets/characters/sources/nana-explorer.glb`.
 
-## Ajuste posterior — encontro das mãos
+## Revisão atual — mãos, corpo e rosto nas cinco animações
+
+Após revisar os cinco movimentos, o usuário apontou mãos atravessando outras mãos, calças e rosto e punhos desalinhados. A adaptação agora usa o contorno da mão inteira medido nos vértices ponderados, incluindo dedos e polegar. Volumes convexos medidos no tronco e nas pernas consideram a roupa. As mãos contornam as pernas pela lateral anatômica correspondente; o gesto junto à cabeça passa ao lado dos óculos. Um corredor frontal protege a visibilidade dos olhos, mesmo quando a palma está fisicamente afastada da cabeça.
+
+A correção atua somente nos seis canais de braço, antebraço e mão. O solucionador preserva comprimentos e a orientação de autoria, limita a flexão do punho e suaviza as curvas com filtro simétrico de nove amostras a 30 Hz. Depois do filtro, uma projeção limitada corrige contatos residuais, evitando que a interpolação corte o caminho por dentro da roupa. A máscara facial e as margens foram calibradas para a Nana; não constituem uma solução universal de colisão nem animação individual dos dedos.
+
+Perfil `mixamo-cmu-v5-clearance`, módulos/import map `nana-contatos-1`. O GLB preparado continua sem clipes armazenados; o editor gera localmente os cinco movimentos, preservando a fonte enviada. Nenhum processamento pago foi utilizado.
+
+Validação desta revisão:
+
+- `node tests/nana-maos.mjs`: 65 trilhas fora dos braços idênticas à base aprovada `6656d93`, fonte/pesos com o mesmo SHA, 3.065 poses a 120 Hz, continuidade e emendas dos loops, alinhamento dos punhos medido nos vértices reais.
+- `node tests/nana-contatos.mjs`: 13 poses de regressão; 770 poses e nove pares por pose (6.930 verificações de proximidade entre mãos, cabeça, tronco e pernas), usando uma grade espacial independente dos volumes do corretor; 1.535 poses a 60 Hz para conferir a região central dos óculos livre de mãos; regressão de arestas contra triângulos das mãos aos 3,3 s da dança retrô, nos dois sentidos.
+- `node tests/nana-pernas.mjs` e `node tests/nana-rig.mjs`: rotação e comprimentos das pernas, deformação, apoio, geometria e textura originais.
+- `node tests/nana-importada.cjs`: oito poses do GLB reaberto, incluindo rosto, pernas e os cinco movimentos, além de altura, Worker e interface mobile. `tests/modelos-importados.cjs` conserva a regressão da arqueira e a troca entre modelos importados/procedurais.
+
+Uma auditoria adicional de arestas contra triângulos amostrou 770 poses e cinco pares por pose (3.850 verificações), sem cruzamentos detectados. As verificações amostradas não provam ausência de toda interseção entre triângulos ou oclusão em qualquer câmera. A comparação visual está em [revisao/nana-contatos/](revisao/nana-contatos/), com os cinco clipes completos a 24 fps e antes/depois no mesmo arquivo de vídeo. A avaliação artística continua pendente; a Nana não foi removida da fila do README.
+
+## Histórico — primeiro ajuste no encontro das mãos
 
 O usuário aprovou a correção das pernas e pediu um ajuste discreto na posição das mãos. Foram medidas sobreposições no lobby e na dança retrô. `src/mixamo-hands.js` aplica um pequeno afastamento quando as referências das palmas se aproximam, usando a orientação anatômica do tronco. A cadeia do braço mantém seus comprimentos e a orientação capturada da mão. A curva de correção é contínua e é aplicada depois do apoio das pernas.
 

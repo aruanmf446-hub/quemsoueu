@@ -1,0 +1,524 @@
+{
+  "codeCommit": "9b0a58e",
+  "sourceHashes": {
+    "src/mixamo-hands.js": "08df869cff4ec6fa469c65d9d4f406da94430e91e99bec1ce6284a314f0eef5d",
+    "src/mixamo-motions.js": "be749bf65eb6dea2ed030b3cc03fb143e49d478b21362e7ba540d39e9a596a61"
+  },
+  "hands": {
+    "preservedTracks": 65,
+    "contacts": [
+      {
+        "clip": "Body_lobby",
+        "t": 3,
+        "before": 0.013568688704719476,
+        "after": 0.08354794459449805
+      },
+      {
+        "clip": "Body_dance_shuffle",
+        "t": 4.5,
+        "before": 0.019471276928524017,
+        "after": 0.06167150750909413
+      },
+      {
+        "clip": "Body_dance_shuffle",
+        "t": 1.3,
+        "before": 0.01209418822270496,
+        "after": 0.07205740677673987
+      }
+    ],
+    "samples": 3065,
+    "maxDegreesPer120Hz": 8.766077966517257,
+    "maxWristAngle": 42.65136286034371
+  },
+  "contacts": {
+    "contactPoses": 13,
+    "denseContactSamples": 770,
+    "denseContactPairs": 9,
+    "denseContactFailingSamples": 0,
+    "denseContactFailures": [],
+    "eyePoseSamples": 1535,
+    "eyeFailingSamples": 0,
+    "faceVisibility": [
+      {
+        "clip": "Body_lobby",
+        "side": "Left",
+        "maxCovering": 0,
+        "worstTime": 0,
+        "samples": 361
+      },
+      {
+        "clip": "Body_lobby",
+        "side": "Right",
+        "maxCovering": 0,
+        "worstTime": 0,
+        "samples": 361
+      },
+      {
+        "clip": "Body_defeat",
+        "side": "Left",
+        "maxCovering": 0,
+        "worstTime": 0,
+        "samples": 271
+      },
+      {
+        "clip": "Body_defeat",
+        "side": "Right",
+        "maxCovering": 0,
+        "worstTime": 0,
+        "samples": 271
+      },
+      {
+        "clip": "Body_victory",
+        "side": "Left",
+        "maxCovering": 0,
+        "worstTime": 0,
+        "samples": 361
+      },
+      {
+        "clip": "Body_victory",
+        "side": "Right",
+        "maxCovering": 0,
+        "worstTime": 0,
+        "samples": 361
+      },
+      {
+        "clip": "Body_dance_floss",
+        "side": "Left",
+        "maxCovering": 0,
+        "worstTime": 0,
+        "samples": 241
+      },
+      {
+        "clip": "Body_dance_floss",
+        "side": "Right",
+        "maxCovering": 0,
+        "worstTime": 0,
+        "samples": 241
+      },
+      {
+        "clip": "Body_dance_shuffle",
+        "side": "Left",
+        "maxCovering": 0,
+        "worstTime": 0,
+        "samples": 301
+      },
+      {
+        "clip": "Body_dance_shuffle",
+        "side": "Right",
+        "maxCovering": 0,
+        "worstTime": 0,
+        "samples": 301
+      }
+    ],
+    "eyeFailures": [],
+    "trianglePose": {
+      "clip": "Body_dance_shuffle",
+      "time": 3.3
+    },
+    "triangleContacts": [
+      {
+        "hand": "LeftHand",
+        "target": "RightHand",
+        "edges": 394,
+        "triangles": 203,
+        "intersections": 0
+      },
+      {
+        "hand": "RightHand",
+        "target": "LeftHand",
+        "edges": 363,
+        "triangles": 223,
+        "intersections": 0
+      }
+    ],
+    "groups": {
+      "LeftHand": 177,
+      "RightHand": 166,
+      "LeftLeg": 2189,
+      "RightLeg": 2075,
+      "Head": 4359,
+      "Torso": 174
+    },
+    "contacts": [
+      {
+        "clip": "Body_lobby",
+        "t": 1.0666666666666667,
+        "hand": "LeftHand",
+        "target": "RightHand",
+        "before": 0.000994,
+        "after": 0.025440528595377515
+      },
+      {
+        "clip": "Body_lobby",
+        "t": 0.5,
+        "hand": "RightHand",
+        "target": "Torso",
+        "before": 0.000581,
+        "after": 0.024789209350513944
+      },
+      {
+        "clip": "Body_defeat",
+        "t": 3.533333333333333,
+        "hand": "LeftHand",
+        "target": "LeftLeg",
+        "before": 0.000509,
+        "after": 0.02479986816288584
+      },
+      {
+        "clip": "Body_defeat",
+        "t": 2.966666666666667,
+        "hand": "RightHand",
+        "target": "Head",
+        "before": 0.000677,
+        "after": 0.06008757220472464
+      },
+      {
+        "clip": "Body_defeat",
+        "t": 3.566666666666667,
+        "hand": "RightHand",
+        "target": "RightLeg",
+        "before": 0.001161,
+        "after": 0.029697678903158952
+      },
+      {
+        "clip": "Body_victory",
+        "t": 5.866666666666666,
+        "hand": "LeftHand",
+        "target": "LeftLeg",
+        "before": 0.000479,
+        "after": 0.018723948473006267
+      },
+      {
+        "clip": "Body_victory",
+        "t": 5.066666666666666,
+        "hand": "RightHand",
+        "target": "RightLeg",
+        "before": 0.000455,
+        "after": 0.022482753153464815
+      },
+      {
+        "clip": "Body_dance_floss",
+        "t": 3.1666666666666665,
+        "hand": "LeftHand",
+        "target": "Head",
+        "before": 0.000625,
+        "after": 0.06883363573719813
+      },
+      {
+        "clip": "Body_dance_floss",
+        "t": 2.9,
+        "hand": "RightHand",
+        "target": "Head",
+        "before": 0.000725,
+        "after": 0.013846328943384108
+      },
+      {
+        "clip": "Body_dance_floss",
+        "t": 0,
+        "hand": "LeftHand",
+        "target": "LeftLeg",
+        "before": 0.000297,
+        "after": 0.01940611868119687
+      },
+      {
+        "clip": "Body_dance_floss",
+        "t": 0.26666666666666666,
+        "hand": "RightHand",
+        "target": "RightLeg",
+        "before": 0.00112,
+        "after": 0.019584217092996563
+      },
+      {
+        "clip": "Body_dance_shuffle",
+        "t": 4.833333333333333,
+        "hand": "LeftHand",
+        "target": "RightHand",
+        "before": 0.000635,
+        "after": 0.010526820908184154
+      },
+      {
+        "clip": "Body_dance_shuffle",
+        "t": 0.5333333333333333,
+        "hand": "RightHand",
+        "target": "Torso",
+        "before": 0.000982,
+        "after": 0.04329698259756636
+      }
+    ]
+  },
+  "edgeTriangleAudit": {
+    "sourceHashes": {
+      "src/mixamo-hands.js": "08df869cff4ec6fa469c65d9d4f406da94430e91e99bec1ce6284a314f0eef5d",
+      "src/mixamo-motions.js": "be749bf65eb6dea2ed030b3cc03fb143e49d478b21362e7ba540d39e9a596a61"
+    },
+    "rows": {
+      "Body_lobby": {
+        "LeftHand/RightHand": {
+          "samples": 181,
+          "crossingPoses": 0,
+          "maxEdges": 0,
+          "worstTime": 0
+        },
+        "LeftHand/LeftLeg": {
+          "samples": 181,
+          "crossingPoses": 0,
+          "maxEdges": 0,
+          "worstTime": 0
+        },
+        "LeftHand/RightLeg": {
+          "samples": 181,
+          "crossingPoses": 0,
+          "maxEdges": 0,
+          "worstTime": 0
+        },
+        "RightHand/LeftLeg": {
+          "samples": 181,
+          "crossingPoses": 0,
+          "maxEdges": 0,
+          "worstTime": 0
+        },
+        "RightHand/RightLeg": {
+          "samples": 181,
+          "crossingPoses": 0,
+          "maxEdges": 0,
+          "worstTime": 0
+        }
+      },
+      "Body_defeat": {
+        "LeftHand/RightHand": {
+          "samples": 136,
+          "crossingPoses": 0,
+          "maxEdges": 0,
+          "worstTime": 0
+        },
+        "LeftHand/LeftLeg": {
+          "samples": 136,
+          "crossingPoses": 0,
+          "maxEdges": 0,
+          "worstTime": 0
+        },
+        "LeftHand/RightLeg": {
+          "samples": 136,
+          "crossingPoses": 0,
+          "maxEdges": 0,
+          "worstTime": 0
+        },
+        "RightHand/LeftLeg": {
+          "samples": 136,
+          "crossingPoses": 0,
+          "maxEdges": 0,
+          "worstTime": 0
+        },
+        "RightHand/RightLeg": {
+          "samples": 136,
+          "crossingPoses": 0,
+          "maxEdges": 0,
+          "worstTime": 0
+        }
+      },
+      "Body_victory": {
+        "LeftHand/RightHand": {
+          "samples": 181,
+          "crossingPoses": 0,
+          "maxEdges": 0,
+          "worstTime": 0
+        },
+        "LeftHand/LeftLeg": {
+          "samples": 181,
+          "crossingPoses": 0,
+          "maxEdges": 0,
+          "worstTime": 0
+        },
+        "LeftHand/RightLeg": {
+          "samples": 181,
+          "crossingPoses": 0,
+          "maxEdges": 0,
+          "worstTime": 0
+        },
+        "RightHand/LeftLeg": {
+          "samples": 181,
+          "crossingPoses": 0,
+          "maxEdges": 0,
+          "worstTime": 0
+        },
+        "RightHand/RightLeg": {
+          "samples": 181,
+          "crossingPoses": 0,
+          "maxEdges": 0,
+          "worstTime": 0
+        }
+      },
+      "Body_dance_floss": {
+        "LeftHand/RightHand": {
+          "samples": 121,
+          "crossingPoses": 0,
+          "maxEdges": 0,
+          "worstTime": 0
+        },
+        "LeftHand/LeftLeg": {
+          "samples": 121,
+          "crossingPoses": 0,
+          "maxEdges": 0,
+          "worstTime": 0
+        },
+        "LeftHand/RightLeg": {
+          "samples": 121,
+          "crossingPoses": 0,
+          "maxEdges": 0,
+          "worstTime": 0
+        },
+        "RightHand/LeftLeg": {
+          "samples": 121,
+          "crossingPoses": 0,
+          "maxEdges": 0,
+          "worstTime": 0
+        },
+        "RightHand/RightLeg": {
+          "samples": 121,
+          "crossingPoses": 0,
+          "maxEdges": 0,
+          "worstTime": 0
+        }
+      },
+      "Body_dance_shuffle": {
+        "LeftHand/RightHand": {
+          "samples": 151,
+          "crossingPoses": 0,
+          "maxEdges": 0,
+          "worstTime": 0
+        },
+        "LeftHand/LeftLeg": {
+          "samples": 151,
+          "crossingPoses": 0,
+          "maxEdges": 0,
+          "worstTime": 0
+        },
+        "LeftHand/RightLeg": {
+          "samples": 151,
+          "crossingPoses": 0,
+          "maxEdges": 0,
+          "worstTime": 0
+        },
+        "RightHand/LeftLeg": {
+          "samples": 151,
+          "crossingPoses": 0,
+          "maxEdges": 0,
+          "worstTime": 0
+        },
+        "RightHand/RightLeg": {
+          "samples": 151,
+          "crossingPoses": 0,
+          "maxEdges": 0,
+          "worstTime": 0
+        }
+      }
+    },
+    "firstFailures": [],
+    "crossingPosePairs": 0,
+    "pairChecks": 3850
+  },
+  "legs": {
+    "samples": 3065,
+    "maxDegreesPer120Hz": 3.9135543620554385,
+    "maxLengthRelativeError": 1.062008803039171e-06,
+    "syntheticRestAngleDegrees": 8.10961445599407,
+    "rows": [
+      {
+        "clip": "Body_lobby",
+        "maxima": {
+          "LeftUpLeg": 0.06161429030337957,
+          "LeftLeg": 0.0781311627140705,
+          "LeftFoot": 0.042850676882665514,
+          "RightUpLeg": 0.046562019365640035,
+          "RightLeg": 0.04759524226669605,
+          "RightFoot": 0.054478736713135405
+        }
+      },
+      {
+        "clip": "Body_defeat",
+        "maxima": {
+          "LeftUpLeg": 0.758391856478175,
+          "LeftLeg": 0.7358766908294351,
+          "LeftFoot": 0.3298513095242805,
+          "RightUpLeg": 0.7354696253216799,
+          "RightLeg": 0.7357253853527435,
+          "RightFoot": 0.7143495558699503
+        }
+      },
+      {
+        "clip": "Body_victory",
+        "maxima": {
+          "LeftUpLeg": 2.349239966794964,
+          "LeftLeg": 1.9189413592459583,
+          "LeftFoot": 0.805126062384157,
+          "RightUpLeg": 3.9135543620554385,
+          "RightLeg": 2.927986162684807,
+          "RightFoot": 0.7028421756346392
+        }
+      },
+      {
+        "clip": "Body_dance_floss",
+        "maxima": {
+          "LeftUpLeg": 0.6042512247486641,
+          "LeftLeg": 0.512468695813213,
+          "LeftFoot": 0.17395028582570995,
+          "RightUpLeg": 0.5662348719046452,
+          "RightLeg": 0.4990559336812264,
+          "RightFoot": 0.26107208777732643
+        }
+      },
+      {
+        "clip": "Body_dance_shuffle",
+        "maxima": {
+          "LeftUpLeg": 1.16975072890661,
+          "LeftLeg": 1.240069930931297,
+          "LeftFoot": 0.5409443736821993,
+          "RightUpLeg": 1.0329541794404293,
+          "RightLeg": 1.2826046657861132,
+          "RightFoot": 0.5195924304182268
+        }
+      }
+    ]
+  },
+  "rig": {
+    "triangles": 19610,
+    "vertices": 13706,
+    "skinJoints": 48,
+    "activeJoints": 22,
+    "clips": 5,
+    "poses": 45,
+    "minFloor": -2.5216000665381152e-05,
+    "maxFloor": 0.004711840372935152,
+    "maxStretch": 3.2674387059487255,
+    "handRelativeMotion": 0.46934714283980533,
+    "sourceSHA256": "e76c2cbf5e01fe03aeaa0d729c9ea5f94cfc813fe89ec248421e29f25003d91e",
+    "preparedSHA256": "3e9f8042191968579d34704798c22174b72c2d8908f85d61eeb0ac7a38628f42"
+  },
+  "browser": {
+    "vertices": 13706,
+    "triangles": 19610,
+    "joints": 48,
+    "clips": 5,
+    "exportBytes": 2030360,
+    "reimportMaxError": 0,
+    "reimportPoses": 8,
+    "worker": true,
+    "errors": []
+  },
+  "production": {
+    "profile": "mixamo-cmu-v5-clearance",
+    "clips": [
+      "lobby",
+      "defeat",
+      "victory",
+      "dance_floss",
+      "dance_shuffle"
+    ],
+    "hashes": {
+      "src/mixamo-motions.js": "be749bf65eb6dea2ed030b3cc03fb143e49d478b21362e7ba540d39e9a596a61",
+      "src/mixamo-hands.js": "08df869cff4ec6fa469c65d9d4f406da94430e91e99bec1ce6284a314f0eef5d"
+    },
+    "errors": []
+  },
+  "limits": "Amostragem de poses; não comprova ausência universal de contatos em todos os instantes e ângulos."
+}

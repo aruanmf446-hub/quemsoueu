@@ -1,6 +1,16 @@
 # Continuidade
 
-## Rodada atual — posição das mãos da Nana
+## Rodada atual — mãos nas cinco animações da Nana
+
+O usuário enviou capturas das cinco animações e ampliou o pedido: sobreposição mão/mão, mão/perna, mão/rosto e alinhamento. Preservar a aprovação das pernas. Não retomar outros personagens nem marcar a Nana aprovada no README.
+
+`src/mixamo-hands.js` usa os vértices ponderados da mão inteira e volumes convexos de corpo/roupa. Braços contornam a calça pelo lado anatômico; as mãos seguem para a lateral do rosto, com um corredor frontal dos óculos. Punhos recebem limite de flexão. `src/mixamo-motions.js` suaviza apenas os seis canais de braço/punho e reprojeta contatos residuais com movimento limitado. As outras 65 trilhas são byte a byte iguais à base `6656d93`. Geometria, textura, pesos e fonte GLB permanecem intactos.
+
+Perfil `mixamo-cmu-v5-clearance`, import map/importação principal `nana-contatos-1`. Miniaturas estáticas não mudaram. `tests/nana-maos.mjs` agora cobre os braços dos cinco clipes, mantendo hashes de todas as trilhas fora deles; a alteração do escopo foi pedida explicitamente pelo usuário. `tests/nana-contatos.mjs` mede contatos na malha real, independentemente dos volumes do corretor: 13 poses, 6.930 verificações densas e 1.535 poses de visibilidade dos óculos. Não enfraquecer limites de deformação/continuidade para obter aprovação.
+
+Captura `tests/nana-contatos-video.cjs` compara a base imutável `8c44e5b` (servidor 8004) com a atual (8000), com câmera e materiais iguais, a 24 fps e sombras de revisão desativadas. `tests/publicar-nana-contatos.py` exige hashes atuais e decodifica os vídeos. Publicação em `revisao/nana-contatos/`, controles nativos, antes/depois codificados no mesmo vídeo. Artefatos de auditoria em `/workspace/outputs/nana-contatos/`; documentação em `NANA.md`. A aprovação estética continua pertencendo ao usuário.
+
+## Histórico — primeiro ajuste das mãos da Nana
 
 O usuário aprovou a melhora das pernas e pediu um pequeno ajuste na posição das mãos que se cobriam. Foi feita uma pergunta opcional sobre o tipo de sobreposição; sem resposta até esta implementação. A medição encontrou fusão das mãos no lobby/dança retrô. A Macarena leva as mãos perto da cabeça como parte da captura; esse gesto não foi alterado nesta rodada. Não afirmar que houve correção geral de mãos/rosto.
 

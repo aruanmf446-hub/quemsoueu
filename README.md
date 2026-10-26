@@ -1,6 +1,10 @@
 # Quem Sou Eu — Ateliê Facial · Head V2
 
-## Nana — ajuste no encontro das mãos
+## Nana — mãos nas cinco animações
+
+Correção das trajetórias das mãos no lobby, derrota, vitória, Macarena e dança retrô: separação das palmas, desvio pelas laterais da calça e do rosto e alinhamento dos punhos. Pernas, quadril, tronco e cabeça mantêm suas trilhas aprovadas. Malha, textura e pesos continuam intactos. [Comparar as cinco animações](revisao/nana-contatos/) · [Implementação e validação](NANA.md). **A Nana permanece na fila até sua aprovação visual.**
+
+## Histórico — primeiro ajuste no encontro das mãos
 
 Ajuste discreto na separação das mãos durante o lobby e a dança retrô. A comparação com a versão aprovada conserva as trilhas das pernas, do quadril e do tronco; derrota, vitória e Macarena mantêm seus gestos. [Ver comparação em vídeo](revisao/nana-maos/) · [Detalhes e validação](NANA.md). A Nana continua pendente na fila de refinamento.
 

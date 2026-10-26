@@ -1,0 +1,134 @@
+{
+  "baseline": "8c44e5b",
+  "rows": [
+    {
+      "phase": "depois",
+      "id": "lobby",
+      "frames": 144,
+      "width": 400,
+      "height": 560,
+      "fps": 24,
+      "duration": 6,
+      "camera": [
+        1.8,
+        -1.4999999999999996,
+        17.4
+      ],
+      "target": [
+        0,
+        -1.7,
+        0
+      ],
+      "file": "comparacao-lobby.mp4",
+      "closeTime": 1.0666666666666667,
+      "sha256": "5f4d32fec38ad354c73dd78a322e91fb4b2266fe85b49b20be2e804485c48806",
+      "decoded": true
+    },
+    {
+      "phase": "depois",
+      "id": "defeat",
+      "frames": 108,
+      "width": 400,
+      "height": 560,
+      "fps": 24,
+      "duration": 4.5,
+      "camera": [
+        1.8,
+        -1.4999999999999996,
+        17.4
+      ],
+      "target": [
+        0,
+        -1.7,
+        0
+      ],
+      "file": "comparacao-defeat.mp4",
+      "closeTime": 2.966666666666667,
+      "sha256": "8e6d0416284edf1bb432d31b2efffaa020f1cf622900da2777f9a30b267b486c",
+      "decoded": true
+    },
+    {
+      "phase": "depois",
+      "id": "victory",
+      "frames": 144,
+      "width": 400,
+      "height": 560,
+      "fps": 24,
+      "duration": 6,
+      "camera": [
+        1.8,
+        -1.4999999999999996,
+        17.4
+      ],
+      "target": [
+        0,
+        -1.7,
+        0
+      ],
+      "file": "comparacao-victory.mp4",
+      "closeTime": 5.066666666666666,
+      "sha256": "7ec9080757ca2a71e6a63bd2f7185ab5124ba9e7eda3b3fceab813a4e3fbcedc",
+      "decoded": true
+    },
+    {
+      "phase": "depois",
+      "id": "dance_floss",
+      "frames": 96,
+      "width": 400,
+      "height": 560,
+      "fps": 24,
+      "duration": 4,
+      "camera": [
+        1.8,
+        -1.4999999999999996,
+        17.4
+      ],
+      "target": [
+        0,
+        -1.7,
+        0
+      ],
+      "file": "comparacao-dance_floss.mp4",
+      "closeTime": 3,
+      "sha256": "042760b381517dbde69d2118f4d86893e58e93ca0e03f78a5789baa11dd93f3c",
+      "decoded": true
+    },
+    {
+      "phase": "depois",
+      "id": "dance_shuffle",
+      "frames": 120,
+      "width": 400,
+      "height": 560,
+      "fps": 24,
+      "duration": 5,
+      "camera": [
+        1.8,
+        -1.4999999999999996,
+        17.4
+      ],
+      "target": [
+        0,
+        -1.7,
+        0
+      ],
+      "file": "comparacao-dance_shuffle.mp4",
+      "closeTime": 4.833333333333333,
+      "sha256": "428ae064597732acbf04ab147f70c7a0976cbeed7dfe14458451cd022331208b",
+      "decoded": true
+    }
+  ],
+  "sourceHashes": {
+    "src/mixamo-motions.js": "be749bf65eb6dea2ed030b3cc03fb143e49d478b21362e7ba540d39e9a596a61",
+    "src/mixamo-hands.js": "08df869cff4ec6fa469c65d9d4f406da94430e91e99bec1ce6284a314f0eef5d",
+    "src/mixamo-leg-ik.js": "c2acfcd36c724df8d17567deddbd1e2a99399e173e7519e75a7fda9c67dbfb5c",
+    "assets/characters/nana-explorer.glb": "3e9f8042191968579d34704798c22174b72c2d8908f85d61eeb0ac7a38628f42"
+  },
+  "beforeSourceHashes": {
+    "src/mixamo-motions.js": "aef57ed309870617eca5240e6bd826e94ab4c1f03541bbaf0a5fd7cb6bcff467",
+    "src/mixamo-hands.js": "6c8fd33f6b0c0df4e2a3b3e866df951981305b7e799f9ebfb582bb7d1015c307",
+    "src/mixamo-leg-ik.js": "c2acfcd36c724df8d17567deddbd1e2a99399e173e7519e75a7fda9c67dbfb5c",
+    "assets/characters/nana-explorer.glb": "3e9f8042191968579d34704798c22174b72c2d8908f85d61eeb0ac7a38628f42"
+  },
+  "shadows": false,
+  "errors": []
+}
