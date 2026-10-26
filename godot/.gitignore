@@ -1,0 +1,6 @@
+# Cache e configurações locais do editor Godot
+.godot/
+.import/
+
+# Builds exportados (Web e Android)
+build/
