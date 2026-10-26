@@ -60,9 +60,9 @@ function buildHead(...args){window.__headBuildCount=(window.__headBuildCount||0)
    const report=await page.evaluate(id=>{
     const a=window.__atelie,g=a.group();window.__render();let meshes=0;
     g.traverse(m=>{if(m.isMesh){meshes++;if(!m.geometry.attributes.position.array.every(Number.isFinite))throw Error('Malha inválida: '+id)}});
-    return{id,active:document.querySelector('[data-preset].active')?.dataset.preset,name:g.name,meshes,previews:a.editor.previews.stats()};
+    return{id,active:document.querySelector('[data-preset].active')?.dataset.preset,name:g.name,kind:a.assetKind(),meshes,previews:a.editor.previews.stats()};
    },id);
-   assert.equal(report.active,id);assert.equal(report.name,'Head_V2_'+id);assert(report.meshes>0);assert.equal(report.previews.failed,false);
+   assert.equal(report.active,id);assert.equal(report.kind,id==='forest_archer_f'?'glb':'procedural');assert.equal(report.name,report.kind==='glb'?'Modelo_Importado':'Head_V2_'+id);assert(report.meshes>0);assert.equal(report.previews.failed,false);
    report.ms=Date.now()-start;report.preview=preview;reports.push(report);console.log('OK',id,report.ms+'ms',JSON.stringify(preview));
    fs.writeFileSync(path.join(out,'parcial.json'),JSON.stringify({reports,rapid,errors,warnings},null,2));
   }

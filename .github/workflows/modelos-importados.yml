@@ -1,0 +1,43 @@
+name: Validar modelos GLB importados
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/modelos-importados.yml
+      - index.html
+      - 'src/**'
+      - 'assets/characters/**'
+      - tests/modelos-importados.cjs
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: modelos-importados-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  arqueira:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Preparar navegador e dependências
+        run: |
+          npm install --no-save --package-lock=false --no-audit --no-fund three@0.180.0 playwright
+          npx playwright install --with-deps chromium
+          sudo ln -sf "$(node -p "require('playwright').chromium.executablePath()")" /usr/bin/chromium
+      - name: Validar importação, altura, movimentos, Worker e GLB
+        run: |
+          python3 -m http.server 8000 > /tmp/atelie-importados-http.log 2>&1 &
+          for tentativa in $(seq 1 30); do
+            if curl -fsS http://localhost:8000/ -o /dev/null; then break; fi
+            sleep 1
+          done
+          node tests/modelos-importados.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: arqueira-glb
+          path: renders/importados/

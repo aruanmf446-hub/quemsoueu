@@ -120,7 +120,8 @@ light(0xffffff,.9,-3.5,2.5,-4);
 
 // ---------- estado ----------
 // cada personagem guarda o próprio visual (pele, cabelo, barba, acessórios, cores); trocar de personagem e voltar mantém as escolhas
-let presetId='feminine_soft',current=null,lookObj=null,clothesObj=null;const looks={};
+const requestedPreset=new URLSearchParams(location.search).get('personagem');
+let presetId=Object.hasOwn(PRESETS,requestedPreset)?requestedPreset:'feminine_soft',current=null,lookObj=null,clothesObj=null;const looks={};
 const getLook=()=>looks[presetId]||(looks[presetId]=defaultLook(presetId));
 let activeClothSlot='upper',editor=null;
 const el=id=>document.getElementById(id);
@@ -434,12 +435,14 @@ document.getElementById('download').onclick=async e=>{
 };
 window.__atelie={bodyRig:()=>current?.bodyRig,get motions(){return motionCatalog()},capabilities:()=>current?.capabilities||null,assetKind:()=>current?.imported?'glb':'procedural',playMotion,pauseMotion:()=>{current.bodyRig?.pause();motionPlaying=false;refreshMotionUI()},stopMotion,seekMotion:t=>current.bodyRig?.seek(t),root:()=>current.root,savedLook:id=>structuredClone(looks[id]||defaultLook(id)),clothes:()=>clothesObj,setPiece:choosePiece,setPieceColors,pieceOptions:slot=>current?.imported?[]:pieceOptions(current.body,slot),setOutfit:chooseOutfit,setClothColors:colors=>{if(current?.imported)return false;Object.assign(getLook().clothColors,colors);for(const piece of Object.values(getLook().pieceColors||{}))Object.assign(piece,colors);clothesObj.setColors(getLook().clothColors);refreshUI()},frame:()=>frame,body:()=>current.body,getLook,setBuild,setHeight,bodyTiming:()=>bodyTiming,setLook,rebuildLook,lookObj:()=>lookObj,setExpression,setPose:p=>{pose={...NEUTRAL,...p};exprName=null;syncPoseUI();applyPose()},stopAuto:()=>{document.getElementById('autoBlink').checked=false;document.getElementById('talk').checked=false},group:()=>current.group,timings:()=>current.group.userData.timings,setPreset,aim,VIEWS,camera,orbit,clay:on=>current.group.traverse(o=>{if(o.isMesh&&o.material.vertexColors!==undefined&&o.material.name==='Skin'){o.material.vertexColors=!on;o.material.sheen=on?0:.6;if(on)o.material.color.set('#d8d4cf');else o.material.color.set('#ffffff');o.material.needsUpdate=true}}),exportGLB};
 
-rebuildHead();aim(...VIEWS.three);statusEl.textContent=PRESETS[presetId].label;
+host.setAttribute('aria-busy','true');statusEl.textContent='Carregando '+PRESETS[presetId].label+'…';
+try{await rebuildHead()}catch(error){console.error('Falha no modelo inicial:',error);presetId='feminine_soft';await rebuildHead();statusEl.textContent='Não foi possível abrir o modelo. Escolha-o novamente para tentar.'}
+host.setAttribute('aria-busy','false');aim(...VIEWS.three);if(!statusEl.textContent.startsWith('Não foi'))statusEl.textContent=PRESETS[presetId].label;
 editor=mountEditor({families:FAMILY_ORDER,slots:CLOTH_SLOTS,accessories:ACC_SLOTS,getContext:()=>({id:presetId,look:structuredClone(getLook()),capabilities:current?.capabilities||null}),selectSlot:slot=>{activeClothSlot=slot},refresh:refreshUI,previewBody,previewHeight,onLayout:()=>resize()});
 refreshUI();
 window.__atelie.editor=editor;
 // Links de teste abrem a mesma produção já no personagem e movimento escolhidos.
-async function openMotionLink(){const query=new URLSearchParams(location.search),id=query.get('personagem'),motion=query.get('animacao');if(id&&Object.hasOwn(PRESETS,id))await setPreset(id);if(motion&&Object.hasOwn(motionCatalog(),motion)){editor.select('motions','shared');await playMotion(motion)}}
+async function openMotionLink(){const query=new URLSearchParams(location.search),id=query.get('personagem'),motion=query.get('animacao');if(id&&Object.hasOwn(PRESETS,id)&&id!==current?.params.id)await setPreset(id);if(motion&&Object.hasOwn(motionCatalog(),motion)){editor.select('motions','shared');await playMotion(motion)}}
 openMotionLink();
 function resize(){const w=host.clientWidth,h=Math.max(1,host.clientHeight-(host.querySelector('.stage-controls')?.offsetHeight||0));renderer.domElement.style.height=h+'px';renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}addEventListener('resize',resize);resize();
 let lastT=performance.now();
