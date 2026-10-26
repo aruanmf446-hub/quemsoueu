@@ -1,14 +1,20 @@
 # Quem Sou Eu — Ateliê Facial · Head V2
 
+## Nana — rig recebido sem movimentos
+
+[Abrir a Nana](https://aruanmf446-hub.github.io/quemsoueu/?personagem=nana_explorer). O GLB recebido tinha 48 juntas e nenhum clipe, mas quase todos os vértices estavam presos ao quadril. Uma cópia recebeu correção de vínculo e pesos calculados no Blender, transferidos para os 13.706 vértices originais. Posições, normais, UVs, triângulos e JPEG permanecem iguais à fonte. O arquivo enviado está preservado em `assets/characters/sources/`.
+
+Os cinco movimentos existentes do jogo são adaptados localmente ao esqueleto da Nana: lobby, derrota, vitória, Macarena e dança retrô. O GLB exportado inclui esses cinco clipes. Não houve geração paga. [Origem, validação, limites e reprodução](NANA.md). **A Nana continua na fila de refinamento e aprovação visual.**
+
 ## Arqueira — primeiro modelo GLB integrado
 
 A arqueira agora usa o **GLB enviado pelo usuário**, preservando sua malha, textura e esqueleto. [Abrir no Ateliê](https://aruanmf446-hub.github.io/quemsoueu/?personagem=forest_archer_f). O arquivo original tem 2,47 MiB, 19.077 triângulos, textura 2K e 65 ossos. Espera, tristeza e dança original estão disponíveis com pausa, posição e velocidade. Altura proporcional, vistas, miniatura em Worker e exportação também usam o modelo importado.
 
-Peso/músculo, troca de cabelo/roupas/acessórios e expressões faciais exigem preparação específica desta malha; o menu informa a indisponibilidade e não aplica controles sem efeito. Os outros 33 personagens continuam no gerador procedural. O catálogo em `src/imported-character.js` permite cadastrar outros modelos com suas capacidades e animações. Nenhuma geração ou processamento pago foi utilizado nesta integração.
+Peso/músculo, troca de cabelo/roupas/acessórios e expressões faciais exigem preparação específica desta malha; o menu informa a indisponibilidade e não aplica controles sem efeito. Além da Nana e da arqueira importadas, os outros 32 personagens continuam no gerador procedural. O catálogo em `src/imported-character.js` permite cadastrar outros modelos com suas capacidades e animações. Nenhuma geração ou processamento pago foi utilizado nesta integração.
 
 Detalhes, origem e próximos passos em [ARQUEIRA.md](ARQUEIRA.md) e [assets/characters/PROVENANCE.md](assets/characters/PROVENANCE.md). Teste de integração: `node tests/modelos-importados.cjs`, com servidor local na porta 8000. **A arqueira continua na lista pendente de aprovação visual.** A [comparação anterior](revisao/arqueira/) registra o refinamento procedural, anterior à importação.
 
-Protótipo separado do jogo principal para aprovar personagens cartoon 3D. Reúne modelos procedurais personalizáveis e o primeiro personagem GLB importado.
+Protótipo separado do jogo principal para aprovar personagens cartoon 3D. Reúne modelos procedurais personalizáveis e o Nana e arqueira em GLB.
 
 ## Animações e esqueleto corporal
 
@@ -16,7 +22,7 @@ A biblioteca usa movimento humano capturado: lobby, derrota, vitória, Macarena 
 
 Correção após a reprovação da primeira vinculação: pesos contínuos para remover pontas nas axilas, proteção de cinturas largas e equipamentos rígidos. [Comparação antes/depois](revisao/correcao-rig/) · [Detalhes da correção](CORRECAO-RIG.md).
 
-Os 33 personagens procedurais têm rig corporal com 26 ossos (quatro para tecidos) e uma biblioteca compartilhada, com adaptação às cinco anatomias. A arqueira importada conserva seus 65 ossos e três animações próprias. Abra **Animações → Reações e danças** para testar, pausar, mudar velocidade, consultar os ossos e comparar os personagens. O GLB inclui os clipes corporais e as expressões faciais. [Abrir Nico dançando na produção](https://aruanmf446-hub.github.io/quemsoueu/?v=altura-roupas-1&personagem=nico_inventor&animacao=dance_floss).
+Os 32 personagens procedurais têm rig corporal com 26 ossos (quatro para tecidos) e uma biblioteca compartilhada, com adaptação às cinco anatomias. A arqueira importada conserva seus 65 ossos e três animações próprias; a Nana usa 48 juntas e cinco movimentos adaptados. Abra **Animações → Reações e danças** para testar, pausar, mudar velocidade, consultar os ossos e comparar os personagens. O GLB inclui os clipes corporais e as expressões faciais. [Abrir Nico dançando na produção](https://aruanmf446-hub.github.io/quemsoueu/?v=altura-roupas-1&personagem=nico_inventor&animacao=dance_floss).
 
 ## Altura dos personagens
 

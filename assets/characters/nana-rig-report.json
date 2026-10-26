@@ -1,0 +1,14 @@
+{
+  "sourceVertices": 13706,
+  "proxyVertices": 27000,
+  "proxyWeighted": 26928,
+  "sourceMotionClips": 0,
+  "preparedMotionClips": 0,
+  "activeJoints": 22,
+  "skinJoints": 48,
+  "sourceJoint0WeightSum": 13704.0,
+  "preparedWeightSumError": 1.1920928955078125e-07,
+  "transferDistanceMax": 0.016426132518647274,
+  "transferDistanceMedian": 0.0026122148736861758,
+  "preparedBytes": 2181440
+}

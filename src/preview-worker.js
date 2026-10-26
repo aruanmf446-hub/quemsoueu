@@ -23,7 +23,7 @@ for(const [c,i,x,y,z]of [[0xfff7f0,2.9,-2.6,3.6,6],[0xf4ecea,.65,3.5,.6,5],[0xff
 let head,body,visual,clothes,root,headKey,bodyKey,visualKey,clothesKey;
 function clear(){if(clothes)clothes.dispose();if(visual)visual.dispose();if(body){body.geo.dispose();if(body.vegSkin)body.mesh.material.dispose()}if(head)head.dispose();root?.removeFromParent();head=body=visual=clothes=null;headKey=bodyKey=visualKey=clothesKey=null}
 async function assemble(id,look,baseURL){
-  if(IMPORTED_CHARACTERS[id]){clear();heroStudio(scene,renderer,id);head=await loadImportedCharacter(id,{baseURL});root=head.root;scene.add(root);applyCharacterHeight(root,id,look.height,head.fit.ySole);return}
+  if(IMPORTED_CHARACTERS[id]){clear();heroStudio(scene,renderer,id);head=await loadImportedCharacter(id,{baseURL,animations:false});root=head.root;scene.add(root);applyCharacterHeight(root,id,look.height,head.fit.ySole);return}
   heroStudio(scene,renderer,id);
   const hk=JSON.stringify([id,headOpts(look,PRESETS[id])]);
   if(hk!==headKey){clear();head=buildHead(id,{},{quality:1,...headOpts(look,PRESETS[id])});root=new THREE.Group();root.add(head.group);scene.add(root);headKey=hk}

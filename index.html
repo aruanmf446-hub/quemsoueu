@@ -72,11 +72,11 @@ button:hover{background:#f6eaee}.preset.active:hover{background:#4a3642}
 </div>
 <script type="module">
 import * as THREE from 'three';
-import {mountEditor} from './src/editor.js?v=modelos-glb-1';
+import {mountEditor} from './src/editor.js?v=nana-glb-1';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {GLTFExporter} from 'three/addons/exporters/GLTFExporter.js';
 import {RoomEnvironment} from 'three/addons/environments/RoomEnvironment.js';
-import {IMPORTED_CHARACTERS,loadImportedCharacter} from './src/imported-character.js?v=modelos-glb-1';
+import {IMPORTED_CHARACTERS,loadImportedCharacter} from './src/imported-character.js?v=nana-glb-1';
 import {buildHead,BEARD_STYLES} from './src/head.js';
 import {PRESETS,PRESET_ORDER,FAMILY_ORDER} from './src/presets.js';
 import {EXPRESSIONS,NEUTRAL,talkPose} from './src/rig.js';
@@ -308,8 +308,8 @@ function dropBodyRig(h){if(!h?.bodyRig)return;if(h===current){const state=h.body
 function ensureBodyRig(h){if(!h||h.bodyRig)return;h.bodyRig=buildBodyRig(h,clothesObj);h.bodyRig.setSpeed(Number(el('motionSpeed').value));if(selectedMotion){h.bodyRig.play(selectedMotion);h.bodyRig.seek(motionTime);if(!motionPlaying)h.bodyRig.pause()}if(el('motionSkeleton').checked)h.bodyRig.showSkeleton(true)}
 function editBodyRig(fn){if(!rigEditDepth++)dropBodyRig(current);try{return fn()}finally{if(!--rigEditDepth)ensureBodyRig(current)}}
 function motionCatalog(){return current?.imported?current.bodyRig.motions:MOTIONS}
-function motionButtons(){el('motionStop').textContent=current?.imported?'Parar / pose T':'Parar / pose A';el('gMotions').querySelector('p.muted').textContent=current?.imported?'Escolha um dos movimentos incluídos nesta personagem.':'Escolha uma reação ou dança. Troque de personagem para comparar o mesmo movimento.';const catalog=motionCatalog();el('motionButtons').replaceChildren(...Object.entries(catalog).map(([id,def])=>{const b=document.createElement('button');b.dataset.motion=id;b.textContent=def.label;b.title=def.description;b.onclick=()=>playMotion(id);return b}));refreshMotionUI()}
-function refreshMotionUI(){const catalog=motionCatalog();for(const b of el('motionButtons').children){const on=b.dataset.motion===selectedMotion;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on)}el('motionPause').textContent=motionPlaying?'Pausar':'Continuar';el('motionTime').max=selectedMotion?catalog[selectedMotion]?.duration||6:6;el('motionTime').value=motionTime;el('motionStatus').textContent=selectedMotion&&catalog[selectedMotion]?catalog[selectedMotion].label+' · '+catalog[selectedMotion].description:current?.imported?'Pose T':'Pose A';}
+function motionButtons(){el('motionStop').textContent=current?.imported?'Parar / pose original':'Parar / pose A';el('gMotions').querySelector('p.muted').textContent=current?.imported?'Escolha um dos movimentos disponíveis nesta personagem.':'Escolha uma reação ou dança. Troque de personagem para comparar o mesmo movimento.';const catalog=motionCatalog();el('motionButtons').replaceChildren(...Object.entries(catalog).map(([id,def])=>{const b=document.createElement('button');b.dataset.motion=id;b.textContent=def.label;b.title=def.description;b.onclick=()=>playMotion(id);return b}));refreshMotionUI()}
+function refreshMotionUI(){const catalog=motionCatalog();for(const b of el('motionButtons').children){const on=b.dataset.motion===selectedMotion;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on)}el('motionPause').textContent=motionPlaying?'Pausar':'Continuar';el('motionTime').max=selectedMotion?catalog[selectedMotion]?.duration||6:6;el('motionTime').value=motionTime;el('motionStatus').textContent=selectedMotion&&catalog[selectedMotion]?catalog[selectedMotion].label+' · '+catalog[selectedMotion].description:current?.imported?'Pose original':'Pose A';}
 async function playMotion(id){if(!Object.hasOwn(motionCatalog(),id))return false;if(!el('showBody').checked){el('showBody').checked=true;await busy('Montando corpo…',rebuildHead)}ensureBodyRig(current);selectedMotion=id;motionTime=0;motionPlaying=true;current.bodyRig.play(id);frameBody();aim(...VIEWS.three);refreshMotionUI();return true}
 function stopMotion(){selectedMotion=null;motionTime=0;motionPlaying=false;current?.bodyRig?.stop();refreshMotionUI();applyPose()}
 el('motionPause').onclick=()=>{if(!selectedMotion)return;motionPlaying=!current.bodyRig.state().playing;if(motionPlaying)current.bodyRig.resume();else current.bodyRig.pause();refreshMotionUI()};

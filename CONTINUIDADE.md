@@ -1,6 +1,14 @@
 # Continuidade
 
-## Rodada atual — arqueira GLB enviada pelo usuário
+## Rodada atual — Nana com rig, sem movimentos na fonte
+
+O usuário enviou o GLB rigado da Nana para integração. A fonte tem 13.706 vértices, 19.610 triângulos, 48 juntas e nenhum clipe, mas mais de 99,9% do peso total estava no quadril; os nós também não tinham TRS. A orientação do rig diferia da geometria em 90°. O original está intacto em `assets/characters/sources/nana-explorer.glb`. Não o descrever como um rig funcional sem explicar a preparação.
+
+A cópia `assets/characters/nana-explorer.glb` tem vínculo corrigido e novos pesos de calor calculados em proxy volumétrico no Blender 4.3.2 e transferidos ao original, com controle específico de cabeça/pescoço. Geometria, normais, UVs, triângulos e JPEG foram comparados exatamente com a fonte. Os pesos são automáticos e ainda sujeitos à revisão artística. `src/imported-bind.js` trata nós intermediários não ponderados; `src/mixamo-motions.js` gera cinco clipes CMU locais sem alterar os comprimentos e escalas dos ossos. Preview omite o bake dos clipes; exportação inclui os cinco e preserva a altura.
+
+Testes: `tests/nana-rig.mjs` (45 poses, piso, deformação, movimento relativo da mão e fonte intacta), `tests/nana-importada.cjs` (UI, altura sem reinício, GLB reaberto e Worker) e regressão completa de `tests/modelos-importados.cjs` para a arqueira. Detalhes e reprodução em `NANA.md`. Cache `menu-v32-nana-rig`, módulos principais `nana-glb-1`. Os outros 32 continuam procedurais. Nana e arqueira permanecem pendentes no README até aprovação explícita. Nenhum crédito Tripo/Mixamo utilizado.
+
+## Histórico — arqueira GLB enviada pelo usuário
 
 O usuário forneceu `fantasy+archer+3d+model.glb` e pediu um caminho de melhoria para todo o jogo. A arqueira do editor usa agora o GLB original, com 19.077 triângulos/65 ossos/três clipes. A decisão posterior substitui a preferência anterior de refinar só a malha procedural. Origem em `assets/characters/PROVENANCE.md`; implementação reutilizável em `src/imported-character.js`. Os outros 33 continuam procedurais.
 

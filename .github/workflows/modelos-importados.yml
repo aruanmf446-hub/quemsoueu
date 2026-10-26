@@ -8,6 +8,9 @@ on:
       - 'src/**'
       - 'assets/characters/**'
       - tests/modelos-importados.cjs
+      - tests/nana-importada.cjs
+      - tests/nana-rig.mjs
+      - 'scripts/*nana*'
   workflow_dispatch:
 permissions:
   contents: read
@@ -15,7 +18,7 @@ concurrency:
   group: modelos-importados-${{ github.ref }}
   cancel-in-progress: true
 jobs:
-  arqueira:
+  personagens:
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
@@ -35,9 +38,13 @@ jobs:
             if curl -fsS http://localhost:8000/ -o /dev/null; then break; fi
             sleep 1
           done
+          node tests/nana-rig.mjs
           node tests/modelos-importados.cjs
+          node tests/nana-importada.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: arqueira-glb
-          path: renders/importados/
+          name: modelos-glb
+          path: |
+            renders/importados/
+            renders/nana-glb/

@@ -2,7 +2,7 @@
 import {FRONTIER_CHARACTERS,FRONTIER_COMPANIONS} from './frontier.js';
 import {FOREST_CHARACTERS} from './forest.js';
 import {previewChoice,previewSize} from './preview-spec.js';
-const VERSION='menu-v31-modelos-glb';
+const VERSION='menu-v32-nana-rig';
 const FRONTIER=new Set([...FRONTIER_CHARACTERS.map(c=>c.id),...FRONTIER_COMPANIONS]);
 const FOREST=new Set(FOREST_CHARACTERS.map(c=>c.id));
 const LUNAR=new Set(['nana_explorer','moon_guardian','nico_inventor','ruby_sorceress','paysandu_wolf','ruby_raven']);

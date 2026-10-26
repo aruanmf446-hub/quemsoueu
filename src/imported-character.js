@@ -1,31 +1,45 @@
 // Catálogo de modelos preparados fora do gerador procedural. Nenhuma geração paga.
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+import {bakeMixamoMotions} from './mixamo-motions.js';
+import {restoreImportedBindPose} from './imported-bind.js';
+import {MOTIONS} from './motions.js?v=mocap-1';
 
 export const IMPORTED_CHARACTERS={
+  nana_explorer:{
+    url:'assets/characters/nana-explorer.glb',height:7,floor:-5.2,retarget:'mixamo-cmu-v2',
+    capabilities:{height:true,build:false,appearance:false,clothes:false,accessories:false,expressions:false},
+    clips:Object.fromEntries(Object.entries(MOTIONS).map(([id,def])=>[id,{...def,source:'Body_'+id,description:def.description+' · adaptado ao modelo'}]))
+  },
   forest_archer_f:{
     url:'assets/characters/forest-archer.glb',height:7,floor:-5.2,
     capabilities:{height:true,build:false,appearance:false,clothes:false,accessories:false,expressions:false},
     clips:{lobby:{source:'wait',label:'Esperar',description:'Animação original de espera.',loop:true},defeat:{source:'sob',label:'Tristeza',description:'Animação original de tristeza.',loop:false},dance_original:{source:'dance_04',label:'Dança original',description:'Dança incluída no modelo enviado.',loop:true}}
   }
 };
-const files=new Map();
-export async function loadImportedCharacter(id,{baseURL=globalThis.document?.baseURI||globalThis.location?.href}={}){
+const files=new Map(),adaptedClips=new Map();
+export async function loadImportedCharacter(id,{baseURL=globalThis.document?.baseURI||globalThis.location?.href,animations=true}={}){
   const definition=IMPORTED_CHARACTERS[id];if(!definition)throw Error('Modelo importado não cadastrado: '+id);
   const url=new URL(definition.url,baseURL).href;
   if(!files.has(url))files.set(url,fetch(url).then(r=>{if(!r.ok)throw Error('Não foi possível carregar o modelo ('+r.status+').');return r.arrayBuffer()}).catch(e=>{files.delete(url);throw e}));
   // O buffer é compartilhado; cenas, materiais, esqueletos e estados são independentes.
   const gltf=await new GLTFLoader().parseAsync(await files.get(url),new URL('.',url).href);
-  const root=new THREE.Group(),group=new THREE.Group();root.name='Personagem_'+id;group.name='Modelo_Importado';root.add(group);group.add(gltf.scene);
+  restoreImportedBindPose(gltf.scene,{rotationY:definition.bindRotationY||0});const restNodes=[];gltf.scene.traverse(o=>restNodes.push({o,p:o.position.clone(),q:o.quaternion.clone(),s:o.scale.clone()}));
+  const root=new THREE.Group(),group=new THREE.Group();root.name='Personagem_'+id;group.name='Modelo_Importado';root.add(group);const basis=new THREE.Group();basis.name='Orientacao_Original';basis.rotation.y=definition.rotationY||0;group.add(basis);basis.add(gltf.scene);
   const meshes=[],materials=new Set(),textures=new Set(),geometries=new Set();
   gltf.scene.traverse(o=>{if(!o.isMesh)return;meshes.push(o);o.castShadow=true;o.receiveShadow=true;o.frustumCulled=false;geometries.add(o.geometry);for(const m of [o.material].flat()){materials.add(m);for(const value of Object.values(m))if(value?.isTexture)textures.add(value)}});
-  for(const m of meshes)if(m.isSkinnedMesh)m.skeleton.pose();root.updateMatrixWorld(true);
-  const raw=new THREE.Box3().setFromObject(gltf.scene,true),size=raw.getSize(new THREE.Vector3()),factor=definition.height/size.y;
+  root.updateMatrixWorld(true);
+  const raw=new THREE.Box3().setFromObject(basis,true),size=raw.getSize(new THREE.Vector3()),factor=definition.height/size.y;
   group.scale.setScalar(factor);group.position.set(-(raw.min.x+raw.max.x)/2*factor,definition.floor-raw.min.y*factor,-(raw.min.z+raw.max.z)/2*factor);root.updateMatrixWorld(true);
+  if(definition.retarget&&animations){
+    const key=JSON.stringify([url,definition.retarget,definition.rotationY,definition.bindRotationY]);
+    if(!adaptedClips.has(key))adaptedClips.set(key,bakeMixamoMotions(group,meshes));
+    gltf.animations=adaptedClips.get(key).map(c=>c.clone());
+  }
   const bounds=new THREE.Box3().setFromObject(root,true),mixer=new THREE.AnimationMixer(gltf.scene),motions={};
   for(const [key,def]of Object.entries(definition.clips)){const clip=gltf.animations.find(c=>c.name===def.source);if(clip)motions[key]={...def,duration:clip.duration,clip}}
   let active=null,playing=false,time=0,speed=1,action=null,helper=null,disposed=false;
-  function rest(){mixer.stopAllAction();for(const m of meshes)if(m.isSkinnedMesh)m.skeleton.pose();root.updateMatrixWorld(true)}
+  function rest(){mixer.stopAllAction();for(const {o,p,q,s}of restNodes){o.position.copy(p);o.quaternion.copy(q);o.scale.copy(s)}root.updateMatrixWorld(true);for(const m of meshes)if(m.isSkinnedMesh)m.skeleton.update()}
   const bodyRig={
     bounds,motions,
     play(id){const def=motions[id];if(!def)return false;rest();active=id;time=0;playing=true;action=mixer.clipAction(def.clip);action.setLoop(def.loop?THREE.LoopRepeat:THREE.LoopOnce,def.loop?Infinity:1);action.clampWhenFinished=true;action.play();mixer.update(0);return true},

@@ -1,6 +1,6 @@
 // Navegação do ateliê: uma categoria e uma decisão por vez.
 import {PRESETS} from './presets.js';
-import {PreviewCatalog} from './previews.js?v=modelos-glb-1';
+import {PreviewCatalog} from './previews.js?v=nana-glb-1';
 
 export function mountEditor(api) {
   const el=id=>document.getElementById(id),make=(tag,cls,text)=>{const n=document.createElement(tag);n.className=cls;if(text)n.textContent=text;return n};
@@ -60,7 +60,7 @@ export function mountEditor(api) {
   function refresh(){
     const conf=configs[category],section=conf.subs.find(s=>s.id===sub);
     title.textContent=section.label;trail.textContent=conf.label+' / '+section.label;
-    hint.textContent=category==='motions'?(api.getContext().capabilities?'Escolha uma das animações incluídas nesta personagem.':'Escolha o movimento e troque de personagem para comparar.'):['fine','height'].includes(sub)?'Arraste para ajustar. As mudanças aparecem no personagem.':sub==='skin'?'Escolha uma cor. Veja o resultado no personagem ao lado.':'Compare as prévias. Clique para aplicar.';
+    hint.textContent=category==='motions'?(api.getContext().capabilities?'Escolha uma das animações disponíveis nesta personagem.':'Escolha o movimento e troque de personagem para comparar.'):['fine','height'].includes(sub)?'Arraste para ajustar. As mudanças aparecem no personagem.':sub==='skin'?'Escolha uma cor. Veja o resultado no personagem ao lado.':'Compare as prévias. Clique para aplicar.';
     nav.replaceChildren(make('div','nav-caption',conf.label));
     for(const s of conf.subs){const b=make('button',s.id===sub?'selected':'',s.label);b.dataset.section=s.id;b.setAttribute('aria-current',s.id===sub?'page':'false');b.onclick=()=>select(category,s.id);nav.append(b)}
     tabs.querySelectorAll('button').forEach(b=>{const active=b.dataset.category===category;b.classList.toggle('selected',active);b.setAttribute('aria-pressed',active)});
