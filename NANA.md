@@ -12,7 +12,7 @@ O usuário relatou pernas revirando em movimento. O IK compartilhado encontrava 
 
 `node tests/nana-pernas.mjs` verifica um caso sintético em torno da perna estendida, alvos/roll, 3.065 amostras nos cinco clipes a 120 Hz, comprimentos e emendas dos loops. Maior mudança angular medida caiu de aproximadamente 43,34° para 3,914° por 1/120 s; erro relativo máximo dos comprimentos: 0,00000107. Não elevar os limites dos testes de estiramento ou esconder a pele para corrigir essa rotação.
 
-Os testes de rig, navegador/exportação e regressão da arqueira são repetidos após essa correção. O teste geométrico passou com maior estiramento de 3,220× e piso mínimo −0,0000253 unidade original. A validação técnica continua distinta de aprovação artística.
+[Comparação dos vídeos de vitória e dança retrô](revisao/nana-pernas/): mesma câmera, 24 fps e 528 quadros no total, com decodificação verificada. Os testes de rig, navegador/exportação e regressão da arqueira passaram após essa correção. O teste geométrico passou com maior estiramento de 3,220× e piso mínimo −0,0000253 unidade original. A validação técnica continua distinta de aprovação artística.
 
 ## Preparação feita localmente
 

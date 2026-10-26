@@ -6,7 +6,7 @@ O usuário reprovou a rotação das pernas depois de `7465432`. Causa reproduzid
 
 `src/mixamo-leg-ik.js` preserva as posições IK e refaz o alinhamento a partir dos quaternions originais da coxa/canela. Só o adaptador dos modelos Mixamo usa essa função; `src/leg-ik.js` e os personagens procedurais ficam intactos. O binário preparado da Nana mantém SHA-256 `3e9f8042191968579d34704798c22174b72c2d8908f85d61eeb0ac7a38628f42`. Perfil de clipes `mixamo-cmu-v3-roll`; importação/import map `nana-pernas-1`.
 
-Novo teste `tests/nana-pernas.mjs`: 3.065 amostras a 120 Hz, continuidade, comprimentos, loops e caso sintético que atravessa a direção singular. Mudança máxima anterior ~43,34° por amostra; nova 3,914°. `tests/nana-pernas-video.cjs` captura antes/depois a 24 fps com mesma câmera e materiais, sem sombras de revisão, usando uma cópia local imutável de `7465432` na porta 8001. Detalhes em `NANA.md`. Manter Nana pendente no README; não interpretar testes como aprovação visual.
+Novo teste `tests/nana-pernas.mjs`: 3.065 amostras a 120 Hz, continuidade, comprimentos, loops e caso sintético que atravessa a direção singular. Mudança máxima anterior ~43,34° por amostra; nova 3,914°. `tests/nana-pernas-video.cjs` captura antes/depois a 24 fps com mesma câmera e materiais, sem sombras de revisão, usando uma cópia local imutável de `7465432` na porta 8001. Os quatro vídeos completos (528 quadros) e a validação estão publicados em `revisao/nana-pernas/`. Detalhes em `NANA.md`. Manter Nana pendente no README; não interpretar testes como aprovação visual.
 
 ## Histórico — Nana com rig, sem movimentos na fonte
 

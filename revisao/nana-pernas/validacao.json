@@ -1,0 +1,97 @@
+{
+  "beforeCommit": "7465432",
+  "afterCommit": "53cbbc6",
+  "sha256": {
+    "assets/characters/nana-explorer.glb": "3e9f8042191968579d34704798c22174b72c2d8908f85d61eeb0ac7a38628f42",
+    "src/mixamo-motions.js": "aa53ecce04f753454bbf8579d4d962e157b7f47e0c1f95a1ab429abb9033c80e",
+    "src/mixamo-leg-ik.js": "c2acfcd36c724df8d17567deddbd1e2a99399e173e7519e75a7fda9c67dbfb5c",
+    "tests/nana-pernas.mjs": "88c210678eb2fc28e4b095b5ce0e2e6c6969dff1af431bbf52df9ca25e437166"
+  },
+  "continuity": {
+    "samples": 3065,
+    "maxDegreesPer120Hz": 3.9135543620554385,
+    "maxLengthRelativeError": 1.062008803039171e-06,
+    "syntheticRestAngleDegrees": 8.10961445599407,
+    "rows": [
+      {
+        "clip": "Body_lobby",
+        "maxima": {
+          "LeftUpLeg": 0.06161429030337957,
+          "LeftLeg": 0.0781311627140705,
+          "LeftFoot": 0.042850676882665514,
+          "RightUpLeg": 0.046562019365640035,
+          "RightLeg": 0.04759524226669605,
+          "RightFoot": 0.054478736713135405
+        }
+      },
+      {
+        "clip": "Body_defeat",
+        "maxima": {
+          "LeftUpLeg": 0.758391856478175,
+          "LeftLeg": 0.7358766908294351,
+          "LeftFoot": 0.3298513095242805,
+          "RightUpLeg": 0.7354696253216799,
+          "RightLeg": 0.7357253853527435,
+          "RightFoot": 0.7143495558699503
+        }
+      },
+      {
+        "clip": "Body_victory",
+        "maxima": {
+          "LeftUpLeg": 2.349239966794964,
+          "LeftLeg": 1.9189413592459583,
+          "LeftFoot": 0.805126062384157,
+          "RightUpLeg": 3.9135543620554385,
+          "RightLeg": 2.927986162684807,
+          "RightFoot": 0.7028421756346392
+        }
+      },
+      {
+        "clip": "Body_dance_floss",
+        "maxima": {
+          "LeftUpLeg": 0.6042512247486641,
+          "LeftLeg": 0.512468695813213,
+          "LeftFoot": 0.17395028582570995,
+          "RightUpLeg": 0.5662348719046452,
+          "RightLeg": 0.4990559336812264,
+          "RightFoot": 0.26107208777732643
+        }
+      },
+      {
+        "clip": "Body_dance_shuffle",
+        "maxima": {
+          "LeftUpLeg": 1.16975072890661,
+          "LeftLeg": 1.240069930931297,
+          "LeftFoot": 0.5409443736821993,
+          "RightUpLeg": 1.0329541794404293,
+          "RightLeg": 1.2826046657861132,
+          "RightFoot": 0.5195924304182268
+        }
+      }
+    ]
+  },
+  "rig": {
+    "triangles": 19610,
+    "vertices": 13706,
+    "skinJoints": 48,
+    "activeJoints": 22,
+    "clips": 5,
+    "poses": 45,
+    "minFloor": -2.5216000665381152e-05,
+    "maxFloor": 0.004711840372935152,
+    "maxStretch": 3.2195767682225274,
+    "handRelativeMotion": 0.4472257408803445,
+    "sourceSHA256": "e76c2cbf5e01fe03aeaa0d729c9ea5f94cfc813fe89ec248421e29f25003d91e",
+    "preparedSHA256": "3e9f8042191968579d34704798c22174b72c2d8908f85d61eeb0ac7a38628f42"
+  },
+  "browser": {
+    "vertices": 13706,
+    "triangles": 19610,
+    "joints": 48,
+    "clips": 5,
+    "exportBytes": 2030344,
+    "reimportMaxError": 0,
+    "worker": true,
+    "errors": []
+  }
+}

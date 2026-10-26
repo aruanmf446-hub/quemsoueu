@@ -2,7 +2,7 @@
 
 ## Nana — correção da rotação das pernas
 
-Após o relato de pernas revirando, a adaptação dos movimentos passou a conservar a orientação original dos ossos Mixamo ao resolver coxa e canela. Malha, textura, pesos e os outros personagens foram preservados. Um novo teste acompanha os cinco clipes em 3.065 instantes, incluindo as emendas dos loops e a passagem pela perna estendida. Detalhes em [NANA.md](NANA.md). **A avaliação visual continua pendente.**
+Após o relato de pernas revirando, a adaptação dos movimentos passou a conservar a orientação original dos ossos Mixamo ao resolver coxa e canela. Malha, textura, pesos e os outros personagens foram preservados. Um novo teste acompanha os cinco clipes em 3.065 instantes, incluindo as emendas dos loops e a passagem pela perna estendida. [Comparar vídeos de antes e depois](revisao/nana-pernas/) · Detalhes em [NANA.md](NANA.md). **A avaliação visual continua pendente.**
 
 ## Nana — rig recebido sem movimentos
 

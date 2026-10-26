@@ -1,0 +1,70 @@
+{
+  "rows": [
+    {
+      "phase": "antes",
+      "id": "victory",
+      "frames": 144,
+      "width": 400,
+      "height": 640,
+      "fps": 24,
+      "file": "antes-victory.mp4"
+    },
+    {
+      "phase": "antes",
+      "id": "dance_shuffle",
+      "frames": 120,
+      "width": 400,
+      "height": 640,
+      "fps": 24,
+      "file": "antes-dance_shuffle.mp4"
+    },
+    {
+      "phase": "depois",
+      "id": "victory",
+      "frames": 144,
+      "width": 400,
+      "height": 640,
+      "fps": 24,
+      "file": "depois-victory.mp4"
+    },
+    {
+      "phase": "depois",
+      "id": "dance_shuffle",
+      "frames": 120,
+      "width": 400,
+      "height": 640,
+      "fps": 24,
+      "file": "depois-dance_shuffle.mp4"
+    }
+  ],
+  "cameras": {
+    "victory": {
+      "duration": 6,
+      "camera": [
+        8.511979559158,
+        0.8035234578668793,
+        16.272902098390293
+      ],
+      "target": [
+        0,
+        -1.6999999418854754,
+        0
+      ]
+    },
+    "dance_shuffle": {
+      "duration": 5,
+      "camera": [
+        8.511979559158,
+        0.8035234578668793,
+        16.272902098390293
+      ],
+      "target": [
+        0,
+        -1.6999999418854754,
+        0
+      ]
+    }
+  },
+  "errors": [],
+  "shadows": false
+}
