@@ -1,16 +1,6 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://scripts/ui/main_menu.gd" id="1_menu"]
-[ext_resource type="Script" path="res://scripts/ui/menu_button.gd" id="2_button"]
-
-[sub_resource type="Gradient" id="Gradient_bg"]
-colors = PackedColorArray(0.114, 0.169, 0.325, 1, 0.039, 0.055, 0.122, 1)
-offsets = PackedFloat32Array(0, 1)
-
-[sub_resource type="GradientTexture2D" id="GradientTexture2D_bg"]
-gradient = SubResource("Gradient_bg")
-fill_from = Vector2(0, 0)
-fill_to = Vector2(0, 1)
+[ext_resource type="Script" path="res://scripts/ui/lobby.gd" id="1_lobby"]
 
 [node name="MainMenu" type="Control"]
 layout_mode = 3
@@ -19,54 +9,4 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-script = ExtResource("1_menu")
-
-[node name="Background" type="TextureRect" parent="."]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-texture = SubResource("GradientTexture2D_bg")
-expand_mode = 1
-stretch_mode = 0
-
-[node name="CenterContainer" type="CenterContainer" parent="."]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-
-[node name="Menu" type="VBoxContainer" parent="CenterContainer"]
-custom_minimum_size = Vector2(420, 0)
-layout_mode = 2
-theme_override_constants/separation = 28
-
-[node name="Title" type="Label" parent="CenterContainer/Menu"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 96
-text = "Quem Sou Eu"
-horizontal_alignment = 1
-
-[node name="StoryButton" type="Button" parent="CenterContainer/Menu"]
-custom_minimum_size = Vector2(0, 104)
-layout_mode = 2
-text = "Modo História"
-script = ExtResource("2_button")
-
-[node name="DuelButton" type="Button" parent="CenterContainer/Menu"]
-custom_minimum_size = Vector2(0, 104)
-layout_mode = 2
-text = "Modo Duelo"
-script = ExtResource("2_button")
-
-[node name="SettingsButton" type="Button" parent="CenterContainer/Menu"]
-custom_minimum_size = Vector2(0, 104)
-layout_mode = 2
-text = "Configurações"
-script = ExtResource("2_button")
+script = ExtResource("1_lobby")
