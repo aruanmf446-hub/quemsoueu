@@ -1,6 +1,14 @@
 # Continuidade
 
-## Rodada atual — pernas da Nana revirando
+## Rodada atual — posição das mãos da Nana
+
+O usuário aprovou a melhora das pernas e pediu um pequeno ajuste na posição das mãos que se cobriam. Foi feita uma pergunta opcional sobre o tipo de sobreposição; sem resposta até esta implementação. A medição encontrou fusão das mãos no lobby/dança retrô. A Macarena leva as mãos perto da cabeça como parte da captura; esse gesto não foi alterado nesta rodada. Não afirmar que houve correção geral de mãos/rosto.
+
+`src/mixamo-hands.js` afasta levemente as referências das palmas quando próximas, com direção em profundidade e transição contínua. Resolve os braços mantendo os comprimentos e a orientação capturada das mãos. A correção vem depois das pernas, conservando os resultados aprovados. `tests/fixtures/nana-maos-base.json` registra 95 hashes de trilhas da base `6656d93`; `tests/nana-maos.mjs` exige igualdade em 83 trilhas (todas fora dos braços nos dois clipes alterados, e os outros três clipes inteiros), verifica contatos na geometria real e 1.322 instantes/loops.
+
+Modelos e pesos mantidos; perfil `mixamo-cmu-v4-hands`, versão de importação/import map `nana-maos-1`. O navegador verifica agora três poses no GLB reaberto, incluindo as duas alteradas. Comparação em close a 24 fps em `revisao/nana-maos/`; fonte imutável `6656d93` na porta 8003 para `tests/nana-maos-video.cjs`. Nana continua pendente no README. Detalhes em `NANA.md`.
+
+## Histórico — pernas da Nana revirando
 
 O usuário reprovou a rotação das pernas depois de `7465432`. Causa reproduzida no IK: alinhar diretamente o eixo local +Y ao segmento descendente perde o roll de vínculo Mixamo e pode girar quase meia-volta quando a direção passa pela extensão. Não era necessário repintar os pesos ou modificar a escultura.
 

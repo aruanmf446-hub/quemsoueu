@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import {MOTIONS,motionPose} from './motions.js?v=mocap-1';
 import {solveMixamoLeg} from './mixamo-leg-ik.js';
+import {createHandClearance} from './mixamo-hands.js';
 const V=(x=0,y=0,z=0)=>new THREE.Vector3(x,y,z),Q=()=>new THREE.Quaternion();
 export function bakeMixamoMotions(actor,meshes,{fps=30}={}){
   const nodes={};actor.traverse(o=>{const name=o.name.replace(/^mixamorig[:_]?/i,'');if(name!==o.name)nodes[name]=o});
@@ -29,6 +30,7 @@ export function bakeMixamoMotions(actor,meshes,{fps=30}={}){
   function restore(){for(const {o,p,q,s}of saved){o.position.copy(p);o.quaternion.copy(q);o.scale.copy(s)}refresh()}
   function orient(name,q){const bone=nodes[name];bone.parent.updateWorldMatrix(true,false);bone.quaternion.copy(bone.parent.getWorldQuaternion(Q()).invert().multiply(actorRotation.clone().multiply(q)));bone.updateWorldMatrix(false,true)}
   function moveHip(delta){const desired=rest.Hips.p.clone().add(delta).applyMatrix4(actor.matrixWorld).applyMatrix4(nodes.Hips.parent.matrixWorld.clone().invert());nodes.Hips.position.copy(desired);refresh()}
+  const correctHands=createHandClearance(actor,nodes,position);
   function sample(id,t){
     restore();const pose=motionPose(id,t),c=pose.capture;
     moveHip(V(c.root[0]*legLength,ankleY+c.root[1]*legLength+hipOffset-rest.Hips.p.y,c.root[2]*legLength));
@@ -55,6 +57,7 @@ export function bakeMixamoMotions(actor,meshes,{fps=30}={}){
     refresh();let low=Infinity;
     for(const {m,i}of soles)low=Math.min(low,m.getVertexPosition(i,V()).applyMatrix4(m.matrixWorld).applyMatrix4(intoActor).y);
     const lift=Math.max(0,Math.min(c.clearance.L,c.clearance.R)-.01)*legLength,delta=position(nodes.Hips).sub(rest.Hips.p);delta.y+=floor-low+lift;moveHip(delta);
+    correctHands();
   }
   const animated=required.filter(n=>!n.endsWith('ToeBase')),clips=[];
   try{

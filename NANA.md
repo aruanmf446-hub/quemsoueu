@@ -4,6 +4,16 @@
 
 A fonte enviada tem 48 juntas e nenhum clipe, porém quase todos os 13.706 vértices estavam ponderados somente no quadril. O esqueleto tinha matrizes inversas mas os nós não tinham TRS, e seu referencial estava girado em relação à geometria. A simples importação não articulava braços/pernas. O original está preservado em `assets/characters/sources/nana-explorer.glb`.
 
+## Ajuste posterior — encontro das mãos
+
+O usuário aprovou a correção das pernas e pediu um ajuste discreto na posição das mãos. Foram medidas sobreposições no lobby e na dança retrô. `src/mixamo-hands.js` aplica um pequeno afastamento quando as referências das palmas se aproximam, usando a orientação anatômica do tronco. A cadeia do braço mantém seus comprimentos e a orientação capturada da mão. A curva de correção é contínua e é aplicada depois do apoio das pernas.
+
+A alteração atua somente nos encontros das mãos desses dois clipes. Derrota, vitória e Macarena conservaram todas as trilhas; não foi retirado o gesto de levar a mão ao rosto. O modelo, a textura e os pesos continuam com os mesmos hashes. Perfil `mixamo-cmu-v4-hands`; módulos/import map `nana-maos-1`.
+
+`node tests/nana-maos.mjs` compara 83 trilhas com a referência aprovada `6656d93`, incluindo pernas, quadril e tronco. Nos três contatos medidos na geometria real, a distância entre os centros das mãos passou de 0,0136/0,0195/0,0121 para 0,0510/0,0593/0,0395 unidade original. Cada centro deslocou cerca de 0,020 a 0,028 nessas poses (altura nativa = 1). Há 1.322 amostras de continuidade a 120 Hz e conferência das emendas dos loops. Essas medidas não equivalem a uma simulação completa de contato dos dedos.
+
+O navegador reabre o GLB e compara três poses: vitória e os contatos de lobby/dança retrô, sem diferença geométrica nesta execução. [Vídeos de antes/depois em close](revisao/nana-maos/) usam as mesmas câmeras e 24 fps, com os dois lados sincronizados no mesmo arquivo. Prévias, controle de altura e os testes das pernas continuam válidos. A avaliação visual permanece pendente no README.
+
 ## Correção posterior — giro das pernas
 
 O usuário relatou pernas revirando em movimento. O IK compartilhado encontrava joelho/tornozelo, mas alinhava o eixo local do osso sem conservar sua rotação de vínculo. Na Nana, cujo repouso Mixamo tem meia-volta no osso, essa escolha introduzia um giro axial e mudanças bruscas perto da perna estendida. As amostras esparsas de geometria finita da primeira rodada não verificavam isso.

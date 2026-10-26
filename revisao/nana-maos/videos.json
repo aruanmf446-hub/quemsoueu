@@ -1,0 +1,70 @@
+{
+  "rows": [
+    {
+      "phase": "antes",
+      "id": "lobby",
+      "frames": 144,
+      "width": 400,
+      "height": 480,
+      "fps": 24,
+      "file": "antes-lobby.mp4"
+    },
+    {
+      "phase": "antes",
+      "id": "dance_shuffle",
+      "frames": 120,
+      "width": 400,
+      "height": 480,
+      "fps": 24,
+      "file": "antes-dance_shuffle.mp4"
+    },
+    {
+      "phase": "depois",
+      "id": "lobby",
+      "frames": 144,
+      "width": 400,
+      "height": 480,
+      "fps": 24,
+      "file": "depois-lobby.mp4"
+    },
+    {
+      "phase": "depois",
+      "id": "dance_shuffle",
+      "frames": 120,
+      "width": 400,
+      "height": 480,
+      "fps": 24,
+      "file": "depois-dance_shuffle.mp4"
+    }
+  ],
+  "cameras": {
+    "lobby": {
+      "duration": 6,
+      "camera": [
+        1.5999999999999999,
+        0.4499999999999995,
+        7.2
+      ],
+      "target": [
+        0,
+        0.2,
+        0.25
+      ]
+    },
+    "dance_shuffle": {
+      "duration": 5,
+      "camera": [
+        1.5999999999999999,
+        0.4499999999999995,
+        7.2
+      ],
+      "target": [
+        0,
+        0.2,
+        0.25
+      ]
+    }
+  },
+  "errors": [],
+  "shadows": false
+}

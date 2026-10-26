@@ -7,7 +7,7 @@ import {MOTIONS} from './motions.js?v=mocap-1';
 
 export const IMPORTED_CHARACTERS={
   nana_explorer:{
-    url:'assets/characters/nana-explorer.glb',height:7,floor:-5.2,retarget:'mixamo-cmu-v3-roll',
+    url:'assets/characters/nana-explorer.glb',height:7,floor:-5.2,retarget:'mixamo-cmu-v4-hands',
     capabilities:{height:true,build:false,appearance:false,clothes:false,accessories:false,expressions:false},
     clips:Object.fromEntries(Object.entries(MOTIONS).map(([id,def])=>[id,{...def,source:'Body_'+id,description:def.description+' · adaptado ao modelo'}]))
   },

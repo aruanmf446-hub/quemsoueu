@@ -1,5 +1,9 @@
 # Quem Sou Eu — Ateliê Facial · Head V2
 
+## Nana — ajuste no encontro das mãos
+
+Ajuste discreto na separação das mãos durante o lobby e a dança retrô. A comparação com a versão aprovada conserva as trilhas das pernas, do quadril e do tronco; derrota, vitória e Macarena mantêm seus gestos. [Ver comparação em vídeo](revisao/nana-maos/) · [Detalhes e validação](NANA.md). A Nana continua pendente na fila de refinamento.
+
 ## Nana — correção da rotação das pernas
 
 Após o relato de pernas revirando, a adaptação dos movimentos passou a conservar a orientação original dos ossos Mixamo ao resolver coxa e canela. Malha, textura, pesos e os outros personagens foram preservados. Um novo teste acompanha os cinco clipes em 3.065 instantes, incluindo as emendas dos loops e a passagem pela perna estendida. [Comparar vídeos de antes e depois](revisao/nana-pernas/) · Detalhes em [NANA.md](NANA.md). **A avaliação visual continua pendente.**
