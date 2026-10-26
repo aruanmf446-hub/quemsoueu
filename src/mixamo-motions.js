@@ -30,7 +30,7 @@ export function bakeMixamoMotions(actor,meshes,{fps=30}={}){
   function restore(){for(const {o,p,q,s}of saved){o.position.copy(p);o.quaternion.copy(q);o.scale.copy(s)}refresh()}
   function orient(name,q){const bone=nodes[name];bone.parent.updateWorldMatrix(true,false);bone.quaternion.copy(bone.parent.getWorldQuaternion(Q()).invert().multiply(actorRotation.clone().multiply(q)));bone.updateWorldMatrix(false,true)}
   function moveHip(delta){const desired=rest.Hips.p.clone().add(delta).applyMatrix4(actor.matrixWorld).applyMatrix4(nodes.Hips.parent.matrixWorld.clone().invert());nodes.Hips.position.copy(desired);refresh()}
-  const correctHands=createHandClearance(actor,nodes,position);
+  const correctHands=createHandClearance(actor,nodes,position,meshes);
   function sample(id,t){
     restore();const pose=motionPose(id,t),c=pose.capture;
     moveHip(V(c.root[0]*legLength,ankleY+c.root[1]*legLength+hipOffset-rest.Hips.p.y,c.root[2]*legLength));
@@ -64,6 +64,33 @@ export function bakeMixamoMotions(actor,meshes,{fps=30}={}){
     for(const [id,def]of Object.entries(MOTIONS)){
       const times=[],rotations=Object.fromEntries(animated.map(n=>[n,[]])),positions=[],steps=Math.ceil(def.duration*fps);
       for(let i=0;i<=steps;i++){const t=i/steps*def.duration;sample(id,t);times.push(t);for(const n of animated){const q=nodes[n].quaternion.clone().normalize(),values=rotations[n];if(values.length&&q.dot(Q().fromArray(values,values.length-4))<0)q.set(-q.x,-q.y,-q.z,-q.w);values.push(...q.toArray())}positions.push(...nodes.Hips.position.toArray())}
+      // Simétrico e periódico: suaviza mudanças de contato sem atraso no loop.
+      // Somente os seis canais dos braços; as demais chaves são preservadas.
+      for(const name of animated.filter(n=>/(Arm|ForeArm|Hand)$/.test(n))){
+        const source=rotations[name].slice(),kernel=[1,8,28,56,70,56,28,8,1],count=times.length-1;
+        for(let i=0;i<=count;i++){
+          const reference=Q().fromArray(source,i*4),sum=[0,0,0,0];
+          for(let j=0;j<kernel.length;j++){
+            let k=i+j-4;k=def.loop?((k%count)+count)%count:THREE.MathUtils.clamp(k,0,count);
+            const q=Q().fromArray(source,k*4),weight=kernel[j]*(q.dot(reference)<0?-1:1);
+            for(let axis=0;axis<4;axis++)sum[axis]+=q.toArray()[axis]*weight;
+          }
+          Q().fromArray(sum).normalize().toArray(rotations[name],i*4);
+        }
+      }
+      // A interpolação das rotações pode encurtar a curva que contorna um
+      // obstáculo. Reprojeta só os contatos residuais após o filtro, com folga
+      // menor. Não volta a suavizar para dentro da superfície.
+      const armNames=animated.filter(n=>/(Arm|ForeArm|Hand)$/.test(n));
+      for(let i=0;i<times.length;i++){
+        restore();nodes.Hips.position.fromArray(positions,i*3);
+        for(const name of animated)nodes[name].quaternion.fromArray(rotations[name],i*4);
+        refresh();const faceContacts=correctHands({iterations:3,clearance:.004});
+        for(const name of armNames){
+          const filtered=Q().fromArray(rotations[name],i*4),corrected=nodes[name].quaternion.normalize(),angle=filtered.angleTo(corrected),limit=THREE.MathUtils.degToRad(faceContacts.has(name.startsWith('Left')?'Left':'Right')?6:faceContacts.pair?4.5:2);
+          filtered.slerp(corrected,angle>limit?limit/angle:1).toArray(rotations[name],i*4);
+        }
+      }
       clips.push(new THREE.AnimationClip('Body_'+id,def.duration,[...animated.map(n=>new THREE.QuaternionKeyframeTrack(nodes[n].name+'.quaternion',times,rotations[n])),new THREE.VectorKeyframeTrack(nodes.Hips.name+'.position',times,positions)]));
     }
   }finally{restore()}

@@ -13,11 +13,11 @@ const root=path.resolve(__dirname,'..'),out=process.env.ATELIE_RENDERS||root+'/r
   const buffer=await a.exportGLB(),v=new DataView(buffer),g=JSON.parse(new TextDecoder().decode(new Uint8Array(buffer,20,v.getUint32(12,true))));if(g.skins.length!==1||g.skins[0].joints.length!==48||g.animations.length!==5||g.images.length!==1||g.meshes.length!==1)throw Error('Exportação incompleta');if(g.accessors[g.meshes[0].primitives[0].attributes.POSITION].count!==13706)throw Error('Geometria alterada');
   if(a.root()!==actor||JSON.stringify(a.bodyRig().state())!==state)throw Error('Exportação modificou a cena');
   const imported=await new GLTFLoader().parseAsync(buffer,''),mixer=new T.AnimationMixer(imported.scene);let skinned;imported.scene.traverse(m=>{if(m.isSkinnedMesh)skinned=m});let maxError=0;
-  for(const [id,t]of [['victory',2],['lobby',3],['dance_shuffle',4.5]]){
+  for(const [id,t]of [['victory',2],['lobby',3],['dance_shuffle',4.5],['defeat',2.9666666667],['defeat',3.6333333333],['victory',5.5],['dance_floss',2.4333333333],['dance_floss',3.8333333333]]){
    await a.playMotion(id);a.pauseMotion();a.seekMotion(t);mixer.stopAllAction();const action=mixer.clipAction(imported.animations.find(c=>c.name==='Body_'+id));action.play();action.time=t;mixer.update(0);imported.scene.updateMatrixWorld(true);skinned.skeleton.update();actor.updateMatrixWorld(true);let live;a.root().traverse(m=>{if(m.isSkinnedMesh)live=m});live.skeleton.update();
    for(let i=0;i<13706;i+=37){const x=live.getVertexPosition(i,new T.Vector3()).applyMatrix4(live.matrixWorld),y=skinned.getVertexPosition(i,new T.Vector3()).applyMatrix4(skinned.matrixWorld);maxError=Math.max(maxError,x.distanceTo(y))}
   }if(maxError>1e-4)throw Error('GLB reaberto mudou a pose: '+maxError);
-  a.setHeight(1);a.stopMotion();__render();return{vertices:13706,triangles:19610,joints:48,clips:5,exportBytes:buffer.byteLength,reimportMaxError:maxError,reimportPoses:3};
+  a.setHeight(1);a.stopMotion();__render();return{vertices:13706,triangles:19610,joints:48,clips:5,exportBytes:buffer.byteLength,reimportMaxError:maxError,reimportPoses:8};
  });
  await p.screenshot({path:out+'/original.png'});
  for(const id of ['lobby','defeat','victory','dance_floss','dance_shuffle']){await p.evaluate(async id=>{const a=__atelie;await a.playMotion(id);a.pauseMotion();a.seekMotion(a.motions[id].duration*.5);a.aim(...a.VIEWS.three);__render()},id);await p.screenshot({path:out+'/'+id+'.png'})}

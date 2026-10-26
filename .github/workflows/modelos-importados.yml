@@ -12,6 +12,7 @@ on:
       - tests/nana-rig.mjs
       - tests/nana-pernas.mjs
       - tests/nana-maos.mjs
+      - tests/nana-contatos.mjs
       - tests/fixtures/nana-maos-base.json
       - 'scripts/*nana*'
   workflow_dispatch:
@@ -44,6 +45,7 @@ jobs:
           node tests/nana-rig.mjs
           node tests/nana-pernas.mjs
           node tests/nana-maos.mjs
+          node tests/nana-contatos.mjs
           node tests/modelos-importados.cjs
           node tests/nana-importada.cjs
       - uses: actions/upload-artifact@v4
