@@ -1,0 +1,54 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/world/character_stage.gd" id="1_stage"]
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_platform"]
+top_radius = 1.2
+bottom_radius = 1.2
+height = 0.08
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial_platform"]
+albedo_color = Color(0.05, 0.1, 0.22, 1)
+emission_enabled = true
+emission = Color(0.31, 0.72, 1, 1)
+emission_energy_multiplier = 0.5
+
+[sub_resource type="Environment" id="Environment_stage"]
+background_mode = 1
+background_color = Color(0, 0, 0, 0)
+ambient_light_source = 2
+ambient_light_color = Color(0.7, 0.75, 0.9, 1)
+ambient_light_energy = 0.8
+
+[node name="CharacterStage" type="Node3D"]
+script = ExtResource("1_stage")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_stage")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.9, 1.4, 6)
+fov = 32.0
+
+[node name="KeyLight" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.8, -0.3, 0.5, 0, 0.86, 0.5, -0.6, -0.4, 0.69, 2, 4, 3)
+light_energy = 2.2
+light_color = Color(1, 0.96, 0.9, 1)
+
+[node name="RimLight" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 2, -2)
+light_color = Color(0.5, 0.75, 1, 1)
+light_energy = 1.2
+omni_range = 12.0
+
+[node name="PlatformGlow" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+light_color = Color(0.31, 0.72, 1, 1)
+light_energy = 1.4
+omni_range = 4.0
+
+[node name="Platform" type="MeshInstance3D" parent="."]
+mesh = SubResource("CylinderMesh_platform")
+surface_material_override/0 = SubResource("StandardMaterial_platform")
+
+[node name="Pivot" type="Node3D" parent="."]
