@@ -1,6 +1,12 @@
 # Continuidade
 
-## Rodada atual — arqueira, uma identidade por vez (25/10/2026)
+## Rodada atual — arqueira GLB enviada pelo usuário
+
+O usuário forneceu `fantasy+archer+3d+model.glb` e pediu um caminho de melhoria para todo o jogo. A arqueira do editor usa agora o GLB original, com 19.077 triângulos/65 ossos/três clipes. A decisão posterior substitui a preferência anterior de refinar só a malha procedural. Origem em `assets/characters/PROVENANCE.md`; implementação reutilizável em `src/imported-character.js`. Os outros 33 continuam procedurais.
+
+O menu segue as capacidades do modelo: altura, vistas, clipes nativos e GLB disponíveis; peso/músculo, partes/cores e expressões faciais ainda exigem preparação. Não descrever essas capacidades como concluídas. A aprovação visual e os itens da fila permanecem pendentes. Cache `menu-v31-modelos-glb`, editor `modelos-glb-1`. Instruções, testes e próximos passos em `ARQUEIRA.md`. A galeria `revisao/arqueira/` é histórica, não captura do novo modelo importado.
+
+## Histórico — arqueira procedural, uma identidade por vez (25/10/2026)
 
 O usuário pediu refinamento individual, enviou uma referência em pose T e escolheu explicitamente **refinar a malha atual**, preservando o editor; o modelo do Tripo não foi importado nem houve geração externa. Base desta rodada: `ffc9f80`. Trabalhar só na arqueira até nova orientação, mantendo todos os itens pendentes de aprovação no README.
 

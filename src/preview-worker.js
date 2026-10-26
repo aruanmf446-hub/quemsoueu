@@ -1,5 +1,6 @@
 // Cena independente para miniaturas. A pele, o rig e o visual do editor nunca são tocados.
 import * as THREE from 'three';
+import {IMPORTED_CHARACTERS,loadImportedCharacter} from './imported-character.js';
 import {RoomEnvironment} from 'three/addons/environments/RoomEnvironment.js';
 import {buildHead} from './head.js';
 import {buildBody,headScale,bodyViewHeight,BODIES} from './body.js';
@@ -21,7 +22,8 @@ scene.add(new THREE.HemisphereLight(0xf2f5ff,0x9c8a84,.6));
 for(const [c,i,x,y,z]of [[0xfff7f0,2.9,-2.6,3.6,6],[0xf4ecea,.65,3.5,.6,5],[0xffc0a8,.22,0,-3,4],[0xd2e2ff,1.1,4.5,2.2,-2.5],[0xffffff,.9,-3.5,2.5,-4]]){const l=new THREE.DirectionalLight(c,i);l.position.set(x,y,z);scene.add(l)}
 let head,body,visual,clothes,root,headKey,bodyKey,visualKey,clothesKey;
 function clear(){if(clothes)clothes.dispose();if(visual)visual.dispose();if(body){body.geo.dispose();if(body.vegSkin)body.mesh.material.dispose()}if(head)head.dispose();root?.removeFromParent();head=body=visual=clothes=null;headKey=bodyKey=visualKey=clothesKey=null}
-function assemble(id,look){
+async function assemble(id,look,baseURL){
+  if(IMPORTED_CHARACTERS[id]){clear();heroStudio(scene,renderer,id);head=await loadImportedCharacter(id,{baseURL});root=head.root;scene.add(root);applyCharacterHeight(root,id,look.height,head.fit.ySole);return}
   heroStudio(scene,renderer,id);
   const hk=JSON.stringify([id,headOpts(look,PRESETS[id])]);
   if(hk!==headKey){clear();head=buildHead(id,{},{quality:1,...headOpts(look,PRESETS[id])});root=new THREE.Group();root.add(head.group);scene.add(root);headKey=hk}
@@ -53,7 +55,7 @@ onmessage=async({data})=>{
     const {id,look,frame,expression}=previewChoice(data);
     const size=data.imageSize||{width:320,height:384};
     if(size.width!==canvas.width||size.height!==canvas.height){renderer.setSize(size.width,size.height,false);camera.aspect=size.width/size.height;camera.updateProjectionMatrix()}
-    assemble(id,look);head.rig?.apply(expression?EXPRESSIONS[expression]:{});root.updateMatrixWorld(true);
+    await assemble(id,look,data.assetBase);head.rig?.apply(expression?EXPRESSIONS[expression]:{});root.updateMatrixWorld(true);
     if(frame==='head')focusHead(data.spec?.kind==='accessory'&&data.spec?.slot==='ears');else focusBody();
     renderer.render(scene,camera);const blob=await canvas.convertToBlob({type:'image/webp',quality:.94});postMessage({blob});
   }catch(error){postMessage({message:error.message+'\n'+error.stack})}

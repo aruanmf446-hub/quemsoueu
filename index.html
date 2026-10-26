@@ -72,10 +72,11 @@ button:hover{background:#f6eaee}.preset.active:hover{background:#4a3642}
 </div>
 <script type="module">
 import * as THREE from 'three';
-import {mountEditor} from './src/editor.js?v=arqueira-individual-1';
+import {mountEditor} from './src/editor.js?v=modelos-glb-1';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {GLTFExporter} from 'three/addons/exporters/GLTFExporter.js';
 import {RoomEnvironment} from 'three/addons/environments/RoomEnvironment.js';
+import {IMPORTED_CHARACTERS,loadImportedCharacter} from './src/imported-character.js?v=modelos-glb-1';
 import {buildHead,BEARD_STYLES} from './src/head.js';
 import {PRESETS,PRESET_ORDER,FAMILY_ORDER} from './src/presets.js';
 import {EXPRESSIONS,NEUTRAL,talkPose} from './src/rig.js';
@@ -103,7 +104,7 @@ function frameBody(){
  const reference=bodyViewHeight(presetId,size.y/scale),height=heightTab?reference*1.45:Math.max(reference,size.y),width=size.x/(heightTab?scale:1);
  frame={ty:box.min.y+height/2,dist:Math.max(current.body?9:7.4,Math.max(height,width/camera.aspect,size.z)*2.05)};
 }
-function frameFace(){const scale=current?.group.getWorldScale(new THREE.Vector3()).x||1,center=current?.group.localToWorld(new THREE.Vector3(0,-.2,0));frame={ty:center?.y??-.2,dist:7.4*scale};aim(...VIEWS.three)}
+function frameFace(){if(current?.imported){const box=current.bodyRig.bounds.clone().applyMatrix4(current.root.matrixWorld),height=box.max.y-box.min.y;frame={ty:box.max.y-height*.12,dist:height*.8};aim(...VIEWS.three);return}const scale=current?.group.getWorldScale(new THREE.Vector3()).x||1,center=current?.group.localToWorld(new THREE.Vector3(0,-.2,0));frame={ty:center?.y??-.2,dist:7.4*scale};aim(...VIEWS.three)}
 aim(...VIEWS.three);
 
 renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFShadowMap;
@@ -129,12 +130,13 @@ function busy(msg,fn){
   const revision=presetRevision,serial=++updateSerial;
   ++pendingUpdates;editor?.previews.hold('montagem',true);
   statusEl.textContent=msg;host.setAttribute('aria-busy','true');
-  return new Promise(resolve=>requestAnimationFrame(()=>setTimeout(()=>{
+  return new Promise(resolve=>requestAnimationFrame(()=>setTimeout(async()=>{
     try{
       // Trocas antigas não podem reconstruir o último personagem repetidas vezes.
       if(revision!==presetRevision){resolve(false);return}
-      fn();if(serial===updateSerial)statusEl.textContent=PRESETS[presetId].label;resolve(true);
+      const applied=await fn();if(applied===false){resolve(false);return}if(serial===updateSerial)statusEl.textContent=PRESETS[presetId].label;resolve(true);
     }catch(error){
+      if(revision!==presetRevision){resolve(false);return}
       console.error('Falha ao aplicar personagem:',error);
       statusEl.textContent='Não foi possível aplicar. Escolha novamente para tentar.';resolve(false);
     }finally{
@@ -148,23 +150,28 @@ function disposeCharacter(head,visual,clothes){
   if(head?.body){head.body.geo.dispose();if(head.body.vegSkin)head.body.mesh.material.dispose()}
   head?.dispose();
 }
-function rebuildHead(){
-  const previous={head:current,visual:lookObj,clothes:clothesObj};
-  current=null;lookObj=null;clothesObj=null;
+async function rebuildHead(){
+  const id=presetId,revision=presetRevision,previous={head:current,visual:lookObj,clothes:clothesObj};
+  let next;
   try{
-    heroStudio(scene,renderer,presetId);el('bodyFeedback').textContent='';
-    const look=getLook();current=buildHead(presetId,{},{quality:1,...headOpts(look,PRESETS[presetId])});wrap(current);scene.add(current.root);
-    addBody(current);rebuildClothes();syncBody();rebuildLook();ensureBodyRig(current);applyPose();refreshUI();
+    if(IMPORTED_CHARACTERS[id])next=await loadImportedCharacter(id);
+    else next=wrap(buildHead(id,{},{quality:1,...headOpts(getLook(),PRESETS[id])}));
+    // Um download antigo nunca substitui a escolha mais recente.
+    if(revision!==presetRevision||id!==presetId){next.dispose();return false}
+    current=next;lookObj=null;clothesObj=null;heroStudio(scene,renderer,id);el('bodyFeedback').textContent='';scene.add(current.root);
+    if(current.imported){syncBody();if(!current.bodyRig.motions[selectedMotion]){selectedMotion=null;motionTime=0;motionPlaying=false}if(selectedMotion){current.bodyRig.play(selectedMotion);current.bodyRig.seek(motionTime);if(!motionPlaying)current.bodyRig.pause()}current.bodyRig.setSpeed(Number(el('motionSpeed').value));current.bodyRig.showSkeleton(el('motionSkeleton').checked);refreshUI()}
+    else{if(selectedMotion&&!MOTIONS[selectedMotion]){selectedMotion=null;motionTime=0;motionPlaying=false}addBody(current);rebuildClothes();syncBody();rebuildLook();ensureBodyRig(current);applyPose();refreshUI()}
   }catch(error){
-    // Mantém o personagem anterior utilizável se uma montagem falhar.
-    disposeCharacter(current,lookObj,clothesObj);
+    if(revision!==presetRevision||id!==presetId){next?.dispose();return false}
+    if(next&&next!==previous.head)disposeCharacter(next,lookObj,clothesObj);
     current=previous.head;lookObj=previous.visual;clothesObj=previous.clothes;
     if(current){presetId=current.params.id;heroStudio(scene,renderer,presetId);syncBody();refreshUI()}
     throw error;
   }
-  disposeCharacter(previous.head,previous.visual,previous.clothes);
+  disposeCharacter(previous.head,previous.visual,previous.clothes);return true;
 }
 function rebuildClothes(){
+  if(current?.imported)return false;
   dropBodyRig(current);
   if(clothesObj){clothesObj.group.removeFromParent();clothesObj.dispose()}
   clothesObj=buildClothes(current.body,getLook());current.root.add(clothesObj.group);
@@ -174,6 +181,7 @@ function rebuildClothes(){
 // Somente corpo e roupas são substituídos; o grupo da cabeça, o rig e o visual permanecem vivos.
 let buildRevision=0,bodyTiming=0;
 function setBuild(value,preview=false){
+  if(current?.imported)return Promise.resolve(false);
   if(preview&&PRESETS[presetId].kind!=='robot')el('showBody').checked=true;
   const look=getLook();look.build=normalizeBuild({...look.build,...value});refreshBuildUI();
   const revision=++buildRevision,id=presetId;
@@ -191,6 +199,7 @@ function setBuild(value,preview=false){
   },0)));
 }
 function setLook(value){
+  if(current?.imported){if(Object.keys(value).some(k=>k!=='height'))return false;return setHeight(value.height)}
   const look=getLook(),bodyKeys=new Set(['height','build','outfit','clothColors','pieces','pieceColors']);
   const visualChanged=Object.keys(value).some(key=>!bodyKeys.has(key)&&JSON.stringify(value[key])!==JSON.stringify(look[key]));
   const build=normalizeBuild('build' in value?{...look.build,...value.build}:look.build);
@@ -213,12 +222,13 @@ function frameBodyPreview(){
   TARGET.set(0,frame.ty,0);orbit.target.copy(TARGET);camera.position.copy(TARGET).addScaledVector(direction,frame.dist);orbit.update();
 }
 function previewBody(){
+  if(current?.imported)return;
   if(['robot','companion'].includes(PRESETS[presetId].kind))return;
   if(!current.body||!el('showBody').checked)return setBuild(getLook().build,true);
   frameBodyPreview();
 }
 function refreshBuildUI(){
-  const build=normalizeBuild(getLook().build),robot=['robot','companion'].includes(PRESETS[presetId].kind);
+  const build=normalizeBuild(getLook().build),robot=!!current?.imported||['robot','companion'].includes(PRESETS[presetId].kind);
   el('gBody').classList.toggle('off',robot&&editor?.state().sub!=='height');
   for(const [id,key] of [['bodyWeight','weight'],['bodyMuscle','muscle']]){el(id).value=build[key];el(id).disabled=robot}
   el('bodyWeightValue').textContent=build.weight===0?'Padrão':(build.weight>0?'+':'')+Math.round(build.weight*100)+'%';
@@ -248,18 +258,21 @@ for(const [id,key] of [['bodyWeight','weight'],['bodyMuscle','muscle']]){
 }
 function setHeight(value){getLook().height=normalizeHeight(value);syncBody();frameBodyPreview();refreshBuildUI();return getLook().height}
 el('bodyHeight').oninput=e=>setHeight(e.target.value);el('bodyHeight').onchange=e=>setHeight(e.target.value);
-function previewHeight(){if(!el('showBody').checked&&PRESETS[presetId].kind!=='robot'){el('showBody').checked=true;return busy('Montando corpo…',()=>{rebuildHead();frameBodyPreview()})}frameBodyPreview()}
+function previewHeight(){if(!el('showBody').checked&&PRESETS[presetId].kind!=='robot'){el('showBody').checked=true;return busy('Montando corpo…',async()=>{if(await rebuildHead()===false)return false;frameBodyPreview()})}frameBodyPreview()}
 function chooseOutfit(id){
+  if(current?.imported)return false;
   if(!OUTFITS[id])return;
   const look=getLook();look.outfit=id;look.clothColors=outfitColors(id);look.pieces={};look.pieceColors={};
   rebuildClothes();refreshUI();
 }
 function choosePiece(slot,id){
+  if(current?.imported)return false;
   if(!clothesObj.setPiece(slot,id,outfitColors(id.split(':')[0])))return false;
   const look=getLook();(look.pieces||={})[slot]=id;(look.pieceColors||={})[slot]=outfitColors(id.split(':')[0]);syncBody();refreshUI();return true;
 }
-function setPieceColors(slot,colors){const look=getLook();Object.assign((look.pieceColors||={})[slot]||=( {}),colors);clothesObj.setPieceColors(slot,colors)}
+function setPieceColors(slot,colors){if(current?.imported)return false;const look=getLook();Object.assign((look.pieceColors||={})[slot]||=( {}),colors);clothesObj.setPieceColors(slot,colors)}
 function rebuildLook(){
+  if(current?.imported)return false;
   dropBodyRig(current);
   if(lookObj){if(lookObj.group.parent)lookObj.group.parent.remove(lookObj.group);lookObj.dispose()}
   lookObj=buildLook(current.fit,getLook(),current.body?current.body.sdfHead:null);attachLook(current,lookObj);
@@ -285,7 +298,7 @@ function syncHeight(h=current,look=getLook()){
  const sole=h.body?.ySole??h.fit?.ySole??(h.heightFloor??=localCharacterBounds(h.root).min.y);
  applyCharacterHeight(h.root,h.params.id||presetId,look.height,sole);
 }
-function syncBody(){syncHeight();if(current?.fit?.companion){ground.visible=el('showBody').checked;ground.position.y=(current.fit.ySole??-2.28);frameBody();return}const b=current&&current.body;ground.visible=!!b;if(b){const box=new THREE.Box3().setFromObject(clothesObj.group);ground.position.y=Math.min(b.ySole,box.isEmpty()?b.ySole:box.min.y)-.002}frameBody()}
+function syncBody(){syncHeight();if(current?.imported){ground.visible=true;ground.position.y=current.fit.ySole-.002;frameBody();return}if(current?.fit?.companion){ground.visible=el('showBody').checked;ground.position.y=(current.fit.ySole??-2.28);frameBody();return}const b=current&&current.body;ground.visible=!!b;if(b){const box=new THREE.Box3().setFromObject(clothesObj.group);ground.position.y=Math.min(b.ySole,box.isEmpty()?b.ySole:box.min.y)-.002}frameBody()}
 const hasFacialHair=()=>{const P=current&&current.params;return !!(P&&(P.beardVol||P.stache||P.goatee||P.beard))};
 
 // ---------- esqueleto e movimentos compartilhados ----------
@@ -293,10 +306,11 @@ let selectedMotion=null,motionTime=0,motionPlaying=false,rigEditDepth=0;
 function dropBodyRig(h){if(!h?.bodyRig)return;if(h===current){const state=h.bodyRig.state();motionTime=state.time;motionPlaying=state.playing}h.bodyRig.dispose();h.bodyRig=null}
 function ensureBodyRig(h){if(!h||h.bodyRig)return;h.bodyRig=buildBodyRig(h,clothesObj);h.bodyRig.setSpeed(Number(el('motionSpeed').value));if(selectedMotion){h.bodyRig.play(selectedMotion);h.bodyRig.seek(motionTime);if(!motionPlaying)h.bodyRig.pause()}if(el('motionSkeleton').checked)h.bodyRig.showSkeleton(true)}
 function editBodyRig(fn){if(!rigEditDepth++)dropBodyRig(current);try{return fn()}finally{if(!--rigEditDepth)ensureBodyRig(current)}}
-function refreshMotionUI(){for(const b of el('motionButtons').children){const on=b.dataset.motion===selectedMotion;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on)}el('motionPause').textContent=motionPlaying?'Pausar':'Continuar';el('motionTime').max=selectedMotion?MOTIONS[selectedMotion].duration:6;el('motionTime').value=motionTime;el('motionStatus').textContent=selectedMotion?MOTIONS[selectedMotion].label+' · '+MOTIONS[selectedMotion].description:'Pose A';}
-async function playMotion(id){if(!Object.hasOwn(MOTIONS,id))return false;if(!el('showBody').checked){el('showBody').checked=true;await busy('Montando corpo…',rebuildHead)}ensureBodyRig(current);selectedMotion=id;motionTime=0;motionPlaying=true;current.bodyRig.play(id);frameBody();aim(...VIEWS.three);refreshMotionUI();return true}
+function motionCatalog(){return current?.imported?current.bodyRig.motions:MOTIONS}
+function motionButtons(){const catalog=motionCatalog();el('motionButtons').replaceChildren(...Object.entries(catalog).map(([id,def])=>{const b=document.createElement('button');b.dataset.motion=id;b.textContent=def.label;b.title=def.description;b.onclick=()=>playMotion(id);return b}));refreshMotionUI()}
+function refreshMotionUI(){const catalog=motionCatalog();for(const b of el('motionButtons').children){const on=b.dataset.motion===selectedMotion;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on)}el('motionPause').textContent=motionPlaying?'Pausar':'Continuar';el('motionTime').max=selectedMotion?catalog[selectedMotion]?.duration||6:6;el('motionTime').value=motionTime;el('motionStatus').textContent=selectedMotion&&catalog[selectedMotion]?catalog[selectedMotion].label+' · '+catalog[selectedMotion].description:current?.imported?'Pose T':'Pose A';}
+async function playMotion(id){if(!Object.hasOwn(motionCatalog(),id))return false;if(!el('showBody').checked){el('showBody').checked=true;await busy('Montando corpo…',rebuildHead)}ensureBodyRig(current);selectedMotion=id;motionTime=0;motionPlaying=true;current.bodyRig.play(id);frameBody();aim(...VIEWS.three);refreshMotionUI();return true}
 function stopMotion(){selectedMotion=null;motionTime=0;motionPlaying=false;current?.bodyRig?.stop();refreshMotionUI();applyPose()}
-for(const [id,def]of Object.entries(MOTIONS)){const b=document.createElement('button');b.dataset.motion=id;b.textContent=def.label;b.title=def.description;b.onclick=()=>playMotion(id);el('motionButtons').append(b)}
 el('motionPause').onclick=()=>{if(!selectedMotion)return;motionPlaying=!current.bodyRig.state().playing;if(motionPlaying)current.bodyRig.resume();else current.bodyRig.pause();refreshMotionUI()};
 el('motionStop').onclick=stopMotion;
 el('motionTime').oninput=e=>{motionTime=Number(e.target.value);motionPlaying=false;current.bodyRig?.pause();current.bodyRig?.seek(motionTime);applyPose();refreshMotionUI()};
@@ -315,7 +329,7 @@ for(const k of Object.keys(EXPRESSIONS)){const b=document.createElement('button'
 const poseEl=document.getElementById('poseCtrls');
 for(const [id,title,min,max] of poseDefs){const d=document.createElement('div');d.className='ctrl';d.innerHTML='<label for="p_'+id+'">'+title+' <output id="p_'+id+'-value">0.00</output></label><input id="p_'+id+'" type="range" min="'+min+'" max="'+max+'" step=".01" value="0"/>';poseEl.append(d);d.querySelector('input').oninput=e=>{pose[id]=Number(e.target.value);exprName=null;syncPoseUI()}}
 function syncPoseUI(){for(const [id] of poseDefs){document.getElementById('p_'+id).value=pose[id]||0;document.getElementById('p_'+id+'-value').textContent=(pose[id]||0).toFixed(2)}document.querySelectorAll('.exprs button').forEach(b=>{const on=b.dataset.expr===exprName;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on)})}
-function setExpression(k){pose={...NEUTRAL,...EXPRESSIONS[k]};exprName=k;syncPoseUI()}
+function setExpression(k){if(current?.imported)return false;pose={...NEUTRAL,...EXPRESSIONS[k]};exprName=k;syncPoseUI()}
 function livePose(dt){
   const p={...pose};
   if(document.getElementById('autoBlink').checked){blinkT+=dt;if(blinkT>nextBlink){const k=Math.min(1,(blinkT-nextBlink)/.09),b=k<.5?k*2:2-k*2;p.blinkL=Math.max(p.blinkL,b);p.blinkR=Math.max(p.blinkR,b);if(blinkT>nextBlink+.18){blinkT=0;nextBlink=2+Math.random()*3.5}}}
@@ -333,13 +347,13 @@ function setPreset(id){
   if(!Object.hasOwn(PRESETS,id))return Promise.resolve(false);
   ++presetRevision;++buildRevision;clearTimeout(buildSliderTimer);
   el('bodyFeedback').textContent='';el('gBody').setAttribute('aria-busy','false');presetId=id;
-  const update=busy('Montando '+PRESETS[id].label+'…',()=>{rebuildHead();aim(...VIEWS.three)});
+  const update=busy('Montando '+PRESETS[id].label+'…',async()=>{if(await rebuildHead()===false)return false;aim(...VIEWS.three)});
   editor?.previews.hold('corpo',false);return update;
 }
 document.getElementById('front').onclick=()=>aim(...VIEWS.front);
-document.getElementById('bodyView').onclick=()=>{if(!el('showBody').checked){el('showBody').checked=true;busy('Montando…',()=>{rebuildHead();aim(...VIEWS.three)})}else{frameBody();aim(...VIEWS.three)}};
+document.getElementById('bodyView').onclick=()=>{if(!el('showBody').checked){el('showBody').checked=true;busy('Montando…',async()=>{if(await rebuildHead()===false)return false;aim(...VIEWS.three)})}else{frameBody();aim(...VIEWS.three)}};
 document.getElementById('faceView').onclick=frameFace;
-document.getElementById('showBody').onchange=()=>busy('Montando…',()=>{rebuildHead();aim(...VIEWS.three)});
+document.getElementById('showBody').onchange=()=>busy('Montando…',async()=>{if(await rebuildHead()===false)return false;aim(...VIEWS.three)});
 document.getElementById('side').onclick=()=>aim(...VIEWS.side);
 document.getElementById('threequarters').onclick=()=>aim(...VIEWS.three);
 document.getElementById('reset').onclick=()=>{looks[presetId]=defaultLook(presetId);busy('Restaurando…',rebuildHead)};
@@ -350,7 +364,9 @@ function previewData(b,spec){if(spec)b.dataset.preview=JSON.stringify({...spec,l
 function card(label,sub,on,click,spec){const b=document.createElement('button');b.className=on?'on':'';b.innerHTML='<b>'+label+'</b>'+(sub?'<span>'+sub+'</span>':'');b.onclick=click;return previewData(b,spec)}
 function chip(label,on,click,spec){const b=document.createElement('button');b.className=on?'on':'';b.textContent=label;b.onclick=click;return previewData(b,spec)}
 function refreshUI(){
-  refreshBuildUI();
+  refreshBuildUI();motionButtons();
+  el('showBody').closest('label').hidden=!!current?.imported;
+  if(current?.imported){el('showBody').checked=true;document.querySelectorAll('.preset').forEach(b=>b.classList.toggle('active',b.dataset.preset===presetId));for(const id of ['outfits','clothPieces','clothSlots','clothColors','skins','hairs','hairColors','beards','accs','accColors'])el(id).replaceChildren();editor?.refresh();return}
   const P=PRESETS[presetId],look=getLook(),robot=P.kind==='robot',veg=P.family==='Vegetais',companion=P.kind==='companion';
   document.querySelectorAll('.preset').forEach(b=>b.classList.toggle('active',b.dataset.preset===presetId));
   for(const g of ['gSkin','gHair','gBeard','gAcc'])el(g).classList.toggle('off',robot);
@@ -382,7 +398,7 @@ function refreshUI(){
   const skins=el('skins');skins.replaceChildren(...skinPalette(P).map(([n,h])=>swatch(h,n,(look.skin||'').toLowerCase()===h,()=>{look.skin=h;busy('Aplicando pele…',rebuildHead)})));
   if(P.skin&&!skinPalette(P).some(([,h])=>h===P.skin))skins.prepend(swatch(P.skin,'Original',look.skin===P.skin,()=>{look.skin=P.skin;busy('Aplicando pele…',rebuildHead)}));
   el('hairs').replaceChildren(...Object.entries(HAIR_STYLES).map(([k,S])=>card(S.label,S.sub,look.hair===k,()=>{
-    const flip=(look.hair==='none')!==(k==='none');look.hair=k;busy('Trocando cabelo…',()=>{flip&&hasFacialHair()?rebuildHead():(rebuildLook(),refreshUI())})},{kind:'hair',value:k,label:S.label})));
+    const flip=(look.hair==='none')!==(k==='none');look.hair=k;busy('Trocando cabelo…',()=>flip&&hasFacialHair()?rebuildHead():(rebuildLook(),refreshUI()))},{kind:'hair',value:k,label:S.label})));
   el('hairColors').replaceChildren(...HAIR_COLORS.map(([n,h])=>swatch(h,n,look.hairColor===h,()=>{look.hairColor=h;lookObj&&lookObj.setHairColor(h);
     if(hasFacialHair()&&look.hair!=='none')busy('Pintando barba…',rebuildHead);else refreshUI()})));
   el('beards').replaceChildren(...Object.entries(BEARD_STYLES).map(([k,l])=>chip(l,look.beard===k,()=>{look.beard=k;busy('Trocando barba…',rebuildHead)},{kind:'beard',value:k,label:l})));
@@ -405,7 +421,7 @@ function refreshUI(){
 }
 // exportação: malha com densidade um pouco menor que a do visualizador (arquivo mais leve, mesma forma)
 // o GLB vai em pose neutra, com o esqueleto facial e os clipes de animação (piscar, falar, expressões…)
-function exportGLB(){const look=getLook(),h=wrap(buildHead(presetId,{},{quality:.6,export:true,...headOpts(look,PRESETS[presetId])}));const withBody=addBody(h,.036);const L=buildLook(h.fit,look,withBody?h.body.sdfHead:null);attachLook(h,L);
+async function exportGLB(){if(current?.imported){const h=await loadImportedCharacter(presetId);try{syncHeight(h,getLook());return await new GLTFExporter().parseAsync(h.root,{binary:true,onlyVisible:true,animations:h.animations})}finally{h.dispose()}}const look=getLook(),h=wrap(buildHead(presetId,{},{quality:.6,export:true,...headOpts(look,PRESETS[presetId])}));const withBody=addBody(h,.036);const L=buildLook(h.fit,look,withBody?h.body.sdfHead:null);attachLook(h,L);
   const clothes=buildClothes(h.body,look);h.root.add(clothes.group);
   const animations=h.rig&&h.rig.makeClips?h.rig.makeClips():[];if(h.rig)h.rig.apply({});
   syncHeight(h,look);const bodyRig=buildBodyRig(h,clothes);animations.push(...bodyRig.makeClips());bodyRig.stop();
@@ -416,14 +432,14 @@ document.getElementById('download').onclick=async e=>{
   catch(err){alert('Falha na exportação: '+(err&&err.message||err))}
   finally{btn.disabled=false;btn.textContent=label}
 };
-window.__atelie={bodyRig:()=>current?.bodyRig,motions:MOTIONS,playMotion,pauseMotion:()=>{current.bodyRig?.pause();motionPlaying=false;refreshMotionUI()},stopMotion,seekMotion:t=>current.bodyRig?.seek(t),root:()=>current.root,savedLook:id=>structuredClone(looks[id]||defaultLook(id)),clothes:()=>clothesObj,setPiece:choosePiece,setPieceColors,pieceOptions:slot=>pieceOptions(current.body,slot),setOutfit:chooseOutfit,setClothColors:colors=>{Object.assign(getLook().clothColors,colors);for(const piece of Object.values(getLook().pieceColors||{}))Object.assign(piece,colors);clothesObj.setColors(getLook().clothColors);refreshUI()},frame:()=>frame,body:()=>current.body,getLook,setBuild,setHeight,bodyTiming:()=>bodyTiming,setLook,rebuildLook,lookObj:()=>lookObj,setExpression,setPose:p=>{pose={...NEUTRAL,...p};exprName=null;syncPoseUI();applyPose()},stopAuto:()=>{document.getElementById('autoBlink').checked=false;document.getElementById('talk').checked=false},group:()=>current.group,timings:()=>current.group.userData.timings,setPreset,aim,VIEWS,camera,orbit,clay:on=>current.group.traverse(o=>{if(o.isMesh&&o.material.vertexColors!==undefined&&o.material.name==='Skin'){o.material.vertexColors=!on;o.material.sheen=on?0:.6;if(on)o.material.color.set('#d8d4cf');else o.material.color.set('#ffffff');o.material.needsUpdate=true}}),exportGLB};
+window.__atelie={bodyRig:()=>current?.bodyRig,get motions(){return motionCatalog()},capabilities:()=>current?.capabilities||null,assetKind:()=>current?.imported?'glb':'procedural',playMotion,pauseMotion:()=>{current.bodyRig?.pause();motionPlaying=false;refreshMotionUI()},stopMotion,seekMotion:t=>current.bodyRig?.seek(t),root:()=>current.root,savedLook:id=>structuredClone(looks[id]||defaultLook(id)),clothes:()=>clothesObj,setPiece:choosePiece,setPieceColors,pieceOptions:slot=>current?.imported?[]:pieceOptions(current.body,slot),setOutfit:chooseOutfit,setClothColors:colors=>{if(current?.imported)return false;Object.assign(getLook().clothColors,colors);for(const piece of Object.values(getLook().pieceColors||{}))Object.assign(piece,colors);clothesObj.setColors(getLook().clothColors);refreshUI()},frame:()=>frame,body:()=>current.body,getLook,setBuild,setHeight,bodyTiming:()=>bodyTiming,setLook,rebuildLook,lookObj:()=>lookObj,setExpression,setPose:p=>{pose={...NEUTRAL,...p};exprName=null;syncPoseUI();applyPose()},stopAuto:()=>{document.getElementById('autoBlink').checked=false;document.getElementById('talk').checked=false},group:()=>current.group,timings:()=>current.group.userData.timings,setPreset,aim,VIEWS,camera,orbit,clay:on=>current.group.traverse(o=>{if(o.isMesh&&o.material.vertexColors!==undefined&&o.material.name==='Skin'){o.material.vertexColors=!on;o.material.sheen=on?0:.6;if(on)o.material.color.set('#d8d4cf');else o.material.color.set('#ffffff');o.material.needsUpdate=true}}),exportGLB};
 
 rebuildHead();aim(...VIEWS.three);statusEl.textContent=PRESETS[presetId].label;
-editor=mountEditor({families:FAMILY_ORDER,slots:CLOTH_SLOTS,accessories:ACC_SLOTS,getContext:()=>({id:presetId,look:structuredClone(getLook())}),selectSlot:slot=>{activeClothSlot=slot},refresh:refreshUI,previewBody,previewHeight,onLayout:()=>resize()});
+editor=mountEditor({families:FAMILY_ORDER,slots:CLOTH_SLOTS,accessories:ACC_SLOTS,getContext:()=>({id:presetId,look:structuredClone(getLook()),capabilities:current?.capabilities||null}),selectSlot:slot=>{activeClothSlot=slot},refresh:refreshUI,previewBody,previewHeight,onLayout:()=>resize()});
 refreshUI();
 window.__atelie.editor=editor;
 // Links de teste abrem a mesma produção já no personagem e movimento escolhidos.
-async function openMotionLink(){const query=new URLSearchParams(location.search),id=query.get('personagem'),motion=query.get('animacao');if(id&&Object.hasOwn(PRESETS,id))await setPreset(id);if(motion&&Object.hasOwn(MOTIONS,motion)){editor.select('motions','shared');await playMotion(motion)}}
+async function openMotionLink(){const query=new URLSearchParams(location.search),id=query.get('personagem'),motion=query.get('animacao');if(id&&Object.hasOwn(PRESETS,id))await setPreset(id);if(motion&&Object.hasOwn(motionCatalog(),motion)){editor.select('motions','shared');await playMotion(motion)}}
 openMotionLink();
 function resize(){const w=host.clientWidth,h=Math.max(1,host.clientHeight-(host.querySelector('.stage-controls')?.offsetHeight||0));renderer.domElement.style.height=h+'px';renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}addEventListener('resize',resize);resize();
 let lastT=performance.now();

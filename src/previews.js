@@ -2,7 +2,7 @@
 import {FRONTIER_CHARACTERS,FRONTIER_COMPANIONS} from './frontier.js';
 import {FOREST_CHARACTERS} from './forest.js';
 import {previewChoice,previewSize} from './preview-spec.js';
-const VERSION='menu-v30-arqueira-individual';
+const VERSION='menu-v31-modelos-glb';
 const FRONTIER=new Set([...FRONTIER_CHARACTERS.map(c=>c.id),...FRONTIER_COMPANIONS]);
 const FOREST=new Set(FOREST_CHARACTERS.map(c=>c.id));
 const LUNAR=new Set(['nana_explorer','moon_guardian','nico_inventor','ruby_sorceress','paysandu_wolf','ruby_raven']);
@@ -30,7 +30,7 @@ export class PreviewCatalog {
       }
       const spec=JSON.parse(button.dataset.preview);
       // Os personagens mostram o visual salvo de cada um; as outras opções usam a skin atual.
-      const size=frame.getBoundingClientRect(),request={...context,spec,imageSize:previewSize(size.width,size.height,globalThis.devicePixelRatio)};if(spec.kind==='character')request.look=window.__atelie.savedLook(spec.value);
+      const size=frame.getBoundingClientRect(),request={...context,spec,assetBase:new URL('.',document.baseURI).href,imageSize:previewSize(size.width,size.height,globalThis.devicePixelRatio)};if(spec.kind==='character')request.look=window.__atelie.savedLook(spec.value);
       // O enquadramento novo dos brincos invalida somente as quatro miniaturas desse slot.
       const alvo=spec.kind==='character'?spec.value:context.id;
       const versao=alvo==='chili_bandit'?'boca-aberta-2':FRONTIER.has(alvo)?'deserto-heroi-4':FOREST.has(spec.kind==='character'?spec.value:context.id)?'floresta-heroi-4':LUNAR.has(spec.kind==='character'?spec.value:context.id)?'reino-lua-heroi-3':spec.kind==='accessory'&&spec.slot==='ears'?'menu-v2-orelhas':VERSION;

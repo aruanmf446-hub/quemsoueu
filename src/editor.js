@@ -1,6 +1,6 @@
 // Navegação do ateliê: uma categoria e uma decisão por vez.
 import {PRESETS} from './presets.js';
-import {PreviewCatalog} from './previews.js?v=arqueira-individual-1';
+import {PreviewCatalog} from './previews.js?v=modelos-glb-1';
 
 export function mountEditor(api) {
   const el=id=>document.getElementById(id),make=(tag,cls,text)=>{const n=document.createElement(tag);n.className=cls;if(text)n.textContent=text;return n};
@@ -60,7 +60,7 @@ export function mountEditor(api) {
   function refresh(){
     const conf=configs[category],section=conf.subs.find(s=>s.id===sub);
     title.textContent=section.label;trail.textContent=conf.label+' / '+section.label;
-    hint.textContent=category==='motions'?'Escolha o movimento e troque de personagem para comparar.':['fine','height'].includes(sub)?'Arraste para ajustar. As mudanças aparecem no personagem.':sub==='skin'?'Escolha uma cor. Veja o resultado no personagem ao lado.':'Compare as prévias. Clique para aplicar.';
+    hint.textContent=category==='motions'?(api.getContext().capabilities?'Escolha uma das animações incluídas nesta personagem.':'Escolha o movimento e troque de personagem para comparar.'):['fine','height'].includes(sub)?'Arraste para ajustar. As mudanças aparecem no personagem.':sub==='skin'?'Escolha uma cor. Veja o resultado no personagem ao lado.':'Compare as prévias. Clique para aplicar.';
     nav.replaceChildren(make('div','nav-caption',conf.label));
     for(const s of conf.subs){const b=make('button',s.id===sub?'selected':'',s.label);b.dataset.section=s.id;b.setAttribute('aria-current',s.id===sub?'page':'false');b.onclick=()=>select(category,s.id);nav.append(b)}
     tabs.querySelectorAll('button').forEach(b=>{const active=b.dataset.category===category;b.classList.toggle('selected',active);b.setAttribute('aria-pressed',active)});
@@ -81,8 +81,9 @@ export function mountEditor(api) {
     const context=api.getContext(),robot=context.id==='robot_ball',vegetal=PRESETS[context.id].family==='Vegetais';
     const companion=PRESETS[context.id].kind==='companion';
     const heightAllowed=category==='body'&&sub==='height';
-    const unsupported=companion&&(!heightAllowed&&['body','clothes'].includes(category)||category==='appearance'&&['hair','beard'].includes(sub))||robot&&!heightAllowed&&!['character','expressions','motions'].includes(category)||vegetal&&category==='appearance'&&sub==='beard';
-    unavailable.hidden=!unsupported;unavailable.textContent=companion?'Este companheiro tem uma malha própria. Troque a pelagem em Aparência → Pele, o equipamento em Acessórios → Cabeça e as expressões em Expressões.':robot?'O robô usa o próprio casco. Personalize suas expressões ou escolha outro personagem.':'Este personagem mantém o bigode e os detalhes do seu modelo original.';
+    const capability=context.capabilities,importedUnsupported=capability&&(category==='body'&&!heightAllowed&&!capability.build||['appearance','clothes','accessories','expressions'].includes(category)&&!capability[category]);
+    const unsupported=importedUnsupported||companion&&(!heightAllowed&&['body','clothes'].includes(category)||category==='appearance'&&['hair','beard'].includes(sub))||robot&&!heightAllowed&&!['character','expressions','motions'].includes(category)||vegetal&&category==='appearance'&&sub==='beard';
+    unavailable.hidden=!unsupported;unavailable.textContent=importedUnsupported?({body:'Este modelo ainda não tem variações de peso e músculo. A altura está disponível em Corpo → Altura.',appearance:'O cabelo e a pele fazem parte do visual original desta personagem. A personalização por partes está em preparação.',clothes:'Este visual usa um conjunto completo. A troca de peças está em preparação.',accessories:'Os acessórios fazem parte deste visual. A troca individual está em preparação.',expressions:'Este modelo ainda não tem expressões faciais. Veja os movimentos disponíveis em Animações.'}[category]):companion?'Este companheiro tem uma malha própria. Troque a pelagem em Aparência → Pele, o equipamento em Acessórios → Cabeça e as expressões em Expressões.':robot?'O robô usa o próprio casco. Personalize suas expressões ou escolha outro personagem.':'Este personagem mantém o bigode e os detalhes do seu modelo original.';
     if(unsupported)el(visible).hidden=true;
     document.querySelector('.brand h1').textContent=document.querySelector(`[data-preset="${context.id}"] b`)?.textContent||'Seu personagem';
     previews.refresh(sidebar);

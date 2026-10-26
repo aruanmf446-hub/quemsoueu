@@ -1,4 +1,27 @@
-# Arqueira da floresta — refinamento individual
+# Arqueira — modelo GLB enviado
+
+A escolha posterior do usuário foi aproveitar `fantasy+archer+3d+model.glb`. A arqueira padrão no editor usa agora esse arquivo; a implementação procedural anterior permanece no código e no histórico. A aprovação estética continua pendente.
+
+## Integração atual
+
+- Arquivo original intacto em `assets/characters/forest-archer.glb`, 2.587.732 bytes, 19.077 triângulos, 15.117 vértices, textura JPEG 2048², 65 juntas, três clipes (`wait`, `sob`, `dance_04`).
+- Catálogo `src/imported-character.js`: caminho relativo à base do site, normalização uniforme para 7 unidades, sola em −5,2, capacidades e mapeamento dos clipes. Serve tanto ao editor quanto ao Worker. Buffer em cache; cada instância tem cena/rig/materiais independentes.
+- O editor mantém altura, câmera, vistas e exportação; pausa, posição, velocidade e esqueleto funcionam com os clipes nativos. A exportação cria uma instância independente, conserva a malha/rig/textura e grava a altura, sem parar a animação que está na tela.
+- Download atrasado não substitui a seleção mais recente. Falha de carregamento preserva o ator anterior e permite nova tentativa. Trocar de volta a um personagem procedural recupera seus controles e cinco movimentos.
+- O menu explica as capacidades ausentes. Não há morphs de peso/músculo, separação de roupas/cabelo ou rig facial neste GLB. Não fabricar resultados desses controles por escala grosseira ou recoloração global da textura.
+
+Teste: `node tests/modelos-importados.cjs`, com servidor na porta 8000. Inspeciona nove poses, dados finitos, três alturas com apoio dos pés, controle de capacidades, GLB exportado/reimportado com 65 juntas/3 clipes/19.077 triângulos, Worker, desktop/celular, seleção concorrente e retorno ao gerador. Capturas/relatório em `renders/importados/` por padrão (`ATELIE_RENDERS` altera a pasta).
+
+## Próximas etapas para o jogo
+
+Validar esta integração visual antes de migrar outros personagens. Cada novo modelo precisa ter origem registrada, escala/frente/sola conferidas, capacidade real declarada e animações verificadas. Personalização modular requer corpo completo, peças separadas, encaixes, pesos compatíveis e variações de corpo aplicadas também às roupas. Expressões requerem morphs/ossos faciais preparados; movimentos compartilhados precisam de retargeting entre as poses e esqueletos. Esta primeira integração não adiciona essas capacidades nem resolve colisões de tecido em todos os quadros do arquivo original.
+
+Nenhum crédito Tripo foi usado. A lista do README permanece pendente até aprovação explícita do usuário.
+
+---
+
+## Histórico do refinamento procedural anterior
+
 
 Base: `ffc9f80`, em 25/10/2026. O usuário escolheu refinar a malha atual do Ateliê. A referência enviada orienta silhueta, cabelo, linho, couro e camadas. A comparação apresenta renders do projeto; a aprovação artística continua pendente.
 

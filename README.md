@@ -1,12 +1,14 @@
 # Quem Sou Eu — Ateliê Facial · Head V2
 
-## Refinamento individual — Arqueira da floresta
+## Arqueira — primeiro modelo GLB integrado
 
-Rodada de 25/10/2026 sobre `ffc9f80`, usando a malha atual conforme escolha do usuário. [Comparação de frente, 3/4, costas e rosto](revisao/arqueira/) com câmeras iguais. Cabelo com trança lateral, blusa clara e mangas franzidas, corpete baixo, short sob abas assimétricas, capa curta, couro e botas. Ombros/pescoço e sardas foram ajustados só nela; os outros 33 visuais padrão continuam preservados. Os controles de peças, cores, tipos físicos, altura e animações permanecem disponíveis.
+A arqueira agora usa o **GLB enviado pelo usuário**, preservando sua malha, textura e esqueleto. [Abrir no Ateliê](https://aruanmf446-hub.github.io/quemsoueu/?personagem=forest_archer_f). O arquivo original tem 2,47 MiB, 19.077 triângulos, textura 2K e 65 ossos. Espera, tristeza e dança original estão disponíveis com pausa, posição e velocidade. Altura proporcional, vistas, miniatura em Worker e exportação também usam o modelo importado.
 
-Cobertura: 43.056 vértices em três builds, zero falhas. Rig com 26 ossos, GLB com 17 clipes, Worker e cache passaram; maior troca medida no navegador: 136,3 ms. Detalhes, comandos e limitações em [ARQUEIRA.md](ARQUEIRA.md). **A arqueira continua na lista pendente de aprovação visual.**
+Peso/músculo, troca de cabelo/roupas/acessórios e expressões faciais exigem preparação específica desta malha; o menu informa a indisponibilidade e não aplica controles sem efeito. Os outros 33 personagens continuam no gerador procedural. O catálogo em `src/imported-character.js` permite cadastrar outros modelos com suas capacidades e animações. Nenhuma geração ou processamento pago foi utilizado nesta integração.
 
-Protótipo separado do jogo principal para aprovar a anatomia facial de personagens cartoon 3D. A V2 reúne cabeça, rig facial, corpo, cabelo, acessórios e figurinos procedurais personalizáveis, sem assets externos.
+Detalhes, origem e próximos passos em [ARQUEIRA.md](ARQUEIRA.md) e [assets/characters/PROVENANCE.md](assets/characters/PROVENANCE.md). Teste de integração: `node tests/modelos-importados.cjs`, com servidor local na porta 8000. **A arqueira continua na lista pendente de aprovação visual.** A [comparação anterior](revisao/arqueira/) registra o refinamento procedural, anterior à importação.
+
+Protótipo separado do jogo principal para aprovar personagens cartoon 3D. Reúne modelos procedurais personalizáveis e o primeiro personagem GLB importado.
 
 ## Animações e esqueleto corporal
 
@@ -14,7 +16,7 @@ A biblioteca usa movimento humano capturado: lobby, derrota, vitória, Macarena 
 
 Correção após a reprovação da primeira vinculação: pesos contínuos para remover pontas nas axilas, proteção de cinturas largas e equipamentos rígidos. [Comparação antes/depois](revisao/correcao-rig/) · [Detalhes da correção](CORRECAO-RIG.md).
 
-Os 34 personagens têm rig corporal com 26 ossos (quatro para tecidos) e uma biblioteca compartilhada, com adaptação às cinco anatomias. Abra **Animações → Reações e danças** para testar, pausar, mudar velocidade, consultar os ossos e comparar os personagens. O GLB inclui os clipes corporais e as expressões faciais. [Abrir Nico dançando na produção](https://aruanmf446-hub.github.io/quemsoueu/?v=altura-roupas-1&personagem=nico_inventor&animacao=dance_floss).
+Os 33 personagens procedurais têm rig corporal com 26 ossos (quatro para tecidos) e uma biblioteca compartilhada, com adaptação às cinco anatomias. A arqueira importada conserva seus 65 ossos e três animações próprias. Abra **Animações → Reações e danças** para testar, pausar, mudar velocidade, consultar os ossos e comparar os personagens. O GLB inclui os clipes corporais e as expressões faciais. [Abrir Nico dançando na produção](https://aruanmf446-hub.github.io/quemsoueu/?v=altura-roupas-1&personagem=nico_inventor&animacao=dance_floss).
 
 ## Altura dos personagens
 
